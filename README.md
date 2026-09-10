@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎓 Ekosistem Kampus Asia
+# 🎓 Proyek_Magang
 
 **Sistem Informasi Terpadu untuk Manajemen Kemahasiswaan, Penelitian, dan Kerja Sama**
 
@@ -17,7 +17,7 @@ Platform berbasis Laravel untuk mengelola prestasi mahasiswa, publikasi ilmiah d
 
 ## 📖 Tentang Proyek
 
-**Ekosistem Kampus Asia** adalah sistem informasi yang dirancang untuk mendigitalisasi pengelolaan data kemahasiswaan dan akademik di lingkungan kampus. Sistem ini menyatukan tiga pilar utama kegiatan kampus — kemahasiswaan, penelitian & pengabdian masyarakat (LPPM), dan kerja sama institusional — ke dalam satu platform yang terstruktur dan mudah diaudit.
+**Proyek_Magang** adalah sistem informasi yang dirancang untuk mendigitalisasi pengelolaan data kemahasiswaan dan akademik di lingkungan kampus. Sistem ini menyatukan tiga pilar utama kegiatan kampus — kemahasiswaan, penelitian & pengabdian masyarakat (LPPM), dan kerja sama institusional — ke dalam satu platform yang terstruktur dan mudah diaudit.
 
 Setiap capaian, mulai dari prestasi lomba mahasiswa hingga publikasi jurnal internasional dosen, tercatat rapi lengkap dengan bukti pendukung, sehingga memudahkan proses akreditasi, pelaporan, dan pengambilan keputusan berbasis data.
 
@@ -107,8 +107,8 @@ Pastikan sudah terpasang di sistem kamu:
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/username/ekosistem-kampus-asia.git
-cd ekosistem-kampus-asia
+git clone https://github.com/username/Proyek_Magang.git
+cd Proyek_Magang
 
 # 2. Install dependency PHP
 composer install
@@ -123,7 +123,7 @@ cp .env.example .env
 php artisan key:generate
 
 # 6. Konfigurasi database di .env
-# DB_DATABASE=ekosistem_kampus
+# DB_DATABASE=proyek_magang
 # DB_USERNAME=root
 # DB_PASSWORD=
 
@@ -185,7 +185,7 @@ Didistribusikan di bawah lisensi MIT. Lihat `LICENSE` untuk informasi lebih lanj
 
 ## 👤 Kontak
 
-Dikembangkan sebagai proyek PKL — *Program Ekosistem Kampus Asia*
+Dikembangkan sebagai proyek PKL — *Proyek_Magang*
 
 ---
 

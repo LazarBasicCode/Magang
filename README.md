@@ -190,5 +190,5 @@ Dikembangkan sebagai proyek PKL — *Proyek_Magang*
 ---
 
 <div align="center">
-<sub>Dibuat dengan 💜 untuk mendukung digitalisasi data kampus</sub>
+<sub>Dibuat dengan passion untuk mendukung digitalisasi data kampus</sub>
 </div>

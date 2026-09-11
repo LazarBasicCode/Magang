@@ -19,7 +19,7 @@
             /* base surfaces */
             --canvas: #eef0f7;
             --card: #ffffff;
-            --border: #dfe3f0;
+            --border: #dfe3f1;
             --border-strong: #ced5ea;
 
             /* text */

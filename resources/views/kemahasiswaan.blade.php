@@ -5,761 +5,1750 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap"
         rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
+    <title>Kemahasiswaan &middot; SIDA</title>
     <style>
-        @layer base {
+        /* ==========================================================
+           1. TOKENS (design variables)
+           ========================================================== */
+        :root {
+            /* base surfaces */
+            --canvas: #eef0f7;
+            --card: #ffffff;
+            --border: #d7dbe7;
+            --border-strong: #b9c0d4;
 
-            html,
-            body {
-                margin: 0;
-                padding: 0;
-            }
+            /* text */
+            --ink: #2f3349;
+            --ink-muted: #6b7280;
+            --ink-faint: #9aa1b5;
 
-            body {
-                overscroll-behavior: none;
-            }
+            /* brand */
+            --primary: #5b5fef;
+            --primary-dark: #4547d1;
+            --primary-soft: #e2e2fd;
+            --primary-border: #b9baf7;
 
-            main>:first-child {
-                margin-top: 0 !important;
-            }
+            /* status accents (badges) — darker text + tinted bg for real contrast */
+            --success: #1a8a3d;
+            --success-bg: #d6f5df;
+            --success-border: #9fe3b4;
 
-            main>:last-child {
-                margin-bottom: 0 !important;
-            }
+            --info: #0680a3;
+            --info-bg: #cdf2fa;
+            --info-border: #82dcef;
+
+            --warning: #a15c00;
+            --warning-bg: #ffe6b8;
+            --warning-border: #ffcb70;
+
+            --danger: #c62f14;
+            --danger-bg: #ffd9d0;
+            --danger-border: #ffab97;
+
+            --neutral: #44506b;
+            --neutral-bg: #e3e6f0;
+            --neutral-border: #c3c9dc;
+
+            /* shadows */
+            --shadow-card: 0 1px 3px rgba(31, 41, 66, 0.08), 0 1px 2px rgba(31, 41, 66, 0.06);
+            --shadow-btn: 0 3px 8px rgba(91, 95, 239, 0.38);
+
+            /* layout */
+            --sidebar-w: 260px;
+            --header-h: 64px;
+            --radius: 10px;
+            --radius-lg: 14px;
+        }
+
+        /* ==========================================================
+           2. RESET / BASE
+           ========================================================== */
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Public Sans", sans-serif;
+            background: var(--canvas);
+            color: var(--ink);
+            font-size: 13.5px;
+            line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
         }
 
         ::-webkit-scrollbar {
-            display: none;
+            width: 7px;
+            height: 7px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+            line-height: 1;
+        }
+
+        /* ==========================================================
+           3. LAYOUT SHELL
+           ========================================================== */
+        .app-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: var(--sidebar-w);
+            background: var(--card);
+            border-right: 1px solid var(--border);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-content {
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            height: var(--header-h);
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .app-main {
+            flex: 1;
+            padding: 24px;
+        }
+
+        .page-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1600px;
+        }
+
+        /* ==========================================================
+           4. SIDEBAR
+           ========================================================== */
+        .sidebar-brand {
+            height: var(--header-h);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand img {
+            height: 32px;
+            width: 32px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .sidebar-brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .sidebar-brand-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.01em;
+        }
+
+        .sidebar-brand-sub {
+            font-size: 11px;
+            color: var(--ink-muted);
+            margin-top: 2px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px 24px;
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .nav-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 8px;
+            color: var(--ink-muted);
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: background-color .15s ease, color .15s ease;
+        }
+
+        .nav-link:hover {
+            background: var(--canvas);
+            color: var(--ink);
+        }
+
+        .nav-link .material-symbols-outlined {
+            font-size: 19px;
+        }
+
+        .nav-link.is-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-weight: 700;
+            border: 1px solid var(--primary-border);
+        }
+
+        .nav-link.is-active::before {
+            content: "";
+            position: absolute;
+            left: -16px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 22px;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            background: var(--primary);
+        }
+
+        .nav-heading {
+            padding: 18px 12px 6px;
+            font-size: 10.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--ink-faint);
+        }
+
+        .sidebar-help {
+            padding: 16px;
+            flex-shrink: 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .help-card {
+            background: var(--canvas);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .help-card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .help-card-title .material-symbols-outlined {
+            font-size: 17px;
+            color: var(--primary);
+        }
+
+        .help-card-text {
+            font-size: 11.5px;
+            color: var(--ink-muted);
+            line-height: 1.5;
+        }
+
+        /* ==========================================================
+           5. HEADER
+           ========================================================== */
+        .header-inner {
+            height: 100%;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .header-search {
+            flex: 1;
+            max-width: 420px;
+            position: relative;
+        }
+
+        .header-search input {
+            width: 100%;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--canvas);
+            padding: 0 56px 0 38px;
+            font-size: 13px;
+            color: var(--ink);
+        }
+
+        .header-search input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+
+        .header-search input::placeholder {
+            color: var(--ink-faint);
+        }
+
+        .header-search .icon-search {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--ink-faint);
+            font-size: 19px;
+        }
+
+        .header-search kbd {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--ink-muted);
+            background: var(--card);
+            border: 1px solid var(--border-strong);
+            border-radius: 5px;
+            padding: 2px 6px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--ink-muted);
+            transition: background-color .15s ease;
+        }
+
+        .icon-btn:hover {
+            background: var(--canvas);
+        }
+
+        .icon-btn .material-symbols-outlined {
+            font-size: 21px;
+        }
+
+        .icon-btn .dot {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--danger);
+            border: 2px solid var(--card);
+        }
+
+        .header-divider {
+            width: 1px;
+            height: 26px;
+            background: var(--border);
+            margin: 0 6px;
+        }
+
+        .header-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px 6px 6px;
+            border-radius: 8px;
+            transition: background-color .15s ease;
+        }
+
+        .header-profile:hover {
+            background: var(--canvas);
+        }
+
+        .header-profile img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-border);
+        }
+
+        .header-profile-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.25;
+        }
+
+        .header-profile-name {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .header-profile-role {
+            font-size: 11px;
+            color: var(--ink-muted);
+        }
+
+        /* ==========================================================
+           6. PAGE TITLE BAR
+           ========================================================== */
+        .title-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--ink-muted);
+        }
+
+        .breadcrumb .current {
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .breadcrumb .material-symbols-outlined {
+            font-size: 14px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.01em;
+            margin: 2px 0 2px;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--ink-muted);
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 44px;
+            padding: 0 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--primary-dark);
+            background: var(--primary);
+            color: #fff;
+            font-size: 13.5px;
+            font-weight: 700;
+            box-shadow: var(--shadow-btn);
+            transition: background-color .15s ease, transform .1s ease;
+            flex-shrink: 0;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary .material-symbols-outlined {
+            font-size: 19px;
+        }
+
+        /* ==========================================================
+           7. STAT CARDS
+           ========================================================== */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        @media (min-width: 1024px) {
+            .stat-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 18px 20px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-muted);
+        }
+
+        .stat-value {
+            font-size: 23px;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .stat-delta {
+            font-size: 11.5px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .stat-delta .material-symbols-outlined {
+            font-size: 13px;
+        }
+
+        .stat-delta.up {
+            color: var(--success);
+        }
+
+        .stat-delta.neutral {
+            color: var(--ink-muted);
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon .material-symbols-outlined {
+            font-size: 22px;
+        }
+
+        .stat-icon.primary {
+            background: var(--primary-soft);
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
+        }
+
+        .stat-icon.warning {
+            background: var(--warning-bg);
+            color: var(--warning);
+            border: 1px solid var(--warning-border);
+        }
+
+        .stat-icon.info {
+            background: var(--info-bg);
+            color: var(--info);
+            border: 1px solid var(--info-border);
+        }
+
+        .stat-icon.success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid var(--success-border);
+        }
+
+        /* ==========================================================
+           8. FILTER BAR
+           ========================================================== */
+        .filter-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 20px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            align-items: end;
+        }
+
+        @media (min-width: 640px) {
+            .filter-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .filter-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .filter-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-muted);
+        }
+
+        .field-control {
+            position: relative;
+        }
+
+        .field-control select,
+        .field-control input[type="text"] {
+            width: 100%;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--card);
+            color: var(--ink);
+            font-size: 13px;
+            padding: 0 12px;
+            appearance: none;
+        }
+
+        .field-control input[type="text"] {
+            padding-left: 36px;
+        }
+
+        .field-control select {
+            padding-right: 34px;
+            cursor: pointer;
+        }
+
+        .field-control select:focus,
+        .field-control input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+
+        .field-control .caret {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--ink-muted);
+            font-size: 19px;
+        }
+
+        .field-control .icon-search {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--ink-faint);
+            font-size: 18px;
+        }
+
+        .field-locked {
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid var(--primary-border);
+            background: var(--primary-soft);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: not-allowed;
+        }
+
+        .field-locked-inner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field-locked .material-symbols-outlined {
+            font-size: 16px;
+            color: var(--primary);
+        }
+
+        .field-locked-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .field-search-wide {
+            grid-column: 1 / -1;
+        }
+
+        @media (min-width: 1280px) {
+            .field-search-wide {
+                grid-column: auto;
+            }
+        }
+
+        .filter-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-ghost {
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--card);
+            color: var(--ink-muted);
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color .15s ease, color .15s ease;
+        }
+
+        .btn-ghost:hover {
+            background: var(--canvas);
+            color: var(--ink);
+        }
+
+        .btn-ghost .material-symbols-outlined {
+            font-size: 17px;
+        }
+
+        .btn-apply {
+            height: 40px;
+            padding: 0 20px;
+            border-radius: 8px;
+            border: 1px solid var(--primary-dark);
+            background: var(--primary);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: var(--shadow-btn);
+            transition: background-color .15s ease;
+        }
+
+        .btn-apply:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-apply .material-symbols-outlined {
+            font-size: 17px;
+        }
+
+        /* ==========================================================
+           9. TABLE CARD
+           ========================================================== */
+        .table-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+        }
+
+        .table-card-header {
+            padding: 20px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-card-title {
+            font-size: 15.5px;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .table-card-subtitle {
+            font-size: 12.5px;
+            color: var(--ink-muted);
+            margin-top: 2px;
+        }
+
+        .table-card-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            height: 36px;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--canvas);
+            color: var(--ink-muted);
+            font-size: 12.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color .15s ease;
+        }
+
+        .tool-btn:hover {
+            background: var(--border);
+            color: var(--ink);
+        }
+
+        .tool-btn .material-symbols-outlined {
+            font-size: 16px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .data-table thead tr {
+            background: var(--canvas);
+            border-bottom: 1px solid var(--border-strong);
+        }
+
+        .data-table th {
+            padding: 13px 16px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--ink-muted);
+        }
+
+        .data-table th:first-child {
+            padding-left: 24px;
+        }
+
+        .data-table th:last-child {
+            padding-right: 24px;
+        }
+
+        .data-table th.center {
+            text-align: center;
+        }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background-color .12s ease;
+        }
+
+        .data-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--canvas);
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--ink);
+            vertical-align: middle;
+        }
+
+        .data-table td:first-child {
+            padding-left: 24px;
+        }
+
+        .data-table td:last-child {
+            padding-right: 24px;
+        }
+
+        .data-table td.center {
+            text-align: center;
+        }
+
+        .nim-code {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 12.5px;
+        }
+
+        .student-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 12.5px;
+            border: 1px solid transparent;
+        }
+
+        .avatar.c-primary {
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: var(--primary-border);
+        }
+
+        .avatar.c-info {
+            background: var(--info-bg);
+            color: var(--info);
+            border-color: var(--info-border);
+        }
+
+        .avatar.c-warning {
+            background: var(--warning-bg);
+            color: var(--warning);
+            border-color: var(--warning-border);
+        }
+
+        .avatar.c-success {
+            background: var(--success-bg);
+            color: var(--success);
+            border-color: var(--success-border);
+        }
+
+        .avatar.c-danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border-color: var(--danger-border);
+        }
+
+        .student-name {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .student-name .name {
+            font-weight: 700;
+            color: var(--ink);
+            font-size: 13px;
+        }
+
+        .student-name .prodi {
+            font-size: 11.5px;
+            color: var(--ink-muted);
+            margin-top: 1px;
+        }
+
+        .activity-title {
+            font-size: 13px;
+            color: var(--ink);
+            display: block;
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .badge .material-symbols-outlined {
+            font-size: 12px;
+        }
+
+        .badge-primary {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            border-color: var(--primary-border);
+        }
+
+        .badge-info {
+            background: var(--info-bg);
+            color: var(--info);
+            border-color: var(--info-border);
+        }
+
+        .badge-neutral {
+            background: var(--neutral-bg);
+            color: var(--neutral);
+            border-color: var(--neutral-border);
+        }
+
+        .badge-success {
+            background: var(--success-bg);
+            color: var(--success);
+            border-color: var(--success-border);
+        }
+
+        .badge-warning {
+            background: var(--warning-bg);
+            color: var(--warning);
+            border-color: var(--warning-border);
+        }
+
+        .badge-danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border-color: var(--danger-border);
+        }
+
+        .year-chip {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ink-muted);
+        }
+
+        .evidence-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--canvas);
+            color: var(--ink);
+            font-size: 11.5px;
+            font-weight: 700;
+            transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+        }
+
+        .evidence-link:hover {
+            background: var(--primary);
+            border-color: var(--primary-dark);
+            color: #fff;
+        }
+
+        .evidence-link .material-symbols-outlined {
+            font-size: 15px;
+        }
+
+        .row-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .row-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--ink-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+        }
+
+        .row-action-btn:hover {
+            background: var(--primary-soft);
+            border-color: var(--primary-border);
+            color: var(--primary);
+        }
+
+        .row-action-btn.is-secondary:hover {
+            background: var(--canvas);
+            border-color: var(--border-strong);
+            color: var(--ink);
+        }
+
+        .row-action-btn .material-symbols-outlined {
+            font-size: 18px;
+        }
+
+        /* ==========================================================
+           10. TABLE FOOTER / PAGINATION
+           ========================================================== */
+        .table-footer {
+            padding: 16px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-top: 1px solid var(--border);
+            background: var(--canvas);
+        }
+
+        .footer-summary {
+            font-size: 12.5px;
+            color: var(--ink-muted);
+        }
+
+        .footer-summary strong {
+            color: var(--ink);
+            font-weight: 700;
+        }
+
+        .footer-summary .highlight {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--card);
+            color: var(--ink-muted);
+            font-size: 12.5px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color .15s ease, color .15s ease;
+        }
+
+        .page-btn:hover {
+            background: var(--canvas);
+            color: var(--ink);
+        }
+
+        .page-btn.is-active {
+            background: var(--primary);
+            border-color: var(--primary-dark);
+            color: #fff;
+            box-shadow: var(--shadow-btn);
+        }
+
+        .page-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .page-btn:disabled:hover {
+            background: var(--card);
+        }
+
+        .page-ellipsis {
+            padding: 0 4px;
+            color: var(--ink-faint);
+            font-size: 12.5px;
+        }
+
+        .page-btn .material-symbols-outlined {
+            font-size: 18px;
         }
     </style>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script
-        id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "primary-fixed": "#e1e0ff", "surface-container-lowest": "#ffffff", "primary": "#4546da", "primary-container": "#5f61f4", "inverse-on-surface": "#e8f2ff", "on-secondary-container": "#576473", "surface-container-high": "#d9eaff", "error": "#ba1a1a", "on-tertiary-fixed-variant": "#004e60", "on-tertiary": "#ffffff", "outline": "#767586", "secondary": "#535f6f", "background": "#f7f9ff", "secondary-fixed-dim": "#bac8da", "tertiary": "#00657b", "on-error-container": "#93000a", "secondary-container": "#d4e1f3", "surface-dim": "#c7dcf5", "on-primary-container": "#fffbff", "inverse-surface": "#1e3245", "on-surface": "#071d2f", "surface-bright": "#f7f9ff", "on-primary-fixed-variant": "#2c2ac5", "surface-container": "#e3efff", "on-secondary-fixed-variant": "#3b4857", "outline-variant": "#c6c4d7", "surface-tint": "#4748dd", "on-background": "#071d2f", "on-primary": "#ffffff", "tertiary-fixed": "#b5ebff", "tertiary-fixed-dim": "#43d6ff", "on-tertiary-container": "#fafdff", "primary-fixed-dim": "#c0c1ff", "surface-container-low": "#edf4ff", "surface-variant": "#d0e5fd", "on-secondary-fixed": "#101d2a", "tertiary-container": "#007f9b", "secondary-fixed": "#d6e4f6", "on-secondary": "#ffffff", "surface": "#f7f9ff", "error-container": "#ffdad6", "surface-container-highest": "#d0e5fd", "inverse-primary": "#c0c1ff", "on-surface-variant": "#464555", "on-tertiary-fixed": "#001f28", "on-error": "#ffffff", "on-primary-fixed": "#07006c" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.5rem", "sidebar-width": "260px", "space-sm": "0.75rem", "space-md": "1rem", "header-height": "64px", "space-2xs": "0.25rem", "space-xl": "2rem", "space-2xl": "2.5rem", "space-lg": "1.5rem", "gutter": "1.5rem", "margin-page": "1.5rem" }, "fontFamily": { "headline-xl": ["Public Sans"], "headline-sm": ["Public Sans"], "body-md": ["Public Sans"], "body-lg": ["Public Sans"], "label-sm": ["Public Sans"], "headline-lg-mobile": ["Public Sans"], "headline-md": ["Public Sans"], "label-md": ["Public Sans"], "headline-xl-mobile": ["Public Sans"], "headline-lg": ["Public Sans"], "body-sm": ["Public Sans"], "caption": ["Public Sans"] }, "fontSize": { "headline-xl": ["34px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-sm": ["15px", { "lineHeight": "22px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "21px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }], "headline-lg-mobile": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "headline-xl-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }], "caption": ["10px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }] } } } }</script>
 </head>
 
-<body class="bg-background font-body-md text-on-surface antialiased min-h-screen">
-    <aside
-        class="fixed left-0 top-0 h-screen w-sidebar-width bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div class="flex flex-col">
-            <div class="h-header-height flex items-center gap-space-xs px-space-md"><img alt="Logo Institut Asia Malang"
-                    class="h-8 w-auto object-contain"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1NafrqE7zgk-MH1bALr-Reu0A8mdjdxELfqfal7zRbOhhfEIbOmwIbrIyTQ764kiX0m5p2hWwUHXmKm2zaoFulJno38GSAJ5DhTUwy5_WMdCi720dka9D3yD_wuZ4wopDiMy_BjOoGK54bVjLP0NiywfI7nL86YI3HsKPXmFlj6hlF4BI5Q8DjXt2aNUOYoU8edBrCcGb0bvA9InhKCQe5cw8H4DHhon4G7_Ydrd9AwmAQnrtYnFjTg" />
-                <div class="flex flex-col"><span
-                        class="font-headline-sm text-headline-sm text-primary uppercase tracking-tight">INSTITUT
-                        ASIA</span><span class="font-caption text-caption text-on-surface-variant uppercase">Portal
-                        Akademik</span></div>
-            </div>
-            <div class="px-space-md py-space-xs">
-                <nav class="flex flex-col gap-space-2xs"
-                    data-active-classes="bg-secondary-container text-primary font-headline-sm"><a
-                        class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-xl font-headline-sm text-headline-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                        data-path="dashboard" href="#"><span
-                            class="material-symbols-outlined text-primary text-xl">dashboard</span><span>Dashboard</span></a><a
-                        aria-current="page"
-                        class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-xl transition-colors bg-secondary-container text-primary font-headline-sm"
-                        data-path="kemahasiswaan" href="#"><span
-                            class="material-symbols-outlined text-primary text-xl">school</span><span>Kemahasiswaan</span></a>
-                    <div class="pt-space-sm pb-space-2xs px-space-sm"><span
-                            class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">LPPM</span>
-                    </div>
-                    <div class="flex flex-col gap-space-2xs pl-space-xs"><a
-                            class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-xl font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                            data-path="lppm-mahasiswa" href="#"><span
-                                class="material-symbols-outlined text-secondary text-lg">person</span><span>Mahasiswa</span></a><a
-                            class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-xl font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                            data-path="lppm-dosen" href="#"><span
-                                class="material-symbols-outlined text-secondary text-lg">co_present</span><span>Dosen</span></a><a
-                            class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-xl font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                            data-path="lppm-rekognisi" href="#"><span
-                                class="material-symbols-outlined text-secondary text-lg">workspace_premium</span><span>Rekognisi</span></a>
-                    </div>
-                    <div class="pt-space-sm pb-space-2xs px-space-sm"><span
-                            class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Kemitraan</span>
-                    </div><a
-                        class="flex items-center gap-space-xs px-space-sm py-space-xs rounded-xl font-headline-sm text-headline-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                        data-path="kerja-sama" href="#"><span
-                            class="material-symbols-outlined text-primary text-xl">handshake</span><span>Kerja
-                            Sama</span></a>
-                </nav>
+<body>
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="app-sidebar">
+        <div class="sidebar-brand">
+            <img alt="Logo Institut Asia Malang"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1NafrqE7zgk-MH1bALr-Reu0A8mdjdxELfqfal7zRbOhhfEIbOmwIbrIyTQ764kiX0m5p2hWwUHXmKm2zaoFulJno38GSAJ5DhTUwy5_WMdCi720dka9D3yD_wuZ4wopDiMy_BjOoGK54bVjLP0NiywfI7nL86YI3HsKPXmFlj6hlF4BI5Q8DjXt2aNUOYoU8edBrCcGb0bvA9InhKCQe5cw8H4DHhon4G7_Ydrd9AwmAQnrtYnFjTg" />
+            <div class="sidebar-brand-text">
+                <span class="sidebar-brand-title">SIDA</span>
+                <span class="sidebar-brand-sub">Institut Asia Malang</span>
             </div>
         </div>
-        <div class="p-space-md">
-            <div class="bg-surface-container-low rounded-xl p-space-sm flex flex-col gap-space-2xs">
-                <div class="flex items-center gap-space-2xs text-secondary"><span
-                        class="material-symbols-outlined text-sm">info</span><span
-                        class="font-label-sm text-label-sm">Bantuan SIAKAD</span></div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-group">
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="#" aria-current="page" class="nav-link is-active">
+                    <span class="material-symbols-outlined">school</span>
+                    <span>Kemahasiswaan</span>
+                </a>
+
+                <div class="nav-heading">LPPM</div>
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">person</span>
+                    <span>Mahasiswa</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">co_present</span>
+                    <span>Dosen</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">workspace_premium</span>
+                    <span>Rekognisi</span>
+                </a>
+
+                <div class="nav-heading">Kemitraan</div>
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">handshake</span>
+                    <span>Kerja Sama</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-help">
+            <div class="help-card">
+                <div class="help-card-title">
+                    <span class="material-symbols-outlined">info</span>
+                    <span>Bantuan SIAKAD</span>
+                </div>
+                <p class="help-card-text">Butuh bantuan input data? Hubungi tim IT Kampus.</p>
             </div>
         </div>
     </aside>
-    <div class="pl-[260px]">
-        <header class="fixed top-0 left-[260px] right-0 h-header-height z-40 px-space-lg flex items-center">
-            <div
-                class="w-full h-12 bg-surface-container-lowest/80 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)] rounded-2xl px-space-md flex items-center justify-between">
-                <div class="flex items-center gap-space-sm">
-                    <div
-                        class="flex items-center gap-space-xs px-space-sm py-1 rounded-lg text-secondary"></div>
-                    <div class="hidden md:flex items-center gap-space-2xs font-body-sm text-body-sm text-secondary">
-                        <span class="hover:text-primary cursor-pointer">Kemahasiswaan</span><span>/</span><span
-                            class="font-headline-sm text-on-surface">Data Prestasi &amp; Kegiatan</span></div>
+
+    <!-- ============ MAIN ============ -->
+    <div class="app-content">
+        <header class="app-header">
+            <div class="header-inner">
+                <div class="header-search">
+                    <span class="material-symbols-outlined icon-search">search</span>
+                    <input type="text" placeholder="Cari menu / aksi..." />
+                    <kbd>Ctrl K</kbd>
                 </div>
-                <div class="flex items-center gap-space-md"><button aria-label="Notifikasi"
-                        class="relative flex items-center justify-center p-1.5 rounded-xl hover:bg-surface-container transition-colors text-on-surface-variant"
-                        type="button"><span class="material-symbols-outlined text-xl">notifications</span><span
-                            class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span></button><button
-                        aria-label="Ganti Tema"
-                        class="flex items-center justify-center p-1.5 rounded-xl hover:bg-surface-container transition-colors text-on-surface-variant"
-                        type="button"><span class="material-symbols-outlined text-xl">light_mode</span></button>
-                    <div class="flex items-center gap-space-xs">
-                        <div class="relative"><img alt="Profile" class="w-8 h-8 rounded-full object-cover"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" /><span
-                                class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-tertiary-container rounded-full ring-2 ring-surface-container-lowest"></span>
+                <div class="header-actions">
+                    <button type="button" class="icon-btn" aria-label="Notifikasi">
+                        <span class="material-symbols-outlined">notifications</span>
+                        <span class="dot"></span>
+                    </button>
+                    <button type="button" class="icon-btn" aria-label="Ganti Tema">
+                        <span class="material-symbols-outlined">dark_mode</span>
+                    </button>
+                    <div class="header-divider"></div>
+                    <div class="header-profile">
+                        <div class="header-profile-text">
+                            <span class="header-profile-name">Admin Kemahasiswaan</span>
+                            <span class="header-profile-role">Institut Asia Malang</span>
                         </div>
-                        <div class="hidden sm:flex flex-col"><span
-                                class="font-headline-sm text-label-md text-on-surface leading-tight">Admin
-                                Kemahasiswaan</span><span class="font-caption text-caption text-secondary">Institut Asia
-                                Malang</span></div>
+                        <img alt="Profile"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
                     </div>
                 </div>
             </div>
         </header>
-        <main class="w-full pt-header-height bg-background px-space-lg py-space-md">
-            <div class="flex flex-col w-full gap-space-lg pb-space-2xl">
-                <!-- Top Action & Title Bar -->
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md">
-                    <div class="flex flex-col">
-                        <div class="flex items-center gap-space-xs text-secondary mb-1">
-                            <span
-                                class="font-caption text-caption uppercase tracking-wider text-primary font-bold">Direktorat
-                                Kemahasiswaan &amp; Kerjasama</span>
-                            <span class="text-outline-variant">•</span>
-                            <span class="font-caption text-caption text-secondary">Tahun Akademik 2025/2026
-                                (Genap)</span>
+
+        <main class="app-main">
+            <div class="page-wrap">
+
+                <!-- PAGE TITLE + ACTION -->
+                <div class="title-bar">
+                    <div>
+                        <div class="breadcrumb">
+                            <span>Kemahasiswaan</span>
+                            <span class="material-symbols-outlined">chevron_right</span>
+                            <span class="current">Data Prestasi &amp; Kegiatan</span>
                         </div>
-                        <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Manajemen Prestasi
-                            &amp; Kegiatan Kemahasiswaan</h1>
-                        <p class="font-body-md text-body-md text-secondary mt-1">Pusat pendataan kegiatan akademik,
-                            non-akademik, inbis, dan kompetisi mahasiswa Institut Asia Malang.</p>
+                        <h1 class="page-title">Prestasi &amp; Kegiatan Mahasiswa</h1>
+                        <p class="page-subtitle">Pendataan kegiatan akademik, non-akademik, inbis, dan kompetisi
+                            &middot; Tahun Akademik 2025/2026 (Genap)</p>
                     </div>
-                    <div class="flex items-center flex-wrap gap-space-xs sm:gap-space-sm">
-                        <button
-                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-on-primary shadow-[0_4px_12px_rgba(69,70,218,0.35)] hover:bg-primary-container hover:shadow-[0_6px_16px_rgba(69,70,218,0.45)] transition-all duration-200 transform active:scale-95"
-                            type="button">
-                            <span class="material-symbols-outlined text-xl">add_circle</span>
-                            <span class="font-label-md text-label-md tracking-wide font-semibold">+ Tambah Kegiatan
-                                Baru</span>
-                        </button>
+                    <button type="button" class="btn-primary">
+                        <span class="material-symbols-outlined">add</span>
+                        <span>Tambah Kegiatan</span>
+                    </button>
+                </div>
+
+                <!-- SUMMARY STAT CARDS -->
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Total Kegiatan</span>
+                            <span class="stat-value">48</span>
+                            <span class="stat-delta up">
+                                <span class="material-symbols-outlined">arrow_upward</span>12% bulan ini
+                            </span>
+                        </div>
+                        <div class="stat-icon primary">
+                            <span class="material-symbols-outlined">emoji_events</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Tingkat Nasional</span>
+                            <span class="stat-value">27</span>
+                            <span class="stat-delta neutral">56% dari total</span>
+                        </div>
+                        <div class="stat-icon warning">
+                            <span class="material-symbols-outlined">flag</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Tingkat Internasional</span>
+                            <span class="stat-value">9</span>
+                            <span class="stat-delta neutral">19% dari total</span>
+                        </div>
+                        <div class="stat-icon info">
+                            <span class="material-symbols-outlined">public</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Unit Inbis</span>
+                            <span class="stat-value">12</span>
+                            <span class="stat-delta neutral">25% dari total</span>
+                        </div>
+                        <div class="stat-icon success">
+                            <span class="material-symbols-outlined">storefront</span>
+                        </div>
                     </div>
                 </div>
-                <!-- Reference Sneat Modern Concept Preview Bar -->
-                <div
-                    class="bg-surface-container-low rounded-2xl p-space-md flex flex-col md:flex-row items-center justify-between gap-space-md shadow-sm">
-                    <div class="flex items-center gap-space-md">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-headline-sm text-headline-sm text-on-surface">Arsitektur Terintegrasi
-                                    SIM-Kemahasiswaan</span>
-                            </div>
-                            <p class="font-body-sm text-body-sm text-secondary">Sinkronisasi langsung dengan PDDikti,
-                                SIMKATMAWA Kemdikbudristek, dan Dashboard Inkubator Bisnis.</p>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-                <!-- Interactive Filter Bar (Clean White Card, Flat & Elevated) -->
-                <div
-                    class="bg-surface-container-lowest rounded-2xl p-space-lg shadow-[0_2px_12px_rgba(67,89,113,0.06)] flex flex-col gap-space-md">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2">
-                        <div class="flex items-center gap-2">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-primary-fixed/50 flex items-center justify-center text-primary">
-                                <span class="material-symbols-outlined text-lg">tune</span>
-                            </div>
-                            <span class="font-headline-sm text-headline-sm text-on-surface">Filter Kriteria
-                                Kegiatan</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-secondary">
-                            
-                        </div>
-                    </div>
-                    <!-- Filter Fields Grid -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-space-sm items-end">
-                        <!-- 1. Dropdown Jenis -->
-                        <div class="flex flex-col gap-1.5">
-                            <label class="font-caption text-caption uppercase tracking-wider text-secondary font-bold"
-                                for="filter-jenis">Jenis Divisi</label>
-                            <div class="relative">
-                                <select
-                                    class="w-full h-11 px-3 py-2 bg-surface-container-low rounded-xl text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
-                                    id="filter-jenis">
+
+                <!-- FILTER BAR -->
+                <div class="filter-card">
+                    <div class="filter-grid">
+                        <!-- Jenis -->
+                        <div class="field">
+                            <label class="field-label" for="filter-jenis">Jenis Divisi</label>
+                            <div class="field-control">
+                                <select id="filter-jenis">
                                     <option value="semua">Semua Jenis</option>
-                                    <option value="inbis">inbis (Inkubator Bisnis)</option>
-                                    <option value="kemahasiswaan">kemahasiswaan</option>
+                                    <option value="inbis">Inbis (Inkubator Bisnis)</option>
+                                    <option value="kemahasiswaan">Kemahasiswaan</option>
                                 </select>
-                                <span
-                                    class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-secondary text-lg">expand_more</span>
+                                <span class="material-symbols-outlined caret">expand_more</span>
                             </div>
                         </div>
-                        <!-- 2. Dropdown Tab -->
-                        <div class="flex flex-col gap-1.5">
-                            <label class="font-caption text-caption uppercase tracking-wider text-secondary font-bold"
-                                for="filter-tab">Kategori Tab</label>
-                            <div class="relative">
-                                <select
-                                    class="w-full h-11 px-3 py-2 bg-surface-container-low rounded-xl text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
-                                    id="filter-tab">
+                        <!-- Tab -->
+                        <div class="field">
+                            <label class="field-label" for="filter-tab">Kategori Tab</label>
+                            <div class="field-control">
+                                <select id="filter-tab">
                                     <option value="semua">Semua Tab</option>
-                                    <option value="akademik">akademik</option>
-                                    <option value="non_akademik">non_akademik</option>
+                                    <option value="akademik">Akademik</option>
+                                    <option value="non_akademik">Non Akademik</option>
                                 </select>
-                                <span
-                                    class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-secondary text-lg">expand_more</span>
+                                <span class="material-symbols-outlined caret">expand_more</span>
                             </div>
                         </div>
-                        <!-- 3. Dropdown Tingkat -->
-                        <div class="flex flex-col gap-1.5">
-                            <label class="font-caption text-caption uppercase tracking-wider text-secondary font-bold"
-                                for="filter-tingkat">Tingkat Capaian</label>
-                            <div class="relative">
-                                <select
-                                    class="w-full h-11 px-3 py-2 bg-surface-container-low rounded-xl text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
-                                    id="filter-tingkat">
+                        <!-- Tingkat -->
+                        <div class="field">
+                            <label class="field-label" for="filter-tingkat">Tingkat Capaian</label>
+                            <div class="field-control">
+                                <select id="filter-tingkat">
                                     <option value="semua">Semua Tingkat</option>
-                                    <option value="lokal">lokal (Kota/Wilayah)</option>
-                                    <option value="nasional">nasional (RI)</option>
-                                    <option value="internasional">internasional (Global)</option>
+                                    <option value="lokal">Lokal (Kota/Wilayah)</option>
+                                    <option value="nasional">Nasional (RI)</option>
+                                    <option value="internasional">Internasional (Global)</option>
                                 </select>
-                                <span
-                                    class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-secondary text-lg">expand_more</span>
+                                <span class="material-symbols-outlined caret">expand_more</span>
                             </div>
                         </div>
-                        <!-- 4. Filter Tahun (Terkunci ke 2026) -->
-                        <div class="flex flex-col gap-1.5">
-                            <div class="flex items-center justify-between">
-                                <span class="font-caption text-caption text-primary font-semibold">Terkunci</span>
-                            </div>
-                            <div
-                                class="h-11 px-3 py-2 bg-surface-container rounded-xl flex items-center justify-between cursor-not-allowed">
-                                <div class="flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-base text-primary">lock</span>
-                                    <span class="font-headline-sm text-headline-sm text-primary">2026</span>
+                        <!-- Tahun (locked) -->
+                        <div class="field">
+                            <label class="field-label">Tahun Akademik</label>
+                            <div class="field-locked">
+                                <div class="field-locked-inner">
+                                    <span class="material-symbols-outlined">lock</span>
+                                    <span class="field-locked-value">2026</span>
                                 </div>
                             </div>
                         </div>
-                        <!-- 5. Search Box -->
-                        <div class="flex flex-col gap-1.5 xl:col-span-1">
-                            <label class="font-caption text-caption uppercase tracking-wider text-secondary font-bold"
-                                for="filter-search">Pencarian Cepat</label>
-                            <div class="relative">
-                                <input
-                                    class="w-full h-11 pl-9 pr-3 py-2 bg-surface-container-low rounded-xl text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                                    id="filter-search" placeholder="Cari Mahasiswa / NIM..." type="text" />
-                                <span
-                                    class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-base">search</span>
+                        <!-- Search -->
+                        <div class="field field-search-wide">
+                            <label class="field-label" for="filter-search">Pencarian Cepat</label>
+                            <div class="field-control">
+                                <span class="material-symbols-outlined icon-search">search</span>
+                                <input id="filter-search" type="text" placeholder="Cari NIM/nama mahasiswa..." />
                             </div>
                         </div>
-                        <!-- 6. Filter Buttons -->
-                        <div class="flex items-center gap-2 pt-1">
-                            <button
-                                class="h-11 flex-1 px-4 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container shadow-sm hover:shadow transition-all flex items-center justify-center gap-1"
-                                id="btn-apply-filter" type="button">
-                                <span class="material-symbols-outlined text-lg">filter_alt</span>
-                                <span>Terapkan</span>
-                            </button>
-                            <button
-                                class="h-11 w-11 rounded-xl bg-surface-container-low hover:bg-surface-container text-secondary hover:text-on-surface flex items-center justify-center transition-colors"
-                                id="btn-reset-filter" title="Reset Filter" type="button">
-                                <span class="material-symbols-outlined text-lg">restart_alt</span>
-                            </button>
-                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button type="button" id="btn-reset-filter" class="btn-ghost">
+                            <span class="material-symbols-outlined">restart_alt</span>
+                            <span>Reset</span>
+                        </button>
+                        <button type="button" id="btn-apply-filter" class="btn-apply">
+                            <span class="material-symbols-outlined">filter_alt</span>
+                            <span>Terapkan Filter</span>
+                        </button>
                     </div>
                 </div>
-                <!-- Data Table Section (Clean Sneat-Style Card, Row Hover & Visual Badges) -->
-                <div
-                    class="bg-surface-container-lowest rounded-2xl shadow-[0_2px_12px_rgba(67,89,113,0.06)] overflow-hidden">
-                    <!-- Header of the Table Card -->
-                    <div
-                        class="p-space-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm bg-surface-container-lowest">
+
+                <!-- DATA TABLE CARD -->
+                <div class="table-card">
+                    <div class="table-card-header">
                         <div>
-                            <h2 class="font-headline-md text-headline-md text-on-surface font-semibold">Daftar Rekap
-                                Prestasi Mahasiswa</h2>
-                            <p class="font-body-sm text-body-sm text-secondary">Data kegiatan terverifikasi berdasarkan
-                                format resmi SIM Kemahasiswaan 2026.</p>
+                            <h2 class="table-card-title">Daftar Rekap Prestasi Mahasiswa</h2>
+                            <p class="table-card-subtitle">Data kegiatan terverifikasi sesuai format resmi SIM
+                                Kemahasiswaan 2026</p>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-low hover:bg-surface-container text-secondary text-body-sm font-medium transition-colors"
-                                type="button">
-                                <span class="material-symbols-outlined text-base">density_small</span>
+                        <div class="table-card-tools">
+                            <button type="button" class="tool-btn">
+                                <span class="material-symbols-outlined">density_small</span>
                                 <span>Kepadatan</span>
                             </button>
-                            <button
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-low hover:bg-surface-container text-secondary text-body-sm font-medium transition-colors"
-                                type="button">
-                                <span class="material-symbols-outlined text-base">view_column</span>
+                            <button type="button" class="tool-btn">
+                                <span class="material-symbols-outlined">view_column</span>
                                 <span>Kolom</span>
                             </button>
                         </div>
                     </div>
-                    <!-- Table Responsive Wrapper -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left whitespace-nowrap">
+
+                    <div class="table-scroll">
+                        <table class="data-table">
                             <thead>
-                                <tr
-                                    class="bg-surface-container-low text-secondary uppercase font-caption text-caption tracking-wider">
-                                    <th class="py-3.5 px-5 font-bold">NIM</th>
-                                    <th class="py-3.5 px-5 font-bold">Mahasiswa</th>
-                                    <th class="py-3.5 px-5 font-bold">Nama Kegiatan</th>
-                                    <th class="py-3.5 px-4 font-bold text-center">Jenis</th>
-                                    <th class="py-3.5 px-4 font-bold text-center">Tab</th>
-                                    <th class="py-3.5 px-4 font-bold text-center">Tingkat</th>
-                                    <th class="py-3.5 px-4 font-bold text-center">Tahun</th>
-                                    <th class="py-3.5 px-4 font-bold text-center">Bukti Kegiatan</th>
-                                    <th class="py-3.5 px-5 font-bold text-center">Aksi</th>
+                                <tr>
+                                    <th>NIM</th>
+                                    <th>Mahasiswa</th>
+                                    <th>Nama Kegiatan</th>
+                                    <th class="center">Jenis</th>
+                                    <th class="center">Tab</th>
+                                    <th class="center">Tingkat</th>
+                                    <th class="center">Tahun</th>
+                                    <th class="center">Bukti Kegiatan</th>
+                                    <th class="center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-transparent font-body-md text-body-md text-on-surface">
+                            <tbody>
                                 <!-- Row 1 -->
-                                <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                                    <td class="py-4 px-5">
-                                        <span
-                                            class="font-headline-sm text-label-md text-primary font-mono tracking-tight">222011005</span>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-9 h-9 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
-                                                AR
-                                            </div>
-                                            <div class="flex flex-col">
-                                                <span class="font-headline-sm text-headline-sm text-on-surface">Ahmad
-                                                    Rizal Fauzi</span>
-                                                <span class="font-caption text-caption text-secondary">Teknik
-                                                    Informatika</span>
+                                <tr>
+                                    <td><span class="nim-code">222011005</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar c-primary">AR</div>
+                                            <div class="student-name">
+                                                <span class="name">Ahmad Rizal Fauzi</span>
+                                                <span class="prodi">Teknik Informatika</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-5 max-w-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full bg-primary shrink-0"></span>
-                                            <span class="font-body-md text-body-md text-on-surface truncate"
-                                                title="Juara 1 Kompetisi UI/UX Design Nasional TECHFEST 2026">Juara 1
-                                                Kompetisi UI/UX Design Nasional TECHFEST 2026</span>
-                                        </div>
+                                    <td>
+                                        <span class="activity-title"
+                                            title="Juara 1 Kompetisi UI/UX Design Nasional TECHFEST 2026">Juara 1
+                                            Kompetisi UI/UX Design Nasional TECHFEST 2026</span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">
-                                            kemahasiswaan
+                                    <td class="center"><span class="badge badge-primary">kemahasiswaan</span></td>
+                                    <td class="center"><span class="badge badge-info">akademik</span></td>
+                                    <td class="center">
+                                        <span class="badge badge-warning">
+                                            <span class="material-symbols-outlined">flag</span>nasional
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-tertiary font-label-sm text-label-sm font-bold">
-                                            akademik
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm font-bold shadow-sm">
-                                            <span class="material-symbols-outlined text-xs">flag</span> nasional
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-secondary font-mono font-bold">2026</span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high text-tertiary hover:bg-tertiary hover:text-on-tertiary font-label-sm text-label-sm font-semibold transition-all duration-200"
-                                            href="https://drive.google.com" rel="noopener noreferrer" target="_blank">
-                                            <span class="material-symbols-outlined text-base">cloud</span>
-                                            <span>Lihat Bukti (GDrive)</span>
-                                            <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    <td class="center"><span class="year-chip">2026</span></td>
+                                    <td class="center">
+                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
+                                            class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
                                         </a>
                                     </td>
-                                    <td class="py-4 px-5 text-center">
-                                        <div class="flex items-center justify-center gap-1">
-                                            <button aria-label="Lihat Detail"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-container transition-colors"
-                                                title="Lihat Detail" type="button">
-                                                <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Lihat Detail" class="row-action-btn">
+                                                <span class="material-symbols-outlined">visibility</span>
                                             </button>
-                                            <button aria-label="Menu Opsi"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors"
-                                                title="Opsi" type="button">
-                                                <span class="material-symbols-outlined text-lg">more_vert</span>
+                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
+                                                <span class="material-symbols-outlined">more_vert</span>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <!-- Row 2 -->
-                                <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                                    <td class="py-4 px-5">
-                                        <span
-                                            class="font-headline-sm text-label-md text-primary font-mono tracking-tight">232012014</span>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-9 h-9 rounded-full bg-surface-container-high text-tertiary flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
-                                                SN
-                                            </div>
-                                            <div class="flex flex-col">
-                                                <span class="font-headline-sm text-headline-sm text-on-surface">Siti
-                                                    Nurhaliza Putri</span>
-                                                <span class="font-caption text-caption text-secondary">Sistem
-                                                    Informasi</span>
+                                <tr>
+                                    <td><span class="nim-code">232012014</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar c-info">SN</div>
+                                            <div class="student-name">
+                                                <span class="name">Siti Nurhaliza Putri</span>
+                                                <span class="prodi">Sistem Informasi</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-5 max-w-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="w-2 h-2 rounded-full bg-on-secondary-container shrink-0"></span>
-                                            <span class="font-body-md text-body-md text-on-surface truncate"
-                                                title="Pendanaan Startup Inbis: Smart Agrotech IoT">Pendanaan Startup
-                                                Inbis: Smart Agrotech IoT</span>
-                                        </div>
+                                    <td>
+                                        <span class="activity-title"
+                                            title="Pendanaan Startup Inbis: Smart Agrotech IoT">Pendanaan Startup
+                                            Inbis: Smart Agrotech IoT</span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold">
-                                            inbis
+                                    <td class="center"><span class="badge badge-success">inbis</span></td>
+                                    <td class="center"><span class="badge badge-info">akademik</span></td>
+                                    <td class="center">
+                                        <span class="badge badge-warning">
+                                            <span class="material-symbols-outlined">flag</span>nasional
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-tertiary font-label-sm text-label-sm font-bold">
-                                            akademik
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm font-bold shadow-sm">
-                                            <span class="material-symbols-outlined text-xs">flag</span> nasional
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-secondary font-mono font-bold">2026</span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high text-tertiary hover:bg-tertiary hover:text-on-tertiary font-label-sm text-label-sm font-semibold transition-all duration-200"
-                                            href="https://drive.google.com" rel="noopener noreferrer" target="_blank">
-                                            <span class="material-symbols-outlined text-base">cloud</span>
-                                            <span>Lihat Bukti (GDrive)</span>
-                                            <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    <td class="center"><span class="year-chip">2026</span></td>
+                                    <td class="center">
+                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
+                                            class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
                                         </a>
                                     </td>
-                                    <td class="py-4 px-5 text-center">
-                                        <div class="flex items-center justify-center gap-1">
-                                            <button aria-label="Lihat Detail"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-container transition-colors"
-                                                title="Lihat Detail" type="button">
-                                                <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Lihat Detail" class="row-action-btn">
+                                                <span class="material-symbols-outlined">visibility</span>
                                             </button>
-                                            <button aria-label="Menu Opsi"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors"
-                                                title="Opsi" type="button">
-                                                <span class="material-symbols-outlined text-lg">more_vert</span>
+                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
+                                                <span class="material-symbols-outlined">more_vert</span>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <!-- Row 3 -->
-                                <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                                    <td class="py-4 px-5">
-                                        <span
-                                            class="font-headline-sm text-label-md text-primary font-mono tracking-tight">211009088</span>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
-                                                KA
-                                            </div>
-                                            <div class="flex flex-col">
-                                                <span class="font-headline-sm text-headline-sm text-on-surface">Kevin
-                                                    Ardiansyah</span>
-                                                <span class="font-caption text-caption text-secondary">Desain Komunikasi
-                                                    Visual</span>
+                                <tr>
+                                    <td><span class="nim-code">211009088</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar c-warning">KA</div>
+                                            <div class="student-name">
+                                                <span class="name">Kevin Ardiansyah</span>
+                                                <span class="prodi">Desain Komunikasi Visual</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-5 max-w-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full bg-tertiary shrink-0"></span>
-                                            <span class="font-body-md text-body-md text-on-surface truncate"
-                                                title="Juara 2 Debat Bahasa Inggris Tingkat Internasional NUDC">Juara 2
-                                                Debat Bahasa Inggris Tingkat Internasional NUDC</span>
-                                        </div>
+                                    <td>
+                                        <span class="activity-title"
+                                            title="Juara 2 Debat Bahasa Inggris Tingkat Internasional NUDC">Juara 2
+                                            Debat Bahasa Inggris Tingkat Internasional NUDC</span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">
-                                            kemahasiswaan
+                                    <td class="center"><span class="badge badge-primary">kemahasiswaan</span></td>
+                                    <td class="center"><span class="badge badge-neutral">non_akademik</span></td>
+                                    <td class="center">
+                                        <span class="badge badge-danger">
+                                            <span class="material-symbols-outlined">public</span>internasional
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-secondary font-label-sm text-label-sm font-bold">
-                                            non_akademik
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-sm text-label-sm font-bold shadow-sm">
-                                            <span class="material-symbols-outlined text-xs">public</span> internasional
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-secondary font-mono font-bold">2026</span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high text-tertiary hover:bg-tertiary hover:text-on-tertiary font-label-sm text-label-sm font-semibold transition-all duration-200"
-                                            href="https://drive.google.com" rel="noopener noreferrer" target="_blank">
-                                            <span class="material-symbols-outlined text-base">cloud</span>
-                                            <span>Lihat Bukti (GDrive)</span>
-                                            <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    <td class="center"><span class="year-chip">2026</span></td>
+                                    <td class="center">
+                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
+                                            class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
                                         </a>
                                     </td>
-                                    <td class="py-4 px-5 text-center">
-                                        <div class="flex items-center justify-center gap-1">
-                                            <button aria-label="Lihat Detail"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-container transition-colors"
-                                                title="Lihat Detail" type="button">
-                                                <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Lihat Detail" class="row-action-btn">
+                                                <span class="material-symbols-outlined">visibility</span>
                                             </button>
-                                            <button aria-label="Menu Opsi"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors"
-                                                title="Opsi" type="button">
-                                                <span class="material-symbols-outlined text-lg">more_vert</span>
+                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
+                                                <span class="material-symbols-outlined">more_vert</span>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <!-- Row 4 -->
-                                <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                                    <td class="py-4 px-5">
-                                        <span
-                                            class="font-headline-sm text-label-md text-primary font-mono tracking-tight">223015022</span>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-9 h-9 rounded-full bg-secondary-container text-on-secondary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
-                                                NA
-                                            </div>
-                                            <div class="flex flex-col">
-                                                <span class="font-headline-sm text-headline-sm text-on-surface">Nabila
-                                                    Amanda</span>
-                                                <span class="font-caption text-caption text-secondary">Manajemen
-                                                    Bisnis</span>
+                                <tr>
+                                    <td><span class="nim-code">201007044</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar c-danger">RP</div>
+                                            <div class="student-name">
+                                                <span class="name">Rafi Pratama Wijaya</span>
+                                                <span class="prodi">Teknik Informatika</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-5 max-w-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full bg-outline shrink-0"></span>
-                                            <span class="font-body-md text-body-md text-on-surface truncate"
-                                                title="Pekan Olahraga Mahasiswa Nasional (POMNAS) Bulutangkis">Pekan
-                                                Olahraga Mahasiswa Nasional (POMNAS) Bulutangkis</span>
-                                        </div>
+                                    <td>
+                                        <span class="activity-title"
+                                            title="Publikasi Jurnal Nasional Terakreditasi SINTA 2 Bidang AI">Publikasi
+                                            Jurnal Nasional Terakreditasi SINTA 2 Bidang AI</span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">
-                                            kemahasiswaan
+                                    <td class="center"><span class="badge badge-primary">kemahasiswaan</span></td>
+                                    <td class="center"><span class="badge badge-info">akademik</span></td>
+                                    <td class="center">
+                                        <span class="badge badge-warning">
+                                            <span class="material-symbols-outlined">flag</span>nasional
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-secondary font-label-sm text-label-sm font-bold">
-                                            non_akademik
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm font-bold shadow-sm">
-                                            <span class="material-symbols-outlined text-xs">flag</span> nasional
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-secondary font-mono font-bold">2026</span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high text-tertiary hover:bg-tertiary hover:text-on-tertiary font-label-sm text-label-sm font-semibold transition-all duration-200"
-                                            href="https://drive.google.com" rel="noopener noreferrer" target="_blank">
-                                            <span class="material-symbols-outlined text-base">cloud</span>
-                                            <span>Lihat Bukti (GDrive)</span>
-                                            <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    <td class="center"><span class="year-chip">2026</span></td>
+                                    <td class="center">
+                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
+                                            class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
                                         </a>
                                     </td>
-                                    <td class="py-4 px-5 text-center">
-                                        <div class="flex items-center justify-center gap-1">
-                                            <button aria-label="Lihat Detail"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-container transition-colors"
-                                                title="Lihat Detail" type="button">
-                                                <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Lihat Detail" class="row-action-btn">
+                                                <span class="material-symbols-outlined">visibility</span>
                                             </button>
-                                            <button aria-label="Menu Opsi"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors"
-                                                title="Opsi" type="button">
-                                                <span class="material-symbols-outlined text-lg">more_vert</span>
+                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
+                                                <span class="material-symbols-outlined">more_vert</span>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <!-- Row 5 -->
-                                <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                                    <td class="py-4 px-5">
-                                        <span
-                                            class="font-headline-sm text-label-md text-primary font-mono tracking-tight">231008045</span>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-9 h-9 rounded-full bg-surface-dim text-on-surface flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
-                                                DW
-                                            </div>
-                                            <div class="flex flex-col">
-                                                <span class="font-headline-sm text-headline-sm text-on-surface">Dimas
-                                                    Wahyu Saputra</span>
-                                                <span class="font-caption text-caption text-secondary">Teknik
-                                                    Informatika</span>
+                                <tr>
+                                    <td><span class="nim-code">212010071</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar c-success">DM</div>
+                                            <div class="student-name">
+                                                <span class="name">Dinda Maharani</span>
+                                                <span class="prodi">Manajemen Informatika</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-5 max-w-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full bg-primary-container shrink-0"></span>
-                                            <span class="font-body-md text-body-md text-on-surface truncate"
-                                                title="Finalis Gemastik Divisi Pemrograman 2026">Finalis Gemastik Divisi
-                                                Pemrograman 2026</span>
-                                        </div>
+                                    <td>
+                                        <span class="activity-title"
+                                            title="Finalis Hackathon Nasional BUMN Innovation Week 2026">Finalis
+                                            Hackathon Nasional BUMN Innovation Week 2026</span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">
-                                            kemahasiswaan
+                                    <td class="center"><span class="badge badge-primary">kemahasiswaan</span></td>
+                                    <td class="center"><span class="badge badge-info">akademik</span></td>
+                                    <td class="center">
+                                        <span class="badge badge-warning">
+                                            <span class="material-symbols-outlined">flag</span>nasional
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-tertiary font-label-sm text-label-sm font-bold">
-                                            akademik
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm font-bold shadow-sm">
-                                            <span class="material-symbols-outlined text-xs">flag</span> nasional
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-secondary font-mono font-bold">2026</span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high text-tertiary hover:bg-tertiary hover:text-on-tertiary font-label-sm text-label-sm font-semibold transition-all duration-200"
-                                            href="https://drive.google.com" rel="noopener noreferrer" target="_blank">
-                                            <span class="material-symbols-outlined text-base">cloud</span>
-                                            <span>Lihat Bukti (GDrive)</span>
-                                            <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    <td class="center"><span class="year-chip">2026</span></td>
+                                    <td class="center">
+                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
+                                            class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
                                         </a>
                                     </td>
-                                    <td class="py-4 px-5 text-center">
-                                        <div class="flex items-center justify-center gap-1">
-                                            <button aria-label="Lihat Detail"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-container transition-colors"
-                                                title="Lihat Detail" type="button">
-                                                <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Lihat Detail" class="row-action-btn">
+                                                <span class="material-symbols-outlined">visibility</span>
                                             </button>
-                                            <button aria-label="Menu Opsi"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors"
-                                                title="Opsi" type="button">
-                                                <span class="material-symbols-outlined text-lg">more_vert</span>
+                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
+                                                <span class="material-symbols-outlined">more_vert</span>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                                 <!-- Row 6 -->
-                                <tr class="hover:bg-surface-container-low/60 transition-colors group">
-                                    <td class="py-4 px-5">
-                                        <span
-                                            class="font-headline-sm text-label-md text-primary font-mono tracking-tight">202011099</span>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-9 h-9 rounded-full bg-primary-fixed-dim text-primary font-bold flex items-center justify-center font-headline-sm text-headline-sm shadow-sm">
-                                                CJ
-                                            </div>
-                                            <div class="flex flex-col">
-                                                <span class="font-headline-sm text-headline-sm text-on-surface">Clara
-                                                    Jessica</span>
-                                                <span class="font-caption text-caption text-secondary">Akuntansi &amp;
-                                                    Inbis</span>
+                                <tr>
+                                    <td><span class="nim-code">202011099</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar c-primary">CJ</div>
+                                            <div class="student-name">
+                                                <span class="name">Clara Jessica</span>
+                                                <span class="prodi">Akuntansi &amp; Inbis</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-5 max-w-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full bg-tertiary-container shrink-0"></span>
-                                            <span class="font-body-md text-body-md text-on-surface truncate"
-                                                title="Inkubasi Bisnis Mahasiswa Kemenpora 2026">Inkubasi Bisnis
-                                                Mahasiswa Kemenpora 2026</span>
-                                        </div>
+                                    <td>
+                                        <span class="activity-title"
+                                            title="Inkubasi Bisnis Mahasiswa Kemenpora 2026">Inkubasi Bisnis
+                                            Mahasiswa Kemenpora 2026</span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold">
-                                            inbis
+                                    <td class="center"><span class="badge badge-success">inbis</span></td>
+                                    <td class="center"><span class="badge badge-neutral">non_akademik</span></td>
+                                    <td class="center">
+                                        <span class="badge badge-neutral">
+                                            <span class="material-symbols-outlined">location_on</span>lokal
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-secondary font-label-sm text-label-sm font-bold">
-                                            non_akademik
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-secondary font-label-sm text-label-sm font-bold">
-                                            <span class="material-symbols-outlined text-xs">location_on</span> lokal
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <span
-                                            class="px-2.5 py-1 rounded-lg bg-surface-container-low font-label-sm text-label-sm text-secondary font-mono font-bold">2026</span>
-                                    </td>
-                                    <td class="py-4 px-4 text-center">
-                                        <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high text-tertiary hover:bg-tertiary hover:text-on-tertiary font-label-sm text-label-sm font-semibold transition-all duration-200"
-                                            href="https://drive.google.com" rel="noopener noreferrer" target="_blank">
-                                            <span class="material-symbols-outlined text-base">cloud</span>
-                                            <span>Lihat Bukti (GDrive)</span>
-                                            <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    <td class="center"><span class="year-chip">2026</span></td>
+                                    <td class="center">
+                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
+                                            class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
                                         </a>
                                     </td>
-                                    <td class="py-4 px-5 text-center">
-                                        <div class="flex items-center justify-center gap-1">
-                                            <button aria-label="Lihat Detail"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-container transition-colors"
-                                                title="Lihat Detail" type="button">
-                                                <span class="material-symbols-outlined text-lg">visibility</span>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Lihat Detail" class="row-action-btn">
+                                                <span class="material-symbols-outlined">visibility</span>
                                             </button>
-                                            <button aria-label="Menu Opsi"
-                                                class="p-1.5 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors"
-                                                title="Opsi" type="button">
-                                                <span class="material-symbols-outlined text-lg">more_vert</span>
+                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
+                                                <span class="material-symbols-outlined">more_vert</span>
                                             </button>
                                         </div>
                                     </td>
@@ -767,78 +1756,56 @@
                             </tbody>
                         </table>
                     </div>
-                    <!-- Pagination & Summary Footer -->
-                    <div
-                        class="p-space-md sm:px-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-md bg-surface-container-low/40">
-                        <div class="text-secondary font-body-sm text-body-sm">
-                            Menampilkan <span class="font-semibold text-on-surface">1-6</span> dari <span
-                                class="font-semibold text-on-surface">48</span> data kegiatan mahasiswa tahun <span
-                                class="font-semibold text-primary font-mono">2026</span>
+
+                    <!-- FOOTER: pagination -->
+                    <div class="table-footer">
+                        <div class="footer-summary">
+                            Menampilkan <strong>1-6</strong> dari <strong>48</strong> data kegiatan mahasiswa tahun
+                            <span class="highlight">2026</span>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <button
-                                class="w-9 h-9 rounded-xl flex items-center justify-center text-outline hover:bg-surface-container hover:text-on-surface transition-colors disabled:opacity-40"
-                                disabled="" type="button">
-                                <span class="material-symbols-outlined text-lg">chevron_left</span>
+                        <div class="pagination">
+                            <button type="button" class="page-btn" disabled>
+                                <span class="material-symbols-outlined">chevron_left</span>
                             </button>
-                            <!-- Active Page Number (Blue Sneat Accent) -->
-                            <button
-                                class="w-9 h-9 rounded-xl bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center shadow-[0_2px_8px_rgba(69,70,218,0.35)]"
-                                type="button">
-                                1
-                            </button>
-                            <button
-                                class="w-9 h-9 rounded-xl bg-surface-container-lowest text-secondary hover:bg-surface-container hover:text-on-surface font-headline-sm text-headline-sm flex items-center justify-center transition-colors"
-                                type="button">
-                                2
-                            </button>
-                            <button
-                                class="w-9 h-9 rounded-xl bg-surface-container-lowest text-secondary hover:bg-surface-container hover:text-on-surface font-headline-sm text-headline-sm flex items-center justify-center transition-colors"
-                                type="button">
-                                3
-                            </button>
-                            <span class="px-1 text-outline">...</span>
-                            <button
-                                class="w-9 h-9 rounded-xl bg-surface-container-lowest text-secondary hover:bg-surface-container hover:text-on-surface font-headline-sm text-headline-sm flex items-center justify-center transition-colors"
-                                type="button">
-                                8
-                            </button>
-                            <button
-                                class="w-9 h-9 rounded-xl flex items-center justify-center text-secondary hover:bg-surface-container hover:text-on-surface transition-colors"
-                                type="button">
-                                <span class="material-symbols-outlined text-lg">chevron_right</span>
+                            <button type="button" class="page-btn is-active">1</button>
+                            <button type="button" class="page-btn">2</button>
+                            <button type="button" class="page-btn">3</button>
+                            <span class="page-ellipsis">&hellip;</span>
+                            <button type="button" class="page-btn">8</button>
+                            <button type="button" class="page-btn">
+                                <span class="material-symbols-outlined">chevron_right</span>
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-            <script>
-                // Simple interactive filter resets for high-fidelity feel
-                document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-                    const jenis = document.getElementById('filter-jenis');
-                    const tab = document.getElementById('filter-tab');
-                    const tingkat = document.getElementById('filter-tingkat');
-                    const search = document.getElementById('filter-search');
-
-                    if (jenis) jenis.value = 'semua';
-                    if (tab) tab.value = 'semua';
-                    if (tingkat) tingkat.value = 'semua';
-                    if (search) search.value = '';
-                });
-
-                document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
-                    const btn = document.getElementById('btn-apply-filter');
-                    if (btn) {
-                        const originalText = btn.innerHTML;
-                        btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span><span>Memuat...</span>';
-                        setTimeout(() => {
-                            btn.innerHTML = originalText;
-                        }, 400);
-                    }
-                });
-            </script>
         </main>
     </div>
+
+    <script>
+        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+            const jenis = document.getElementById('filter-jenis');
+            const tab = document.getElementById('filter-tab');
+            const tingkat = document.getElementById('filter-tingkat');
+            const search = document.getElementById('filter-search');
+
+            if (jenis) jenis.value = 'semua';
+            if (tab) tab.value = 'semua';
+            if (tingkat) tingkat.value = 'semua';
+            if (search) search.value = '';
+        });
+
+        document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
+            const btn = document.getElementById('btn-apply-filter');
+            if (btn) {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 400);
+            }
+        });
+    </script>
 </body>
 
 </html>

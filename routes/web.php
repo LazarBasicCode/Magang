@@ -10,11 +10,11 @@ Route::get('/kemahasiswaan', function () {
     return view('kemahasiswaan');
 });
 
-Route::get('/kemahasiswaanOld', function () {
-    return view('kemahasiswaanOld');
+Route::get('/lppm/mahasiswa', function () {
+    return view('lppm_mahasiswa');
 });
 
-Route::get('/kemahasiswaanOld2', function () {
-    return view('kemahasiswaanOld2');
+Route::get('/lppm/dosen', function () {
+    return view('lppm_dosen');
 });
 

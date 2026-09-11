@@ -10,7 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
-    <title>Kemahasiswaan &middot; SITA</title>
+    <title>Kemahasiswaan &middot; SIDA</title>
     <style>
         /* ==========================================================
            1. TOKENS (design variables)
@@ -63,6 +63,41 @@
             --header-h: 64px;
             --radius: 10px;
             --radius-lg: 14px;
+        }
+
+        /* ==========================================================
+            DARK MODE OVERRIDES
+            ========================================================== */
+        body.dark-mode {
+            --canvas: #150f2a;
+            --card: #1e293b;
+            --border: #334155;
+            --border-strong: #475569;
+
+            /* Text */
+            --ink: #f8fafc;
+            --ink-muted: #94a3b8;
+            --ink-faint: #64748b;
+
+            /* Brand / Primary Adjustments */
+            --primary-soft: #1e1b4b;
+            --primary-border: #3730a3;
+
+            /* Shadow */
+            --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Penyesuaian khusus elemen tertentu saat Dark Mode */
+        body.dark-mode .header-capsule {
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        body.dark-mode .data-table thead tr {
+            background: #182234;
+        }
+
+        body.dark-mode .dropdown-panel {
+            background: var(--card);
         }
 
         /* ==========================================================
@@ -280,33 +315,17 @@
         }
 
         .sidebar-help {
-            padding: 16px;
             flex-shrink: 0;
-            border-top: 1px solid var(--border);
         }
 
         .help-card {
             background: var(--canvas);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px;
+            padding: 0px 12px;
+            align-items: center;
             display: flex;
             flex-direction: column;
             gap: 8px;
-        }
-
-        .help-card-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12.5px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-
-        .help-card-title .material-symbols-outlined {
-            font-size: 17px;
-            color: var(--primary);
         }
 
         .help-card-text {
@@ -1382,6 +1401,83 @@
         .page-btn .material-symbols-outlined {
             font-size: 18px;
         }
+
+        /* ========================= ASIDE CLOSE ================================ */
+        /* Tombol Toggle & Close Default (Sembunyi di Layar Lebar) */
+        .sidebar-toggle-btn,
+        .sidebar-close-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 45;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .sidebar-overlay.is-active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ==========================================================
+            RESPONSIVE BREAKPOINT (Layar < 1024px)
+            ========================================================== */
+        @media (max-width: 1023px) {
+
+            /* Sembunyikan Sidebar ke luar layar kiri */
+            .app-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+            }
+
+            /* Tampilkan Sidebar saat status open */
+            .app-sidebar.is-open {
+                transform: translateX(0);
+            }
+
+            /* Penyesuaian Main Content & Header agar memenuhi layar */
+            .app-content {
+                margin-left: 0;
+            }
+
+            .app-header {
+                left: 0;
+            }
+
+            /* Tampilkan Tombol Hamburger di Navbar */
+            .sidebar-toggle-btn {
+                display: flex;
+                margin-right: 8px;
+            }
+
+            /* Tampilkan Tombol Close di Sidebar Header */
+            .sidebar-brand {
+                justify-content: space-between;
+            }
+
+            .sidebar-close-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                border: none;
+                background: var(--canvas);
+                color: var(--ink-muted);
+            }
+        }
     </style>
 </head>
 
@@ -1392,9 +1488,12 @@
             <img alt="Logo Institut Asia Malang"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1NafrqE7zgk-MH1bALr-Reu0A8mdjdxELfqfal7zRbOhhfEIbOmwIbrIyTQ764kiX0m5p2hWwUHXmKm2zaoFulJno38GSAJ5DhTUwy5_WMdCi720dka9D3yD_wuZ4wopDiMy_BjOoGK54bVjLP0NiywfI7nL86YI3HsKPXmFlj6hlF4BI5Q8DjXt2aNUOYoU8edBrCcGb0bvA9InhKCQe5cw8H4DHhon4G7_Ydrd9AwmAQnrtYnFjTg" />
             <div class="sidebar-brand-text">
-                <span class="sidebar-brand-title">SITA</span>
+                <span class="sidebar-brand-title">SIDA</span>
                 <span class="sidebar-brand-sub">Institut Asia Malang</span>
             </div>
+            <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Tutup Menu">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
 
         <nav class="sidebar-nav">
@@ -1433,11 +1532,7 @@
 
         <div class="sidebar-help">
             <div class="help-card">
-                <div class="help-card-title">
-                    <span class="material-symbols-outlined">info</span>
-                    <span>Bantuan SIAKAD</span>
-                </div>
-                <p class="help-card-text">Butuh bantuan input data? Hubungi tim IT Kampus.</p>
+                <p class="help-card-text">© Prodi IT - Institut Asia Malang</p>
             </div>
         </div>
     </aside>
@@ -1447,6 +1542,9 @@
         <header class="app-header">
             <div class="header-capsule">
                 <div class="header-inner">
+                    <button type="button" class="icon-btn sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Buka Menu">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
                     <div class="header-crumb">
                         <span class="link">Kemahasiswaan</span>
                         <span>/</span>
@@ -1457,8 +1555,8 @@
                             <span class="material-symbols-outlined">notifications</span>
                             <span class="dot"></span>
                         </button>
-                        <button type="button" class="icon-btn" aria-label="Ganti Tema">
-                            <span class="material-symbols-outlined">dark_mode</span>
+                        <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="Ganti Tema">
+                            <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
                         <div class="header-divider"></div>
                         <div class="header-profile">
@@ -2018,6 +2116,62 @@
                     btn.innerHTML = originalHTML;
                 }, 400);
             }
+        });
+
+        // Sidebar Drawer Toggle Logic
+        const sidebar = document.querySelector('.app-sidebar');
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function openSidebar() {
+            sidebar.classList.add('is-open');
+            sidebarOverlay.classList.add('is-active');
+            document.body.style.overflow = 'hidden'; // Mencegah scroll pada body saat sidebar terbuka
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            sidebarOverlay.classList.remove('is-active');
+            document.body.style.overflow = '';
+        }
+
+        // Event Listeners
+        sidebarToggleBtn?.addEventListener('click', openSidebar);
+        sidebarCloseBtn?.addEventListener('click', closeSidebar);
+        sidebarOverlay?.addEventListener('click', closeSidebar);
+
+        // Otomatis menutup sidebar jika ukuran window diperbesar kembali ke mode desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                closeSidebar();
+            }
+        });
+
+        // Dark Mode Toggle Logic
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+
+        // 1. Cek preferensi tema sebelumnya dari LocalStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            if (themeIcon) themeIcon.textContent = 'light_mode';
+        }
+
+        // 2. Event listener klik tombol
+        themeToggleBtn?.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+
+            const isDark = document.body.classList.contains('dark-mode');
+
+            // Ubah ikon antara Bulan (dark_mode) dan Matahari (light_mode)
+            if (themeIcon) {
+                themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            }
+
+            // Simpan pilihan user agar tidak hilang saat reload halaman
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
         });
     </script>
 </body>

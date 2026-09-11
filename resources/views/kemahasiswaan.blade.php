@@ -10,7 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
-    <title>Kemahasiswaan &middot; SIDA</title>
+    <title>Kemahasiswaan &middot; SITA</title>
     <style>
         /* ==========================================================
            1. TOKENS (design variables)
@@ -19,8 +19,8 @@
             /* base surfaces */
             --canvas: #eef0f7;
             --card: #ffffff;
-            --border: #d7dbe7;
-            --border-strong: #b9c0d4;
+            --border: #dfe3f0;
+            --border-strong: #ced5ea;
 
             /* text */
             --ink: #2f3349;
@@ -55,7 +55,7 @@
             --neutral-border: #c3c9dc;
 
             /* shadows */
-            --shadow-card: 0 1px 3px rgba(31, 41, 66, 0.08), 0 1px 2px rgba(31, 41, 66, 0.06);
+            --shadow-card: 0 1px 3px rgba(88, 105, 146, 0.13), 0 1px 2px rgba(57, 72, 110, 0.06);
             --shadow-btn: 0 3px 8px rgba(91, 95, 239, 0.38);
 
             /* layout */
@@ -141,18 +141,33 @@
         }
 
         .app-header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: var(--sidebar-w);
+            right: 0;
             z-index: 40;
             height: var(--header-h);
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .header-capsule {
+            width: 100%;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(31, 41, 66, 0.08);
+            padding: 0 16px;
         }
 
         .app-main {
             flex: 1;
             padding: 24px;
+            padding-top: calc(var(--header-h) + 16px);
         }
 
         .page-wrap {
@@ -305,11 +320,34 @@
            ========================================================== */
         .header-inner {
             height: 100%;
-            padding: 0 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
+        }
+
+        .header-crumb {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            color: var(--ink-muted);
+        }
+
+        @media (min-width: 768px) {
+            .header-crumb {
+                display: flex;
+            }
+        }
+
+        .header-crumb .link:hover {
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .header-crumb .current {
+            color: var(--ink);
+            font-weight: 700;
         }
 
         .header-search {
@@ -431,10 +469,15 @@
         }
 
         .header-profile-text {
-            display: flex;
+            display: none;
             flex-direction: column;
-            align-items: flex-end;
             line-height: 1.25;
+        }
+
+        @media (min-width: 640px) {
+            .header-profile-text {
+                display: flex;
+            }
         }
 
         .header-profile-name {
@@ -720,6 +763,114 @@
             transform: translateY(-50%);
             color: var(--ink-faint);
             font-size: 18px;
+        }
+
+        /* ---- Custom dropdown (replaces native <select>) ---- */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-trigger {
+            width: 100%;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--card);
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            text-align: left;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .dropdown-trigger:hover {
+            border-color: var(--primary-border);
+        }
+
+        .dropdown-trigger .caret {
+            position: static;
+            transform: none;
+            transition: transform .15s ease;
+            font-size: 19px;
+            color: var(--ink-muted);
+            flex-shrink: 0;
+        }
+
+        .dropdown-value {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown.is-open .dropdown-trigger {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+
+        .dropdown.is-open .dropdown-trigger .caret {
+            transform: rotate(180deg);
+            color: var(--primary);
+        }
+
+        .dropdown-panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            background: var(--card);
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            box-shadow: 0 12px 28px rgba(31, 41, 66, 0.14);
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .dropdown.is-open .dropdown-panel {
+            display: flex;
+        }
+
+        .dropdown-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 10px;
+            border-radius: 7px;
+            border: none;
+            background: transparent;
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 500;
+            text-align: left;
+            width: 100%;
+            transition: background-color .12s ease, color .12s ease;
+        }
+
+        .dropdown-option:hover {
+            background: var(--canvas);
+        }
+
+        .dropdown-option.is-selected {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+        .dropdown-option.is-selected::after {
+            content: "check";
+            font-family: "Material Symbols Outlined";
+            margin-left: auto;
+            font-size: 17px;
+            color: var(--primary);
         }
 
         .field-locked {
@@ -1241,7 +1392,7 @@
             <img alt="Logo Institut Asia Malang"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1NafrqE7zgk-MH1bALr-Reu0A8mdjdxELfqfal7zRbOhhfEIbOmwIbrIyTQ764kiX0m5p2hWwUHXmKm2zaoFulJno38GSAJ5DhTUwy5_WMdCi720dka9D3yD_wuZ4wopDiMy_BjOoGK54bVjLP0NiywfI7nL86YI3HsKPXmFlj6hlF4BI5Q8DjXt2aNUOYoU8edBrCcGb0bvA9InhKCQe5cw8H4DHhon4G7_Ydrd9AwmAQnrtYnFjTg" />
             <div class="sidebar-brand-text">
-                <span class="sidebar-brand-title">SIDA</span>
+                <span class="sidebar-brand-title">SITA</span>
                 <span class="sidebar-brand-sub">Institut Asia Malang</span>
             </div>
         </div>
@@ -1294,28 +1445,30 @@
     <!-- ============ MAIN ============ -->
     <div class="app-content">
         <header class="app-header">
-            <div class="header-inner">
-                <div class="header-search">
-                    <span class="material-symbols-outlined icon-search">search</span>
-                    <input type="text" placeholder="Cari menu / aksi..." />
-                    <kbd>Ctrl K</kbd>
-                </div>
-                <div class="header-actions">
-                    <button type="button" class="icon-btn" aria-label="Notifikasi">
-                        <span class="material-symbols-outlined">notifications</span>
-                        <span class="dot"></span>
-                    </button>
-                    <button type="button" class="icon-btn" aria-label="Ganti Tema">
-                        <span class="material-symbols-outlined">dark_mode</span>
-                    </button>
-                    <div class="header-divider"></div>
-                    <div class="header-profile">
-                        <div class="header-profile-text">
-                            <span class="header-profile-name">Admin Kemahasiswaan</span>
-                            <span class="header-profile-role">Institut Asia Malang</span>
+            <div class="header-capsule">
+                <div class="header-inner">
+                    <div class="header-crumb">
+                        <span class="link">Kemahasiswaan</span>
+                        <span>/</span>
+                        <span class="current">Data Prestasi &amp; Kegiatan</span>
+                    </div>
+                    <div class="header-actions">
+                        <button type="button" class="icon-btn" aria-label="Notifikasi">
+                            <span class="material-symbols-outlined">notifications</span>
+                            <span class="dot"></span>
+                        </button>
+                        <button type="button" class="icon-btn" aria-label="Ganti Tema">
+                            <span class="material-symbols-outlined">dark_mode</span>
+                        </button>
+                        <div class="header-divider"></div>
+                        <div class="header-profile">
+                            <img alt="Profile"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
+                            <div class="header-profile-text">
+                                <span class="header-profile-name">Admin Kemahasiswaan</span>
+                                <span class="header-profile-role">Institut Asia Malang</span>
+                            </div>
                         </div>
-                        <img alt="Profile"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
                     </div>
                 </div>
             </div>
@@ -1393,39 +1546,61 @@
                     <div class="filter-grid">
                         <!-- Jenis -->
                         <div class="field">
-                            <label class="field-label" for="filter-jenis">Jenis Divisi</label>
-                            <div class="field-control">
-                                <select id="filter-jenis">
-                                    <option value="semua">Semua Jenis</option>
-                                    <option value="inbis">Inbis (Inkubator Bisnis)</option>
-                                    <option value="kemahasiswaan">Kemahasiswaan</option>
-                                </select>
-                                <span class="material-symbols-outlined caret">expand_more</span>
+                            <label class="field-label">Jenis Divisi</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-jenis" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Jenis</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
+                                        Jenis</button>
+                                    <button type="button" class="dropdown-option" data-value="inbis">Inbis (Inkubator
+                                        Bisnis)</button>
+                                    <button type="button" class="dropdown-option"
+                                        data-value="kemahasiswaan">Kemahasiswaan</button>
+                                </div>
                             </div>
                         </div>
                         <!-- Tab -->
                         <div class="field">
-                            <label class="field-label" for="filter-tab">Kategori Tab</label>
-                            <div class="field-control">
-                                <select id="filter-tab">
-                                    <option value="semua">Semua Tab</option>
-                                    <option value="akademik">Akademik</option>
-                                    <option value="non_akademik">Non Akademik</option>
-                                </select>
-                                <span class="material-symbols-outlined caret">expand_more</span>
+                            <label class="field-label">Kategori Tab</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-tab" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Tab</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
+                                        Tab</button>
+                                    <button type="button" class="dropdown-option"
+                                        data-value="akademik">Akademik</button>
+                                    <button type="button" class="dropdown-option" data-value="non_akademik">Non
+                                        Akademik</button>
+                                </div>
                             </div>
                         </div>
                         <!-- Tingkat -->
                         <div class="field">
-                            <label class="field-label" for="filter-tingkat">Tingkat Capaian</label>
-                            <div class="field-control">
-                                <select id="filter-tingkat">
-                                    <option value="semua">Semua Tingkat</option>
-                                    <option value="lokal">Lokal (Kota/Wilayah)</option>
-                                    <option value="nasional">Nasional (RI)</option>
-                                    <option value="internasional">Internasional (Global)</option>
-                                </select>
-                                <span class="material-symbols-outlined caret">expand_more</span>
+                            <label class="field-label">Tingkat Capaian</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-tingkat" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Tingkat</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
+                                        Tingkat</button>
+                                    <button type="button" class="dropdown-option" data-value="lokal">Lokal
+                                        (Kota/Wilayah)</button>
+                                    <button type="button" class="dropdown-option"
+                                        data-value="nasional">Nasional (RI)</button>
+                                    <button type="button" class="dropdown-option" data-value="internasional">Internasional
+                                        (Global)</button>
+                                </div>
                             </div>
                         </div>
                         <!-- Tahun (locked) -->
@@ -1783,15 +1958,54 @@
     </div>
 
     <script>
-        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            const jenis = document.getElementById('filter-jenis');
-            const tab = document.getElementById('filter-tab');
-            const tingkat = document.getElementById('filter-tingkat');
-            const search = document.getElementById('filter-search');
+        // Custom dropdown behavior
+        const dropdowns = document.querySelectorAll('[data-dropdown]');
 
-            if (jenis) jenis.value = 'semua';
-            if (tab) tab.value = 'semua';
-            if (tingkat) tingkat.value = 'semua';
+        dropdowns.forEach((dropdown) => {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            const valueEl = dropdown.querySelector('.dropdown-value');
+            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+            const options = dropdown.querySelectorAll('.dropdown-option');
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wasOpen = dropdown.classList.contains('is-open');
+                dropdowns.forEach((d) => d.classList.remove('is-open'));
+                if (!wasOpen) dropdown.classList.add('is-open');
+            });
+
+            options.forEach((option) => {
+                option.addEventListener('click', () => {
+                    options.forEach((o) => o.classList.remove('is-selected'));
+                    option.classList.add('is-selected');
+                    valueEl.textContent = option.textContent.trim();
+                    if (hiddenInput) hiddenInput.value = option.dataset.value;
+                    dropdown.classList.remove('is-open');
+                });
+            });
+        });
+
+        document.addEventListener('click', () => {
+            dropdowns.forEach((d) => d.classList.remove('is-open'));
+        });
+
+        function resetDropdown(dropdown) {
+            if (!dropdown) return;
+            const options = dropdown.querySelectorAll('.dropdown-option');
+            const valueEl = dropdown.querySelector('.dropdown-value');
+            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+            options.forEach((o, i) => {
+                o.classList.toggle('is-selected', i === 0);
+                if (i === 0) {
+                    valueEl.textContent = o.textContent.trim();
+                    if (hiddenInput) hiddenInput.value = o.dataset.value;
+                }
+            });
+        }
+
+        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+            document.querySelectorAll('[data-dropdown]').forEach(resetDropdown);
+            const search = document.getElementById('filter-search');
             if (search) search.value = '';
         });
 

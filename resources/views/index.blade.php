@@ -857,6 +857,9 @@
 
             <div class="status-row reveal d2">
                 <span class="live-pill"><span class="live-dot"></span> Server SIAKAD aktif</span>
+                <button class="theme-btn" id="themeToggleBtn" type="button" title="Ubah mode tampilan">
+                    <i class="fa-regular fa-moon"></i> Mode
+                </button>
             </div>
 
             <div class="card reveal d3">
@@ -889,6 +892,11 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <label class="remember-row" style="cursor:pointer;">
+                                <input checked type="checkbox">
+                                <span>Ingat saya di perangkat ini</span>
+                            </label>
 
                             <button class="btn-primary" type="submit">
                                 <span>Masuk sekarang</span>

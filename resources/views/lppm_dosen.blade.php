@@ -429,7 +429,6 @@
                 });
             });
         });
-
         // Reset Dropdown
         function resetDropdown(dropdown) {
             if (!dropdown) return;

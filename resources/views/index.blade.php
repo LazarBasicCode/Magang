@@ -18,6 +18,86 @@
             --ocean: #0a4892;
             --cyan: #22d3ee;
             --ink: #eef2ff;
+
+            /* Theme-dependent surfaces/text — dark mode values by default */
+            --glass-1: rgba(255, 255, 255, .06);
+            --glass-2: rgba(255, 255, 255, .08);
+            --glass-3: rgba(255, 255, 255, .11);
+            --glass-4: rgba(255, 255, 255, .16);
+            --glass-border-1: rgba(255, 255, 255, .1);
+            --glass-border-2: rgba(255, 255, 255, .14);
+            --glass-border-3: rgba(255, 255, 255, .18);
+            --ink-soft-1: rgba(224, 236, 255, .9);
+            --ink-soft-2: rgba(224, 236, 255, .85);
+            --ink-soft-3: rgba(224, 236, 255, .82);
+            --ink-soft-4: rgba(224, 236, 255, .78);
+            --ink-faint-1: rgba(191, 219, 254, .8);
+            --ink-faint-2: rgba(191, 219, 254, .75);
+            --ink-faint-3: rgba(191, 219, 254, .7);
+            --ink-faint-4: rgba(191, 219, 254, .65);
+            --ink-faint-5: rgba(191, 219, 254, .6);
+            --ink-faint-6: rgba(191, 219, 254, .45);
+            --bubble-color: 224, 242, 254;
+            --accent: #67e8f9;
+            --accent-strong: #a5f3fc;
+        }
+
+        /* ---------- Dark mode: the current blue theme is the default
+           ("light") state; this block is the deeper, near-black variant
+           applied on top when the user toggles it on. ---------- */
+        body.dark-mode {
+            --navy-deep: #020305;
+            --navy-mid: #05070c;
+            --ocean: #070a12;
+            --cyan: #22d3ee;
+            --ink: #d6d9e0;
+
+            --glass-1: rgba(255, 255, 255, .02);
+            --glass-2: rgba(255, 255, 255, .035);
+            --glass-3: rgba(255, 255, 255, .055);
+            --glass-4: rgba(255, 255, 255, .08);
+            --glass-border-1: rgba(255, 255, 255, .04);
+            --glass-border-2: rgba(255, 255, 255, .06);
+            --glass-border-3: rgba(255, 255, 255, .09);
+            --ink-soft-1: rgba(214, 217, 224, .82);
+            --ink-soft-2: rgba(214, 217, 224, .72);
+            --ink-soft-3: rgba(214, 217, 224, .64);
+            --ink-soft-4: rgba(214, 217, 224, .58);
+            --ink-faint-1: rgba(148, 163, 184, .5);
+            --ink-faint-2: rgba(148, 163, 184, .45);
+            --ink-faint-3: rgba(148, 163, 184, .4);
+            --ink-faint-4: rgba(148, 163, 184, .36);
+            --ink-faint-5: rgba(148, 163, 184, .32);
+            --ink-faint-6: rgba(148, 163, 184, .22);
+            --bubble-color: 100, 116, 139;
+            --accent: #22d3ee;
+            --accent-strong: #67e8f9;
+        }
+
+        body.dark-mode {
+            background: #010203;
+        }
+
+        body.dark-mode .card {
+            box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .85);
+        }
+
+        body.dark-mode .site-loader-overlay {
+            background:
+                radial-gradient(1100px 700px at 12% 8%, rgba(34, 211, 238, .05), transparent 60%),
+                radial-gradient(900px 650px at 88% 82%, rgba(15, 23, 42, .4), transparent 60%),
+                linear-gradient(160deg, var(--navy-deep) 0%, var(--navy-mid) 48%, var(--ocean) 100%);
+        }
+
+        body.dark-mode .scene-bg {
+            background:
+                radial-gradient(1100px 700px at 12% 8%, rgba(34, 211, 238, .05), transparent 60%),
+                radial-gradient(900px 650px at 88% 82%, rgba(15, 23, 42, .35), transparent 60%),
+                linear-gradient(160deg, var(--navy-deep) 0%, var(--navy-mid) 48%, var(--ocean) 100%);
+        }
+
+        body.dark-mode .scene-grid {
+            opacity: .04;
         }
 
         * {
@@ -197,8 +277,7 @@
 
             /* Lock the page to exactly one screen on desktop: no leftover
                space at the bottom, and nothing to scroll down into. */
-            html,
-            body {
+            html, body {
                 height: 100%;
                 overflow: hidden;
             }
@@ -355,9 +434,9 @@
             font-weight: 600;
             padding: .35rem .75rem;
             border-radius: 999px;
-            background: rgba(255, 255, 255, .08);
-            border: 1px solid rgba(255, 255, 255, .15);
-            color: #a5f3fc;
+            background: var(--glass-2);
+            border: 1px solid var(--glass-border-2);
+            color: var(--accent-strong);
             backdrop-filter: blur(6px);
         }
 
@@ -381,7 +460,7 @@
             margin-top: 1rem;
             font-size: .95rem;
             line-height: 1.7;
-            color: rgba(224, 236, 255, .82);
+            color: var(--ink-soft-3);
             max-width: 34rem;
         }
 
@@ -391,19 +470,19 @@
             gap: .75rem;
             margin-top: 2.25rem;
             padding-top: 1.5rem;
-            border-top: 1px solid rgba(255, 255, 255, .12);
+            border-top: 1px solid var(--glass-border-1);
         }
 
         .stat-card {
             padding: .9rem 1rem;
             border-radius: 1rem;
-            background: rgba(255, 255, 255, .06);
-            border: 1px solid rgba(255, 255, 255, .1);
+            background: var(--glass-1);
+            border: 1px solid var(--glass-border-1);
             transition: background .25s ease, transform .25s ease;
         }
 
         .stat-card:hover {
-            background: rgba(255, 255, 255, .11);
+            background: var(--glass-3);
             transform: translateY(-2px);
         }
 
@@ -411,7 +490,7 @@
             display: flex;
             align-items: center;
             gap: .5rem;
-            color: #67e8f9;
+            color: var(--accent);
             font-size: .72rem;
             font-weight: 600;
         }
@@ -424,7 +503,7 @@
 
         .stat-sub {
             font-size: .68rem;
-            color: rgba(191, 219, 254, .8);
+            color: var(--ink-faint-1);
             margin-top: .1rem;
         }
 
@@ -435,9 +514,9 @@
             align-items: center;
             justify-content: space-between;
             font-size: .75rem;
-            color: rgba(191, 219, 254, .75);
+            color: var(--ink-faint-2);
             padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, .08);
+            border-top: 1px solid var(--glass-2);
         }
 
         /* ---------- Right auth panel ---------- */
@@ -472,9 +551,9 @@
             font-weight: 500;
             padding: .3rem .7rem;
             border-radius: 999px;
-            background: rgba(255, 255, 255, .08);
-            border: 1px solid rgba(255, 255, 255, .14);
-            color: #a5f3fc;
+            background: var(--glass-2);
+            border: 1px solid var(--glass-border-2);
+            color: var(--accent-strong);
         }
 
         .live-dot {
@@ -503,8 +582,8 @@
             gap: .5rem;
             padding: .4rem .75rem;
             border-radius: .8rem;
-            background: rgba(255, 255, 255, .08);
-            border: 1px solid rgba(255, 255, 255, .14);
+            background: var(--glass-2);
+            border: 1px solid var(--glass-border-2);
             color: #fff;
             font-size: .72rem;
             font-weight: 500;
@@ -513,17 +592,17 @@
         }
 
         .theme-btn:hover {
-            background: rgba(255, 255, 255, .16);
+            background: var(--glass-4);
         }
 
         .card {
             max-width: 26rem;
             margin: 0 auto;
             width: 100%;
-            background: rgba(255, 255, 255, .07);
+            background: var(--glass-2);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, .16);
+            border: 1px solid var(--glass-4);
             border-radius: 1.75rem;
             box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .55);
             padding: 2.1rem 1.9rem;
@@ -545,7 +624,7 @@
         .card .sub {
             margin-top: .5rem;
             font-size: .87rem;
-            color: rgba(224, 236, 255, .78);
+            color: var(--ink-soft-4);
             line-height: 1.6;
         }
 
@@ -554,7 +633,7 @@
             font-size: .72rem;
             font-weight: 600;
             letter-spacing: .02em;
-            color: rgba(224, 236, 255, .85);
+            color: var(--ink-soft-2);
             margin-bottom: .4rem;
         }
 
@@ -567,7 +646,7 @@
             left: .9rem;
             top: 50%;
             transform: translateY(-50%);
-            color: rgba(191, 219, 254, .6);
+            color: var(--ink-faint-5);
             font-size: .85rem;
             pointer-events: none;
         }
@@ -575,8 +654,8 @@
         .field-wrap input {
             width: 100%;
             padding: .78rem 1rem .78rem 2.5rem;
-            background: rgba(255, 255, 255, .08);
-            border: 1px solid rgba(255, 255, 255, .18);
+            background: var(--glass-2);
+            border: 1px solid var(--glass-border-3);
             border-radius: .9rem;
             color: #fff;
             font-size: .88rem;
@@ -585,12 +664,12 @@
         }
 
         .field-wrap input::placeholder {
-            color: rgba(191, 219, 254, .45);
+            color: var(--ink-faint-6);
         }
 
         .field-wrap input:focus {
             border-color: var(--cyan);
-            background: rgba(255, 255, 255, .11);
+            background: var(--glass-3);
             box-shadow: 0 0 0 3px rgba(34, 211, 238, .18);
         }
 
@@ -605,7 +684,7 @@
             transform: translateY(-50%);
             background: none;
             border: 0;
-            color: rgba(191, 219, 254, .65);
+            color: var(--ink-faint-4);
             cursor: pointer;
             font-size: .85rem;
         }
@@ -629,7 +708,7 @@
 
         .remember-row span {
             font-size: .75rem;
-            color: rgba(224, 236, 255, .85);
+            color: var(--ink-soft-2);
         }
 
         .btn-primary {
@@ -674,26 +753,26 @@
         .link-line a {
             font-size: .78rem;
             font-weight: 600;
-            color: #67e8f9;
+            color: var(--accent);
             text-decoration: underline;
             text-underline-offset: 4px;
             text-decoration-color: rgba(103, 232, 249, .4);
         }
 
         .link-line a:hover {
-            color: #a5f3fc;
+            color: var(--accent-strong);
         }
 
         .access-note {
             margin-top: 1.5rem;
             padding-top: 1.25rem;
-            border-top: 1px solid rgba(255, 255, 255, .14);
+            border-top: 1px solid var(--glass-border-2);
         }
 
         .access-note p {
             text-align: center;
             font-size: .72rem;
-            color: rgba(191, 219, 254, .7);
+            color: var(--ink-faint-3);
             margin: 0 0 .6rem;
         }
 
@@ -709,9 +788,9 @@
             font-weight: 500;
             padding: .3rem .65rem;
             border-radius: .65rem;
-            background: rgba(255, 255, 255, .08);
-            border: 1px solid rgba(255, 255, 255, .14);
-            color: rgba(224, 236, 255, .9);
+            background: var(--glass-2);
+            border: 1px solid var(--glass-border-2);
+            color: var(--ink-soft-1);
         }
 
         .info-box {
@@ -720,15 +799,15 @@
             align-items: flex-start;
             padding: .85rem .9rem;
             border-radius: .9rem;
-            background: rgba(255, 255, 255, .07);
-            border: 1px solid rgba(255, 255, 255, .14);
+            background: var(--glass-2);
+            border: 1px solid var(--glass-border-2);
             font-size: .76rem;
-            color: rgba(224, 236, 255, .85);
+            color: var(--ink-soft-2);
             line-height: 1.55;
         }
 
         .info-box i {
-            color: #67e8f9;
+            color: var(--accent);
             margin-top: .15rem;
         }
 
@@ -738,7 +817,7 @@
             gap: .5rem;
             font-size: .78rem;
             font-weight: 600;
-            color: rgba(224, 236, 255, .85);
+            color: var(--ink-soft-2);
             background: none;
             border: 0;
             cursor: pointer;
@@ -756,11 +835,11 @@
             align-items: center;
             justify-content: space-between;
             font-size: .75rem;
-            color: rgba(191, 219, 254, .75);
+            color: var(--ink-faint-2);
         }
 
         .helper-row a {
-            color: #67e8f9;
+            color: var(--accent);
             font-weight: 500;
         }
 
@@ -846,7 +925,7 @@
 
             <div class="foot-row reveal d6">
                 <div style="display:flex;align-items:center;gap:.5rem;">
-                    <i class="fa-solid fa-location-dot" style="color:#67e8f9;"></i>
+                    <i class="fa-solid fa-location-dot" style="color:var(--accent);"></i>
                     <span>Jl. Soekarno Hatta - Rembuksari No. 1A, Malang</span>
                 </div>
                 <span>&copy; 2026 Institut Asia Malang</span>
@@ -859,7 +938,7 @@
             <div class="status-row reveal d2">
                 <span class="live-pill"><span class="live-dot"></span> Server SIAKAD aktif</span>
                 <button class="theme-btn" id="themeToggleBtn" type="button" title="Ubah mode tampilan">
-                    <i class="fa-regular fa-moon"></i> Mode
+                    <i class="fa-solid fa-moon"></i> Mode
                 </button>
             </div>
 
@@ -873,7 +952,6 @@
 
                         <form id="loginForm" method="POST" action="{{ url('/login-process') }}" style="margin-top:1.5rem; display:flex; flex-direction:column; gap:1.1rem;">
                             @csrf
-                            <!-- Sisa input field Anda biarkan sama -->
                             @error('username')
                             <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 10px 14px; border-radius: 10px; font-size: 0.75rem; display: flex; align-items: center; gap: 8px;">
                                 <i class="fa-solid fa-circle-exclamation"></i>
@@ -901,11 +979,6 @@
                                 </div>
                             </div>
 
-                            <label class="remember-row" style="cursor:pointer;">
-                                <input checked type="checkbox">
-                                <span>Ingat saya di perangkat ini</span>
-                            </label>
-
                             <button class="btn-primary" type="submit">
                                 <span>Masuk sekarang</span>
                                 <i class="fa-solid fa-arrow-right"></i>
@@ -920,7 +993,7 @@
                     <div id="forgotSection" class="fade-switch fade-hidden">
                         <div
                             style="display:inline-flex;align-items:center;justify-content:center;width:3rem;height:3rem;border-radius:1rem;background:rgba(34,211,238,.18);border:1px solid rgba(103,232,249,.35);margin-bottom:.9rem;">
-                            <i class="fa-solid fa-key" style="color:#67e8f9;font-size:1.15rem;"></i>
+                            <i class="fa-solid fa-key" style="color:var(--accent);font-size:1.15rem;"></i>
                         </div>
                         <h2>Lupa password?</h2>
                         <p class="sub">Masukkan NIM, NIDN, atau email terdaftar untuk menerima tautan pemulihan kata
@@ -961,7 +1034,7 @@
             </div>
 
             <!-- <div class="helper-row reveal d4">
-                <span><i class="fa-regular fa-circle-question" style="color:#67e8f9;margin-right:.4rem;"></i>Butuh
+                <span><i class="fa-regular fa-circle-question" style="color:var(--accent);margin-right:.4rem;"></i>Butuh
                     bantuan akun?</span>
                 <a href="#">Hubungi Helpdesk LPPM</a>
             </div> -->
@@ -971,7 +1044,7 @@
 
     <script>
         // ---------- Splash loader: show ~1.8s, then fade out and start the reveal sequence ----------
-        (function() {
+        (function () {
             var overlay = document.getElementById('siteLoaderOverlay');
             var LOADER_DURATION = 1800; // ms — tune between 1500-2000 as needed
 
@@ -981,17 +1054,15 @@
                 overlay.addEventListener('transitionend', function handler() {
                     overlay.remove();
                     overlay.removeEventListener('transitionend', handler);
-                }, {
-                    once: true
-                });
+                }, { once: true });
             }
 
-            window.addEventListener('load', function() {
+            window.addEventListener('load', function () {
                 setTimeout(dismissLoader, LOADER_DURATION);
             });
 
             // Fallback in case the 'load' event never fires for some reason
-            setTimeout(function() {
+            setTimeout(function () {
                 if (document.body.contains(overlay)) dismissLoader();
             }, LOADER_DURATION + 3000);
         })();
@@ -1017,18 +1088,30 @@
             hide.classList.add('fade-hidden');
             show.classList.remove('fade-hidden');
         }
-        goToForgotBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            swap(forgotSection, loginSection);
-        });
-        backToLoginBtn.addEventListener('click', () => {
-            swap(loginSection, forgotSection);
-        });
+        goToForgotBtn.addEventListener('click', (e) => { e.preventDefault(); swap(forgotSection, loginSection); });
+        backToLoginBtn.addEventListener('click', () => { swap(loginSection, forgotSection); });
 
-        // Simple light/dark accent toggle (visual only, keeps single cohesive theme)
+        // Light/dark theme toggle. The current blue theme is the default
+        // ("light") state; clicking adds the deeper body.dark-mode palette
+        // defined in <style>. Persists the choice and swaps the icon.
         const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeToggleLabel = themeToggleBtn.querySelector('i');
+
+        function applyTheme(isDark) {
+            document.body.classList.toggle('dark-mode', isDark);
+            if (themeToggleLabel) {
+                themeToggleLabel.classList.toggle('fa-moon', !isDark);
+                themeToggleLabel.classList.toggle('fa-sun', isDark);
+            }
+        }
+
+        const savedTheme = localStorage.getItem('siakad-theme');
+        applyTheme(savedTheme === 'dark');
+
         themeToggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('light-mode');
+            const isDark = !document.body.classList.contains('dark-mode');
+            applyTheme(isDark);
+            localStorage.setItem('siakad-theme', isDark ? 'dark' : 'light');
         });
 
         // ---------- Particle / bubble background (canvas, delta-time based = no jank) ----------
@@ -1054,8 +1137,8 @@
                 x: Math.random() * width,
                 y: randomY ? Math.random() * height : height + r + Math.random() * 200,
                 r,
-                speed: 10 + Math.random() * 22, // px per second
-                drift: (Math.random() - 0.5) * 14, // horizontal sway amplitude
+                speed: 10 + Math.random() * 22,      // px per second
+                drift: (Math.random() - 0.5) * 14,   // horizontal sway amplitude
                 driftSpeed: 0.4 + Math.random() * 0.6,
                 phase: Math.random() * Math.PI * 2,
                 alpha: 0.06 + Math.random() * 0.16,
@@ -1064,13 +1147,19 @@
 
         function initBubbles() {
             const count = Math.round((width * height) / 26000);
-            bubbles = Array.from({
-                length: Math.max(24, Math.min(count, 70))
-            }, () => makeBubble(true));
+            bubbles = Array.from({ length: Math.max(24, Math.min(count, 70)) }, () => makeBubble(true));
         }
 
-        let lastTime = null;
+        function currentBubbleColor() {
+            return getComputedStyle(document.body).getPropertyValue('--bubble-color').trim() || '224,242,254';
+        }
 
+        let bubbleColor = currentBubbleColor();
+        // Re-read the bubble tint whenever the theme changes (class toggles on <body>)
+        new MutationObserver(() => { bubbleColor = currentBubbleColor(); })
+            .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+        let lastTime = null;
         function tick(now) {
             if (lastTime === null) lastTime = now;
             const dt = Math.min((now - lastTime) / 1000, 0.05); // clamp to avoid big jumps (no jank on tab refocus)
@@ -1083,8 +1172,8 @@
                 const x = b.x + Math.sin(b.phase) * b.drift;
 
                 const gradient = ctx.createRadialGradient(x, b.y, 0, x, b.y, b.r);
-                gradient.addColorStop(0, `rgba(224,242,254,${b.alpha})`);
-                gradient.addColorStop(1, `rgba(103,232,249,0)`);
+                gradient.addColorStop(0, `rgba(${bubbleColor},${b.alpha})`);
+                gradient.addColorStop(1, `rgba(${bubbleColor},0)`);
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
                 ctx.arc(x, b.y, b.r, 0, Math.PI * 2);
@@ -1100,10 +1189,7 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         resize();
         initBubbles();
-        window.addEventListener('resize', () => {
-            resize();
-            initBubbles();
-        });
+        window.addEventListener('resize', () => { resize(); initBubbles(); });
         if (!prefersReducedMotion) {
             requestAnimationFrame(tick);
         }

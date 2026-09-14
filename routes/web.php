@@ -18,3 +18,6 @@ Route::get('/lppm/dosen', function () {
     return view('lppm_dosen');
 });
 
+Route::get('/lppm/rekognisi', function () {
+    return view('lppm_rekognisi');
+});

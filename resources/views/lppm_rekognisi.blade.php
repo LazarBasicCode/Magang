@@ -6,7 +6,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-    <title>LPPM Mahasiswa &middot; SIDA</title>
+    <title>LPPM Rekognisi &middot; SIDA</title>
     <style>
         :root {
             --canvas: #eef0f7;
@@ -764,35 +764,6 @@
             color: var(--primary);
         }
 
-        .field-locked {
-            height: 40px;
-            padding: 0 12px;
-            border-radius: 8px;
-            border: 1px solid var(--primary-border);
-            background: var(--primary-soft);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: not-allowed;
-        }
-
-        .field-locked-inner {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .field-locked .material-symbols-outlined {
-            font-size: 16px;
-            color: var(--primary);
-        }
-
-        .field-locked-value {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
         .field-search-wide {
             grid-column: 1 / -1;
         }
@@ -1057,7 +1028,7 @@
             font-size: 13px;
             color: var(--ink);
             display: block;
-            max-width: 260px;
+            max-width: 220px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -1113,12 +1084,6 @@
             background: var(--danger-bg);
             color: var(--danger);
             border-color: var(--danger-border);
-        }
-
-        .year-chip {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--ink-muted);
         }
 
         .evidence-link {
@@ -1353,7 +1318,7 @@
                 </a>
 
                 <div class="nav-heading">LPPM</div>
-                <a href="#" aria-current="page" class="nav-link is-active">
+                <a href="#" class="nav-link">
                     <span class="material-symbols-outlined">person</span>
                     <span>Mahasiswa</span>
                 </a>
@@ -1361,7 +1326,7 @@
                     <span class="material-symbols-outlined">co_present</span>
                     <span>Dosen</span>
                 </a>
-                <a href="#" class="nav-link">
+                <a href="#" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">workspace_premium</span>
                     <span>Rekognisi</span>
                 </a>
@@ -1392,7 +1357,7 @@
                     <div class="header-crumb">
                         <span class="link">LPPM</span>
                         <span>/</span>
-                        <span class="current">Data Mahasiswa</span>
+                        <span class="current">Rekognisi</span>
                     </div>
                     <div class="header-actions">
                         <button type="button" class="icon-btn" aria-label="Notifikasi">
@@ -1424,14 +1389,14 @@
                         <div class="breadcrumb">
                             <span>LPPM</span>
                             <span class="material-symbols-outlined">chevron_right</span>
-                            <span class="current">Data Mahasiswa</span>
+                            <span class="current">Rekognisi</span>
                         </div>
-                        <h1 class="page-title">Publikasi & Conference Mahasiswa</h1>
-                        <p class="page-subtitle">Pendataan luaran publikasi SINTA Nasional, Conference, dan Jurnal Internasional &middot; Tahun 2026</p>
+                        <h1 class="page-title">Data Rekognisi & Karir Alumni</h1>
+                        <p class="page-subtitle">Pendataan rekognisi tingkat Nasional, Internasional, dan jejak karir Alumni</p>
                     </div>
                     <button type="button" class="btn-primary">
                         <span class="material-symbols-outlined">add</span>
-                        <span>Tambah Data Publikasi</span>
+                        <span>Tambah Data Rekognisi</span>
                     </button>
                 </div>
 
@@ -1439,44 +1404,44 @@
                 <div class="stat-grid">
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Total Publikasi</span>
-                            <span class="stat-value">52</span>
+                            <span class="stat-label">Total Rekognisi</span>
+                            <span class="stat-value">84</span>
                             <span class="stat-delta up">
-                                <span class="material-symbols-outlined">arrow_upward</span>5% bulan ini
+                                <span class="material-symbols-outlined">arrow_upward</span>3% bulan ini
                             </span>
                         </div>
                         <div class="stat-icon primary">
-                            <span class="material-symbols-outlined">library_books</span>
+                            <span class="material-symbols-outlined">stars</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">SINTA Nasional</span>
-                            <span class="stat-value">34</span>
-                            <span class="stat-delta neutral">65% dari total</span>
+                            <span class="stat-label">Tingkat Nasional</span>
+                            <span class="stat-value">42</span>
+                            <span class="stat-delta neutral">50% dari total</span>
                         </div>
                         <div class="stat-icon info">
-                            <span class="material-symbols-outlined">local_library</span>
+                            <span class="material-symbols-outlined">map</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Conference Int.</span>
-                            <span class="stat-value">12</span>
-                            <span class="stat-delta neutral">23% dari total</span>
+                            <span class="stat-label">Tingkat Internasional</span>
+                            <span class="stat-value">16</span>
+                            <span class="stat-delta neutral">19% dari total</span>
                         </div>
                         <div class="stat-icon warning">
-                            <span class="material-symbols-outlined">groups</span>
+                            <span class="material-symbols-outlined">public</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Jurnal Internasional</span>
-                            <span class="stat-value">6</span>
-                            <span class="stat-delta neutral">12% dari total</span>
+                            <span class="stat-label">Karir Alumni</span>
+                            <span class="stat-value">26</span>
+                            <span class="stat-delta neutral">31% dari total</span>
                         </div>
                         <div class="stat-icon success">
-                            <span class="material-symbols-outlined">public</span>
+                            <span class="material-symbols-outlined">work_history</span>
                         </div>
                     </div>
                 </div>
@@ -1484,50 +1449,54 @@
                 <!-- FILTER BAR -->
                 <div class="filter-card">
                     <div class="filter-grid">
-                        <!-- Jenis -->
+                        <!-- Tipe User -->
                         <div class="field">
-                            <label class="field-label">Jenis Publikasi</label>
+                            <label class="field-label">Entitas Pengguna</label>
                             <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-jenis" value="semua" />
+                                <input type="hidden" id="filter-user" value="semua" />
                                 <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Jenis</span>
+                                    <span class="dropdown-value">Semua Entitas</span>
                                     <span class="material-symbols-outlined caret">expand_more</span>
                                 </button>
                                 <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Jenis</button>
-                                    <button type="button" class="dropdown-option" data-value="sinta_nasional">SINTA Nasional</button>
-                                    <button type="button" class="dropdown-option" data-value="conference_internasional">Conference Internasional</button>
-                                    <button type="button" class="dropdown-option" data-value="jurnal_internasional">Jurnal Internasional</button>
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Entitas</button>
+                                    <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa / Alumni</button>
+                                    <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Peringkat -->
+                        <!-- Jenis Rekognisi -->
                         <div class="field">
-                            <label class="field-label">Peringkat / Kuartil</label>
+                            <label class="field-label">Tingkat Rekognisi</label>
                             <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-peringkat" value="semua" />
+                                <input type="hidden" id="filter-jenis" value="semua" />
                                 <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Peringkat</span>
+                                    <span class="dropdown-value">Semua Kategori</span>
                                     <span class="material-symbols-outlined caret">expand_more</span>
                                 </button>
                                 <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Peringkat</button>
-                                    <button type="button" class="dropdown-option" data-value="sinta1">SINTA 1 - 2</button>
-                                    <button type="button" class="dropdown-option" data-value="sinta3">SINTA 3 - 4</button>
-                                    <button type="button" class="dropdown-option" data-value="q1">Q1 - Q2</button>
-                                    <button type="button" class="dropdown-option" data-value="q3">Q3 - Q4</button>
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Kategori</button>
+                                    <button type="button" class="dropdown-option" data-value="nasional">Nasional</button>
+                                    <button type="button" class="dropdown-option" data-value="internasional">Internasional</button>
+                                    <button type="button" class="dropdown-option" data-value="alumni">Karir Alumni</button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Tahun Akademik -->
                         <div class="field">
-                            <label class="field-label">Tahun</label>
-                            <div class="field-locked">
-                                <div class="field-locked-inner">
-                                    <span class="material-symbols-outlined">lock</span>
-                                    <span class="field-locked-value">2026</span>
+                            <label class="field-label">Rentang Periode</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-tahun" value="2026" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Tahun 2026</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="2026">Tahun 2026</button>
+                                    <button type="button" class="dropdown-option" data-value="2025">Tahun 2025</button>
+                                    <button type="button" class="dropdown-option" data-value="2024">Tahun 2024</button>
                                 </div>
                             </div>
                         </div>
@@ -1537,7 +1506,7 @@
                             <label class="field-label" for="filter-search">Pencarian Cepat</label>
                             <div class="field-control">
                                 <span class="material-symbols-outlined icon-search">search</span>
-                                <input id="filter-search" type="text" placeholder="Cari judul penelitian atau nama penulis..." />
+                                <input id="filter-search" type="text" placeholder="Cari nama, mitra, atau jabatan..." />
                             </div>
                         </div>
                     </div>
@@ -1557,8 +1526,8 @@
                 <div class="table-card">
                     <div class="table-card-header">
                         <div>
-                            <h2 class="table-card-title">Daftar Rekap LPPM Mahasiswa</h2>
-                            <p class="table-card-subtitle">Data luaran publikasi sesuai format LPPM 2026</p>
+                            <h2 class="table-card-title">Daftar Rekap Rekognisi</h2>
+                            <p class="table-card-subtitle">Data kegiatan pengakuan Nasional, Internasional, dan Alumni</p>
                         </div>
                         <div class="table-card-tools">
                             <button type="button" class="tool-btn">
@@ -1572,18 +1541,17 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>NIM</th>
-                                    <th>Penulis (Mahasiswa)</th>
-                                    <th>Judul Publikasi</th>
-                                    <th class="center">Jenis</th>
-                                    <th class="center">Peringkat / Jurnal</th>
-                                    <th class="center">Tahun</th>
-                                    <th class="center">Bukti / DOI</th>
+                                    <th>ID Pengguna</th>
+                                    <th>Nama Lengkap</th>
+                                    <th class="center">Kategori</th>
+                                    <th>Instansi Mitra & Jabatan</th>
+                                    <th>Periode Tanggal</th>
+                                    <th class="center">Bukti Validasi</th>
                                     <th class="center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Row 1 -->
+                                <!-- Row 1 (Mahasiswa - Nasional) -->
                                 <tr>
                                     <td><span class="nim-code">222011005</span></td>
                                     <td>
@@ -1591,22 +1559,23 @@
                                             <div class="avatar c-info">AR</div>
                                             <div class="student-name">
                                                 <span class="name">Ahmad Rizal Fauzi</span>
-                                                <span class="prodi">Teknik Mesin</span>
+                                                <span class="prodi">Mahasiswa - Teknik Mesin</span>
                                             </div>
                                         </div>
                                     </td>
+                                    <td class="center"><span class="badge badge-info">Nasional</span></td>
                                     <td>
-                                        <span class="activity-title" title="Analisis Nilai Modulus Young dan Tension pada Material Sintetis untuk Kebutuhan Industri">Analisis Nilai Modulus Young dan Tension pada Material Sintetis untuk Kebutuhan Industri</span>
+                                        <span class="activity-title" title="Universitas Gadjah Mada">Universitas Gadjah Mada</span>
+                                        <div style="font-size: 11.5px; color: var(--ink-muted); margin-top: 2px;">Peserta Pertukaran Mahasiswa</div>
                                     </td>
-                                    <td class="center"><span class="badge badge-info">SINTA Nasional</span></td>
-                                    <td class="center">
-                                        <span class="badge badge-primary">SINTA 2</span>
+                                    <td>
+                                        <div style="font-size: 12px; font-weight: 500; color: var(--ink);">01 Jan 2026</div>
+                                        <div style="font-size: 11px; color: var(--ink-muted);">s/d 30 Jun 2026</div>
                                     </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
                                     <td class="center">
                                         <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">link</span>
-                                            <span>Link DOI</span>
+                                            <span class="material-symbols-outlined">cloud_download</span>
+                                            <span>Sertifikat</span>
                                         </a>
                                     </td>
                                     <td class="center">
@@ -1620,30 +1589,31 @@
                                         </div>
                                     </td>
                                 </tr>
-                                <!-- Row 2 -->
+                                <!-- Row 2 (Dosen - Internasional) -->
                                 <tr>
-                                    <td><span class="nim-code">232012014</span></td>
+                                    <td><span class="nim-code">0712048901</span></td>
                                     <td>
                                         <div class="student-cell">
-                                            <div class="avatar c-primary">SN</div>
+                                            <div class="avatar c-primary">BS</div>
                                             <div class="student-name">
-                                                <span class="name">Siti Nurhaliza Putri</span>
-                                                <span class="prodi">Sistem Informasi</span>
+                                                <span class="name">Dr. Budi Santoso</span>
+                                                <span class="prodi">Dosen - Fakultas Teknologi</span>
                                             </div>
                                         </div>
                                     </td>
+                                    <td class="center"><span class="badge badge-warning">Internasional</span></td>
                                     <td>
-                                        <span class="activity-title" title="Implementasi Framework Laravel pada Arsitektur Server Mobile Terbatas Menggunakan Termux">Implementasi Framework Laravel pada Arsitektur Server Mobile Terbatas Menggunakan Termux</span>
+                                        <span class="activity-title" title="National University of Singapore">National University of Singapore</span>
+                                        <div style="font-size: 11.5px; color: var(--ink-muted); margin-top: 2px;">Visiting Researcher</div>
                                     </td>
-                                    <td class="center"><span class="badge badge-warning">Conference Int.</span></td>
-                                    <td class="center">
-                                        <span class="badge badge-neutral">-</span>
+                                    <td>
+                                        <div style="font-size: 12px; font-weight: 500; color: var(--ink);">10 Mar 2026</div>
+                                        <div style="font-size: 11px; color: var(--ink-muted);">s/d 10 Mei 2026</div>
                                     </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
                                     <td class="center">
                                         <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
+                                            <span class="material-symbols-outlined">cloud_download</span>
+                                            <span>SK Tugas</span>
                                         </a>
                                     </td>
                                     <td class="center">
@@ -1657,30 +1627,31 @@
                                         </div>
                                     </td>
                                 </tr>
-                                <!-- Row 3 -->
+                                <!-- Row 3 (Alumni - Karir) -->
                                 <tr>
-                                    <td><span class="nim-code">211009088</span></td>
+                                    <td><span class="nim-code">192011044</span></td>
                                     <td>
                                         <div class="student-cell">
-                                            <div class="avatar c-warning">KA</div>
+                                            <div class="avatar c-success">SN</div>
                                             <div class="student-name">
-                                                <span class="name">Kevin Ardiansyah</span>
-                                                <span class="prodi">Teknik Komputer</span>
+                                                <span class="name">Sarah Novita, S.Kom</span>
+                                                <span class="prodi">Alumni - Sistem Informasi</span>
                                             </div>
                                         </div>
                                     </td>
+                                    <td class="center"><span class="badge badge-success">Alumni</span></td>
                                     <td>
-                                        <span class="activity-title" title="Rancang Bangun Sistem Pemantauan Jarak Menggunakan Sensor Ultrasonik dan Arduino Uno Berbasis IoT">Rancang Bangun Sistem Pemantauan Jarak Menggunakan Sensor Ultrasonik dan Arduino Uno Berbasis IoT</span>
+                                        <span class="activity-title" title="PT Telkom Indonesia (Persero) Tbk">PT Telkom Indonesia (Persero) Tbk</span>
+                                        <div style="font-size: 11.5px; color: var(--primary); font-weight: 600; margin-top: 2px;">Senior Data Analyst</div>
                                     </td>
-                                    <td class="center"><span class="badge badge-success">Jurnal Int.</span></td>
-                                    <td class="center">
-                                        <span class="badge badge-danger">Q3</span>
+                                    <td>
+                                        <div style="font-size: 12px; font-weight: 500; color: var(--ink);">01 Ags 2025</div>
+                                        <div style="font-size: 11px; color: var(--ink-muted);">s/d Sekarang</div>
                                     </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
                                     <td class="center">
                                         <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">link</span>
-                                            <span>Link DOI</span>
+                                            <span class="material-symbols-outlined">work</span>
+                                            <span>Bukti Kerja</span>
                                         </a>
                                     </td>
                                     <td class="center">
@@ -1701,7 +1672,7 @@
                     <!-- FOOTER: pagination -->
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>1-3</strong> dari <strong>52</strong> data publikasi LPPM mahasiswa tahun <span class="highlight">2026</span>
+                            Menampilkan <strong>1-3</strong> dari <strong>84</strong> data rekognisi LPPM <span class="highlight">2026</span>
                         </div>
                         <div class="pagination">
                             <button type="button" class="page-btn" disabled><span class="material-symbols-outlined">chevron_left</span></button>

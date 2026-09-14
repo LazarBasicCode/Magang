@@ -197,7 +197,8 @@
 
             /* Lock the page to exactly one screen on desktop: no leftover
                space at the bottom, and nothing to scroll down into. */
-            html, body {
+            html,
+            body {
                 height: 100%;
                 overflow: hidden;
             }
@@ -870,8 +871,15 @@
                         <p class="sub">Masukkan Username, NIM, atau NIDN dan kata sandi untuk masuk ke sistem akademik.
                         </p>
 
-                        <form id="loginForm" style="margin-top:1.5rem; display:flex; flex-direction:column; gap:1.1rem;"
-                            onsubmit="event.preventDefault();">
+                        <form id="loginForm" method="POST" action="{{ url('/login-process') }}" style="margin-top:1.5rem; display:flex; flex-direction:column; gap:1.1rem;">
+                            @csrf
+                            <!-- Sisa input field Anda biarkan sama -->
+                            @error('username')
+                            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 10px 14px; border-radius: 10px; font-size: 0.75rem; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span>{{ $message }}</span>
+                            </div>
+                            @enderror
                             <div class="field">
                                 <label for="usernameInput">User / NIM / NIDN</label>
                                 <div class="field-wrap">
@@ -963,7 +971,7 @@
 
     <script>
         // ---------- Splash loader: show ~1.8s, then fade out and start the reveal sequence ----------
-        (function () {
+        (function() {
             var overlay = document.getElementById('siteLoaderOverlay');
             var LOADER_DURATION = 1800; // ms — tune between 1500-2000 as needed
 
@@ -973,15 +981,17 @@
                 overlay.addEventListener('transitionend', function handler() {
                     overlay.remove();
                     overlay.removeEventListener('transitionend', handler);
-                }, { once: true });
+                }, {
+                    once: true
+                });
             }
 
-            window.addEventListener('load', function () {
+            window.addEventListener('load', function() {
                 setTimeout(dismissLoader, LOADER_DURATION);
             });
 
             // Fallback in case the 'load' event never fires for some reason
-            setTimeout(function () {
+            setTimeout(function() {
                 if (document.body.contains(overlay)) dismissLoader();
             }, LOADER_DURATION + 3000);
         })();
@@ -1007,8 +1017,13 @@
             hide.classList.add('fade-hidden');
             show.classList.remove('fade-hidden');
         }
-        goToForgotBtn.addEventListener('click', (e) => { e.preventDefault(); swap(forgotSection, loginSection); });
-        backToLoginBtn.addEventListener('click', () => { swap(loginSection, forgotSection); });
+        goToForgotBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            swap(forgotSection, loginSection);
+        });
+        backToLoginBtn.addEventListener('click', () => {
+            swap(loginSection, forgotSection);
+        });
 
         // Simple light/dark accent toggle (visual only, keeps single cohesive theme)
         const themeToggleBtn = document.getElementById('themeToggleBtn');
@@ -1039,8 +1054,8 @@
                 x: Math.random() * width,
                 y: randomY ? Math.random() * height : height + r + Math.random() * 200,
                 r,
-                speed: 10 + Math.random() * 22,      // px per second
-                drift: (Math.random() - 0.5) * 14,   // horizontal sway amplitude
+                speed: 10 + Math.random() * 22, // px per second
+                drift: (Math.random() - 0.5) * 14, // horizontal sway amplitude
                 driftSpeed: 0.4 + Math.random() * 0.6,
                 phase: Math.random() * Math.PI * 2,
                 alpha: 0.06 + Math.random() * 0.16,
@@ -1049,10 +1064,13 @@
 
         function initBubbles() {
             const count = Math.round((width * height) / 26000);
-            bubbles = Array.from({ length: Math.max(24, Math.min(count, 70)) }, () => makeBubble(true));
+            bubbles = Array.from({
+                length: Math.max(24, Math.min(count, 70))
+            }, () => makeBubble(true));
         }
 
         let lastTime = null;
+
         function tick(now) {
             if (lastTime === null) lastTime = now;
             const dt = Math.min((now - lastTime) / 1000, 0.05); // clamp to avoid big jumps (no jank on tab refocus)
@@ -1082,7 +1100,10 @@
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         resize();
         initBubbles();
-        window.addEventListener('resize', () => { resize(); initBubbles(); });
+        window.addEventListener('resize', () => {
+            resize();
+            initBubbles();
+        });
         if (!prefersReducedMotion) {
             requestAnimationFrame(tick);
         }

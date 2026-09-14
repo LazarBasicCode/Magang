@@ -1434,19 +1434,16 @@
             ========================================================== */
         @media (max-width: 1023px) {
 
-            /* Sembunyikan Sidebar ke luar layar kiri */
             .app-sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
             }
 
-            /* Tampilkan Sidebar saat status open */
             .app-sidebar.is-open {
                 transform: translateX(0);
             }
 
-            /* Penyesuaian Main Content & Header agar memenuhi layar */
             .app-content {
                 margin-left: 0;
             }
@@ -1455,13 +1452,13 @@
                 left: 0;
             }
 
-            /* Tampilkan Tombol Hamburger di Navbar */
+            /* Tombol Hamburger di Navbar */
             .sidebar-toggle-btn {
                 display: flex;
                 margin-right: 8px;
             }
 
-            /* Tampilkan Tombol Close di Sidebar Header */
+            /* Tombol Close di Sidebar Header */
             .sidebar-brand {
                 justify-content: space-between;
             }
@@ -2054,9 +2051,10 @@
             </div>
         </main>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <script>
-        // Custom dropdown behavior
+        // Custom Dropdown
         const dropdowns = document.querySelectorAll('[data-dropdown]');
 
         dropdowns.forEach((dropdown) => {
@@ -2087,6 +2085,7 @@
             dropdowns.forEach((d) => d.classList.remove('is-open'));
         });
 
+        // Reset Dropdown
         function resetDropdown(dropdown) {
             if (!dropdown) return;
             const options = dropdown.querySelectorAll('.dropdown-option');
@@ -2118,7 +2117,7 @@
             }
         });
 
-        // Sidebar Drawer Toggle Logic
+        // SIDEBAR Drawer Toggle Logic
         const sidebar = document.querySelector('.app-sidebar');
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
@@ -2151,25 +2150,20 @@
         // Dark Mode Toggle Logic
         const themeToggleBtn = document.getElementById('themeToggleBtn');
         const themeIcon = document.getElementById('themeIcon');
-
         // 1. Cek preferensi tema sebelumnya dari LocalStorage
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
             document.body.classList.add('dark-mode');
             if (themeIcon) themeIcon.textContent = 'light_mode';
         }
-
         // 2. Event listener klik tombol
         themeToggleBtn?.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
-
             const isDark = document.body.classList.contains('dark-mode');
-
             // Ubah ikon antara Bulan (dark_mode) dan Matahari (light_mode)
             if (themeIcon) {
                 themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
             }
-
             // Simpan pilihan user agar tidak hilang saat reload halaman
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         });

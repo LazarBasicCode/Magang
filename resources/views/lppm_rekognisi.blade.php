@@ -1687,6 +1687,7 @@
             </div>
         </main>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Script fungsionalitas UI -->
     <script>
@@ -1714,6 +1715,68 @@
                     dropdown.classList.remove('is-open');
                 });
             });
+        });
+
+        // Reset Dropdown
+        function resetDropdown(dropdown) {
+            if (!dropdown) return;
+            const options = dropdown.querySelectorAll('.dropdown-option');
+            const valueEl = dropdown.querySelector('.dropdown-value');
+            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+            options.forEach((o, i) => {
+                o.classList.toggle('is-selected', i === 0);
+                if (i === 0) {
+                    valueEl.textContent = o.textContent.trim();
+                    if (hiddenInput) hiddenInput.value = o.dataset.value;
+                }
+            });
+        }
+
+        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+            document.querySelectorAll('[data-dropdown]').forEach(resetDropdown);
+            const search = document.getElementById('filter-search');
+            if (search) search.value = '';
+        });
+
+        document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
+            const btn = document.getElementById('btn-apply-filter');
+            if (btn) {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 400);
+            }
+        });
+
+        // SIDEBAR Drawer Toggle Logic
+        const sidebar = document.querySelector('.app-sidebar');
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function openSidebar() {
+            sidebar.classList.add('is-open');
+            sidebarOverlay.classList.add('is-active');
+            document.body.style.overflow = 'hidden'; // Mencegah scroll pada body saat sidebar terbuka
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            sidebarOverlay.classList.remove('is-active');
+            document.body.style.overflow = '';
+        }
+
+        // Event Listeners
+        sidebarToggleBtn?.addEventListener('click', openSidebar);
+        sidebarCloseBtn?.addEventListener('click', closeSidebar);
+        sidebarOverlay?.addEventListener('click', closeSidebar);
+
+        // Otomatis menutup sidebar jika ukuran window diperbesar kembali ke mode desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                closeSidebar();
+            }
         });
 
         document.addEventListener('click', () => {

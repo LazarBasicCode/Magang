@@ -26,11 +26,10 @@
         .datepicker.is-open .datepicker-trigger .dp-icon { color: var(--primary); }
 
         .datepicker-panel {
-            position: absolute; top: calc(100% + 6px); left: 0; z-index: 90; width: 268px;
+            position: fixed; z-index: 1000; width: 268px;
             background: var(--card); border: 1px solid var(--border-strong); border-radius: 12px;
-            box-shadow: 0 16px 34px rgba(31, 41, 66, 0.22); padding: 12px; display: none;
+            box-shadow: 0 16px 34px rgba(31, 41, 66, 0.28); padding: 12px; display: none;
         }
-        .datepicker.is-open .datepicker-panel { display: block; }
         .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
         .dp-month-label { font-size: 13px; font-weight: 700; color: var(--ink); text-transform: capitalize; }
         .dp-nav {
@@ -558,6 +557,10 @@
             const todayBtn = rootEl.querySelector('.dp-today-btn');
             const clearBtn = rootEl.querySelector('.dp-clear-btn');
 
+            // Pindahkan panel kalender ke <body> supaya posisinya lepas dari overflow modal
+            // dan tidak pernah menggeser/mengubah ukuran modal saat dibuka.
+            document.body.appendChild(panel);
+
             let selected = null;
             let minDate = null;
             const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -593,6 +596,22 @@
                 }
             }
 
+            function positionPanel() {
+                const rect = trigger.getBoundingClientRect();
+                const panelWidth = panel.offsetWidth || 268;
+                let left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
+                left = Math.max(8, left);
+                panel.style.left = left + 'px';
+
+                const panelHeight = panel.offsetHeight;
+                let top = rect.bottom + 6;
+                if (top + panelHeight > window.innerHeight - 8) {
+                    const above = rect.top - panelHeight - 6;
+                    top = above > 8 ? above : Math.max(8, window.innerHeight - panelHeight - 8);
+                }
+                panel.style.top = top + 'px';
+            }
+
             function selectDate(dateObj) {
                 selected = dateObj;
                 hiddenInput.value = toISO(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
@@ -611,17 +630,26 @@
             }
 
             function openPanel() {
-                document.querySelectorAll('.datepicker.is-open, .dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
+                closeAllDatepickers();
+                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
                 view = selected ? { year: selected.getFullYear(), month: selected.getMonth() } : { year: today.getFullYear(), month: today.getMonth() };
                 render();
+                panel.style.display = 'block';
+                positionPanel();
                 rootEl.classList.add('is-open');
+                activeDatepickers.add(api);
             }
-            function closePanel() { rootEl.classList.remove('is-open'); }
+            function closePanel() {
+                panel.style.display = 'none';
+                rootEl.classList.remove('is-open');
+                activeDatepickers.delete(api);
+            }
 
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const wasOpen = rootEl.classList.contains('is-open');
-                document.querySelectorAll('.datepicker.is-open, .dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
+                closeAllDatepickers();
+                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
                 if (!wasOpen) openPanel();
             });
             panel.addEventListener('click', (e) => e.stopPropagation());
@@ -632,7 +660,12 @@
 
             render();
 
-            return {
+            const api = {
+                el: rootEl,
+                panel,
+                isOpen: () => rootEl.classList.contains('is-open'),
+                close: closePanel,
+                reposition: positionPanel,
                 setValue(iso) {
                     const d = parseISO(iso);
                     if (d) { selected = d; valueEl.textContent = formatDisplayDate(d); valueEl.classList.add('has-value'); hiddenInput.value = iso; }
@@ -641,10 +674,26 @@
                 setMinDate(iso) { minDate = parseISO(iso); },
                 clear,
             };
+            return api;
         }
+
+        const activeDatepickers = new Set();
+        function closeAllDatepickers() { activeDatepickers.forEach((dp) => dp.close()); }
 
         const dpMulai = createDatepicker(document.getElementById('dp-tanggal_mulai'));
         const dpSelesai = createDatepicker(document.getElementById('dp-tanggal_selesai'));
+
+        // Tutup kalender saat klik di luar trigger maupun panel (panel kini ada di <body>)
+        document.addEventListener('click', (e) => {
+            [dpMulai, dpSelesai].forEach((dp) => {
+                if (!dp.isOpen()) return;
+                if (dp.el.contains(e.target) || dp.panel.contains(e.target)) return;
+                dp.close();
+            });
+        });
+        // Reposisi ulang kalender saat window di-resize atau ada scroll di mana pun (termasuk isi modal)
+        window.addEventListener('resize', () => activeDatepickers.forEach((dp) => dp.reposition()));
+        document.addEventListener('scroll', () => activeDatepickers.forEach((dp) => dp.reposition()), true);
 
         // Tanggal selesai tidak boleh sebelum tanggal mulai
         document.getElementById('dp-tanggal_mulai').addEventListener('datepicker:change', (e) => {

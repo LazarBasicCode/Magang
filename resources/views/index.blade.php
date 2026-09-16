@@ -891,7 +891,7 @@
         <div class="panel left-panel">
             <div class="brand-row reveal d1">
                 <div>
-                    <span class="badge"><i class="fa-solid fa-circle-nodes"></i> SIAKAD v2.4 &middot; 2026</span>
+                    <span class="badge"><i class="fa-solid fa-circle-nodes"></i> masih beta &middot; 2026</span>
                     <p style="font-size:.72rem;color:rgba(191,219,254,.75);margin:.35rem 0 0;font-weight:500;">Sistem
                         Informasi Akademik &amp; Kemahasiswaan</p>
                 </div>
@@ -936,7 +936,7 @@
         <div class="panel right-panel">
 
             <div class="status-row reveal d2">
-                <span class="live-pill"><span class="live-dot"></span> Server SIAKAD aktif</span>
+                <span class="live-pill"><span class="live-dot"></span> Server aktif</span>
                 <button class="theme-btn" id="themeToggleBtn" type="button" title="Ubah mode tampilan">
                     <i class="fa-solid fa-moon"></i> Mode
                 </button>

@@ -13,6 +13,10 @@ Route::get('/', function () {
     return view('index');
 })->name('login');
 
+Route::get('/r', function () {
+    return view('data_master_users');
+})->name('login');
+
 // Rute Pemrosesan Login & Logout
 Route::post('/login-process', [AuthController::class, 'loginProcess']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -47,4 +51,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/kerja-sama', [KerjaSamaController::class, 'store'])->name('kerja-sama.store');
     Route::put('/kerja-sama/{kerjaSama}', [KerjaSamaController::class, 'update'])->name('kerja-sama.update');
     Route::delete('/kerja-sama/{kerjaSama}', [KerjaSamaController::class, 'destroy'])->name('kerja-sama.destroy');
+
+
 });

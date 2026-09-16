@@ -5,12 +5,13 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap"
         rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <title>Kemahasiswaan &middot; SIDA</title>
 </head>
 
@@ -36,21 +37,21 @@
                     <span>Dashboard</span>
                 </a>
 
-                <a href="#" aria-current="page" class="nav-link is-active">
+                <a href="{{ url('/kemahasiswaan') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">school</span>
                     <span>Kemahasiswaan</span>
                 </a>
 
                 <div class="nav-heading">LPPM</div>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
                     <span class="material-symbols-outlined">person</span>
                     <span>Mahasiswa</span>
                 </a>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/lppm/dosen') }}" class="nav-link">
                     <span class="material-symbols-outlined">co_present</span>
                     <span>Dosen</span>
                 </a>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
                     <span class="material-symbols-outlined">workspace_premium</span>
                     <span>Rekognisi</span>
                 </a>
@@ -120,7 +121,7 @@
                         <p class="page-subtitle">Pendataan kegiatan akademik, non-akademik, inbis, dan kompetisi
                             &middot; Tahun Akademik 2025/2026 (Genap)</p>
                     </div>
-                    <button type="button" class="btn-primary">
+                    <button type="button" class="btn-primary" id="btnTambahKegiatan">
                         <span class="material-symbols-outlined">add</span>
                         <span>Tambah Kegiatan</span>
                     </button>
@@ -131,10 +132,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Total Kegiatan</span>
-                            <span class="stat-value">48</span>
-                            <span class="stat-delta up">
-                                <span class="material-symbols-outlined">arrow_upward</span>12% bulan ini
-                            </span>
+                            <span class="stat-value">{{ $stats['total'] }}</span>
                         </div>
                         <div class="stat-icon primary">
                             <span class="material-symbols-outlined">emoji_events</span>
@@ -143,39 +141,35 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Tingkat Nasional</span>
-                            <span class="stat-value">27</span>
-                            <span class="stat-delta neutral">56% dari total</span>
+                            <span class="stat-value">{{ $stats['nasional'] }}</span>
                         </div>
-                        <div class="stat-icon warning">
+                        <div class="stat-icon primary">
                             <span class="material-symbols-outlined">flag</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Tingkat Internasional</span>
-                            <span class="stat-value">9</span>
-                            <span class="stat-delta neutral">19% dari total</span>
+                            <span class="stat-value">{{ $stats['internasional'] }}</span>
                         </div>
-                        <div class="stat-icon info">
+                        <div class="stat-icon primary">
                             <span class="material-symbols-outlined">public</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Unit Inbis</span>
-                            <span class="stat-value">12</span>
-                            <span class="stat-delta neutral">25% dari total</span>
+                            <span class="stat-value">{{ $stats['inbis'] }}</span>
                         </div>
-                        <div class="stat-icon success">
+                        <div class="stat-icon primary">
                             <span class="material-symbols-outlined">storefront</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- FILTER BAR -->
+                <!-- FILTER BAR (tampilan saja untuk saat ini, belum disambung ke query) -->
                 <div class="filter-card">
                     <div class="filter-grid">
-                        <!-- Jenis -->
                         <div class="field">
                             <label class="field-label">Jenis Divisi</label>
                             <div class="dropdown" data-dropdown>
@@ -194,7 +188,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Tab -->
                         <div class="field">
                             <label class="field-label">Kategori Tab</label>
                             <div class="dropdown" data-dropdown>
@@ -213,7 +206,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Tingkat -->
                         <div class="field">
                             <label class="field-label">Tingkat Capaian</label>
                             <div class="dropdown" data-dropdown>
@@ -234,7 +226,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Tahun (locked) -->
                         <div class="field">
                             <label class="field-label">Tahun Akademik</label>
                             <div class="field-locked">
@@ -244,7 +235,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Search -->
                         <div class="field field-search-wide">
                             <label class="field-label" for="filter-search">Pencarian Cepat</label>
                             <div class="field-control">
@@ -278,10 +268,6 @@
                                 <span class="material-symbols-outlined">density_small</span>
                                 <span>Kepadatan</span>
                             </button>
-                            <button type="button" class="tool-btn">
-                                <span class="material-symbols-outlined">view_column</span>
-                                <span>Kolom</span>
-                            </button>
                         </div>
                     </div>
 
@@ -300,291 +286,201 @@
                                     <th class="center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Row 1 -->
-                                <tr>
-                                    <td><span class="nim-code">222011005</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-primary">AR</div>
-                                            <div class="student-name">
-                                                <span class="name">Ahmad Rizal Fauzi</span>
-                                                <span class="prodi">Teknik Informatika</span>
+                            <tbody id="kegiatanTableBody">
+                                @forelse($kegiatan as $item)
+                                    @php
+                                        $nama = optional($item->mahasiswa->user)->name ?? 'Tanpa Nama';
+                                        $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                        $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                        $avatarColor = $colors[$item->mahasiswa_id % count($colors)];
+                                    @endphp
+                                    <tr data-id="{{ $item->id }}">
+                                        <td><span class="nim-code">{{ $item->mahasiswa->nim ?? '-' }}</span></td>
+                                        <td>
+                                            <div class="student-cell">
+                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                                <div class="student-name">
+                                                    <span class="name">{{ $nama }}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title"
-                                            title="Juara 1 Kompetisi UI/UX Design Nasional TECHFEST 2026">Juara 1
-                                            Kompetisi UI/UX Design Nasional TECHFEST 2026</span>
-                                    </td>
-                                    <td class="center"><span class="plain-text">kemahasiswaan</span></td>
-                                    <td class="center"><span class="plain-text">akademik</span></td>
-                                    <td class="center">
-                                        <span class="plain-text">nasional
-                                        </span>
-                                    </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
-                                    <td class="center">
-                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
-                                            class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Row 2 -->
-                                <tr>
-                                    <td><span class="nim-code">232012014</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-info">SN</div>
-                                            <div class="student-name">
-                                                <span class="name">Siti Nurhaliza Putri</span>
-                                                <span class="prodi">Sistem Informasi</span>
+                                        </td>
+                                        <td>
+                                            <span class="activity-title" title="{{ $item->nama_kegiatan }}">{{ $item->nama_kegiatan }}</span>
+                                        </td>
+                                        <td class="center"><span class="plain-text">{{ $item->jenis }}</span></td>
+                                        <td class="center"><span class="plain-text">{{ $item->tab }}</span></td>
+                                        <td class="center"><span class="plain-text">{{ $item->tingkat }}</span></td>
+                                        <td class="center"><span class="year-chip">{{ $item->tahun }}</span></td>
+                                        <td class="center">
+                                            <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer"
+                                                class="evidence-link">
+                                                <span class="material-symbols-outlined">cloud</span>
+                                                <span>Lihat Bukti</span>
+                                            </a>
+                                        </td>
+                                        <td class="center">
+                                            <div class="row-actions">
+                                                <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                                                    data-id="{{ $item->id }}"
+                                                    data-mahasiswa_id="{{ $item->mahasiswa_id }}"
+                                                    data-jenis="{{ $item->jenis }}"
+                                                    data-tab="{{ $item->tab }}"
+                                                    data-tingkat="{{ $item->tingkat }}"
+                                                    data-tahun="{{ $item->tahun }}"
+                                                    data-nama_kegiatan="{{ urlencode($item->nama_kegiatan) }}"
+                                                    data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}">
+                                                    <span class="material-symbols-outlined">edit</span>
+                                                </button>
+                                                <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
+                                                    data-id="{{ $item->id }}">
+                                                    <span class="material-symbols-outlined">delete</span>
+                                                </button>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title"
-                                            title="Pendanaan Startup Inbis: Smart Agrotech IoT">Pendanaan Startup
-                                            Inbis: Smart Agrotech IoT</span>
-                                    </td>
-                                    <td class="center"><span class="plain-text">inbis</span></td>
-                                    <td class="center"><span class="plain-text">akademik</span></td>
-                                    <td class="center">
-                                        <span class="plain-text">nasional
-                                        </span>
-                                    </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
-                                    <td class="center">
-                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
-                                            class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Row 3 -->
-                                <tr>
-                                    <td><span class="nim-code">211009088</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-warning">KA</div>
-                                            <div class="student-name">
-                                                <span class="name">Kevin Ardiansyah</span>
-                                                <span class="prodi">Desain Komunikasi Visual</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title"
-                                            title="Juara 2 Debat Bahasa Inggris Tingkat Internasional NUDC">Juara 2
-                                            Debat Bahasa Inggris Tingkat Internasional NUDC</span>
-                                    </td>
-                                    <td class="center"><span class="plain-text">kemahasiswaan</span></td>
-                                    <td class="center"><span class="plain-text">non_akademik</span></td>
-                                    <td class="center">
-                                        <span class="plain-text">internasional
-                                        </span>
-                                    </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
-                                    <td class="center">
-                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
-                                            class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Row 4 -->
-                                <tr>
-                                    <td><span class="nim-code">201007044</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-danger">RP</div>
-                                            <div class="student-name">
-                                                <span class="name">Rafi Pratama Wijaya</span>
-                                                <span class="prodi">Teknik Informatika</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title"
-                                            title="Publikasi Jurnal Nasional Terakreditasi SINTA 2 Bidang AI">Publikasi
-                                            Jurnal Nasional Terakreditasi SINTA 2 Bidang AI</span>
-                                    </td>
-                                    <td class="center"><span class="plain-text">kemahasiswaan</span></td>
-                                    <td class="center"><span class="plain-text">akademik</span></td>
-                                    <td class="center">
-                                        <span class="plain-text">nasional
-                                        </span>
-                                    </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
-                                    <td class="center">
-                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
-                                            class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Row 5 -->
-                                <tr>
-                                    <td><span class="nim-code">212010071</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-success">DM</div>
-                                            <div class="student-name">
-                                                <span class="name">Dinda Maharani</span>
-                                                <span class="prodi">Manajemen Informatika</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title"
-                                            title="Finalis Hackathon Nasional BUMN Innovation Week 2026">Finalis
-                                            Hackathon Nasional BUMN Innovation Week 2026</span>
-                                    </td>
-                                    <td class="center"><span class="plain-text">kemahasiswaan</span></td>
-                                    <td class="center"><span class="plain-text">akademik</span></td>
-                                    <td class="center">
-                                        <span class="plain-text">nasional
-                                        </span>
-                                    </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
-                                    <td class="center">
-                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
-                                            class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Row 6 -->
-                                <tr>
-                                    <td><span class="nim-code">202011099</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-primary">CJ</div>
-                                            <div class="student-name">
-                                                <span class="name">Clara Jessica</span>
-                                                <span class="prodi">Akuntansi &amp; Inbis</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title"
-                                            title="Inkubasi Bisnis Mahasiswa Kemenpora 2026">Inkubasi Bisnis
-                                            Mahasiswa Kemenpora 2026</span>
-                                    </td>
-                                    <td class="center"><span class="plain-text">inbis</span></td>
-                                    <td class="center"><span class="plain-text">non_akademik</span></td>
-                                    <td class="center">
-                                        <span class="plain-text">lokal
-                                        </span>
-                                    </td>
-                                    <td class="center"><span class="year-chip">2026</span></td>
-                                    <td class="center">
-                                        <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer"
-                                            class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr id="emptyRow">
+                                        <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                            Belum ada data kegiatan. Klik "Tambah Kegiatan" untuk mulai mengisi.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- FOOTER: pagination -->
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>1-6</strong> dari <strong>48</strong> data kegiatan mahasiswa tahun
-                            <span class="highlight">2026</span>
+                            Menampilkan <strong>{{ $kegiatan->firstItem() ?? 0 }}-{{ $kegiatan->lastItem() ?? 0 }}</strong>
+                            dari <strong>{{ $kegiatan->total() }}</strong> data kegiatan mahasiswa
                         </div>
-                        <div class="pagination">
-                            <button type="button" class="page-btn" disabled>
-                                <span class="material-symbols-outlined">chevron_left</span>
-                            </button>
-                            <button type="button" class="page-btn is-active">1</button>
-                            <button type="button" class="page-btn">2</button>
-                            <button type="button" class="page-btn">3</button>
-                            <span class="page-ellipsis">&hellip;</span>
-                            <button type="button" class="page-btn">8</button>
-                            <button type="button" class="page-btn">
-                                <span class="material-symbols-outlined">chevron_right</span>
-                            </button>
-                        </div>
+                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $kegiatan->links() }}
+                             setelah view paginator kamu disesuaikan dengan desain ini. --}}
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+    <!-- ============ MODAL: Tambah / Edit Kegiatan ============ -->
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-card" id="kegiatanModal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-drag-handle" id="modalDragHandle">
+            <div>
+                <h3 class="modal-title" id="modalTitle">Tambah Kegiatan</h3>
+                <p class="modal-subtitle">Isi detail prestasi/kegiatan mahasiswa</p>
+            </div>
+            <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Tutup">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="kegiatanForm" class="modal-body">
+            <input type="hidden" id="form-id" value="">
+
+            <div class="field">
+                <label class="field-label">Mahasiswa</label>
+                <div class="dropdown" data-dropdown id="dd-mahasiswa">
+                    <input type="hidden" id="form-mahasiswa_id" value="" />
+                    <button type="button" class="dropdown-trigger">
+                        <span class="dropdown-value">Pilih mahasiswa...</span>
+                        <span class="material-symbols-outlined caret">expand_more</span>
+                    </button>
+                    <div class="dropdown-panel">
+                        @foreach($mahasiswaList as $m)
+                            <button type="button" class="dropdown-option" data-value="{{ $m->id }}">{{ $m->nim }} &mdash; {{ optional($m->user)->name ?? '-' }}</button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label">Jenis Kegiatan</label>
+                    <div class="dropdown" data-dropdown id="dd-jenis">
+                        <input type="hidden" id="form-jenis" value="kemahasiswaan" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">Kemahasiswaan</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="kemahasiswaan">Kemahasiswaan</button>
+                            <button type="button" class="dropdown-option" data-value="inbis">Inbis (Inkubator Bisnis)</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label">Kategori Tab</label>
+                    <div class="dropdown" data-dropdown id="dd-tab">
+                        <input type="hidden" id="form-tab" value="akademik" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">Akademik</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="akademik">Akademik</button>
+                            <button type="button" class="dropdown-option" data-value="non_akademik">Non Akademik</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label">Tingkat Capaian</label>
+                    <div class="dropdown" data-dropdown id="dd-tingkat">
+                        <input type="hidden" id="form-tingkat" value="lokal" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">Lokal (Kota/Wilayah)</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="lokal">Lokal (Kota/Wilayah)</button>
+                            <button type="button" class="dropdown-option" data-value="nasional">Nasional (RI)</button>
+                            <button type="button" class="dropdown-option" data-value="internasional">Internasional (Global)</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-tahun">Tahun</label>
+                    <div class="field-control">
+                        <input id="form-tahun" type="number" min="2000" max="2100" value="2026" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="form-nama_kegiatan">Nama Kegiatan</label>
+                <div class="field-control">
+                    <input id="form-nama_kegiatan" type="text" placeholder="Contoh: Juara 1 Kompetisi UI/UX Nasional" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="form-bukti_kegiatan">Link Bukti Kegiatan</label>
+                <div class="field-control">
+                    <input id="form-bukti_kegiatan" type="url" placeholder="https://drive.google.com/..." required>
+                </div>
+            </div>
+
+            <div class="modal-error" id="modalError" hidden></div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" id="modalCancelBtn">Batal</button>
+                <button type="submit" class="btn-apply" id="modalSubmitBtn">
+                    <span class="material-symbols-outlined">save</span>
+                    <span>Simpan</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
     <script>
-        // Custom Dropdown
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+        // ---------------- Custom Dropdown (dipakai di filter bar & modal) ----------------
         const dropdowns = document.querySelectorAll('[data-dropdown]');
 
         dropdowns.forEach((dropdown) => {
@@ -615,7 +511,26 @@
             dropdowns.forEach((d) => d.classList.remove('is-open'));
         });
 
-        // Reset Dropdown
+        function selectDropdownValue(dropdownEl, value) {
+            if (!dropdownEl) return;
+            const options = dropdownEl.querySelectorAll('.dropdown-option');
+            const valueEl = dropdownEl.querySelector('.dropdown-value');
+            const hiddenInput = dropdownEl.querySelector('input[type="hidden"]');
+            let matched = false;
+            options.forEach((o) => {
+                const isMatch = o.dataset.value === String(value);
+                o.classList.toggle('is-selected', isMatch);
+                if (isMatch) {
+                    valueEl.textContent = o.textContent.trim();
+                    matched = true;
+                }
+            });
+            if (hiddenInput) hiddenInput.value = matched ? value : '';
+            if (!matched && options.length) {
+                valueEl.textContent = dropdownEl.id === 'dd-mahasiswa' ? 'Pilih mahasiswa...' : options[0].textContent.trim();
+            }
+        }
+
         function resetDropdown(dropdown) {
             if (!dropdown) return;
             const options = dropdown.querySelectorAll('.dropdown-option');
@@ -631,7 +546,7 @@
         }
 
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            document.querySelectorAll('[data-dropdown]').forEach(resetDropdown);
+            document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
             const search = document.getElementById('filter-search');
             if (search) search.value = '';
         });
@@ -641,13 +556,11 @@
             if (btn) {
                 const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                }, 400);
+                setTimeout(() => { btn.innerHTML = originalHTML; }, 400);
             }
         });
 
-        // SIDEBAR Drawer Toggle Logic
+        // ---------------- Sidebar Drawer ----------------
         const sidebar = document.querySelector('.app-sidebar');
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
@@ -656,47 +569,272 @@
         function openSidebar() {
             sidebar.classList.add('is-open');
             sidebarOverlay.classList.add('is-active');
-            document.body.style.overflow = 'hidden'; // Mencegah scroll pada body saat sidebar terbuka
+            document.body.style.overflow = 'hidden';
         }
-
         function closeSidebar() {
             sidebar.classList.remove('is-open');
             sidebarOverlay.classList.remove('is-active');
             document.body.style.overflow = '';
         }
-
-        // Event Listeners
         sidebarToggleBtn?.addEventListener('click', openSidebar);
         sidebarCloseBtn?.addEventListener('click', closeSidebar);
         sidebarOverlay?.addEventListener('click', closeSidebar);
+        window.addEventListener('resize', () => { if (window.innerWidth >= 1024) closeSidebar(); });
 
-        // Otomatis menutup sidebar jika ukuran window diperbesar kembali ke mode desktop
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024) {
-                closeSidebar();
-            }
-        });
-
-        // Dark Mode Toggle Logic
+        // ---------------- Dark Mode ----------------
         const themeToggleBtn = document.getElementById('themeToggleBtn');
         const themeIcon = document.getElementById('themeIcon');
-        // 1. Cek preferensi tema sebelumnya dari LocalStorage
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
             document.body.classList.add('dark-mode');
             if (themeIcon) themeIcon.textContent = 'light_mode';
         }
-        // 2. Event listener klik tombol
         themeToggleBtn?.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
-            // Ubah ikon antara Bulan (dark_mode) dan Matahari (light_mode)
-            if (themeIcon) {
-                themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
-            }
-            // Simpan pilihan user agar tidak hilang saat reload halaman
+            if (themeIcon) themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+
+        // ================================================================
+        // MODAL: buka/tutup, drag, dan CRUD via fetch (tanpa reload halaman)
+        // ================================================================
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalCard = document.getElementById('kegiatanModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalForm = document.getElementById('kegiatanForm');
+        const modalError = document.getElementById('modalError');
+        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const btnTambah = document.getElementById('btnTambahKegiatan');
+        const tableBody = document.getElementById('kegiatanTableBody');
+        const dragHandle = document.getElementById('modalDragHandle');
+
+        function openModal(mode, data = {}) {
+            modalForm.reset();
+            modalError.hidden = true;
+
+            // pastikan posisi drag sebelumnya tidak terbawa; kembali ke tengah layar
+            modalCard.style.left = '';
+            modalCard.style.top = '';
+            modalCard.style.transform = '';
+
+            document.getElementById('form-id').value = data.id || '';
+            modalTitle.textContent = mode === 'edit' ? 'Edit Kegiatan' : 'Tambah Kegiatan';
+
+            selectDropdownValue(document.getElementById('dd-mahasiswa'), data.mahasiswa_id || '');
+            selectDropdownValue(document.getElementById('dd-jenis'), data.jenis || 'kemahasiswaan');
+            selectDropdownValue(document.getElementById('dd-tab'), data.tab || 'akademik');
+            selectDropdownValue(document.getElementById('dd-tingkat'), data.tingkat || 'lokal');
+
+            document.getElementById('form-tahun').value = data.tahun || 2026;
+            document.getElementById('form-nama_kegiatan').value = data.nama_kegiatan ? decodeURIComponent(data.nama_kegiatan) : '';
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+
+            modalBackdrop.classList.add('is-active');
+            modalCard.classList.add('is-active');
+            modalCard.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() {
+            modalBackdrop.classList.remove('is-active');
+            modalCard.classList.remove('is-active');
+            modalCard.setAttribute('aria-hidden', 'true');
+        }
+
+        btnTambah?.addEventListener('click', () => openModal('create'));
+        modalCloseBtn.addEventListener('click', closeModal);
+        modalCancelBtn.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', closeModal);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal();
+        });
+
+        // ---- Drag modal lewat header (pointer events -> jalan di mouse & touch) ----
+        let dragState = null;
+
+        dragHandle.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.modal-close-btn')) return;
+            const rect = modalCard.getBoundingClientRect();
+            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
+            modalCard.style.left = rect.left + 'px';
+            modalCard.style.top = rect.top + 'px';
+            modalCard.style.transform = 'none';
+            modalCard.classList.add('is-dragging');
+            dragHandle.setPointerCapture(e.pointerId);
+        });
+        dragHandle.addEventListener('pointermove', (e) => {
+            if (!dragState) return;
+            const dx = e.clientX - dragState.startX;
+            const dy = e.clientY - dragState.startY;
+            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8;
+            const maxTop = window.innerHeight - modalCard.offsetHeight - 8;
+            const newLeft = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft));
+            const newTop = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop));
+            modalCard.style.left = newLeft + 'px';
+            modalCard.style.top = newTop + 'px';
+        });
+        function endDrag(e) {
+            if (!dragState) return;
+            dragState = null;
+            modalCard.classList.remove('is-dragging');
+            try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+        dragHandle.addEventListener('pointerup', endDrag);
+        dragHandle.addEventListener('pointercancel', endDrag);
+
+        // ---- Bangun/ganti/hapus baris tabel dari data JSON (tanpa reload) ----
+        function initials(name) {
+            return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
+        }
+        function avatarColor(mahasiswaId) {
+            const colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+            return colors[Number(mahasiswaId) % colors.length];
+        }
+        function esc(str) {
+            const div = document.createElement('div');
+            div.textContent = str ?? '';
+            return div.innerHTML;
+        }
+        function buildRowHTML(item) {
+            return `
+            <tr data-id="${item.id}">
+                <td><span class="nim-code">${esc(item.nim)}</span></td>
+                <td>
+                    <div class="student-cell">
+                        <div class="avatar ${avatarColor(item.mahasiswa_id)}">${esc(initials(item.nama))}</div>
+                        <div class="student-name"><span class="name">${esc(item.nama)}</span></div>
+                    </div>
+                </td>
+                <td><span class="activity-title" title="${esc(item.nama_kegiatan)}">${esc(item.nama_kegiatan)}</span></td>
+                <td class="center"><span class="plain-text">${esc(item.jenis)}</span></td>
+                <td class="center"><span class="plain-text">${esc(item.tab)}</span></td>
+                <td class="center"><span class="plain-text">${esc(item.tingkat)}</span></td>
+                <td class="center"><span class="year-chip">${esc(item.tahun)}</span></td>
+                <td class="center">
+                    <a href="${esc(item.bukti_kegiatan)}" target="_blank" rel="noopener noreferrer" class="evidence-link">
+                        <span class="material-symbols-outlined">cloud</span><span>Lihat Bukti</span>
+                    </a>
+                </td>
+                <td class="center">
+                    <div class="row-actions">
+                        <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                            data-id="${item.id}" data-mahasiswa_id="${item.mahasiswa_id}" data-jenis="${item.jenis}"
+                            data-tab="${item.tab}" data-tingkat="${item.tingkat}" data-tahun="${item.tahun}"
+                            data-nama_kegiatan="${encodeURIComponent(item.nama_kegiatan)}"
+                            data-bukti_kegiatan="${encodeURIComponent(item.bukti_kegiatan)}">
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>
+                </td>
+            </tr>`.trim();
+        }
+        function insertRow(item) {
+            document.getElementById('emptyRow')?.remove();
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
+            const row = wrap.firstElementChild;
+            row.classList.add('is-new');
+            tableBody.prepend(row);
+        }
+        function updateRow(item) {
+            const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
+            if (!existing) return insertRow(item);
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
+            existing.replaceWith(wrap.firstElementChild);
+        }
+        function removeRow(id) {
+            const row = tableBody.querySelector(`tr[data-id="${id}"]`);
+            if (!row) return;
+            row.classList.add('is-removing');
+            row.addEventListener('transitionend', () => row.remove(), { once: true });
+        }
+
+        // ---- Submit form (create / update) ----
+        modalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            modalError.hidden = true;
+            modalSubmitBtn.disabled = true;
+
+            const id = document.getElementById('form-id').value;
+            const payload = {
+                mahasiswa_id: document.getElementById('form-mahasiswa_id').value,
+                jenis: document.getElementById('form-jenis').value,
+                tab: document.getElementById('form-tab').value,
+                tingkat: document.getElementById('form-tingkat').value,
+                tahun: document.getElementById('form-tahun').value,
+                nama_kegiatan: document.getElementById('form-nama_kegiatan').value,
+                bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
+            };
+
+            if (!payload.mahasiswa_id) {
+                modalError.textContent = 'Pilih mahasiswa terlebih dahulu.';
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
+            }
+
+            const url = id ? `/kemahasiswaan/${id}` : '/kemahasiswaan';
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify(payload),
+                });
+                const result = await res.json();
+
+                if (!res.ok) {
+                    const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
+                    modalError.textContent = firstError;
+                    modalError.hidden = false;
+                    return;
+                }
+
+                if (id) updateRow(result.data); else insertRow(result.data);
+                closeModal();
+            } catch (err) {
+                modalError.textContent = 'Gagal terhubung ke server.';
+                modalError.hidden = false;
+            } finally {
+                modalSubmitBtn.disabled = false;
+            }
+        });
+
+        // ---- Delete ----
+        async function handleDelete(id) {
+            if (!confirm('Hapus data kegiatan ini? Tindakan tidak bisa dibatalkan.')) return;
+            try {
+                const res = await fetch(`/kemahasiswaan/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                });
+                const result = await res.json();
+                if (res.ok && result.success) removeRow(result.id);
+                else alert(result.message || 'Gagal menghapus data.');
+            } catch (err) {
+                alert('Gagal terhubung ke server.');
+            }
+        }
+
+        // ---- Event delegation: tombol Edit & Hapus di tiap baris (termasuk baris baru) ----
+        tableBody.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.btn-edit-row');
+            if (editBtn) return openModal('edit', editBtn.dataset);
+            const delBtn = e.target.closest('.btn-delete-row');
+            if (delBtn) handleDelete(delBtn.dataset.id);
         });
     </script>
 </body>
+
 </html>

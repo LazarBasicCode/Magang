@@ -7,6 +7,7 @@ use App\Http\Controllers\LppmDosenController;
 use App\Http\Controllers\LppmMahasiswaController;
 use App\Http\Controllers\LppmRekognisiController;
 use App\Http\Controllers\KerjaSamaController;
+use App\Http\Controllers\UserController;
 
 // Halaman Login (index.blade.php)
 Route::get('/', function () {
@@ -47,4 +48,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/kerja-sama', [KerjaSamaController::class, 'store'])->name('kerja-sama.store');
     Route::put('/kerja-sama/{kerjaSama}', [KerjaSamaController::class, 'update'])->name('kerja-sama.update');
     Route::delete('/kerja-sama/{kerjaSama}', [KerjaSamaController::class, 'destroy'])->name('kerja-sama.destroy');
+
+    // ---- Data Master Users (baru) ----
+    Route::get('/data-master/users', [UserController::class, 'index'])->name('data-master.users.index');
+    Route::post('/data-master/users', [UserController::class, 'store'])->name('data-master.users.store');
+    Route::put('/data-master/users/{user}', [UserController::class, 'update'])->name('data-master.users.update');
+    Route::delete('/data-master/users/{user}', [UserController::class, 'destroy'])->name('data-master.users.destroy');
 });

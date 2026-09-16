@@ -231,7 +231,7 @@ button { font-family: inherit; cursor: pointer; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-label { font-size: 12px; font-weight: 600; color: var(--ink-muted); }
 .field-control { position: relative; }
-.field-control input[type="text"], .field-control input[type="number"], .field-control input[type="url"] {
+.field-control input[type="text"], .field-control input[type="number"], .field-control input[type="url"], .field-control input[type="password"] {
     width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border-strong);
     background: var(--card); color: var(--ink); font-size: 13px; padding: 0 12px; appearance: none;
 }

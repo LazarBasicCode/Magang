@@ -11,67 +11,219 @@
     <title>LPPM Rekognisi &middot; SIDA</title>
     <style>
         /* ================= Custom Datepicker (ganti input[type=date] bawaan browser) ================= */
-        .datepicker { position: relative; }
-        .datepicker-trigger {
-            width: 100%; height: 40px; border-radius: 8px; border: 1px solid var(--border-strong);
-            background: var(--card); color: var(--ink); font-size: 13px; font-weight: 500; padding: 0 12px;
-            display: flex; align-items: center; gap: 8px; text-align: left; font-family: 'Public Sans', sans-serif;
-            transition: border-color .15s ease, box-shadow .15s ease; cursor: pointer;
+        .datepicker {
+            position: relative;
         }
-        .datepicker-trigger:hover { border-color: var(--primary-border); }
-        .datepicker-trigger .dp-icon { font-size: 18px; color: var(--ink-faint); flex-shrink: 0; }
-        .datepicker-value { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-faint); }
-        .datepicker-value.has-value { color: var(--ink); font-weight: 600; }
-        .datepicker.is-open .datepicker-trigger { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
-        .datepicker.is-open .datepicker-trigger .dp-icon { color: var(--primary); }
+
+        .datepicker-trigger {
+            width: 100%;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            background: var(--card);
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: left;
+            font-family: 'Public Sans', sans-serif;
+            transition: border-color .15s ease, box-shadow .15s ease;
+            cursor: pointer;
+        }
+
+        .datepicker-trigger:hover {
+            border-color: var(--primary-border);
+        }
+
+        .datepicker-trigger .dp-icon {
+            font-size: 18px;
+            color: var(--ink-faint);
+            flex-shrink: 0;
+        }
+
+        .datepicker-value {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--ink-faint);
+        }
+
+        .datepicker-value.has-value {
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .datepicker.is-open .datepicker-trigger {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+
+        .datepicker.is-open .datepicker-trigger .dp-icon {
+            color: var(--primary);
+        }
 
         .datepicker-panel {
-            position: fixed; z-index: 1000; width: 268px;
-            background: var(--card); border: 1px solid var(--border-strong); border-radius: 12px;
-            box-shadow: 0 16px 34px rgba(31, 41, 66, 0.28); padding: 12px; display: none;
+            position: fixed;
+            z-index: 1000;
+            width: 268px;
+            background: var(--card);
+            border: 1px solid var(--border-strong);
+            border-radius: 12px;
+            box-shadow: 0 16px 34px rgba(31, 41, 66, 0.28);
+            padding: 12px;
+            display: none;
         }
-        .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .dp-month-label { font-size: 13px; font-weight: 700; color: var(--ink); text-transform: capitalize; }
+
+        .dp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .dp-month-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+            text-transform: capitalize;
+        }
+
         .dp-nav {
-            width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border);
-            background: transparent; color: var(--ink-muted); display: flex; align-items: center; justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--ink-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: background-color .15s ease, color .15s ease, border-color .15s ease;
         }
-        .dp-nav:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-border); }
-        .dp-nav .material-symbols-outlined { font-size: 18px; }
+
+        .dp-nav:hover {
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: var(--primary-border);
+        }
+
+        .dp-nav .material-symbols-outlined {
+            font-size: 18px;
+        }
+
         .dp-weekdays {
-            display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 4px;
         }
+
         .dp-weekdays span {
-            text-align: center; font-size: 10.5px; font-weight: 700; color: var(--ink-faint);
-            text-transform: uppercase; letter-spacing: .03em; padding: 4px 0;
+            text-align: center;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--ink-faint);
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            padding: 4px 0;
         }
-        .dp-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+
+        .dp-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
         .dp-day {
-            width: 100%; aspect-ratio: 1 / 1; border-radius: 7px; border: none; background: transparent;
-            color: var(--ink); font-size: 12.5px; font-weight: 500; display: flex; align-items: center; justify-content: center;
-            transition: background-color .12s ease, color .12s ease; cursor: pointer;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 7px;
+            border: none;
+            background: transparent;
+            color: var(--ink);
+            font-size: 12.5px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color .12s ease, color .12s ease;
+            cursor: pointer;
         }
-        .dp-day:hover:not(:disabled) { background: var(--canvas); }
-        .dp-day.is-today { color: var(--primary); font-weight: 800; box-shadow: inset 0 0 0 1px var(--primary-border); }
-        .dp-day.is-selected { background: var(--primary); color: #fff; font-weight: 700; }
-        .dp-day.is-selected.is-today { box-shadow: none; }
-        .dp-day:disabled { color: var(--ink-faint); opacity: .35; cursor: not-allowed; }
-        .dp-day.is-empty { visibility: hidden; pointer-events: none; }
+
+        .dp-day:hover:not(:disabled) {
+            background: var(--canvas);
+        }
+
+        .dp-day.is-today {
+            color: var(--primary);
+            font-weight: 800;
+            box-shadow: inset 0 0 0 1px var(--primary-border);
+        }
+
+        .dp-day.is-selected {
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .dp-day.is-selected.is-today {
+            box-shadow: none;
+        }
+
+        .dp-day:disabled {
+            color: var(--ink-faint);
+            opacity: .35;
+            cursor: not-allowed;
+        }
+
+        .dp-day.is-empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
         .dp-footer {
-            display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
-            padding-top: 10px; border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
         }
+
         .dp-today-btn {
-            font-size: 11.5px; font-weight: 700; color: var(--primary); background: transparent; border: none;
-            padding: 4px 6px; border-radius: 6px; transition: background-color .12s ease;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--primary);
+            background: transparent;
+            border: none;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background-color .12s ease;
         }
-        .dp-today-btn:hover { background: var(--primary-soft); }
+
+        .dp-today-btn:hover {
+            background: var(--primary-soft);
+        }
+
         .dp-clear-btn {
-            font-size: 11.5px; font-weight: 600; color: var(--ink-faint); background: transparent; border: none;
-            padding: 4px 6px; border-radius: 6px; transition: background-color .12s ease, color .12s ease;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--ink-faint);
+            background: transparent;
+            border: none;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background-color .12s ease, color .12s ease;
         }
-        .dp-clear-btn:hover { background: var(--canvas); color: var(--ink-muted); }
+
+        .dp-clear-btn:hover {
+            background: var(--canvas);
+            color: var(--ink-muted);
+        }
     </style>
 </head>
 
@@ -118,6 +270,12 @@
                 <a href="{{ url('/kerja-sama') }}" class="nav-link">
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
+                </a>
+
+                <div class="nav-heading">Administrasi</div>
+                <a href="{{ url('/data-master/users') }}" class="nav-link">
+                    <span class="material-symbols-outlined">manage_accounts</span>
+                    <span>Data Master</span>
                 </a>
             </div>
         </nav>
@@ -278,69 +436,69 @@
                             </thead>
                             <tbody id="rekognisiTableBody">
                                 @php
-                                    $jenisLabel = [
-                                        'nasional'      => 'Nasional',
-                                        'internasional' => 'Internasional',
-                                        'alumni'        => 'Alumni',
-                                    ];
-                                    $jenisBadge = [
-                                        'nasional'      => 'c-warning',
-                                        'internasional' => 'c-info',
-                                        'alumni'        => 'c-success',
-                                    ];
-                                    $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                $jenisLabel = [
+                                'nasional' => 'Nasional',
+                                'internasional' => 'Internasional',
+                                'alumni' => 'Alumni',
+                                ];
+                                $jenisBadge = [
+                                'nasional' => 'c-warning',
+                                'internasional' => 'c-info',
+                                'alumni' => 'c-success',
+                                ];
+                                $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
                                 @forelse($items as $item)
-                                    @php
-                                        $nama = optional($item->user)->name ?? 'Tanpa Nama';
-                                        $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
-                                        $avatarColor = $colors[$item->user_id % count($colors)];
-                                    @endphp
-                                    <tr data-id="{{ $item->id }}">
-                                        <td><span class="nim-code">{{ optional($item->user)->nim_nidn ?? '-' }}</span></td>
-                                        <td>
-                                            <div class="student-cell">
-                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
-                                                <div class="student-name"><span class="name">{{ $nama }}</span></div>
-                                            </div>
-                                        </td>
-                                        <td class="center"><span class="plain-text">{{ ucfirst($item->tipe_user) }}</span></td>
-                                        <td><span class="activity-title" title="{{ $item->mitra }}">{{ $item->mitra }}</span></td>
-                                        <td class="center"><span class="plain-text">{{ $jenisLabel[$item->jenis] ?? $item->jenis }}</span></td>
-                                        <td><span class="plain-text">{{ $item->jabatan ?? '-' }}</span></td>
-                                        <td class="center"><span class="year-chip">{{ optional($item->tanggal_mulai)->format('d M Y') }} &ndash; {{ optional($item->tanggal_selesai)->format('d M Y') }}</span></td>
-                                        <td class="center">
-                                            <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                                                <span class="material-symbols-outlined">cloud</span>
-                                                <span>Lihat Bukti</span>
-                                            </a>
-                                        </td>
-                                        <td class="center">
-                                            <div class="row-actions">
-                                                <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                                                    data-id="{{ $item->id }}"
-                                                    data-user_id="{{ $item->user_id }}"
-                                                    data-jenis="{{ $item->jenis }}"
-                                                    data-mitra="{{ urlencode($item->mitra) }}"
-                                                    data-jabatan="{{ urlencode($item->jabatan ?? '') }}"
-                                                    data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
-                                                    data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
-                                                    data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}"
-                                                    data-bukti_tambahan="{{ urlencode($item->bukti_tambahan ?? '') }}">
-                                                    <span class="material-symbols-outlined">edit</span>
-                                                </button>
-                                                <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
-                                                    <span class="material-symbols-outlined">delete</span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                @php
+                                $nama = optional($item->user)->name ?? 'Tanpa Nama';
+                                $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                $avatarColor = $colors[$item->user_id % count($colors)];
+                                @endphp
+                                <tr data-id="{{ $item->id }}">
+                                    <td><span class="nim-code">{{ optional($item->user)->nim_nidn ?? '-' }}</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            <div class="student-name"><span class="name">{{ $nama }}</span></div>
+                                        </div>
+                                    </td>
+                                    <td class="center"><span class="plain-text">{{ ucfirst($item->tipe_user) }}</span></td>
+                                    <td><span class="activity-title" title="{{ $item->mitra }}">{{ $item->mitra }}</span></td>
+                                    <td class="center"><span class="plain-text">{{ $jenisLabel[$item->jenis] ?? $item->jenis }}</span></td>
+                                    <td><span class="plain-text">{{ $item->jabatan ?? '-' }}</span></td>
+                                    <td class="center"><span class="year-chip">{{ optional($item->tanggal_mulai)->format('d M Y') }} &ndash; {{ optional($item->tanggal_selesai)->format('d M Y') }}</span></td>
+                                    <td class="center">
+                                        <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
+                                        </a>
+                                    </td>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                                                data-id="{{ $item->id }}"
+                                                data-user_id="{{ $item->user_id }}"
+                                                data-jenis="{{ $item->jenis }}"
+                                                data-mitra="{{ urlencode($item->mitra) }}"
+                                                data-jabatan="{{ urlencode($item->jabatan ?? '') }}"
+                                                data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
+                                                data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
+                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}"
+                                                data-bukti_tambahan="{{ urlencode($item->bukti_tambahan ?? '') }}">
+                                                <span class="material-symbols-outlined">edit</span>
+                                            </button>
+                                            <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
+                                                <span class="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                                 @empty
-                                    <tr id="emptyRow">
-                                        <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
-                                            Belum ada data. Klik "Tambah Rekognisi" untuk mulai mengisi.
-                                        </td>
-                                    </tr>
+                                <tr id="emptyRow">
+                                    <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                        Belum ada data. Klik "Tambah Rekognisi" untuk mulai mengisi.
+                                    </td>
+                                </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -385,7 +543,7 @@
                     </button>
                     <div class="dropdown-panel">
                         @foreach($userList as $u)
-                            <button type="button" class="dropdown-option" data-value="{{ $u->id }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} ({{ ucfirst($u->role) }})</button>
+                        <button type="button" class="dropdown-option" data-value="{{ $u->id }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} ({{ ucfirst($u->role) }})</button>
                         @endforeach
                     </div>
                 </div>
@@ -529,19 +687,26 @@
         document.addEventListener('click', () => dropdowns.forEach((d) => d.classList.remove('is-open')));
 
         // ---------------- Custom Datepicker ----------------
-        const MONTH_NAMES_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const MONTH_NAMES_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         const DAY_MS = 24 * 60 * 60 * 1000;
 
-        function pad2(n) { return String(n).padStart(2, '0'); }
-        function toISO(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }
+        function pad2(n) {
+            return String(n).padStart(2, '0');
+        }
+
+        function toISO(y, m, d) {
+            return `${y}-${pad2(m + 1)}-${pad2(d)}`;
+        }
+
         function parseISO(str) {
             if (!str) return null;
             const [y, m, d] = str.split('-').map(Number);
             if (!y || !m || !d) return null;
             return new Date(y, m - 1, d);
         }
+
         function formatDisplayDate(dateObj) {
-            const days = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
             return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${MONTH_NAMES_ID[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
         }
 
@@ -563,8 +728,12 @@
 
             let selected = null;
             let minDate = null;
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            let view = { year: today.getFullYear(), month: today.getMonth() };
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let view = {
+                year: today.getFullYear(),
+                month: today.getMonth()
+            };
 
             function render() {
                 monthLabel.textContent = `${MONTH_NAMES_ID[view.month]} ${view.year}`;
@@ -618,7 +787,12 @@
                 valueEl.textContent = formatDisplayDate(dateObj);
                 valueEl.classList.add('has-value');
                 closePanel();
-                rootEl.dispatchEvent(new CustomEvent('datepicker:change', { detail: { date: dateObj, iso: hiddenInput.value } }));
+                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
+                    detail: {
+                        date: dateObj,
+                        iso: hiddenInput.value
+                    }
+                }));
             }
 
             function clear() {
@@ -626,19 +800,31 @@
                 hiddenInput.value = '';
                 valueEl.textContent = 'Pilih tanggal';
                 valueEl.classList.remove('has-value');
-                rootEl.dispatchEvent(new CustomEvent('datepicker:change', { detail: { date: null, iso: '' } }));
+                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
+                    detail: {
+                        date: null,
+                        iso: ''
+                    }
+                }));
             }
 
             function openPanel() {
                 closeAllDatepickers();
                 document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
-                view = selected ? { year: selected.getFullYear(), month: selected.getMonth() } : { year: today.getFullYear(), month: today.getMonth() };
+                view = selected ? {
+                    year: selected.getFullYear(),
+                    month: selected.getMonth()
+                } : {
+                    year: today.getFullYear(),
+                    month: today.getMonth()
+                };
                 render();
                 panel.style.display = 'block';
                 positionPanel();
                 rootEl.classList.add('is-open');
                 activeDatepickers.add(api);
             }
+
             function closePanel() {
                 panel.style.display = 'none';
                 rootEl.classList.remove('is-open');
@@ -653,8 +839,22 @@
                 if (!wasOpen) openPanel();
             });
             panel.addEventListener('click', (e) => e.stopPropagation());
-            prevBtn.addEventListener('click', () => { view.month--; if (view.month < 0) { view.month = 11; view.year--; } render(); });
-            nextBtn.addEventListener('click', () => { view.month++; if (view.month > 11) { view.month = 0; view.year++; } render(); });
+            prevBtn.addEventListener('click', () => {
+                view.month--;
+                if (view.month < 0) {
+                    view.month = 11;
+                    view.year--;
+                }
+                render();
+            });
+            nextBtn.addEventListener('click', () => {
+                view.month++;
+                if (view.month > 11) {
+                    view.month = 0;
+                    view.year++;
+                }
+                render();
+            });
             todayBtn.addEventListener('click', () => selectDate(new Date(today)));
             clearBtn.addEventListener('click', clear);
 
@@ -668,17 +868,31 @@
                 reposition: positionPanel,
                 setValue(iso) {
                     const d = parseISO(iso);
-                    if (d) { selected = d; valueEl.textContent = formatDisplayDate(d); valueEl.classList.add('has-value'); hiddenInput.value = iso; }
-                    else { selected = null; valueEl.textContent = 'Pilih tanggal'; valueEl.classList.remove('has-value'); hiddenInput.value = ''; }
+                    if (d) {
+                        selected = d;
+                        valueEl.textContent = formatDisplayDate(d);
+                        valueEl.classList.add('has-value');
+                        hiddenInput.value = iso;
+                    } else {
+                        selected = null;
+                        valueEl.textContent = 'Pilih tanggal';
+                        valueEl.classList.remove('has-value');
+                        hiddenInput.value = '';
+                    }
                 },
-                setMinDate(iso) { minDate = parseISO(iso); },
+                setMinDate(iso) {
+                    minDate = parseISO(iso);
+                },
                 clear,
             };
             return api;
         }
 
         const activeDatepickers = new Set();
-        function closeAllDatepickers() { activeDatepickers.forEach((dp) => dp.close()); }
+
+        function closeAllDatepickers() {
+            activeDatepickers.forEach((dp) => dp.close());
+        }
 
         const dpMulai = createDatepicker(document.getElementById('dp-tanggal_mulai'));
         const dpSelesai = createDatepicker(document.getElementById('dp-tanggal_selesai'));
@@ -713,7 +927,10 @@
             options.forEach((o) => {
                 const isMatch = o.dataset.value === String(value);
                 o.classList.toggle('is-selected', isMatch);
-                if (isMatch) { valueEl.textContent = o.textContent.trim(); matched = true; }
+                if (isMatch) {
+                    valueEl.textContent = o.textContent.trim();
+                    matched = true;
+                }
             });
             if (hiddenInput) hiddenInput.value = matched ? value : '';
             if (!matched) valueEl.textContent = placeholder || (options[0] ? options[0].textContent.trim() : '');
@@ -726,7 +943,10 @@
             const hiddenInput = dropdown.querySelector('input[type="hidden"]');
             options.forEach((o, i) => {
                 o.classList.toggle('is-selected', i === 0);
-                if (i === 0) { valueEl.textContent = o.textContent.trim(); if (hiddenInput) hiddenInput.value = o.dataset.value; }
+                if (i === 0) {
+                    valueEl.textContent = o.textContent.trim();
+                    if (hiddenInput) hiddenInput.value = o.dataset.value;
+                }
             });
         }
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
@@ -738,7 +958,9 @@
             const btn = document.getElementById('btn-apply-filter');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-            setTimeout(() => { btn.innerHTML = originalHTML; }, 400);
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 400);
         });
 
         // ---------------- Sidebar Drawer ----------------
@@ -746,18 +968,33 @@
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
-        function openSidebar() { sidebar.classList.add('is-open'); sidebarOverlay.classList.add('is-active'); document.body.style.overflow = 'hidden'; }
-        function closeSidebar() { sidebar.classList.remove('is-open'); sidebarOverlay.classList.remove('is-active'); document.body.style.overflow = ''; }
+
+        function openSidebar() {
+            sidebar.classList.add('is-open');
+            sidebarOverlay.classList.add('is-active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            sidebarOverlay.classList.remove('is-active');
+            document.body.style.overflow = '';
+        }
         sidebarToggleBtn?.addEventListener('click', openSidebar);
         sidebarCloseBtn?.addEventListener('click', closeSidebar);
         sidebarOverlay?.addEventListener('click', closeSidebar);
-        window.addEventListener('resize', () => { if (window.innerWidth >= 1024) closeSidebar(); });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) closeSidebar();
+        });
 
         // ---------------- Dark Mode ----------------
         const themeToggleBtn = document.getElementById('themeToggleBtn');
         const themeIcon = document.getElementById('themeIcon');
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') { document.body.classList.add('dark-mode'); if (themeIcon) themeIcon.textContent = 'light_mode'; }
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            if (themeIcon) themeIcon.textContent = 'light_mode';
+        }
         themeToggleBtn?.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
@@ -792,7 +1029,9 @@
         function openModal(mode, data = {}) {
             modalForm.reset();
             modalError.hidden = true;
-            modalCard.style.left = ''; modalCard.style.top = ''; modalCard.style.transform = '';
+            modalCard.style.left = '';
+            modalCard.style.top = '';
+            modalCard.style.transform = '';
 
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
@@ -814,6 +1053,7 @@
             modalCard.classList.add('is-active');
             modalCard.setAttribute('aria-hidden', 'false');
         }
+
         function closeModal() {
             modalBackdrop.classList.remove('is-active');
             modalCard.classList.remove('is-active');
@@ -823,39 +1063,79 @@
         modalCloseBtn.addEventListener('click', closeModal);
         modalCancelBtn.addEventListener('click', closeModal);
         modalBackdrop.addEventListener('click', closeModal);
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal();
+        });
 
         // ---- Drag ----
         let dragState = null;
         dragHandle.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.modal-close-btn')) return;
             const rect = modalCard.getBoundingClientRect();
-            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
-            modalCard.style.left = rect.left + 'px'; modalCard.style.top = rect.top + 'px'; modalCard.style.transform = 'none';
+            dragState = {
+                startX: e.clientX,
+                startY: e.clientY,
+                originX: rect.left,
+                originY: rect.top
+            };
+            modalCard.style.left = rect.left + 'px';
+            modalCard.style.top = rect.top + 'px';
+            modalCard.style.transform = 'none';
             modalCard.classList.add('is-dragging');
             dragHandle.setPointerCapture(e.pointerId);
         });
         dragHandle.addEventListener('pointermove', (e) => {
             if (!dragState) return;
-            const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
-            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8, maxTop = window.innerHeight - modalCard.offsetHeight - 8;
+            const dx = e.clientX - dragState.startX,
+                dy = e.clientY - dragState.startY;
+            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8,
+                maxTop = window.innerHeight - modalCard.offsetHeight - 8;
             modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
             modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
         });
-        function endDrag(e) { if (!dragState) return; dragState = null; modalCard.classList.remove('is-dragging'); try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {} }
+
+        function endDrag(e) {
+            if (!dragState) return;
+            dragState = null;
+            modalCard.classList.remove('is-dragging');
+            try {
+                dragHandle.releasePointerCapture(e.pointerId);
+            } catch (_) {}
+        }
         dragHandle.addEventListener('pointerup', endDrag);
         dragHandle.addEventListener('pointercancel', endDrag);
 
         // ---- Bangun/ganti/hapus baris tabel ----
-        const jenisLabel = { nasional: 'Nasional', internasional: 'Internasional', alumni: 'Alumni' };
-        function initials(name) { return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-'; }
-        function avatarColor(id) { const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger']; return c[Number(id) % c.length]; }
-        function esc(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }
+        const jenisLabel = {
+            nasional: 'Nasional',
+            internasional: 'Internasional',
+            alumni: 'Alumni'
+        };
+
+        function initials(name) {
+            return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
+        }
+
+        function avatarColor(id) {
+            const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+            return c[Number(id) % c.length];
+        }
+
+        function esc(str) {
+            const div = document.createElement('div');
+            div.textContent = str ?? '';
+            return div.innerHTML;
+        }
+
         function fmtDate(d) {
             if (!d) return '-';
             const dt = new Date(d + 'T00:00:00');
             if (isNaN(dt)) return d;
-            return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            return dt.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
         }
 
         function buildRowHTML(item) {
@@ -897,23 +1177,31 @@
                 </td>
             </tr>`.trim();
         }
+
         function insertRow(item) {
             document.getElementById('emptyRow')?.remove();
-            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
-            const row = wrap.firstElementChild; row.classList.add('is-new');
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
+            const row = wrap.firstElementChild;
+            row.classList.add('is-new');
             tableBody.prepend(row);
         }
+
         function updateRow(item) {
             const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
             if (!existing) return insertRow(item);
-            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
             existing.replaceWith(wrap.firstElementChild);
         }
+
         function removeRow(id) {
             const row = tableBody.querySelector(`tr[data-id="${id}"]`);
             if (!row) return;
             row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), { once: true });
+            row.addEventListener('transitionend', () => row.remove(), {
+                once: true
+            });
         }
 
         modalForm.addEventListener('submit', async (e) => {
@@ -936,7 +1224,9 @@
 
             if (!payload.user_id) {
                 modalError.textContent = 'Pilih nama dosen/mahasiswa terlebih dahulu.';
-                modalError.hidden = false; modalSubmitBtn.disabled = false; return;
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
             }
 
             const url = id ? `/lppm/rekognisi/${id}` : '/lppm/rekognisi';
@@ -945,18 +1235,26 @@
             try {
                 const res = await fetch(url, {
                     method,
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
                     body: JSON.stringify(payload),
                 });
                 const result = await res.json();
                 if (!res.ok) {
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
-                    modalError.textContent = firstError; modalError.hidden = false; return;
+                    modalError.textContent = firstError;
+                    modalError.hidden = false;
+                    return;
                 }
-                if (id) updateRow(result.data); else insertRow(result.data);
+                if (id) updateRow(result.data);
+                else insertRow(result.data);
                 closeModal();
             } catch (err) {
-                modalError.textContent = 'Gagal terhubung ke server.'; modalError.hidden = false;
+                modalError.textContent = 'Gagal terhubung ke server.';
+                modalError.hidden = false;
             } finally {
                 modalSubmitBtn.disabled = false;
             }
@@ -965,11 +1263,19 @@
         async function handleDelete(id) {
             if (!confirm('Hapus data ini? Tindakan tidak bisa dibatalkan.')) return;
             try {
-                const res = await fetch(`/lppm/rekognisi/${id}`, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken } });
+                const res = await fetch(`/lppm/rekognisi/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
                 const result = await res.json();
                 if (res.ok && result.success) removeRow(result.id);
                 else alert(result.message || 'Gagal menghapus data.');
-            } catch (err) { alert('Gagal terhubung ke server.'); }
+            } catch (err) {
+                alert('Gagal terhubung ke server.');
+            }
         }
 
         tableBody.addEventListener('click', (e) => {

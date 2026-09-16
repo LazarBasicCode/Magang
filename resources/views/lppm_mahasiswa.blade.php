@@ -55,6 +55,12 @@
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
                 </a>
+
+                <div class="nav-heading">Administrasi</div>
+                <a href="{{ url('/data-master/users') }}" class="nav-link">
+                    <span class="material-symbols-outlined">manage_accounts</span>
+                    <span>Data Master</span>
+                </a>
             </div>
         </nav>
 
@@ -213,68 +219,68 @@
                             </thead>
                             <tbody id="lppmMahasiswaTableBody">
                                 @php
-                                    $jenisBadge = [
-                                        'sinta_nasional' => ['label' => 'SINTA Nasional', 'class' => 'badge-info'],
-                                        'conference_internasional' => ['label' => 'Conference Int.', 'class' => 'badge-warning'],
-                                        'jurnal_internasional' => ['label' => 'Jurnal Int.', 'class' => 'badge-success'],
-                                    ];
-                                    $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                $jenisBadge = [
+                                'sinta_nasional' => ['label' => 'SINTA Nasional', 'class' => 'badge-info'],
+                                'conference_internasional' => ['label' => 'Conference Int.', 'class' => 'badge-warning'],
+                                'jurnal_internasional' => ['label' => 'Jurnal Int.', 'class' => 'badge-success'],
+                                ];
+                                $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
                                 @forelse($items as $item)
-                                    @php
-                                        $nama = optional($item->mahasiswa->user)->name ?? 'Tanpa Nama';
-                                        $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
-                                        $avatarColor = $colors[$item->mahasiswa_id % count($colors)];
-                                        $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
-                                        $buktiLabel = $item->link_doi ? 'Link DOI' : 'Lihat Bukti';
-                                        $buktiIcon = $item->link_doi ? 'link' : 'cloud';
-                                        $buktiUrl = $item->link_doi ?: $item->bukti_kegiatan;
-                                    @endphp
-                                    <tr data-id="{{ $item->id }}">
-                                        <td><span class="nim-code">{{ $item->mahasiswa->nim ?? '-' }}</span></td>
-                                        <td>
-                                            <div class="student-cell">
-                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
-                                                <div class="student-name"><span class="name">{{ $nama }}</span></div>
-                                            </div>
-                                        </td>
-                                        <td><span class="activity-title" title="{{ $item->judul }}">{{ $item->judul }}</span></td>
-                                        <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
-                                        <td class="center"><span class="badge badge-primary">{{ $item->peringkat ?: '-' }}</span></td>
-                                        <td class="center"><span class="year-chip">{{ $item->tahun }}</span></td>
-                                        <td class="center">
-                                            <a href="{{ $buktiUrl }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                                                <span class="material-symbols-outlined">{{ $buktiIcon }}</span>
-                                                <span>{{ $buktiLabel }}</span>
-                                            </a>
-                                        </td>
-                                        <td class="center">
-                                            <div class="row-actions">
-                                                <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                                                    data-id="{{ $item->id }}"
-                                                    data-mahasiswa_id="{{ $item->mahasiswa_id }}"
-                                                    data-jenis="{{ $item->jenis }}"
-                                                    data-judul="{{ urlencode($item->judul) }}"
-                                                    data-penulis="{{ urlencode($item->penulis) }}"
-                                                    data-nama_jurnal="{{ urlencode($item->nama_jurnal ?? '') }}"
-                                                    data-peringkat="{{ urlencode($item->peringkat ?? '') }}"
-                                                    data-link_doi="{{ urlencode($item->link_doi ?? '') }}"
-                                                    data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}"
-                                                    data-tahun="{{ $item->tahun }}">
-                                                    <span class="material-symbols-outlined">edit</span>
-                                                </button>
-                                                <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
-                                                    <span class="material-symbols-outlined">delete</span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                @php
+                                $nama = optional($item->mahasiswa->user)->name ?? 'Tanpa Nama';
+                                $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                $avatarColor = $colors[$item->mahasiswa_id % count($colors)];
+                                $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
+                                $buktiLabel = $item->link_doi ? 'Link DOI' : 'Lihat Bukti';
+                                $buktiIcon = $item->link_doi ? 'link' : 'cloud';
+                                $buktiUrl = $item->link_doi ?: $item->bukti_kegiatan;
+                                @endphp
+                                <tr data-id="{{ $item->id }}">
+                                    <td><span class="nim-code">{{ $item->mahasiswa->nim ?? '-' }}</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            <div class="student-name"><span class="name">{{ $nama }}</span></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="activity-title" title="{{ $item->judul }}">{{ $item->judul }}</span></td>
+                                    <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
+                                    <td class="center"><span class="badge badge-primary">{{ $item->peringkat ?: '-' }}</span></td>
+                                    <td class="center"><span class="year-chip">{{ $item->tahun }}</span></td>
+                                    <td class="center">
+                                        <a href="{{ $buktiUrl }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
+                                            <span class="material-symbols-outlined">{{ $buktiIcon }}</span>
+                                            <span>{{ $buktiLabel }}</span>
+                                        </a>
+                                    </td>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                                                data-id="{{ $item->id }}"
+                                                data-mahasiswa_id="{{ $item->mahasiswa_id }}"
+                                                data-jenis="{{ $item->jenis }}"
+                                                data-judul="{{ urlencode($item->judul) }}"
+                                                data-penulis="{{ urlencode($item->penulis) }}"
+                                                data-nama_jurnal="{{ urlencode($item->nama_jurnal ?? '') }}"
+                                                data-peringkat="{{ urlencode($item->peringkat ?? '') }}"
+                                                data-link_doi="{{ urlencode($item->link_doi ?? '') }}"
+                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}"
+                                                data-tahun="{{ $item->tahun }}">
+                                                <span class="material-symbols-outlined">edit</span>
+                                            </button>
+                                            <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
+                                                <span class="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                                 @empty
-                                    <tr id="emptyRow">
-                                        <td colspan="8" style="text-align:center; padding: 32px; color: var(--ink-faint);">
-                                            Belum ada data. Klik "Tambah Data Publikasi" untuk mulai mengisi.
-                                        </td>
-                                    </tr>
+                                <tr id="emptyRow">
+                                    <td colspan="8" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                        Belum ada data. Klik "Tambah Data Publikasi" untuk mulai mengisi.
+                                    </td>
+                                </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -319,7 +325,7 @@
                     </button>
                     <div class="dropdown-panel">
                         @foreach($mahasiswaList as $m)
-                            <button type="button" class="dropdown-option" data-value="{{ $m->id }}">{{ $m->nim }} &mdash; {{ optional($m->user)->name ?? '-' }}</button>
+                        <button type="button" class="dropdown-option" data-value="{{ $m->id }}">{{ $m->nim }} &mdash; {{ optional($m->user)->name ?? '-' }}</button>
                         @endforeach
                     </div>
                 </div>
@@ -444,7 +450,10 @@
             options.forEach((o) => {
                 const isMatch = o.dataset.value === String(value);
                 o.classList.toggle('is-selected', isMatch);
-                if (isMatch) { valueEl.textContent = o.textContent.trim(); matched = true; }
+                if (isMatch) {
+                    valueEl.textContent = o.textContent.trim();
+                    matched = true;
+                }
             });
             if (hiddenInput) hiddenInput.value = matched ? value : '';
             if (!matched) valueEl.textContent = placeholder || (options[0] ? options[0].textContent.trim() : '');
@@ -457,7 +466,10 @@
             const hiddenInput = dropdown.querySelector('input[type="hidden"]');
             options.forEach((o, i) => {
                 o.classList.toggle('is-selected', i === 0);
-                if (i === 0) { valueEl.textContent = o.textContent.trim(); if (hiddenInput) hiddenInput.value = o.dataset.value; }
+                if (i === 0) {
+                    valueEl.textContent = o.textContent.trim();
+                    if (hiddenInput) hiddenInput.value = o.dataset.value;
+                }
             });
         }
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
@@ -469,7 +481,9 @@
             const btn = document.getElementById('btn-apply-filter');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-            setTimeout(() => { btn.innerHTML = originalHTML; }, 400);
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 400);
         });
 
         // ---------------- Sidebar Drawer ----------------
@@ -477,18 +491,33 @@
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
-        function openSidebar() { sidebar.classList.add('is-open'); sidebarOverlay.classList.add('is-active'); document.body.style.overflow = 'hidden'; }
-        function closeSidebar() { sidebar.classList.remove('is-open'); sidebarOverlay.classList.remove('is-active'); document.body.style.overflow = ''; }
+
+        function openSidebar() {
+            sidebar.classList.add('is-open');
+            sidebarOverlay.classList.add('is-active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            sidebarOverlay.classList.remove('is-active');
+            document.body.style.overflow = '';
+        }
         sidebarToggleBtn?.addEventListener('click', openSidebar);
         sidebarCloseBtn?.addEventListener('click', closeSidebar);
         sidebarOverlay?.addEventListener('click', closeSidebar);
-        window.addEventListener('resize', () => { if (window.innerWidth >= 1024) closeSidebar(); });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) closeSidebar();
+        });
 
         // ---------------- Dark Mode ----------------
         const themeToggleBtn = document.getElementById('themeToggleBtn');
         const themeIcon = document.getElementById('themeIcon');
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') { document.body.classList.add('dark-mode'); if (themeIcon) themeIcon.textContent = 'light_mode'; }
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            if (themeIcon) themeIcon.textContent = 'light_mode';
+        }
         themeToggleBtn?.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
@@ -526,7 +555,9 @@
         function openModal(mode, data = {}) {
             modalForm.reset();
             modalError.hidden = true;
-            modalCard.style.left = ''; modalCard.style.top = ''; modalCard.style.transform = '';
+            modalCard.style.left = '';
+            modalCard.style.top = '';
+            modalCard.style.transform = '';
 
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Data Publikasi' : 'Tambah Data Publikasi';
@@ -548,6 +579,7 @@
             modalCard.classList.add('is-active');
             modalCard.setAttribute('aria-hidden', 'false');
         }
+
         function closeModal() {
             modalBackdrop.classList.remove('is-active');
             modalCard.classList.remove('is-active');
@@ -557,41 +589,84 @@
         modalCloseBtn.addEventListener('click', closeModal);
         modalCancelBtn.addEventListener('click', closeModal);
         modalBackdrop.addEventListener('click', closeModal);
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal();
+        });
 
         // ---- Drag ----
         let dragState = null;
         dragHandle.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.modal-close-btn')) return;
             const rect = modalCard.getBoundingClientRect();
-            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
-            modalCard.style.left = rect.left + 'px'; modalCard.style.top = rect.top + 'px'; modalCard.style.transform = 'none';
+            dragState = {
+                startX: e.clientX,
+                startY: e.clientY,
+                originX: rect.left,
+                originY: rect.top
+            };
+            modalCard.style.left = rect.left + 'px';
+            modalCard.style.top = rect.top + 'px';
+            modalCard.style.transform = 'none';
             modalCard.classList.add('is-dragging');
             dragHandle.setPointerCapture(e.pointerId);
         });
         dragHandle.addEventListener('pointermove', (e) => {
             if (!dragState) return;
-            const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
-            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8, maxTop = window.innerHeight - modalCard.offsetHeight - 8;
+            const dx = e.clientX - dragState.startX,
+                dy = e.clientY - dragState.startY;
+            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8,
+                maxTop = window.innerHeight - modalCard.offsetHeight - 8;
             modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
             modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
         });
-        function endDrag(e) { if (!dragState) return; dragState = null; modalCard.classList.remove('is-dragging'); try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {} }
+
+        function endDrag(e) {
+            if (!dragState) return;
+            dragState = null;
+            modalCard.classList.remove('is-dragging');
+            try {
+                dragHandle.releasePointerCapture(e.pointerId);
+            } catch (_) {}
+        }
         dragHandle.addEventListener('pointerup', endDrag);
         dragHandle.addEventListener('pointercancel', endDrag);
 
         // ---- Bangun/ganti/hapus baris tabel ----
         const jenisBadge = {
-            sinta_nasional: { label: 'SINTA Nasional', cls: 'badge-info' },
-            conference_internasional: { label: 'Conference Int.', cls: 'badge-warning' },
-            jurnal_internasional: { label: 'Jurnal Int.', cls: 'badge-success' },
+            sinta_nasional: {
+                label: 'SINTA Nasional',
+                cls: 'badge-info'
+            },
+            conference_internasional: {
+                label: 'Conference Int.',
+                cls: 'badge-warning'
+            },
+            jurnal_internasional: {
+                label: 'Jurnal Int.',
+                cls: 'badge-success'
+            },
         };
-        function initials(name) { return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-'; }
-        function avatarColor(id) { const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger']; return c[Number(id) % c.length]; }
-        function esc(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }
+
+        function initials(name) {
+            return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
+        }
+
+        function avatarColor(id) {
+            const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+            return c[Number(id) % c.length];
+        }
+
+        function esc(str) {
+            const div = document.createElement('div');
+            div.textContent = str ?? '';
+            return div.innerHTML;
+        }
 
         function buildRowHTML(item) {
-            const jb = jenisBadge[item.jenis] || { label: item.jenis, cls: 'badge-neutral' };
+            const jb = jenisBadge[item.jenis] || {
+                label: item.jenis,
+                cls: 'badge-neutral'
+            };
             const buktiUrl = item.link_doi || item.bukti_kegiatan;
             const buktiLabel = item.link_doi ? 'Link DOI' : 'Lihat Bukti';
             const buktiIcon = item.link_doi ? 'link' : 'cloud';
@@ -631,23 +706,31 @@
                 </td>
             </tr>`.trim();
         }
+
         function insertRow(item) {
             document.getElementById('emptyRow')?.remove();
-            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
-            const row = wrap.firstElementChild; row.classList.add('is-new');
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
+            const row = wrap.firstElementChild;
+            row.classList.add('is-new');
             tableBody.prepend(row);
         }
+
         function updateRow(item) {
             const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
             if (!existing) return insertRow(item);
-            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
             existing.replaceWith(wrap.firstElementChild);
         }
+
         function removeRow(id) {
             const row = tableBody.querySelector(`tr[data-id="${id}"]`);
             if (!row) return;
             row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), { once: true });
+            row.addEventListener('transitionend', () => row.remove(), {
+                once: true
+            });
         }
 
         modalForm.addEventListener('submit', async (e) => {
@@ -670,7 +753,9 @@
 
             if (!payload.mahasiswa_id) {
                 modalError.textContent = 'Pilih mahasiswa terlebih dahulu.';
-                modalError.hidden = false; modalSubmitBtn.disabled = false; return;
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
             }
 
             const url = id ? `/lppm/mahasiswa/${id}` : '/lppm/mahasiswa';
@@ -679,18 +764,26 @@
             try {
                 const res = await fetch(url, {
                     method,
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
                     body: JSON.stringify(payload),
                 });
                 const result = await res.json();
                 if (!res.ok) {
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
-                    modalError.textContent = firstError; modalError.hidden = false; return;
+                    modalError.textContent = firstError;
+                    modalError.hidden = false;
+                    return;
                 }
-                if (id) updateRow(result.data); else insertRow(result.data);
+                if (id) updateRow(result.data);
+                else insertRow(result.data);
                 closeModal();
             } catch (err) {
-                modalError.textContent = 'Gagal terhubung ke server.'; modalError.hidden = false;
+                modalError.textContent = 'Gagal terhubung ke server.';
+                modalError.hidden = false;
             } finally {
                 modalSubmitBtn.disabled = false;
             }
@@ -699,11 +792,19 @@
         async function handleDelete(id) {
             if (!confirm('Hapus data ini? Tindakan tidak bisa dibatalkan.')) return;
             try {
-                const res = await fetch(`/lppm/mahasiswa/${id}`, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken } });
+                const res = await fetch(`/lppm/mahasiswa/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
                 const result = await res.json();
                 if (res.ok && result.success) removeRow(result.id);
                 else alert(result.message || 'Gagal menghapus data.');
-            } catch (err) { alert('Gagal terhubung ke server.'); }
+            } catch (err) {
+                alert('Gagal terhubung ke server.');
+            }
         }
 
         tableBody.addEventListener('click', (e) => {

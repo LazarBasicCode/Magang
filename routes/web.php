@@ -35,6 +35,11 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+
+
+
+
+
 Route::get('/kemahasiswaan', function () {
     return view('kemahasiswaan');
 });

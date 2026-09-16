@@ -37,4 +37,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/lppm/rekognisi', function () {
         return view('lppm_rekognisi');
     });
+
+    Route::get('/kerja-sama', function () {
+        return view('kerja-sama');
+    });
 });

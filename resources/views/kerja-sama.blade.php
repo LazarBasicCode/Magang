@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -30,27 +31,27 @@
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
                     <span>Kemahasiswaan</span>
                 </a>
 
                 <div class="nav-heading">LPPM</div>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
                     <span class="material-symbols-outlined">person</span>
                     <span>Mahasiswa</span>
                 </a>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/lppm/dosen') }}" class="nav-link">
                     <span class="material-symbols-outlined">co_present</span>
                     <span>Dosen</span>
                 </a>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
                     <span class="material-symbols-outlined">workspace_premium</span>
                     <span>Rekognisi</span>
                 </a>
 
                 <div class="nav-heading">Kemitraan</div>
-                <a href="#" aria-current="page" class="nav-link is-active">
+                <a href="{{ url('/kerja-sama') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
                 </a>
@@ -112,7 +113,7 @@
                         <h1 class="page-title">Kerja Sama &amp; Kemitraan</h1>
                         <p class="page-subtitle">Pendataan kerja sama mahasiswa, dosen, guest lecture, pengabdian &amp; research internasional &middot; Tahun 2026</p>
                     </div>
-                    <button type="button" class="btn-primary">
+                    <button type="button" class="btn-primary" id="btnTambahKerjaSama">
                         <span class="material-symbols-outlined">add</span>
                         <span>Tambah Kerja Sama</span>
                     </button>
@@ -123,10 +124,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Total Kerja Sama</span>
-                            <span class="stat-value">36</span>
-                            <span class="stat-delta up">
-                                <span class="material-symbols-outlined">arrow_upward</span>8% bulan ini
-                            </span>
+                            <span class="stat-value">{{ $stats['total'] }}</span>
                         </div>
                         <div class="stat-icon primary">
                             <span class="material-symbols-outlined">handshake</span>
@@ -135,8 +133,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Mahasiswa</span>
-                            <span class="stat-value">14</span>
-                            <span class="stat-delta neutral">39% dari total</span>
+                            <span class="stat-value">{{ $stats['mahasiswa'] }}</span>
                         </div>
                         <div class="stat-icon info">
                             <span class="material-symbols-outlined">school</span>
@@ -145,8 +142,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Dosen</span>
-                            <span class="stat-value">9</span>
-                            <span class="stat-delta neutral">25% dari total</span>
+                            <span class="stat-value">{{ $stats['dosen'] }}</span>
                         </div>
                         <div class="stat-icon warning">
                             <span class="material-symbols-outlined">co_present</span>
@@ -155,8 +151,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Internasional</span>
-                            <span class="stat-value">13</span>
-                            <span class="stat-delta neutral">36% dari total</span>
+                            <span class="stat-value">{{ $stats['internasional'] }}</span>
                         </div>
                         <div class="stat-icon success">
                             <span class="material-symbols-outlined">public</span>
@@ -164,7 +159,7 @@
                     </div>
                 </div>
 
-                <!-- FILTER BAR -->
+                <!-- FILTER BAR (tampilan saja, belum disambung ke query) -->
                 <div class="filter-card">
                     <div class="filter-grid">
                         <!-- Tipe User -->
@@ -290,256 +285,95 @@
                                     <th class="center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Row 1: Conference Internasional Mahasiswa -->
-                                <tr>
-                                    <td><span class="nim-code">222011005</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-primary">AR</div>
-                                            <div class="student-name">
-                                                <span class="name">Ahmad Rizal Fauzi</span>
-                                                <span class="prodi">Teknik Informatika</span>
+                            <tbody id="kerjaSamaTableBody">
+                                @php
+                                    $jenisBadge = [
+                                        'conference_internasional' => ['label' => 'Conference Int.', 'class' => 'badge-info'],
+                                        'pkl' => ['label' => 'PKL', 'class' => 'badge-primary'],
+                                        'sharing_session' => ['label' => 'Sharing Session', 'class' => 'badge-warning'],
+                                        'keynote_session' => ['label' => 'Keynote Speaker', 'class' => 'badge-success'],
+                                        'guest_lecture' => ['label' => 'Guest Lecture', 'class' => 'badge-info'],
+                                        'pengabdian_internasional' => ['label' => 'Pengabdian Int.', 'class' => 'badge-danger'],
+                                        'research_internasional' => ['label' => 'Research Int.', 'class' => 'badge-neutral'],
+                                    ];
+                                    $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                @endphp
+                                @forelse($items as $item)
+                                    @php
+                                        $nama = $item->user->name ?? 'Tanpa Nama';
+                                        $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                        $avatarColor = $colors[$item->user_id % count($colors)];
+                                        $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
+                                        $periode = optional($item->tanggal_mulai)->translatedFormat('d M Y') . ' - ' . optional($item->tanggal_selesai)->translatedFormat('d M Y');
+                                    @endphp
+                                    <tr data-id="{{ $item->id }}">
+                                        <td><span class="nim-code">{{ $item->user->nim_nidn ?? '-' }}</span></td>
+                                        <td>
+                                            <div class="student-cell">
+                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                                <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title" title="International Conference on Artificial Intelligence 2026">International Conference on Artificial Intelligence 2026</span>
-                                    </td>
-                                    <td class="center"><span class="badge badge-info">Conference Int.</span></td>
-                                    <td class="center"><span class="badge badge-neutral">Mahasiswa</span></td>
-                                    <td class="center"><span class="plain-text">-</span></td>
-                                    <td class="center"><span class="plain-text">IEEE Indonesia</span></td>
-                                    <td class="center"><span class="year-chip">12-15 Feb 2026</span></td>
-                                    <td class="center">
-                                        <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Row 2: PKL Mahasiswa -->
-                                <tr>
-                                    <td><span class="nim-code">232012014</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-info">SN</div>
-                                            <div class="student-name">
-                                                <span class="name">Siti Nurhaliza Putri</span>
-                                                <span class="prodi">Sistem Informasi</span>
+                                        </td>
+                                        <td>
+                                            <span class="activity-title" title="{{ $item->judul_kegiatan }}">{{ $item->judul_kegiatan }}</span>
+                                        </td>
+                                        <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
+                                        <td class="center"><span class="badge badge-neutral">{{ ucfirst($item->tipe_user) }}</span></td>
+                                        <td class="center">
+                                            @if($item->arah)
+                                                <span class="badge badge-primary">{{ ucfirst($item->arah) }}</span>
+                                            @else
+                                                <span class="plain-text">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="center"><span class="plain-text">{{ $item->mitra }}</span></td>
+                                        <td class="center"><span class="year-chip">{{ $periode }}</span></td>
+                                        <td class="center">
+                                            <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
+                                                <span class="material-symbols-outlined">cloud</span>
+                                                <span>Lihat Bukti</span>
+                                            </a>
+                                        </td>
+                                        <td class="center">
+                                            <div class="row-actions">
+                                                <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                                                    data-id="{{ $item->id }}"
+                                                    data-user_id="{{ $item->user_id }}"
+                                                    data-tipe_user="{{ $item->tipe_user }}"
+                                                    data-jenis="{{ $item->jenis }}"
+                                                    data-arah="{{ $item->arah }}"
+                                                    data-mitra="{{ urlencode($item->mitra) }}"
+                                                    data-judul_kegiatan="{{ urlencode($item->judul_kegiatan) }}"
+                                                    data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
+                                                    data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
+                                                    data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}">
+                                                    <span class="material-symbols-outlined">edit</span>
+                                                </button>
+                                                <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
+                                                    <span class="material-symbols-outlined">delete</span>
+                                                </button>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title" title="Praktik Kerja Lapangan di PT Telkom Indonesia">Praktik Kerja Lapangan di PT Telkom Indonesia</span>
-                                    </td>
-                                    <td class="center"><span class="badge badge-primary">PKL</span></td>
-                                    <td class="center"><span class="badge badge-neutral">Mahasiswa</span></td>
-                                    <td class="center"><span class="plain-text">-</span></td>
-                                    <td class="center"><span class="plain-text">PT Telkom Indonesia</span></td>
-                                    <td class="center"><span class="year-chip">1 Jan - 31 Mar 2026</span></td>
-                                    <td class="center">
-                                        <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Row 3: Sharing Session Mahasiswa -->
-                                <tr>
-                                    <td><span class="nim-code">211009088</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-warning">KA</div>
-                                            <div class="student-name">
-                                                <span class="name">Kevin Ardiansyah</span>
-                                                <span class="prodi">Desain Komunikasi Visual</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title" title="Sharing Session UI/UX Design bersama Google Indonesia">Sharing Session UI/UX Design bersama Google Indonesia</span>
-                                    </td>
-                                    <td class="center"><span class="badge badge-warning">Sharing Session</span></td>
-                                    <td class="center"><span class="badge badge-neutral">Mahasiswa</span></td>
-                                    <td class="center"><span class="plain-text">-</span></td>
-                                    <td class="center"><span class="plain-text">Google Indonesia</span></td>
-                                    <td class="center"><span class="year-chip">20 Mar 2026</span></td>
-                                    <td class="center">
-                                        <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Row 4: Keynote Speaker Dosen -->
-                                <tr>
-                                    <td><span class="nim-code">0712345601</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-danger">BS</div>
-                                            <div class="student-name">
-                                                <span class="name">Dr. Budi Santoso</span>
-                                                <span class="prodi">Teknik Informatika</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title" title="Keynote Speaker di International Seminar on Cybersecurity">Keynote Speaker di International Seminar on Cybersecurity</span>
-                                    </td>
-                                    <td class="center"><span class="badge badge-success">Keynote Speaker</span></td>
-                                    <td class="center"><span class="badge badge-neutral">Dosen</span></td>
-                                    <td class="center"><span class="plain-text">-</span></td>
-                                    <td class="center"><span class="plain-text">NUS Singapore</span></td>
-                                    <td class="center"><span class="year-chip">5 Apr 2026</span></td>
-                                    <td class="center">
-                                        <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Row 5: Guest Lecture Inbound -->
-                                <tr>
-                                    <td><span class="nim-code">0712345602</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-success">RW</div>
-                                            <div class="student-name">
-                                                <span class="name">Prof. Rina Wijaya</span>
-                                                <span class="prodi">Sistem Informasi</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title" title="Guest Lecture: AI in Healthcare dari Universitas Melbourne">Guest Lecture: AI in Healthcare dari Universitas Melbourne</span>
-                                    </td>
-                                    <td class="center"><span class="badge badge-info">Guest Lecture</span></td>
-                                    <td class="center"><span class="badge badge-neutral">Dosen</span></td>
-                                    <td class="center"><span class="badge badge-primary">Inbound</span></td>
-                                    <td class="center"><span class="plain-text">Universitas Melbourne</span></td>
-                                    <td class="center"><span class="year-chip">10 Mei 2026</span></td>
-                                    <td class="center">
-                                        <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Row 6: Pengabdian Internasional Dosen -->
-                                <tr>
-                                    <td><span class="nim-code">0712345603</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-primary">AH</div>
-                                            <div class="student-name">
-                                                <span class="name">Dr. Ahmad Hidayat</span>
-                                                <span class="prodi">Teknik Elektro</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title" title="Pengabdian Internasional: Instalasi Panel Surya di Desa Terpencil Timor Leste">Pengabdian Internasional: Instalasi Panel Surya di Desa Terpencil Timor Leste</span>
-                                    </td>
-                                    <td class="center"><span class="badge badge-danger">Pengabdian Int.</span></td>
-                                    <td class="center"><span class="badge badge-neutral">Dosen</span></td>
-                                    <td class="center"><span class="plain-text">-</span></td>
-                                    <td class="center"><span class="plain-text">Universidade Nacional Timor Lorosa'e</span></td>
-                                    <td class="center"><span class="year-chip">1-14 Jun 2026</span></td>
-                                    <td class="center">
-                                        <a href="#" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Lihat Detail" class="row-action-btn">
-                                                <span class="material-symbols-outlined">visibility</span>
-                                            </button>
-                                            <button type="button" title="Opsi" class="row-action-btn is-secondary">
-                                                <span class="material-symbols-outlined">more_vert</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr id="emptyRow">
+                                        <td colspan="10" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                            Belum ada data kerja sama. Klik "Tambah Kerja Sama" untuk mulai mengisi.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- FOOTER: pagination -->
+                    <!-- FOOTER -->
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>1-6</strong> dari <strong>36</strong> data kerja sama tahun <span class="highlight">2026</span>
+                            Menampilkan <strong>{{ $items->firstItem() ?? 0 }}-{{ $items->lastItem() ?? 0 }}</strong>
+                            dari <strong>{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">2026</span>
                         </div>
-                        <div class="pagination">
-                            <button type="button" class="page-btn" disabled>
-                                <span class="material-symbols-outlined">chevron_left</span>
-                            </button>
-                            <button type="button" class="page-btn is-active">1</button>
-                            <button type="button" class="page-btn">2</button>
-                            <button type="button" class="page-btn">3</button>
-                            <span class="page-ellipsis">&hellip;</span>
-                            <button type="button" class="page-btn">6</button>
-                            <button type="button" class="page-btn">
-                                <span class="material-symbols-outlined">chevron_right</span>
-                            </button>
-                        </div>
+                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $items->links() }}
+                             setelah view paginator kamu disesuaikan dengan desain ini. --}}
                     </div>
                 </div>
             </div>
@@ -547,8 +381,127 @@
     </div>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+    <!-- ============ MODAL: Tambah / Edit Kerja Sama ============ -->
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-card" id="kerjaSamaModal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-drag-handle" id="modalDragHandle">
+            <div>
+                <h3 class="modal-title" id="modalTitle">Tambah Kerja Sama</h3>
+                <p class="modal-subtitle">Isi detail kerja sama &amp; kemitraan mahasiswa/dosen</p>
+            </div>
+            <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Tutup">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="kerjaSamaForm" class="modal-body">
+            <input type="hidden" id="form-id" value="">
+            <input type="hidden" id="form-tipe_user" value="">
+
+            <div class="field">
+                <label class="field-label">Mahasiswa / Dosen</label>
+                <div class="dropdown" data-dropdown id="dd-user">
+                    <input type="hidden" id="form-user_id" value="" />
+                    <button type="button" class="dropdown-trigger">
+                        <span class="dropdown-value">Pilih mahasiswa/dosen...</span>
+                        <span class="material-symbols-outlined caret">expand_more</span>
+                    </button>
+                    <div class="dropdown-panel">
+                        @foreach($userList as $u)
+                            <button type="button" class="dropdown-option" data-value="{{ $u->id }}" data-role="{{ $u->role }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} ({{ ucfirst($u->role) }})</button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label">Jenis Kerja Sama</label>
+                    <div class="dropdown" data-dropdown id="dd-jenis">
+                        <input type="hidden" id="form-jenis" value="conference_internasional" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">Conference Internasional</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="conference_internasional">Conference Internasional</button>
+                            <button type="button" class="dropdown-option" data-value="pkl">PKL (Output)</button>
+                            <button type="button" class="dropdown-option" data-value="sharing_session">Sharing Session</button>
+                            <button type="button" class="dropdown-option" data-value="keynote_session">Keynote Speaker</button>
+                            <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
+                            <button type="button" class="dropdown-option" data-value="pengabdian_internasional">Pengabdian Internasional</button>
+                            <button type="button" class="dropdown-option" data-value="research_internasional">Research Internasional</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field" id="field-arah">
+                    <label class="field-label">Arah (khusus Guest Lecture)</label>
+                    <div class="dropdown" data-dropdown id="dd-arah">
+                        <input type="hidden" id="form-arah" value="inbound" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">Inbound</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="inbound">Inbound</button>
+                            <button type="button" class="dropdown-option" data-value="outbound">Outbound</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="form-judul_kegiatan">Judul Kegiatan</label>
+                <div class="field-control">
+                    <input id="form-judul_kegiatan" type="text" placeholder="Judul kegiatan kerja sama" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="form-mitra">Mitra (Institusi/Perusahaan/Negara)</label>
+                <div class="field-control">
+                    <input id="form-mitra" type="text" placeholder="Nama mitra kerja sama" required>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label class="field-label" for="form-tanggal_mulai">Tanggal Mulai</label>
+                    <div class="field-control">
+                        <input id="form-tanggal_mulai" type="date" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-tanggal_selesai">Tanggal Selesai</label>
+                    <div class="field-control">
+                        <input id="form-tanggal_selesai" type="date" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="form-bukti_kegiatan">Link Bukti Kegiatan</label>
+                <div class="field-control">
+                    <input id="form-bukti_kegiatan" type="url" placeholder="https://drive.google.com/..." required>
+                </div>
+            </div>
+
+            <div class="modal-error" id="modalError" hidden></div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" id="modalCancelBtn">Batal</button>
+                <button type="submit" class="btn-apply" id="modalSubmitBtn">
+                    <span class="material-symbols-outlined">save</span>
+                    <span>Simpan</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
     <script>
-        // Custom Dropdown
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+        // ---------------- Custom Dropdown ----------------
         const dropdowns = document.querySelectorAll('[data-dropdown]');
 
         dropdowns.forEach((dropdown) => {
@@ -579,6 +532,22 @@
             dropdowns.forEach((d) => d.classList.remove('is-open'));
         });
 
+        function selectDropdownValue(dropdownEl, value, placeholder) {
+            if (!dropdownEl) return;
+            const options = dropdownEl.querySelectorAll('.dropdown-option');
+            const valueEl = dropdownEl.querySelector('.dropdown-value');
+            const hiddenInput = dropdownEl.querySelector('input[type="hidden"]');
+            let matched = false;
+            options.forEach((o) => {
+                const isMatch = o.dataset.value === String(value);
+                o.classList.toggle('is-selected', isMatch);
+                if (isMatch) { valueEl.textContent = o.textContent.trim(); matched = true; }
+            });
+            if (hiddenInput) hiddenInput.value = matched ? value : '';
+            if (!matched) valueEl.textContent = placeholder || (options[0] ? options[0].textContent.trim() : '');
+            return matched;
+        }
+
         // Reset Dropdown
         function resetDropdown(dropdown) {
             if (!dropdown) return;
@@ -595,7 +564,7 @@
         }
 
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            document.querySelectorAll('[data-dropdown]').forEach(resetDropdown);
+            document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
             const search = document.getElementById('filter-search');
             if (search) search.value = '';
         });
@@ -655,6 +624,249 @@
             }
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         });
+
+        // ================================================================
+        // MODAL: buka/tutup, drag, field kondisional, dan CRUD via fetch
+        // ================================================================
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalCard = document.getElementById('kerjaSamaModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalForm = document.getElementById('kerjaSamaForm');
+        const modalError = document.getElementById('modalError');
+        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const btnTambah = document.getElementById('btnTambahKerjaSama');
+        const tableBody = document.getElementById('kerjaSamaTableBody');
+        const dragHandle = document.getElementById('modalDragHandle');
+        const fieldArah = document.getElementById('field-arah');
+        const ddUser = document.getElementById('dd-user');
+
+        function updateConditionalFields(jenis) {
+            const isGuestLecture = jenis === 'guest_lecture';
+            fieldArah.classList.toggle('hidden', !isGuestLecture);
+        }
+        document.querySelectorAll('#dd-jenis .dropdown-option').forEach((opt) => {
+            opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));
+        });
+
+        // Saat memilih mahasiswa/dosen, otomatis set tipe_user sesuai role user tsb.
+        document.querySelectorAll('#dd-user .dropdown-option').forEach((opt) => {
+            opt.addEventListener('click', () => {
+                document.getElementById('form-tipe_user').value = opt.dataset.role || '';
+            });
+        });
+
+        function openModal(mode, data = {}) {
+            modalForm.reset();
+            modalError.hidden = true;
+            modalCard.style.left = ''; modalCard.style.top = ''; modalCard.style.transform = '';
+
+            document.getElementById('form-id').value = data.id || '';
+            modalTitle.textContent = mode === 'edit' ? 'Edit Kerja Sama' : 'Tambah Kerja Sama';
+
+            selectDropdownValue(ddUser, data.user_id || '', 'Pilih mahasiswa/dosen...');
+            document.getElementById('form-tipe_user').value = data.tipe_user || '';
+
+            const jenis = data.jenis || 'conference_internasional';
+            selectDropdownValue(document.getElementById('dd-jenis'), jenis);
+            updateConditionalFields(jenis);
+
+            selectDropdownValue(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');
+
+            document.getElementById('form-judul_kegiatan').value = data.judul_kegiatan ? decodeURIComponent(data.judul_kegiatan) : '';
+            document.getElementById('form-mitra').value = data.mitra ? decodeURIComponent(data.mitra) : '';
+            document.getElementById('form-tanggal_mulai').value = data.tanggal_mulai || '';
+            document.getElementById('form-tanggal_selesai').value = data.tanggal_selesai || '';
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+
+            modalBackdrop.classList.add('is-active');
+            modalCard.classList.add('is-active');
+            modalCard.setAttribute('aria-hidden', 'false');
+        }
+        function closeModal() {
+            modalBackdrop.classList.remove('is-active');
+            modalCard.classList.remove('is-active');
+            modalCard.setAttribute('aria-hidden', 'true');
+        }
+        btnTambah?.addEventListener('click', () => openModal('create'));
+        modalCloseBtn.addEventListener('click', closeModal);
+        modalCancelBtn.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', closeModal);
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal(); });
+
+        // ---- Drag modal ----
+        let dragState = null;
+        dragHandle.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.modal-close-btn')) return;
+            const rect = modalCard.getBoundingClientRect();
+            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
+            modalCard.style.left = rect.left + 'px'; modalCard.style.top = rect.top + 'px'; modalCard.style.transform = 'none';
+            modalCard.classList.add('is-dragging');
+            dragHandle.setPointerCapture(e.pointerId);
+        });
+        dragHandle.addEventListener('pointermove', (e) => {
+            if (!dragState) return;
+            const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
+            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8, maxTop = window.innerHeight - modalCard.offsetHeight - 8;
+            modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
+            modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
+        });
+        function endDrag(e) { if (!dragState) return; dragState = null; modalCard.classList.remove('is-dragging'); try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {} }
+        dragHandle.addEventListener('pointerup', endDrag);
+        dragHandle.addEventListener('pointercancel', endDrag);
+
+        // ---- Bangun/ganti/hapus baris tabel ----
+        const jenisBadge = {
+            conference_internasional: { label: 'Conference Int.', cls: 'badge-info' },
+            pkl: { label: 'PKL', cls: 'badge-primary' },
+            sharing_session: { label: 'Sharing Session', cls: 'badge-warning' },
+            keynote_session: { label: 'Keynote Speaker', cls: 'badge-success' },
+            guest_lecture: { label: 'Guest Lecture', cls: 'badge-info' },
+            pengabdian_internasional: { label: 'Pengabdian Int.', cls: 'badge-danger' },
+            research_internasional: { label: 'Research Int.', cls: 'badge-neutral' },
+        };
+        function initials(name) { return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-'; }
+        function avatarColor(id) { const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger']; return c[Number(id) % c.length]; }
+        function esc(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }
+        function formatTanggal(iso) {
+            if (!iso) return '-';
+            const d = new Date(iso + 'T00:00:00');
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+        function ucfirst(str) { return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''; }
+
+        function buildRowHTML(item) {
+            const jb = jenisBadge[item.jenis] || { label: item.jenis, cls: 'badge-neutral' };
+            const arahHTML = item.arah ? `<span class="badge badge-primary">${esc(ucfirst(item.arah))}</span>` : '<span class="plain-text">-</span>';
+            const periode = `${formatTanggal(item.tanggal_mulai)} - ${formatTanggal(item.tanggal_selesai)}`;
+            return `
+            <tr data-id="${item.id}">
+                <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
+                <td>
+                    <div class="student-cell">
+                        <div class="avatar ${avatarColor(item.user_id)}">${esc(initials(item.nama))}</div>
+                        <div class="student-name"><span class="name">${esc(item.nama)}</span></div>
+                    </div>
+                </td>
+                <td><span class="activity-title" title="${esc(item.judul_kegiatan)}">${esc(item.judul_kegiatan)}</span></td>
+                <td class="center"><span class="badge ${jb.cls}">${esc(jb.label)}</span></td>
+                <td class="center"><span class="badge badge-neutral">${esc(ucfirst(item.tipe_user))}</span></td>
+                <td class="center">${arahHTML}</td>
+                <td class="center"><span class="plain-text">${esc(item.mitra)}</span></td>
+                <td class="center"><span class="year-chip">${esc(periode)}</span></td>
+                <td class="center">
+                    <a href="${esc(item.bukti_kegiatan)}" target="_blank" rel="noopener noreferrer" class="evidence-link">
+                        <span class="material-symbols-outlined">cloud</span><span>Lihat Bukti</span>
+                    </a>
+                </td>
+                <td class="center">
+                    <div class="row-actions">
+                        <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                            data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
+                            data-jenis="${item.jenis}" data-arah="${item.arah || ''}"
+                            data-mitra="${encodeURIComponent(item.mitra)}"
+                            data-judul_kegiatan="${encodeURIComponent(item.judul_kegiatan)}"
+                            data-tanggal_mulai="${item.tanggal_mulai}" data-tanggal_selesai="${item.tanggal_selesai}"
+                            data-bukti_kegiatan="${encodeURIComponent(item.bukti_kegiatan)}">
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>
+                </td>
+            </tr>`.trim();
+        }
+        function insertRow(item) {
+            document.getElementById('emptyRow')?.remove();
+            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
+            const row = wrap.firstElementChild; row.classList.add('is-new');
+            tableBody.prepend(row);
+        }
+        function updateRow(item) {
+            const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
+            if (!existing) return insertRow(item);
+            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
+            existing.replaceWith(wrap.firstElementChild);
+        }
+        function removeRow(id) {
+            const row = tableBody.querySelector(`tr[data-id="${id}"]`);
+            if (!row) return;
+            row.classList.add('is-removing');
+            row.addEventListener('transitionend', () => row.remove(), { once: true });
+        }
+
+        modalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            modalError.hidden = true;
+            modalSubmitBtn.disabled = true;
+
+            const id = document.getElementById('form-id').value;
+            const jenis = document.getElementById('form-jenis').value;
+            const payload = {
+                user_id: document.getElementById('form-user_id').value,
+                tipe_user: document.getElementById('form-tipe_user').value,
+                jenis: jenis,
+                arah: jenis === 'guest_lecture' ? document.getElementById('form-arah').value : null,
+                judul_kegiatan: document.getElementById('form-judul_kegiatan').value,
+                mitra: document.getElementById('form-mitra').value,
+                tanggal_mulai: document.getElementById('form-tanggal_mulai').value,
+                tanggal_selesai: document.getElementById('form-tanggal_selesai').value,
+                bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
+            };
+
+            if (!payload.user_id) {
+                modalError.textContent = 'Pilih mahasiswa/dosen terlebih dahulu.';
+                modalError.hidden = false; modalSubmitBtn.disabled = false; return;
+            }
+            if (!payload.tipe_user) {
+                modalError.textContent = 'Tipe user tidak terdeteksi, pilih ulang mahasiswa/dosen.';
+                modalError.hidden = false; modalSubmitBtn.disabled = false; return;
+            }
+
+            const url = id ? `/kerja-sama/${id}` : '/kerja-sama';
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify(payload),
+                });
+                const result = await res.json();
+                if (!res.ok) {
+                    const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
+                    modalError.textContent = firstError; modalError.hidden = false; return;
+                }
+                if (id) updateRow(result.data); else insertRow(result.data);
+                closeModal();
+            } catch (err) {
+                modalError.textContent = 'Gagal terhubung ke server.'; modalError.hidden = false;
+            } finally {
+                modalSubmitBtn.disabled = false;
+            }
+        });
+
+        async function handleDelete(id) {
+            if (!confirm('Hapus data kerja sama ini? Tindakan tidak bisa dibatalkan.')) return;
+            try {
+                const res = await fetch(`/kerja-sama/${id}`, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken } });
+                const result = await res.json();
+                if (res.ok && result.success) removeRow(result.id);
+                else alert(result.message || 'Gagal menghapus data.');
+            } catch (err) { alert('Gagal terhubung ke server.'); }
+        }
+
+        tableBody.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.btn-edit-row');
+            if (editBtn) return openModal('edit', editBtn.dataset);
+            const delBtn = e.target.closest('.btn-delete-row');
+            if (delBtn) handleDelete(delBtn.dataset.id);
+        });
+
+        // Set kondisi awal field arah saat modal pertama kali di-load
+        updateConditionalFields(document.getElementById('form-jenis').value);
     </script>
 </body>
 

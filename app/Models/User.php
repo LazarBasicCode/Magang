@@ -42,8 +42,8 @@ class User extends Authenticatable
     }
 
     // Relasi ke tabel Kerja_Sama (1 User bisa menginput banyak Kerja Sama)
-    // public function kerjaSama()
-    // {
-    //     return $this->hasMany(KerjaSama::class); // Asumsi kamu punya model KerjaSama
-    // }
+    public function kerjaSama()
+    {
+        return $this->hasMany(KerjaSama::class);
+    }
 }

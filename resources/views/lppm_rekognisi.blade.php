@@ -115,7 +115,7 @@
                 </a>
 
                 <div class="nav-heading">Kemitraan</div>
-                <a href="#" class="nav-link">
+                <a href="{{ url('/kerja-sama') }}" class="nav-link">
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
                 </a>

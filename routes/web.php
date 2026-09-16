@@ -6,6 +6,7 @@ use App\Http\Controllers\KemahasiswaanController;
 use App\Http\Controllers\LppmDosenController;
 use App\Http\Controllers\LppmMahasiswaController;
 use App\Http\Controllers\LppmRekognisiController;
+use App\Http\Controllers\KerjaSamaController;
 
 // Halaman Login (index.blade.php)
 Route::get('/', function () {
@@ -41,11 +42,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/lppm/rekognisi/{rekognisi}', [LppmRekognisiController::class, 'update'])->name('lppm.rekognisi.update');
     Route::delete('/lppm/rekognisi/{rekognisi}', [LppmRekognisiController::class, 'destroy'])->name('lppm.rekognisi.destroy');
 
-    Route::get('/kerja-sama', function () {
-        return view('kerja-sama');
-    });
-
-    Route::get('/data_master_users', function () {
-        return view('data_master_users');
-    });
+    // ---- Kerja Sama (baru) ----
+    Route::get('/kerja-sama', [KerjaSamaController::class, 'index'])->name('kerja-sama.index');
+    Route::post('/kerja-sama', [KerjaSamaController::class, 'store'])->name('kerja-sama.store');
+    Route::put('/kerja-sama/{kerjaSama}', [KerjaSamaController::class, 'update'])->name('kerja-sama.update');
+    Route::delete('/kerja-sama/{kerjaSama}', [KerjaSamaController::class, 'destroy'])->name('kerja-sama.destroy');
 });

@@ -14,6 +14,10 @@ Route::get('/', function () {
     return view('index');
 })->name('login');
 
+Route::get('/hak-akses', function () {
+    return view('hak-akses');
+})->name('login');
+
 // Rute Pemrosesan Login & Logout
 Route::post('/login-process', [AuthController::class, 'loginProcess']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

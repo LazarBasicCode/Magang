@@ -67,6 +67,10 @@
                     <span class="material-symbols-outlined">manage_accounts</span>
                     <span>Data Master</span>
                 </a>
+                <a href="{{ url('/data-master/hak-akses') }}" class="nav-link">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                    <span>Hak Akses</span>
+                </a>
             </div>
         </nav>
 

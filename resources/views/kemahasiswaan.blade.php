@@ -173,7 +173,7 @@
                     </div>
                 </div>
 
-                <!-- FILTER BAR (tampilan saja untuk saat ini, belum disambung ke query) -->
+                <!-- FILTER BAR -->
                 <div class="filter-card">
                     <div class="filter-grid">
                         <div class="field">
@@ -252,11 +252,9 @@
                     <div class="filter-actions">
                         <button type="button" id="btn-reset-filter" class="btn-ghost">
                             <span class="material-symbols-outlined">restart_alt</span>
-                            <span>Reset</span>
                         </button>
                         <button type="button" id="btn-apply-filter" class="btn-apply">
                             <span class="material-symbols-outlined">filter_alt</span>
-                            <span>Terapkan Filter</span>
                         </button>
                     </div>
                 </div>

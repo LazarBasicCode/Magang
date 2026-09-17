@@ -55,6 +55,12 @@
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
                 </a>
+
+                <div class="nav-heading">Administrasi</div>
+                <a href="{{ url('/data-master/users') }}" class="nav-link">
+                    <span class="material-symbols-outlined">manage_accounts</span>
+                    <span>Data Master</span>
+                </a>
             </div>
         </nav>
 

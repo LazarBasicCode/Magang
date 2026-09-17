@@ -12,7 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-    <title>Kemahasiswaan &middot; SIDA</title>
+    <title>Data Master Pengguna &middot; SIDA</title>
 </head>
 
 <body>
@@ -37,7 +37,7 @@
                     <span>Dashboard</span>
                 </a>
 
-                <a href="{{ url('/kemahasiswaan') }}" aria-current="page" class="nav-link is-active">
+                <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
                     <span>Kemahasiswaan</span>
                 </a>
@@ -63,7 +63,7 @@
                 </a>
 
                 <div class="nav-heading">Administrasi</div>
-                <a href="{{ url('/data-master/users') }}" class="nav-link">
+                <a href="{{ url('/data-master/users') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">manage_accounts</span>
                     <span>Data Master</span>
                 </a>
@@ -86,9 +86,9 @@
                         <span class="material-symbols-outlined">menu</span>
                     </button>
                     <div class="header-crumb">
-                        <span class="link">Kemahasiswaan</span>
+                        <span class="link">Administrasi</span>
                         <span>/</span>
-                        <span class="current">Data Prestasi &amp; Kegiatan</span>
+                        <span class="current">Data Master Pengguna</span>
                     </div>
                     <div class="header-actions">
                         <button type="button" class="icon-btn" aria-label="Notifikasi">
@@ -103,7 +103,7 @@
                             <img alt="Profile"
                                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
                             <div class="header-profile-text">
-                                <span class="header-profile-name">Admin Kemahasiswaan</span>
+                                <span class="header-profile-name">Superadmin SIDA</span>
                                 <span class="header-profile-role">Institut Asia Malang</span>
                             </div>
                         </div>
@@ -119,17 +119,16 @@
                 <div class="title-bar">
                     <div>
                         <div class="breadcrumb">
-                            <span>Kemahasiswaan</span>
+                            <span>Administrasi</span>
                             <span class="material-symbols-outlined">chevron_right</span>
-                            <span class="current">Data Prestasi &amp; Kegiatan</span>
+                            <span class="current">Data Master Pengguna</span>
                         </div>
-                        <h1 class="page-title">Prestasi &amp; Kegiatan Mahasiswa</h1>
-                        <p class="page-subtitle">Pendataan kegiatan akademik, non-akademik, inbis, dan kompetisi
-                            &middot; Tahun Akademik 2025/2026 (Genap)</p>
+                        <h1 class="page-title">Data Master Pengguna</h1>
+                        <p class="page-subtitle">Kelola akun pengguna sistem: Superadmin, Admin, Dosen, dan Mahasiswa</p>
                     </div>
-                    <button type="button" class="btn-primary" id="btnTambahKegiatan">
+                    <button type="button" class="btn-primary" id="btnTambahUser">
                         <span class="material-symbols-outlined">add</span>
-                        <span>Tambah Kegiatan</span>
+                        <span>Tambah Pengguna</span>
                     </button>
                 </div>
 
@@ -137,38 +136,38 @@
                 <div class="stat-grid">
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Total Kegiatan</span>
+                            <span class="stat-label">Total Pengguna</span>
                             <span class="stat-value">{{ $stats['total'] }}</span>
                         </div>
                         <div class="stat-icon primary">
-                            <span class="material-symbols-outlined">emoji_events</span>
+                            <span class="material-symbols-outlined">groups</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Tingkat Nasional</span>
-                            <span class="stat-value">{{ $stats['nasional'] }}</span>
+                            <span class="stat-label">Mahasiswa</span>
+                            <span class="stat-value">{{ $stats['mahasiswa'] }}</span>
                         </div>
                         <div class="stat-icon primary">
-                            <span class="material-symbols-outlined">flag</span>
+                            <span class="material-symbols-outlined">person</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Tingkat Internasional</span>
-                            <span class="stat-value">{{ $stats['internasional'] }}</span>
+                            <span class="stat-label">Dosen</span>
+                            <span class="stat-value">{{ $stats['dosen'] }}</span>
                         </div>
                         <div class="stat-icon primary">
-                            <span class="material-symbols-outlined">public</span>
+                            <span class="material-symbols-outlined">co_present</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Unit Inbis</span>
-                            <span class="stat-value">{{ $stats['inbis'] }}</span>
+                            <span class="stat-label">Admin &amp; Superadmin</span>
+                            <span class="stat-value">{{ $stats['admin'] }}</span>
                         </div>
                         <div class="stat-icon primary">
-                            <span class="material-symbols-outlined">storefront</span>
+                            <span class="material-symbols-outlined">admin_panel_settings</span>
                         </div>
                     </div>
                 </div>
@@ -177,67 +176,22 @@
                 <div class="filter-card">
                     <div class="filter-grid">
                         <div class="field">
-                            <label class="field-label">Jenis Divisi</label>
+                            <label class="field-label">Role Pengguna</label>
                             <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-jenis" value="semua" />
+                                <input type="hidden" id="filter-role" value="semua" />
                                 <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Jenis</span>
+                                    <span class="dropdown-value">Semua Role</span>
                                     <span class="material-symbols-outlined caret">expand_more</span>
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
-                                        Jenis</button>
-                                    <button type="button" class="dropdown-option" data-value="inbis">Inbis (Inkubator
-                                        Bisnis)</button>
+                                        Role</button>
                                     <button type="button" class="dropdown-option"
-                                        data-value="kemahasiswaan">Kemahasiswaan</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="field-label">Kategori Tab</label>
-                            <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-tab" value="semua" />
-                                <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Tab</span>
-                                    <span class="material-symbols-outlined caret">expand_more</span>
-                                </button>
-                                <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
-                                        Tab</button>
+                                        data-value="superadmin">Superadmin</button>
+                                    <button type="button" class="dropdown-option" data-value="admin">Admin</button>
+                                    <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
                                     <button type="button" class="dropdown-option"
-                                        data-value="akademik">Akademik</button>
-                                    <button type="button" class="dropdown-option" data-value="non_akademik">Non
-                                        Akademik</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="field-label">Tingkat Capaian</label>
-                            <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-tingkat" value="semua" />
-                                <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Tingkat</span>
-                                    <span class="material-symbols-outlined caret">expand_more</span>
-                                </button>
-                                <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
-                                        Tingkat</button>
-                                    <button type="button" class="dropdown-option" data-value="lokal">Lokal
-                                        (Kota/Wilayah)</button>
-                                    <button type="button" class="dropdown-option"
-                                        data-value="nasional">Nasional (RI)</button>
-                                    <button type="button" class="dropdown-option" data-value="internasional">Internasional
-                                        (Global)</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="field-label">Tahun Akademik</label>
-                            <div class="field-locked">
-                                <div class="field-locked-inner">
-                                    <span class="material-symbols-outlined">lock</span>
-                                    <span class="field-locked-value">2026</span>
+                                        data-value="mahasiswa">Mahasiswa</button>
                                 </div>
                             </div>
                         </div>
@@ -245,7 +199,7 @@
                             <label class="field-label" for="filter-search">Pencarian Cepat</label>
                             <div class="field-control">
                                 <span class="material-symbols-outlined icon-search">search</span>
-                                <input id="filter-search" type="text" placeholder="Cari NIM/nama mahasiswa..." />
+                                <input id="filter-search" type="text" placeholder="Cari nama, NIM, atau NIDN..." />
                             </div>
                         </div>
                     </div>
@@ -265,9 +219,8 @@
                 <div class="table-card">
                     <div class="table-card-header">
                         <div>
-                            <h2 class="table-card-title">Daftar Rekap Prestasi Mahasiswa</h2>
-                            <p class="table-card-subtitle">Data kegiatan terverifikasi sesuai format resmi SIM
-                                Kemahasiswaan 2026</p>
+                            <h2 class="table-card-title">Daftar Pengguna Sistem</h2>
+                            <p class="table-card-subtitle">Data akun Superadmin, Admin, Dosen, dan Mahasiswa</p>
                         </div>
                         <div class="table-card-tools">
                             <button type="button" class="tool-btn">
@@ -281,75 +234,66 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>NIM</th>
-                                    <th>Mahasiswa</th>
-                                    <th>Nama Kegiatan</th>
-                                    <th class="center">Jenis</th>
-                                    <th class="center">Tab</th>
-                                    <th class="center">Tingkat</th>
-                                    <th class="center">Tahun</th>
-                                    <th class="center">Bukti Kegiatan</th>
+                                    <th>ID</th>
+                                    <th>Nama Lengkap</th>
+                                    <th class="center">Role</th>
+                                    <th class="center">NIM / NIDN</th>
                                     <th class="center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="kegiatanTableBody">
-                                @forelse($kegiatan as $item)
-                                @php
-                                $nama = optional($item->mahasiswa->user)->name ?? 'Tanpa Nama';
-                                $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
-                                $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
-                                $avatarColor = $colors[$item->mahasiswa_id % count($colors)];
-                                @endphp
-                                <tr data-id="{{ $item->id }}">
-                                    <td><span class="nim-code">{{ $item->mahasiswa->nim ?? '-' }}</span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
-                                            <div class="student-name">
-                                                <span class="name">{{ $nama }}</span>
+                            <tbody id="userTableBody">
+                                @forelse($users as $item)
+                                    @php
+                                        $initials = collect(explode(' ', $item->name))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                        $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                        $avatarColor = $colors[$item->id % count($colors)];
+                                        $roleBadge = [
+                                            'superadmin' => 'badge-danger',
+                                            'admin' => 'badge-warning',
+                                            'dosen' => 'badge-info',
+                                            'mahasiswa' => 'badge-success',
+                                        ][$item->role] ?? 'badge-neutral';
+                                        $roleLabel = ucfirst($item->role);
+                                        $identifier = $item->role === 'mahasiswa'
+                                            ? optional($item->mahasiswa)->nim
+                                            : ($item->role === 'dosen' ? optional($item->dosen)->nidn : null);
+                                    @endphp
+                                    <tr data-id="{{ $item->id }}">
+                                        <td><span class="nim-code">USR-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</span></td>
+                                        <td>
+                                            <div class="student-cell">
+                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                                <div class="student-name">
+                                                    <span class="name">{{ $item->name }}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="activity-title" title="{{ $item->nama_kegiatan }}">{{ $item->nama_kegiatan }}</span>
-                                    </td>
-                                    <td class="center"><span class="plain-text">{{ $item->jenis }}</span></td>
-                                    <td class="center"><span class="plain-text">{{ $item->tab }}</span></td>
-                                    <td class="center"><span class="plain-text">{{ $item->tingkat }}</span></td>
-                                    <td class="center"><span class="year-chip">{{ $item->tahun }}</span></td>
-                                    <td class="center">
-                                        <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer"
-                                            class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
-                                            <span>Lihat Bukti</span>
-                                        </a>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                                                data-id="{{ $item->id }}"
-                                                data-mahasiswa_id="{{ $item->mahasiswa_id }}"
-                                                data-jenis="{{ $item->jenis }}"
-                                                data-tab="{{ $item->tab }}"
-                                                data-tingkat="{{ $item->tingkat }}"
-                                                data-tahun="{{ $item->tahun }}"
-                                                data-nama_kegiatan="{{ urlencode($item->nama_kegiatan) }}"
-                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}">
-                                                <span class="material-symbols-outlined">edit</span>
-                                            </button>
-                                            <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
-                                                data-id="{{ $item->id }}">
-                                                <span class="material-symbols-outlined">delete</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                        <td class="center"><span class="badge {{ $roleBadge }}">{{ $roleLabel }}</span></td>
+                                        <td class="center">
+                                            <span class="plain-text">{{ $identifier ?? '—' }}</span>
+                                        </td>
+                                        <td class="center">
+                                            <div class="row-actions">
+                                                <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                                                    data-id="{{ $item->id }}"
+                                                    data-name="{{ urlencode($item->name) }}"
+                                                    data-role="{{ $item->role }}"
+                                                    data-identifier="{{ urlencode($identifier ?? '') }}">
+                                                    <span class="material-symbols-outlined">edit</span>
+                                                </button>
+                                                <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
+                                                    data-id="{{ $item->id }}">
+                                                    <span class="material-symbols-outlined">delete</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 @empty
-                                <tr id="emptyRow">
-                                    <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
-                                        Belum ada data kegiatan. Klik "Tambah Kegiatan" untuk mulai mengisi.
-                                    </td>
-                                </tr>
+                                    <tr id="emptyRow">
+                                        <td colspan="5" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                            Belum ada data pengguna. Klik "Tambah Pengguna" untuk mulai mengisi.
+                                        </td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -357,11 +301,11 @@
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>{{ $kegiatan->firstItem() ?? 0 }}-{{ $kegiatan->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $kegiatan->total() }}</strong> data kegiatan mahasiswa
+                            Menampilkan <strong>{{ $users->firstItem() ?? 0 }}-{{ $users->lastItem() ?? 0 }}</strong>
+                            dari <strong>{{ $users->total() }}</strong> data pengguna
                         </div>
-                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $kegiatan->links() }}
-                        setelah view paginator kamu disesuaikan dengan desain ini. --}}
+                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $users->links() }}
+                             setelah view paginator kamu disesuaikan dengan desain ini. --}}
                     </div>
                 </div>
             </div>
@@ -370,104 +314,58 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- ============ MODAL: Tambah / Edit Kegiatan ============ -->
+    <!-- ============ MODAL: Tambah / Edit Pengguna ============ -->
     <div class="modal-backdrop" id="modalBackdrop"></div>
-    <div class="modal-card" id="kegiatanModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card" id="userModal" role="dialog" aria-modal="true" aria-hidden="true">
         <div class="modal-drag-handle" id="modalDragHandle">
             <div>
-                <h3 class="modal-title" id="modalTitle">Tambah Kegiatan</h3>
-                <p class="modal-subtitle">Isi detail prestasi/kegiatan mahasiswa</p>
+                <h3 class="modal-title" id="modalTitle">Tambah Pengguna</h3>
+                <p class="modal-subtitle">Isi detail akun pengguna sistem</p>
             </div>
             <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Tutup">
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
 
-        <form id="kegiatanForm" class="modal-body">
+        <form id="userForm" class="modal-body">
             <input type="hidden" id="form-id" value="">
 
             <div class="field">
-                <label class="field-label">Mahasiswa</label>
-                <div class="dropdown" data-dropdown id="dd-mahasiswa">
-                    <input type="hidden" id="form-mahasiswa_id" value="" />
-                    <button type="button" class="dropdown-trigger">
-                        <span class="dropdown-value">Pilih mahasiswa...</span>
-                        <span class="material-symbols-outlined caret">expand_more</span>
-                    </button>
-                    <div class="dropdown-panel">
-                        @foreach($mahasiswaList as $m)
-                        <button type="button" class="dropdown-option" data-value="{{ $m->id }}">{{ $m->nim }} &mdash; {{ optional($m->user)->name ?? '-' }}</button>
-                        @endforeach
-                    </div>
+                <label class="field-label" for="form-name">Nama Lengkap</label>
+                <div class="field-control">
+                    <input id="form-name" type="text" placeholder="Contoh: Budi Santoso" required>
                 </div>
             </div>
 
             <div class="field-row">
                 <div class="field">
-                    <label class="field-label">Jenis Kegiatan</label>
-                    <div class="dropdown" data-dropdown id="dd-jenis">
-                        <input type="hidden" id="form-jenis" value="kemahasiswaan" />
+                    <label class="field-label">Role</label>
+                    <div class="dropdown" data-dropdown id="dd-role">
+                        <input type="hidden" id="form-role" value="mahasiswa" />
                         <button type="button" class="dropdown-trigger">
-                            <span class="dropdown-value">Kemahasiswaan</span>
+                            <span class="dropdown-value">Mahasiswa</span>
                             <span class="material-symbols-outlined caret">expand_more</span>
                         </button>
                         <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="kemahasiswaan">Kemahasiswaan</button>
-                            <button type="button" class="dropdown-option" data-value="inbis">Inbis (Inkubator Bisnis)</button>
+                            <button type="button" class="dropdown-option" data-value="superadmin">Superadmin</button>
+                            <button type="button" class="dropdown-option" data-value="admin">Admin</button>
+                            <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
+                            <button type="button" class="dropdown-option is-selected" data-value="mahasiswa">Mahasiswa</button>
                         </div>
                     </div>
                 </div>
-                <div class="field">
-                    <label class="field-label">Kategori Tab</label>
-                    <div class="dropdown" data-dropdown id="dd-tab">
-                        <input type="hidden" id="form-tab" value="akademik" />
-                        <button type="button" class="dropdown-trigger">
-                            <span class="dropdown-value">Akademik</span>
-                            <span class="material-symbols-outlined caret">expand_more</span>
-                        </button>
-                        <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="akademik">Akademik</button>
-                            <button type="button" class="dropdown-option" data-value="non_akademik">Non Akademik</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="field-row">
-                <div class="field">
-                    <label class="field-label">Tingkat Capaian</label>
-                    <div class="dropdown" data-dropdown id="dd-tingkat">
-                        <input type="hidden" id="form-tingkat" value="lokal" />
-                        <button type="button" class="dropdown-trigger">
-                            <span class="dropdown-value">Lokal (Kota/Wilayah)</span>
-                            <span class="material-symbols-outlined caret">expand_more</span>
-                        </button>
-                        <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="lokal">Lokal (Kota/Wilayah)</button>
-                            <button type="button" class="dropdown-option" data-value="nasional">Nasional (RI)</button>
-                            <button type="button" class="dropdown-option" data-value="internasional">Internasional (Global)</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="field">
-                    <label class="field-label" for="form-tahun">Tahun</label>
+                <div class="field" id="field-identifier">
+                    <label class="field-label" for="form-identifier" id="label-identifier">NIM</label>
                     <div class="field-control">
-                        <input id="form-tahun" type="number" min="2000" max="2100" value="2026" required>
+                        <input id="form-identifier" type="text" placeholder="Contoh: 222011005">
                     </div>
                 </div>
             </div>
 
             <div class="field">
-                <label class="field-label" for="form-nama_kegiatan">Nama Kegiatan</label>
+                <label class="field-label" for="form-password">Password</label>
                 <div class="field-control">
-                    <input id="form-nama_kegiatan" type="text" placeholder="Contoh: Juara 1 Kompetisi UI/UX Nasional" required>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="field-label" for="form-bukti_kegiatan">Link Bukti Kegiatan</label>
-                <div class="field-control">
-                    <input id="form-bukti_kegiatan" type="url" placeholder="https://drive.google.com/..." required>
+                    <input id="form-password" type="password" placeholder="Kosongkan jika tidak diubah (saat edit)">
                 </div>
             </div>
 
@@ -533,7 +431,7 @@
             });
             if (hiddenInput) hiddenInput.value = matched ? value : '';
             if (!matched && options.length) {
-                valueEl.textContent = dropdownEl.id === 'dd-mahasiswa' ? 'Pilih mahasiswa...' : options[0].textContent.trim();
+                valueEl.textContent = options[0].textContent.trim();
             }
         }
 
@@ -562,9 +460,7 @@
             if (btn) {
                 const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                }, 400);
+                setTimeout(() => { btn.innerHTML = originalHTML; }, 400);
             }
         });
 
@@ -579,7 +475,6 @@
             sidebarOverlay.classList.add('is-active');
             document.body.style.overflow = 'hidden';
         }
-
         function closeSidebar() {
             sidebar.classList.remove('is-open');
             sidebarOverlay.classList.remove('is-active');
@@ -588,9 +483,7 @@
         sidebarToggleBtn?.addEventListener('click', openSidebar);
         sidebarCloseBtn?.addEventListener('click', closeSidebar);
         sidebarOverlay?.addEventListener('click', closeSidebar);
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024) closeSidebar();
-        });
+        window.addEventListener('resize', () => { if (window.innerWidth >= 1024) closeSidebar(); });
 
         // ---------------- Dark Mode ----------------
         const themeToggleBtn = document.getElementById('themeToggleBtn');
@@ -611,16 +504,38 @@
         // MODAL: buka/tutup, drag, dan CRUD via fetch (tanpa reload halaman)
         // ================================================================
         const modalBackdrop = document.getElementById('modalBackdrop');
-        const modalCard = document.getElementById('kegiatanModal');
+        const modalCard = document.getElementById('userModal');
         const modalTitle = document.getElementById('modalTitle');
-        const modalForm = document.getElementById('kegiatanForm');
+        const modalForm = document.getElementById('userForm');
         const modalError = document.getElementById('modalError');
         const modalSubmitBtn = document.getElementById('modalSubmitBtn');
         const modalCloseBtn = document.getElementById('modalCloseBtn');
         const modalCancelBtn = document.getElementById('modalCancelBtn');
-        const btnTambah = document.getElementById('btnTambahKegiatan');
-        const tableBody = document.getElementById('kegiatanTableBody');
+        const btnTambah = document.getElementById('btnTambahUser');
+        const tableBody = document.getElementById('userTableBody');
         const dragHandle = document.getElementById('modalDragHandle');
+        const labelIdentifier = document.getElementById('label-identifier');
+        const inputIdentifier = document.getElementById('form-identifier');
+
+        // Sesuaikan label & placeholder NIM/NIDN berdasarkan role yang dipilih
+        function syncIdentifierField(role) {
+            if (role === 'mahasiswa') {
+                labelIdentifier.textContent = 'NIM';
+                inputIdentifier.placeholder = 'Contoh: 222011005';
+                inputIdentifier.closest('.field').hidden = false;
+            } else if (role === 'dosen') {
+                labelIdentifier.textContent = 'NIDN';
+                inputIdentifier.placeholder = 'Contoh: 0712048901';
+                inputIdentifier.closest('.field').hidden = false;
+            } else {
+                inputIdentifier.value = '';
+                inputIdentifier.closest('.field').hidden = true;
+            }
+        }
+
+        document.querySelectorAll('#dd-role .dropdown-option').forEach((option) => {
+            option.addEventListener('click', () => syncIdentifierField(option.dataset.value));
+        });
 
         function openModal(mode, data = {}) {
             modalForm.reset();
@@ -632,16 +547,17 @@
             modalCard.style.transform = '';
 
             document.getElementById('form-id').value = data.id || '';
-            modalTitle.textContent = mode === 'edit' ? 'Edit Kegiatan' : 'Tambah Kegiatan';
+            modalTitle.textContent = mode === 'edit' ? 'Edit Pengguna' : 'Tambah Pengguna';
 
-            selectDropdownValue(document.getElementById('dd-mahasiswa'), data.mahasiswa_id || '');
-            selectDropdownValue(document.getElementById('dd-jenis'), data.jenis || 'kemahasiswaan');
-            selectDropdownValue(document.getElementById('dd-tab'), data.tab || 'akademik');
-            selectDropdownValue(document.getElementById('dd-tingkat'), data.tingkat || 'lokal');
+            document.getElementById('form-name').value = data.name ? decodeURIComponent(data.name) : '';
 
-            document.getElementById('form-tahun').value = data.tahun || 2026;
-            document.getElementById('form-nama_kegiatan').value = data.nama_kegiatan ? decodeURIComponent(data.nama_kegiatan) : '';
-            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+            const role = data.role || 'mahasiswa';
+            selectDropdownValue(document.getElementById('dd-role'), role);
+            syncIdentifierField(role);
+            inputIdentifier.value = data.identifier ? decodeURIComponent(data.identifier) : '';
+
+            document.getElementById('form-password').value = '';
+            document.getElementById('form-password').required = mode !== 'edit';
 
             modalBackdrop.classList.add('is-active');
             modalCard.classList.add('is-active');
@@ -668,12 +584,7 @@
         dragHandle.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.modal-close-btn')) return;
             const rect = modalCard.getBoundingClientRect();
-            dragState = {
-                startX: e.clientX,
-                startY: e.clientY,
-                originX: rect.left,
-                originY: rect.top
-            };
+            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
             modalCard.style.left = rect.left + 'px';
             modalCard.style.top = rect.top + 'px';
             modalCard.style.transform = 'none';
@@ -691,14 +602,11 @@
             modalCard.style.left = newLeft + 'px';
             modalCard.style.top = newTop + 'px';
         });
-
         function endDrag(e) {
             if (!dragState) return;
             dragState = null;
             modalCard.classList.remove('is-dragging');
-            try {
-                dragHandle.releasePointerCapture(e.pointerId);
-            } catch (_) {}
+            try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {}
         }
         dragHandle.addEventListener('pointerup', endDrag);
         dragHandle.addEventListener('pointercancel', endDrag);
@@ -707,45 +615,38 @@
         function initials(name) {
             return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
         }
-
-        function avatarColor(mahasiswaId) {
+        function avatarColor(userId) {
             const colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
-            return colors[Number(mahasiswaId) % colors.length];
+            return colors[Number(userId) % colors.length];
         }
-
         function esc(str) {
             const div = document.createElement('div');
             div.textContent = str ?? '';
             return div.innerHTML;
         }
-
+        function roleBadgeClass(role) {
+            return { superadmin: 'badge-danger', admin: 'badge-warning', dosen: 'badge-info', mahasiswa: 'badge-success' }[role] || 'badge-neutral';
+        }
+        function roleLabel(role) {
+            return role ? role.charAt(0).toUpperCase() + role.slice(1) : '-';
+        }
         function buildRowHTML(item) {
             return `
             <tr data-id="${item.id}">
-                <td><span class="nim-code">${esc(item.nim)}</span></td>
+                <td><span class="nim-code">USR-${String(item.id).padStart(3, '0')}</span></td>
                 <td>
                     <div class="student-cell">
-                        <div class="avatar ${avatarColor(item.mahasiswa_id)}">${esc(initials(item.nama))}</div>
-                        <div class="student-name"><span class="name">${esc(item.nama)}</span></div>
+                        <div class="avatar ${avatarColor(item.id)}">${esc(initials(item.name))}</div>
+                        <div class="student-name"><span class="name">${esc(item.name)}</span></div>
                     </div>
                 </td>
-                <td><span class="activity-title" title="${esc(item.nama_kegiatan)}">${esc(item.nama_kegiatan)}</span></td>
-                <td class="center"><span class="plain-text">${esc(item.jenis)}</span></td>
-                <td class="center"><span class="plain-text">${esc(item.tab)}</span></td>
-                <td class="center"><span class="plain-text">${esc(item.tingkat)}</span></td>
-                <td class="center"><span class="year-chip">${esc(item.tahun)}</span></td>
-                <td class="center">
-                    <a href="${esc(item.bukti_kegiatan)}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                        <span class="material-symbols-outlined">cloud</span><span>Lihat Bukti</span>
-                    </a>
-                </td>
+                <td class="center"><span class="badge ${roleBadgeClass(item.role)}">${esc(roleLabel(item.role))}</span></td>
+                <td class="center"><span class="plain-text">${esc(item.identifier || '—')}</span></td>
                 <td class="center">
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                            data-id="${item.id}" data-mahasiswa_id="${item.mahasiswa_id}" data-jenis="${item.jenis}"
-                            data-tab="${item.tab}" data-tingkat="${item.tingkat}" data-tahun="${item.tahun}"
-                            data-nama_kegiatan="${encodeURIComponent(item.nama_kegiatan)}"
-                            data-bukti_kegiatan="${encodeURIComponent(item.bukti_kegiatan)}">
+                            data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" data-role="${item.role}"
+                            data-identifier="${encodeURIComponent(item.identifier || '')}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -755,7 +656,6 @@
                 </td>
             </tr>`.trim();
         }
-
         function insertRow(item) {
             document.getElementById('emptyRow')?.remove();
             const wrap = document.createElement('tbody');
@@ -764,7 +664,6 @@
             row.classList.add('is-new');
             tableBody.prepend(row);
         }
-
         function updateRow(item) {
             const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
             if (!existing) return insertRow(item);
@@ -772,14 +671,11 @@
             wrap.innerHTML = buildRowHTML(item);
             existing.replaceWith(wrap.firstElementChild);
         }
-
         function removeRow(id) {
             const row = tableBody.querySelector(`tr[data-id="${id}"]`);
             if (!row) return;
             row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), {
-                once: true
-            });
+            row.addEventListener('transitionend', () => row.remove(), { once: true });
         }
 
         // ---- Submit form (create / update) ----
@@ -790,23 +686,26 @@
 
             const id = document.getElementById('form-id').value;
             const payload = {
-                mahasiswa_id: document.getElementById('form-mahasiswa_id').value,
-                jenis: document.getElementById('form-jenis').value,
-                tab: document.getElementById('form-tab').value,
-                tingkat: document.getElementById('form-tingkat').value,
-                tahun: document.getElementById('form-tahun').value,
-                nama_kegiatan: document.getElementById('form-nama_kegiatan').value,
-                bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
+                name: document.getElementById('form-name').value,
+                role: document.getElementById('form-role').value,
+                identifier: document.getElementById('form-identifier').value,
+                password: document.getElementById('form-password').value,
             };
 
-            if (!payload.mahasiswa_id) {
-                modalError.textContent = 'Pilih mahasiswa terlebih dahulu.';
+            if (!payload.name) {
+                modalError.textContent = 'Nama lengkap wajib diisi.';
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
+            }
+            if (!id && !payload.password) {
+                modalError.textContent = 'Password wajib diisi untuk pengguna baru.';
                 modalError.hidden = false;
                 modalSubmitBtn.disabled = false;
                 return;
             }
 
-            const url = id ? `/kemahasiswaan/${id}` : '/kemahasiswaan';
+            const url = id ? `/data-master/users/${id}` : '/data-master/users';
             const method = id ? 'PUT' : 'POST';
 
             try {
@@ -828,8 +727,7 @@
                     return;
                 }
 
-                if (id) updateRow(result.data);
-                else insertRow(result.data);
+                if (id) updateRow(result.data); else insertRow(result.data);
                 closeModal();
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
@@ -841,14 +739,11 @@
 
         // ---- Delete ----
         async function handleDelete(id) {
-            if (!confirm('Hapus data kegiatan ini? Tindakan tidak bisa dibatalkan.')) return;
+            if (!confirm('Hapus data pengguna ini? Tindakan tidak bisa dibatalkan.')) return;
             try {
-                const res = await fetch(`/kemahasiswaan/${id}`, {
+                const res = await fetch(`/data-master/users/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 });
                 const result = await res.json();
                 if (res.ok && result.success) removeRow(result.id);

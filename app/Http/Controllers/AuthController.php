@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,9 +16,15 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        // Cocokkan data dengan database (mapping 'username' ke kolom 'nim_nidn')
+        // Cari user berdasarkan nama ATAU nim_nidn (case-insensitive untuk nama)
+        $user = User::where('nim_nidn', $request->username)
+            ->orWhereRaw('LOWER(name) = ?', [strtolower($request->username)])
+            ->first();
+
+        // Login pakai kolom unik user tsb (nim_nidn) + password yang diinput,
+        // supaya proses verifikasi password tetap lewat Auth::attempt (hashing aman)
         $credentials = [
-            'nim_nidn' => $request->username,
+            'nim_nidn' => $user->nim_nidn ?? $request->username,
             'password' => $request->password,
         ];
 

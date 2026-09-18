@@ -324,6 +324,16 @@ button { font-family: inherit; cursor: pointer; }
     display: flex; align-items: center; gap: 5px; transition: background-color .15s ease, color .15s ease;
 }
 .btn-ghost:hover { background: var(--canvas); color: var(--ink); }
+.btn-rst {
+    width: 44px; height: 44px; padding: 0; border-radius: var(--radius);
+    border: 1px solid var(--border-strong); background: var(--card); color: var(--ink-muted);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background-color .18s ease, color .18s ease, border-color .18s ease, transform .18s ease;
+}
+.btn-rst .material-symbols-outlined { font-size: 20px; transition: transform .4s ease; }
+.btn-rst:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-border); }
+.btn-rst:hover .material-symbols-outlined { transform: rotate(-120deg); }
+.btn-rst:active { transform: scale(0.94); }
 .btn-apply {
     height: 32px; padding: 0 14px; border-radius: 7px; border: 1px solid var(--primary-dark);
     background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; display: flex;

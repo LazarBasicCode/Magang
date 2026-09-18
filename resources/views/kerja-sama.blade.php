@@ -248,16 +248,11 @@
                                 <input id="filter-search" type="text" placeholder="Cari judul kegiatan atau mitra..." />
                             </div>
                         </div>
-                    </div>
-                    <div class="filter-actions">
-                        <button type="button" id="btn-reset-filter" class="btn-ghost">
-                            <span class="material-symbols-outlined">restart_alt</span>
-                            <span>Reset</span>
-                        </button>
-                        <button type="button" id="btn-apply-filter" class="btn-apply">
-                            <span class="material-symbols-outlined">filter_alt</span>
-                            <span>Terapkan Filter</span>
-                        </button>
+                        <div class="field field-reset" style="grid-column: -1; justify-self: end; align-self: center;">
+                            <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
+                                <span class="material-symbols-outlined">restart_alt</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -317,7 +312,7 @@
                                 $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
                                 $periode = optional($item->tanggal_mulai)->translatedFormat('d M Y') . ' - ' . optional($item->tanggal_selesai)->translatedFormat('d M Y');
                                 @endphp
-                                <tr data-id="{{ $item->id }}">
+                                <tr data-id="{{ $item->id }}" data-tipe_user="{{ $item->tipe_user }}" data-jenis="{{ $item->jenis }}" data-arah="{{ $item->arah }}">
                                     <td><span class="nim-code">{{ $item->user->nim_nidn ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
@@ -581,17 +576,54 @@
             document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
             const search = document.getElementById('filter-search');
             if (search) search.value = '';
+            applyFilters();
         });
 
-        document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
-            const btn = document.getElementById('btn-apply-filter');
-            if (btn) {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                }, 400);
+        // ---------------- Live Filter (otomatis, tanpa tombol "Terapkan") ----------------
+        function applyFilters() {
+            const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
+            const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
+            const arahVal = document.getElementById('filter-arah')?.value || 'semua';
+            const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+            const rows = tableBody.querySelectorAll('tr[data-id]');
+            let visibleCount = 0;
+
+            rows.forEach((row) => {
+                const matchesTipeUser = tipeUserVal === 'semua' || row.dataset.tipe_user === tipeUserVal;
+                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
+                const matchesArah = arahVal === 'semua' || row.dataset.arah === arahVal;
+                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
+                const visible = matchesTipeUser && matchesJenis && matchesArah && matchesSearch;
+                row.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            });
+
+            let noResultRow = document.getElementById('noResultRow');
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!noResultRow) {
+                    noResultRow = document.createElement('tr');
+                    noResultRow.id = 'noResultRow';
+                    const colCount = tableBody.closest('table')?.querySelectorAll('thead th').length || 9;
+                    noResultRow.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding: 32px; color: var(--ink-faint);">Tidak ada data yang cocok dengan filter.</td>`;
+                    tableBody.appendChild(noResultRow);
+                }
+                noResultRow.style.display = '';
+            } else if (noResultRow) {
+                noResultRow.style.display = 'none';
             }
+        }
+
+        document.querySelectorAll('#filter-tipe-user, #filter-jenis, #filter-arah').forEach((input) => {
+            const dropdownEl = input.closest('[data-dropdown]');
+            dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
+                opt.addEventListener('click', () => applyFilters());
+            });
+        });
+
+        let searchDebounce;
+        document.getElementById('filter-search')?.addEventListener('input', () => {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(applyFilters, 150);
         });
 
         // SIDEBAR Drawer Toggle Logic
@@ -821,7 +853,7 @@
             const arahHTML = item.arah ? `<span class="badge badge-primary">${esc(ucfirst(item.arah))}</span>` : '<span class="plain-text">-</span>';
             const periode = `${formatTanggal(item.tanggal_mulai)} - ${formatTanggal(item.tanggal_selesai)}`;
             return `
-            <tr data-id="${item.id}">
+            <tr data-id="${item.id}" data-tipe_user="${item.tipe_user}" data-jenis="${item.jenis}" data-arah="${item.arah || ''}">
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
                 <td>
                     <div class="student-cell">
@@ -939,6 +971,7 @@
                 }
                 if (id) updateRow(result.data);
                 else insertRow(result.data);
+                applyFilters();
                 closeModal();
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';

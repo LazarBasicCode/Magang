@@ -206,12 +206,11 @@
                                 <input id="filter-search" type="text" placeholder="Cari ID, nama, NIM, atau NIDN..." />
                             </div>
                         </div>
-                    </div>
-                    <div class="filter-actions">
-                        <button type="button" id="btn-reset-filter" class="btn-ghost">
-                            <span class="material-symbols-outlined">restart_alt</span>
-                            <span>Reset</span>
-                        </button>
+                        <div class="field field-reset" style="grid-column: -1; justify-self: end; align-self: center;">
+                            <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
+                                <span class="material-symbols-outlined">restart_alt</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -258,7 +257,7 @@
                                 ? optional($item->mahasiswa)->nim
                                 : ($item->role === 'dosen' ? optional($item->dosen)->nidn : null);
                                 @endphp
-                                <tr data-id="{{ $item->id }}">
+                                <tr data-id="{{ $item->id }}" data-role="{{ $item->role }}">
                                     <td><span class="nim-code">USR-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</span></td>
                                     <td>
                                         <div class="student-cell">
@@ -588,18 +587,6 @@
             applyFilters();
         });
 
-        document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
-            const btn = document.getElementById('btn-apply-filter');
-            applyFilters();
-            if (btn) {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                }, 400);
-            }
-        });
-
         // ---------------- Sidebar Drawer ----------------
         const sidebar = document.querySelector('.app-sidebar');
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
@@ -791,7 +778,7 @@
 
         function buildRowHTML(item) {
             return `
-            <tr data-id="${item.id}">
+            <tr data-id="${item.id}" data-role="${item.role}">
                 <td><span class="nim-code">USR-${String(item.id).padStart(3, '0')}</span></td>
                 <td>
                     <div class="student-cell">

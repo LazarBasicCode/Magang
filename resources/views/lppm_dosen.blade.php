@@ -186,11 +186,11 @@
                                 <input id="filter-search" type="text" placeholder="Cari judul karya atau nama dosen..." />
                             </div>
                         </div>
-                    </div>
-                    <div class="filter-actions">
-                        <button type="button" id="btn-reset-filter" class="btn-ghost" title="Reset Filter">
-                            <span class="material-symbols-outlined">restart_alt</span>
-                        </button>
+                        <div class="field field-reset" style="grid-column: -1; justify-self: end; align-self: center;">
+                            <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
+                                <span class="material-symbols-outlined">restart_alt</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

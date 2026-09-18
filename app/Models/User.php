@@ -46,4 +46,58 @@ class User extends Authenticatable
     {
         return $this->hasMany(KerjaSama::class);
     }
+
+    // Relasi ke baris Hak Akses milik user ini (satu baris per menu)
+    public function hakAkses()
+    {
+        return $this->hasMany(HakAkses::class);
+    }
+
+    /**
+     * Level akses efektif user ini untuk satu menu tertentu.
+     * Superadmin selalu 'penuh' untuk semua menu (bypass, tidak tergantung DB).
+     * Kalau ada baris hak_akses eksplisit (pernah diatur superadmin), pakai itu.
+     * Kalau belum pernah diatur, jatuh ke default per role (lihat HakAkses::defaultsForRole).
+     */
+    public function menuLevel(string $menu): string
+    {
+        if ($this->role === 'superadmin') {
+            return 'penuh';
+        }
+
+        $row = $this->relationLoaded('hakAkses')
+            ? $this->hakAkses->firstWhere('menu', $menu)
+            : $this->hakAkses()->where('menu', $menu)->first();
+
+        if ($row && HakAkses::isValidLevel($row->level)) {
+            return $row->level;
+        }
+
+        return HakAkses::defaultsForRole($this->role)[$menu] ?? 'none';
+    }
+
+    /**
+     * True kalau level akses user untuk $menu >= $min (default: 'readonly',
+     * artinya minimal bisa melihat halamannya).
+     */
+    public function canAccessMenu(string $menu, string $min = 'readonly'): bool
+    {
+        $current = HakAkses::RANK[$this->menuLevel($menu)] ?? 0;
+        $required = HakAkses::RANK[$min] ?? 0;
+
+        return $current >= $required;
+    }
+
+    /**
+     * Semua level akses user ini, per menu (dipakai untuk mengisi modal
+     * Hak Akses & menghitung status/ringkasan tanpa query berulang).
+     */
+    public function allMenuLevels(): array
+    {
+        $levels = [];
+        foreach (array_keys(HakAkses::MENUS) as $menu) {
+            $levels[$menu] = $this->menuLevel($menu);
+        }
+        return $levels;
+    }
 }

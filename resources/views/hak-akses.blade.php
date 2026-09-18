@@ -1,4 +1,4 @@
-{{-- resources/views/hak_akses.blade.php --}}
+{{-- resources/views/hak-akses.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 
@@ -101,7 +101,7 @@
                         <div class="header-profile">
                             <img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
                             <div class="header-profile-text">
-                                <span class="header-profile-name">Admin Sistem</span>
+                                <span class="header-profile-name">{{ auth()->user()->name ?? 'Admin Sistem' }}</span>
                                 <span class="header-profile-role">Institut Asia Malang</span>
                             </div>
                         </div>
@@ -126,12 +126,19 @@
                     </div>
                 </div>
 
+                @unless($canManage)
+                <div class="filter-card" style="margin-bottom: 20px; display:flex; align-items:center; gap:10px; padding: 14px 18px;">
+                    <span class="material-symbols-outlined" style="color: var(--warning);">visibility</span>
+                    <span class="plain-text">Kamu hanya punya akses <strong>Read Only</strong> di menu ini &mdash; bisa melihat data, tapi tidak bisa mengubah hak akses siapa pun.</span>
+                </div>
+                @endunless
+
                 <!-- SUMMARY STAT CARDS -->
                 <div class="stat-grid">
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Total Pengguna</span>
-                            <span class="stat-value">24</span>
+                            <span class="stat-value">{{ $stats['total'] }}</span>
                         </div>
                         <div class="stat-icon primary">
                             <span class="material-symbols-outlined">group</span>
@@ -140,7 +147,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Akses Penuh</span>
-                            <span class="stat-value">8</span>
+                            <span class="stat-value">{{ $stats['penuh'] }}</span>
                         </div>
                         <div class="stat-icon success">
                             <span class="material-symbols-outlined">verified_user</span>
@@ -149,7 +156,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Akses Biasa</span>
-                            <span class="stat-value">10</span>
+                            <span class="stat-value">{{ $stats['biasa'] }}</span>
                         </div>
                         <div class="stat-icon info">
                             <span class="material-symbols-outlined">how_to_reg</span>
@@ -158,7 +165,7 @@
                     <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Read Only</span>
-                            <span class="stat-value">6</span>
+                            <span class="stat-value">{{ $stats['readonly'] }}</span>
                         </div>
                         <div class="stat-icon warning">
                             <span class="material-symbols-outlined">visibility</span>
@@ -166,7 +173,7 @@
                     </div>
                 </div>
 
-                <!-- FILTER BAR -->
+                <!-- FILTER BAR (aktif otomatis: filter & pencarian langsung jalan tanpa reload) -->
                 <div class="filter-card">
                     <div class="filter-grid">
                         <div class="field">
@@ -179,6 +186,7 @@
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Peran</button>
+                                    <button type="button" class="dropdown-option" data-value="superadmin">Superadmin</button>
                                     <button type="button" class="dropdown-option" data-value="admin">Admin</button>
                                     <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
                                     <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
@@ -196,6 +204,7 @@
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Status</button>
                                     <button type="button" class="dropdown-option" data-value="aktif">Aktif</button>
+                                    <button type="button" class="dropdown-option" data-value="read">Read</button>
                                     <button type="button" class="dropdown-option" data-value="nonaktif">Nonaktif</button>
                                 </div>
                             </div>
@@ -204,19 +213,14 @@
                             <label class="field-label" for="filter-search">Pencarian Cepat</label>
                             <div class="field-control">
                                 <span class="material-symbols-outlined icon-search">search</span>
-                                <input id="filter-search" type="text" placeholder="Cari nama atau email pengguna..." />
+                                <input id="filter-search" type="text" placeholder="Cari nama atau NIM/NIDN pengguna..." />
                             </div>
                         </div>
-                    </div>
-                    <div class="filter-actions">
-                        <button type="button" id="btn-reset-filter" class="btn-ghost">
-                            <span class="material-symbols-outlined">restart_alt</span>
-                            <span>Reset</span>
-                        </button>
-                        <button type="button" id="btn-apply-filter" class="btn-apply">
-                            <span class="material-symbols-outlined">filter_alt</span>
-                            <span>Terapkan Filter</span>
-                        </button>
+                        <div class="field field-reset" style="grid-column: -1; justify-self: end; align-self: center;">
+                            <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
+                                <span class="material-symbols-outlined">restart_alt</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -234,7 +238,7 @@
                             <thead>
                                 <tr>
                                     <th>Nama Pengguna</th>
-                                    <th>Email</th>
+                                    <th>NIM/NIDN</th>
                                     <th class="center">Peran</th>
                                     <th class="center">Status</th>
                                     <th class="center">Ringkasan Akses</th>
@@ -242,128 +246,74 @@
                                 </tr>
                             </thead>
                             <tbody id="hakAksesTableBody">
-                                {{-- Baris statis contoh (UI only) --}}
-                                <tr data-id="1">
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-primary">AS</div>
-                                            <div class="student-name"><span class="name">Admin Sistem</span></div>
-                                        </div>
-                                    </td>
-                                    <td><span class="plain-text">admin@asia.ac.id</span></td>
-                                    <td class="center"><span class="plain-text">admin</span></td>
-                                    <td class="center"><span class="badge badge-success">Aktif</span></td>
-                                    <td class="center">
-                                        <div class="access-summary">
-                                            <span class="access-chip penuh" title="Akses Penuh"><span class="access-dot penuh"></span> 8</span>
-                                            <span class="access-chip biasa is-zero" title="Akses Biasa"><span class="access-dot biasa"></span> 0</span>
-                                            <span class="access-chip readonly is-zero" title="Read Only"><span class="access-dot readonly"></span> 0</span>
-                                            <span class="access-chip none is-zero" title="Tanpa Akses"><span class="access-dot none"></span> 0</span>
-                                        </div>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Atur Hak Akses" class="row-action-btn btn-access-row"
-                                                data-id="1"
-                                                data-name="Admin Sistem"
-                                                data-email="admin@asia.ac.id"
-                                                data-role="admin">
-                                                <span class="material-symbols-outlined">shield_person</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr data-id="2">
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-info">BS</div>
-                                            <div class="student-name"><span class="name">Budi Santoso</span></div>
-                                        </div>
-                                    </td>
-                                    <td><span class="plain-text">budi@asia.ac.id</span></td>
-                                    <td class="center"><span class="plain-text">dosen</span></td>
-                                    <td class="center"><span class="badge badge-success">Aktif</span></td>
-                                    <td class="center">
-                                        <div class="access-summary">
-                                            <span class="access-chip penuh is-zero" title="Akses Penuh"><span class="access-dot penuh"></span> 0</span>
-                                            <span class="access-chip biasa" title="Akses Biasa"><span class="access-dot biasa"></span> 3</span>
-                                            <span class="access-chip readonly" title="Read Only"><span class="access-dot readonly"></span> 2</span>
-                                            <span class="access-chip none" title="Tanpa Akses"><span class="access-dot none"></span> 3</span>
-                                        </div>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Atur Hak Akses" class="row-action-btn btn-access-row"
-                                                data-id="2"
-                                                data-name="Budi Santoso"
-                                                data-email="budi@asia.ac.id"
-                                                data-role="dosen">
-                                                <span class="material-symbols-outlined">shield_person</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr data-id="3">
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-warning">CW</div>
-                                            <div class="student-name"><span class="name">Citra Wulandari</span></div>
-                                        </div>
-                                    </td>
-                                    <td><span class="plain-text">citra@asia.ac.id</span></td>
-                                    <td class="center"><span class="plain-text">operator</span></td>
-                                    <td class="center"><span class="badge badge-success">Aktif</span></td>
-                                    <td class="center">
-                                        <div class="access-summary">
-                                            <span class="access-chip penuh is-zero" title="Akses Penuh"><span class="access-dot penuh"></span> 0</span>
-                                            <span class="access-chip biasa is-zero" title="Akses Biasa"><span class="access-dot biasa"></span> 0</span>
-                                            <span class="access-chip readonly" title="Read Only"><span class="access-dot readonly"></span> 5</span>
-                                            <span class="access-chip none" title="Tanpa Akses"><span class="access-dot none"></span> 3</span>
-                                        </div>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Atur Hak Akses" class="row-action-btn btn-access-row"
-                                                data-id="3"
-                                                data-name="Citra Wulandari"
-                                                data-email="citra@asia.ac.id"
-                                                data-role="operator">
-                                                <span class="material-symbols-outlined">shield_person</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr data-id="4">
-                                    <td>
-                                        <div class="student-cell">
-                                            <div class="avatar c-success">DP</div>
-                                            <div class="student-name"><span class="name">Dewi Puspita</span></div>
-                                        </div>
-                                    </td>
-                                    <td><span class="plain-text">dewi@asia.ac.id</span></td>
-                                    <td class="center"><span class="plain-text">mahasiswa</span></td>
-                                    <td class="center"><span class="badge badge-neutral">Nonaktif</span></td>
-                                    <td class="center">
-                                        <div class="access-summary">
-                                            <span class="access-chip penuh is-zero" title="Akses Penuh"><span class="access-dot penuh"></span> 0</span>
-                                            <span class="access-chip biasa is-zero" title="Akses Biasa"><span class="access-dot biasa"></span> 0</span>
-                                            <span class="access-chip readonly" title="Read Only"><span class="access-dot readonly"></span> 1</span>
-                                            <span class="access-chip none" title="Tanpa Akses"><span class="access-dot none"></span> 7</span>
-                                        </div>
-                                    </td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <button type="button" title="Atur Hak Akses" class="row-action-btn btn-access-row"
-                                                data-id="4"
-                                                data-name="Dewi Puspita"
-                                                data-email="dewi@asia.ac.id"
-                                                data-role="mahasiswa">
-                                                <span class="material-symbols-outlined">shield_person</span>
-                                            </button>
-                                        </div>
+                                @php
+                                    $statusBadge = [
+                                        'aktif'    => ['label' => 'Aktif', 'class' => 'badge-success'],
+                                        'read'     => ['label' => 'Read', 'class' => 'badge-warning'],
+                                        'nonaktif' => ['label' => 'Nonaktif', 'class' => 'badge-neutral'],
+                                    ];
+                                    $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                @endphp
+                                @forelse($rows as $row)
+                                    @php
+                                        $u = $row['user'];
+                                        $initials = collect(explode(' ', $u->name))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                        $avatarColor = $colors[$u->id % count($colors)];
+                                        $sb = $statusBadge[$row['status']];
+                                    @endphp
+                                    <tr data-id="{{ $u->id }}" data-role="{{ $u->role }}" data-status="{{ $row['status'] }}">
+                                        <td>
+                                            <div class="student-cell">
+                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                                <div class="student-name"><span class="name">{{ $u->name }}</span></div>
+                                            </div>
+                                        </td>
+                                        <td><span class="nim-code">{{ $u->nim_nidn ?? '-' }}</span></td>
+                                        <td class="center"><span class="plain-text">{{ $u->role }}</span></td>
+                                        <td class="center"><span class="badge {{ $sb['class'] }}">{{ $sb['label'] }}</span></td>
+                                        <td class="center">
+                                            <div class="access-summary">
+                                                <span class="access-chip penuh {{ $row['ringkasan']['penuh'] === 0 ? 'is-zero' : '' }}" title="Akses Penuh"><span class="access-dot penuh"></span> {{ $row['ringkasan']['penuh'] }}</span>
+                                                <span class="access-chip biasa {{ $row['ringkasan']['biasa'] === 0 ? 'is-zero' : '' }}" title="Akses Biasa"><span class="access-dot biasa"></span> {{ $row['ringkasan']['biasa'] }}</span>
+                                                <span class="access-chip readonly {{ $row['ringkasan']['readonly'] === 0 ? 'is-zero' : '' }}" title="Read Only"><span class="access-dot readonly"></span> {{ $row['ringkasan']['readonly'] }}</span>
+                                                <span class="access-chip none {{ $row['ringkasan']['none'] === 0 ? 'is-zero' : '' }}" title="Tanpa Akses"><span class="access-dot none"></span> {{ $row['ringkasan']['none'] }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="center">
+                                            <div class="row-actions">
+                                                @if($canManage)
+                                                    <button type="button" title="Atur Hak Akses" class="row-action-btn btn-access-row"
+                                                        data-id="{{ $u->id }}"
+                                                        data-name="{{ $u->name }}"
+                                                        data-nim_nidn="{{ $u->nim_nidn ?? '-' }}"
+                                                        data-role="{{ $u->role }}"
+                                                        data-levels="{{ urlencode(json_encode($row['levels'])) }}">
+                                                        <span class="material-symbols-outlined">shield_person</span>
+                                                    </button>
+                                                @else
+                                                    <button type="button" title="Lihat Hak Akses" class="row-action-btn btn-access-row"
+                                                        data-id="{{ $u->id }}"
+                                                        data-name="{{ $u->name }}"
+                                                        data-nim_nidn="{{ $u->nim_nidn ?? '-' }}"
+                                                        data-role="{{ $u->role }}"
+                                                        data-levels="{{ urlencode(json_encode($row['levels'])) }}"
+                                                        data-readonly="1">
+                                                        <span class="material-symbols-outlined">visibility</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr id="emptyRow">
+                                        <td colspan="6" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                            Belum ada pengguna terdaftar.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                                <tr id="noResultsRow" hidden>
+                                    <td colspan="6" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                        Tidak ada pengguna yang cocok dengan filter/pencarian.
                                     </td>
                                 </tr>
                             </tbody>
@@ -372,7 +322,7 @@
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>1-4</strong> dari <strong>24</strong> pengguna
+                            Menampilkan <strong id="footerVisibleCount">{{ $rows->count() }}</strong> dari <strong>{{ $stats['total'] }}</strong> pengguna
                         </div>
                     </div>
                 </div>
@@ -446,19 +396,6 @@
             <section class="access-main">
                 <div class="access-divider">Daftar Menu</div>
                 <div class="permission-list" id="permissionList">
-                    @php
-                    $menus = [
-                    ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'dashboard'],
-                    ['key' => 'kemahasiswaan', 'label' => 'Kemahasiswaan', 'icon' => 'school'],
-                    ['key' => 'lppm_mahasiswa', 'label' => 'LPPM Mahasiswa', 'icon' => 'person'],
-                    ['key' => 'lppm_dosen', 'label' => 'LPPM Dosen', 'icon' => 'co_present'],
-                    ['key' => 'rekognisi', 'label' => 'Rekognisi', 'icon' => 'workspace_premium'],
-                    ['key' => 'kerja_sama', 'label' => 'Kerja Sama', 'icon' => 'handshake'],
-                    ['key' => 'data_master', 'label' => 'Data Master', 'icon' => 'manage_accounts'],
-                    ['key' => 'hak_akses', 'label' => 'Hak Akses', 'icon' => 'shield_person'],
-                    ];
-                    @endphp
-
                     @foreach($menus as $menu)
                     <div class="permission-row" data-menu="{{ $menu['key'] }}">
                         <div class="permission-menu">
@@ -499,6 +436,7 @@
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        const canManage = @json($canManage);
 
         // ---------------- Custom Dropdown ----------------
         const dropdowns = document.querySelectorAll('[data-dropdown]');
@@ -510,6 +448,7 @@
 
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (dropdown.closest('#accessModal') && !canManage) return; // read-only: kunci dropdown modal
                 const wasOpen = dropdown.classList.contains('is-open');
                 dropdowns.forEach((d) => d.classList.remove('is-open'));
                 if (!wasOpen) dropdown.classList.add('is-open');
@@ -524,6 +463,8 @@
                     const row = dropdown.closest('.permission-row');
                     if (row) row.dataset.state = option.dataset.value;
                     dropdown.classList.remove('is-open');
+                    // Dropdown di filter bar langsung memicu pencarian otomatis
+                    if (dropdown.closest('.filter-grid')) applyFilters();
                 });
             });
         });
@@ -534,14 +475,16 @@
             const options = dropdownEl.querySelectorAll('.dropdown-option');
             const valueEl = dropdownEl.querySelector('.dropdown-value');
             const hiddenInput = dropdownEl.querySelector('input[type="hidden"]');
+            let matched = false;
             options.forEach((o) => {
                 const isMatch = o.dataset.value === String(value);
                 o.classList.toggle('is-selected', isMatch);
-                if (isMatch && valueEl) valueEl.textContent = o.textContent.trim();
+                if (isMatch) { valueEl.textContent = o.textContent.trim(); matched = true; }
             });
-            if (hiddenInput) hiddenInput.value = value;
+            if (hiddenInput) hiddenInput.value = matched ? value : (options[0]?.dataset.value ?? '');
+            if (!matched && options.length) valueEl.textContent = options[0].textContent.trim();
             const row = dropdownEl.closest('.permission-row');
-            if (row) row.dataset.state = value;
+            if (row) row.dataset.state = matched ? value : (options[0]?.dataset.value ?? '');
         }
 
         function resetDropdown(dropdown) {
@@ -558,21 +501,58 @@
             });
         }
 
-        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
-            const search = document.getElementById('filter-search');
-            if (search) search.value = '';
+        // ================================================================
+        // FILTER & PENCARIAN: jalan otomatis (live) di sisi klien, tanpa reload.
+        // Mencari di kolom Nama & NIM/NIDN; Peran dan Status difilter dari dropdown.
+        // ================================================================
+        const filterSearchInput = document.getElementById('filter-search');
+        const filterRoleInput = document.getElementById('filter-role');
+        const filterStatusInput = document.getElementById('filter-status');
+        const tableBody = document.getElementById('hakAksesTableBody');
+        const noResultsRow = document.getElementById('noResultsRow');
+        const footerVisibleCount = document.getElementById('footerVisibleCount');
+
+        function applyFilters() {
+            if (!tableBody) return;
+            const term = (filterSearchInput?.value || '').trim().toLowerCase();
+            const role = filterRoleInput?.value || 'semua';
+            const status = filterStatusInput?.value || 'semua';
+
+            const rows = tableBody.querySelectorAll('tr[data-id]');
+            let visibleCount = 0;
+
+            rows.forEach((row) => {
+                const nama = (row.querySelector('.student-name .name')?.textContent || '').toLowerCase();
+                const nim = (row.querySelector('.nim-code')?.textContent || '').toLowerCase();
+                const rowRole = row.dataset.role || '';
+                const rowStatus = row.dataset.status || '';
+
+                const matchesSearch = !term || nama.includes(term) || nim.includes(term);
+                const matchesRole = role === 'semua' || rowRole === role;
+                const matchesStatus = status === 'semua' || rowStatus === status;
+                const visible = matchesSearch && matchesRole && matchesStatus;
+
+                row.hidden = !visible;
+                if (visible) visibleCount++;
+            });
+
+            const emptyRow = document.getElementById('emptyRow');
+            const hasData = rows.length > 0;
+            if (noResultsRow) noResultsRow.hidden = !(hasData && visibleCount === 0);
+            if (footerVisibleCount) footerVisibleCount.textContent = visibleCount;
+            if (emptyRow) emptyRow.hidden = hasData;
+        }
+
+        let searchDebounceTimer = null;
+        filterSearchInput?.addEventListener('input', () => {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(applyFilters, 150);
         });
 
-        document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
-            const btn = document.getElementById('btn-apply-filter');
-            if (btn) {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                }, 400);
-            }
+        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+            document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
+            if (filterSearchInput) filterSearchInput.value = '';
+            applyFilters();
         });
 
         // ---------------- Sidebar Drawer ----------------
@@ -615,7 +595,7 @@
         });
 
         // ================================================================
-        // MODAL HAK AKSES: buka/tutup, drag, bulk apply
+        // MODAL HAK AKSES: buka/tutup, drag, bulk apply, simpan ke database
         // ================================================================
         const modalBackdrop = document.getElementById('modalBackdrop');
         const modalCard = document.getElementById('accessModal');
@@ -625,7 +605,6 @@
         const modalSubmitBtn = document.getElementById('modalSubmitBtn');
         const modalCloseBtn = document.getElementById('modalCloseBtn');
         const modalCancelBtn = document.getElementById('modalCancelBtn');
-        const tableBody = document.getElementById('hakAksesTableBody');
         const dragHandle = document.getElementById('modalDragHandle');
 
         const accessUserAvatar = document.getElementById('accessUserAvatar');
@@ -646,24 +625,31 @@
             modalCard.style.transform = '';
 
             document.getElementById('form-user_id').value = data.id || '';
-            modalTitle.textContent = 'Atur Hak Akses';
+            modalTitle.textContent = data.readonly ? 'Lihat Hak Akses' : 'Atur Hak Akses';
 
             accessUserName.textContent = data.name || '-';
-            accessUserEmail.textContent = data.email || '-';
+            accessUserEmail.textContent = data.nim_nidn || '-';
             accessUserRole.textContent = data.role || 'user';
             accessUserAvatar.textContent = initials(data.name);
 
-            // Reset semua permission dropdown ke 'none'
+            let levels = {};
+            try { levels = JSON.parse(decodeURIComponent(data.levels || '{}')); } catch (_) { levels = {}; }
+
             document.querySelectorAll('.permission-value').forEach((input) => {
                 const menu = input.dataset.menu;
                 selectDropdownValue(
                     document.querySelector(`[data-permission-dropdown][data-menu="${menu}"]`),
-                    'none'
+                    levels[menu] || 'none'
                 );
             });
 
             resetDropdown(document.getElementById('dd-bulk'));
-            document.querySelectorAll('#accessModal .permission-row').forEach(r => r.dataset.state = 'none');
+
+            // Mode lihat-saja: sembunyikan tombol simpan & bulk apply
+            modalSubmitBtn.hidden = !!data.readonly;
+            document.getElementById('btnBulkApply').hidden = !!data.readonly;
+            document.getElementById('dd-bulk').style.pointerEvents = data.readonly ? 'none' : '';
+            document.getElementById('dd-bulk').style.opacity = data.readonly ? '.5' : '';
 
             modalBackdrop.classList.add('is-active');
             modalCard.classList.add('is-active');
@@ -688,12 +674,7 @@
         dragHandle.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.modal-close-btn')) return;
             const rect = modalCard.getBoundingClientRect();
-            dragState = {
-                startX: e.clientX,
-                startY: e.clientY,
-                originX: rect.left,
-                originY: rect.top
-            };
+            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
             modalCard.style.left = rect.left + 'px';
             modalCard.style.top = rect.top + 'px';
             modalCard.style.transform = 'none';
@@ -706,19 +687,14 @@
             const dy = e.clientY - dragState.startY;
             const maxLeft = window.innerWidth - modalCard.offsetWidth - 8;
             const maxTop = window.innerHeight - modalCard.offsetHeight - 8;
-            const newLeft = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft));
-            const newTop = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop));
-            modalCard.style.left = newLeft + 'px';
-            modalCard.style.top = newTop + 'px';
+            modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
+            modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
         });
-
         function endDrag(e) {
             if (!dragState) return;
             dragState = null;
             modalCard.classList.remove('is-dragging');
-            try {
-                dragHandle.releasePointerCapture(e.pointerId);
-            } catch (_) {}
+            try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {}
         }
         dragHandle.addEventListener('pointerup', endDrag);
         dragHandle.addEventListener('pointercancel', endDrag);
@@ -736,41 +712,102 @@
             });
         });
 
-        // ---- Submit (UI only, tidak ada fetch) ----
-        modalForm.addEventListener('submit', (e) => {
+        // ---- Bangun ulang isi baris (dipakai setelah simpan sukses) ----
+        const statusBadge = {
+            aktif:    { label: 'Aktif', cls: 'badge-success' },
+            read:     { label: 'Read', cls: 'badge-warning' },
+            nonaktif: { label: 'Nonaktif', cls: 'badge-neutral' },
+        };
+        function esc(str) { const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
+        function chip(cls, label, count) {
+            return `<span class="access-chip ${cls} ${count === 0 ? 'is-zero' : ''}" title="${label}"><span class="access-dot ${cls}"></span> ${count}</span>`;
+        }
+
+        function updateRowAfterSave(payload) {
+            const row = tableBody.querySelector(`tr[data-id="${payload.id}"]`);
+            if (!row) return;
+            row.dataset.status = payload.status;
+
+            const sb = statusBadge[payload.status] || statusBadge.nonaktif;
+            const statusCell = row.querySelector('td:nth-child(4) .badge');
+            if (statusCell) {
+                statusCell.className = `badge ${sb.cls}`;
+                statusCell.textContent = sb.label;
+            }
+
+            const summaryCell = row.querySelector('.access-summary');
+            if (summaryCell) {
+                summaryCell.innerHTML =
+                    chip('penuh', 'Akses Penuh', payload.ringkasan.penuh) +
+                    chip('biasa', 'Akses Biasa', payload.ringkasan.biasa) +
+                    chip('readonly', 'Read Only', payload.ringkasan.readonly) +
+                    chip('none', 'Tanpa Akses', payload.ringkasan.none);
+            }
+
+            const accessBtn = row.querySelector('.btn-access-row');
+            if (accessBtn) {
+                accessBtn.dataset.levels = encodeURIComponent(JSON.stringify(payload.levels));
+            }
+
+            applyFilters();
+        }
+
+        // ---- Submit: simpan ke database ----
+        modalForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!canManage) return;
             modalError.hidden = true;
             modalSubmitBtn.disabled = true;
 
             const userId = document.getElementById('form-user_id').value;
-            const permissions = {};
+            const levels = {};
             document.querySelectorAll('.permission-value').forEach((input) => {
-                permissions[input.dataset.menu] = input.value;
+                levels[input.dataset.menu] = input.value;
             });
 
-            console.log('Payload Hak Akses (UI only):', {
-                user_id: userId,
-                permissions
-            });
-
-            setTimeout(() => {
-                modalSubmitBtn.disabled = false;
+            try {
+                const res = await fetch(`/hak-akses/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({ levels }),
+                });
+                const result = await res.json();
+                if (!res.ok || !result.success) {
+                    modalError.textContent = result.message || 'Gagal menyimpan hak akses.';
+                    modalError.hidden = false;
+                    return;
+                }
+                updateRowAfterSave(result.data);
                 closeModal();
-            }, 400);
+            } catch (err) {
+                modalError.textContent = 'Gagal terhubung ke server.';
+                modalError.hidden = false;
+            } finally {
+                modalSubmitBtn.disabled = false;
+            }
         });
 
-        // ---- Event delegation: tombol Atur Hak Akses ----
+        // ---- Event delegation: tombol Atur/Lihat Hak Akses ----
         tableBody.addEventListener('click', (e) => {
             const accessBtn = e.target.closest('.btn-access-row');
             if (accessBtn) {
                 return openModal({
                     id: accessBtn.dataset.id,
                     name: accessBtn.dataset.name,
-                    email: accessBtn.dataset.email,
+                    nim_nidn: accessBtn.dataset.nim_nidn,
                     role: accessBtn.dataset.role,
+                    levels: accessBtn.dataset.levels,
+                    readonly: accessBtn.dataset.readonly === '1',
                 });
             }
         });
+
+        // Inisialisasi tampilan filter saat halaman pertama kali dimuat
+        applyFilters();
     </script>
 </body>
 

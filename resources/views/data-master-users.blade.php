@@ -32,45 +32,67 @@
 
         <nav class="sidebar-nav">
             <div class="nav-group">
+                @if($__user->canAccessMenu('dashboard'))
                 <a href="#" class="nav-link">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
+                @endif
 
+                @if($__user->canAccessMenu('kemahasiswaan'))
                 <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
                     <span>Kemahasiswaan</span>
                 </a>
+                @endif
 
+                @if($__user->canAccessMenu('lppm_mahasiswa') || $__user->canAccessMenu('lppm_dosen') || $__user->canAccessMenu('rekognisi'))
                 <div class="nav-heading">LPPM</div>
+                @endif
+                @if($__user->canAccessMenu('lppm_mahasiswa'))
                 <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
                     <span class="material-symbols-outlined">person</span>
                     <span>Mahasiswa</span>
                 </a>
+                @endif
+                @if($__user->canAccessMenu('lppm_dosen'))
                 <a href="{{ url('/lppm/dosen') }}" class="nav-link">
                     <span class="material-symbols-outlined">co_present</span>
                     <span>Dosen</span>
                 </a>
+                @endif
+                @if($__user->canAccessMenu('rekognisi'))
                 <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
                     <span class="material-symbols-outlined">workspace_premium</span>
                     <span>Rekognisi</span>
                 </a>
+                @endif
 
+                @if($__user->canAccessMenu('kerja_sama'))
                 <div class="nav-heading">Kemitraan</div>
+                @endif
+                @if($__user->canAccessMenu('kerja_sama'))
                 <a href="{{ url('/kerja-sama') }}" class="nav-link">
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
                 </a>
+                @endif
 
+                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
                 <div class="nav-heading">Administrasi</div>
+                @endif
+                @if($__user->canAccessMenu('data_master'))
                 <a href="{{ url('/data-master/users') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">manage_accounts</span>
                     <span>Data Master</span>
                 </a>
+                @endif
+                @if($__user->canAccessMenu('hak_akses'))
                 <a href="{{ url('/hak-akses') }}" class="nav-link">
                     <span class="material-symbols-outlined">admin_panel_settings</span>
                     <span>Hak Akses</span>
                 </a>
+                @endif
             </div>
         </nav>
 
@@ -111,6 +133,12 @@
                                 <span class="header-profile-role">Institut Asia Malang</span>
                             </div>
                         </div>
+                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
+                            @csrf
+                            <button type="submit" class="icon-btn" id="logoutBtn" title="Keluar" aria-label="Keluar">
+                                <span class="material-symbols-outlined">logout</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

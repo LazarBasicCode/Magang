@@ -65,6 +65,16 @@ class HakAksesController extends Controller
             ], 403);
         }
 
+        // Superadmin selalu 'penuh' untuk semua menu (lihat User::menuLevel()),
+        // jadi menyimpan baris hak_akses untuk user superadmin tidak akan pernah
+        // terlihat berubah. Tolak di sini supaya jelas, bukan diam-diam no-op.
+        if ($user->role === 'superadmin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Superadmin selalu memiliki akses penuh ke semua menu dan tidak bisa dibatasi.',
+            ], 422);
+        }
+
         $menuKeys = array_keys(HakAkses::MENUS);
 
         $data = $request->validate([

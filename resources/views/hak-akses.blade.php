@@ -28,44 +28,66 @@
 
         <nav class="sidebar-nav">
             <div class="nav-group">
+                @if($__user->canAccessMenu('dashboard'))
                 <a href="#" class="nav-link">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
+                @endif
+                @if($__user->canAccessMenu('kemahasiswaan'))
                 <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
                     <span>Kemahasiswaan</span>
                 </a>
+                @endif
 
+                @if($__user->canAccessMenu('lppm_mahasiswa') || $__user->canAccessMenu('lppm_dosen') || $__user->canAccessMenu('rekognisi'))
                 <div class="nav-heading">LPPM</div>
+                @endif
+                @if($__user->canAccessMenu('lppm_mahasiswa'))
                 <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
                     <span class="material-symbols-outlined">person</span>
                     <span>Mahasiswa</span>
                 </a>
+                @endif
+                @if($__user->canAccessMenu('lppm_dosen'))
                 <a href="{{ url('/lppm/dosen') }}" class="nav-link">
                     <span class="material-symbols-outlined">co_present</span>
                     <span>Dosen</span>
                 </a>
+                @endif
+                @if($__user->canAccessMenu('rekognisi'))
                 <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
                     <span class="material-symbols-outlined">workspace_premium</span>
                     <span>Rekognisi</span>
                 </a>
+                @endif
 
+                @if($__user->canAccessMenu('kerja_sama'))
                 <div class="nav-heading">Kemitraan</div>
+                @endif
+                @if($__user->canAccessMenu('kerja_sama'))
                 <a href="{{ url('/kerja-sama') }}" class="nav-link">
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
                 </a>
+                @endif
 
+                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
                 <div class="nav-heading">Administrasi</div>
+                @endif
+                @if($__user->canAccessMenu('data_master'))
                 <a href="{{ url('/data-master/users') }}" class="nav-link">
                     <span class="material-symbols-outlined">manage_accounts</span>
                     <span>Data Master</span>
                 </a>
+                @endif
+                @if($__user->canAccessMenu('hak_akses'))
                 <a href="{{ url('/hak-akses') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">shield_person</span>
                     <span>Hak Akses</span>
                 </a>
+                @endif
             </div>
         </nav>
 
@@ -105,6 +127,12 @@
                                 <span class="header-profile-role">Institut Asia Malang</span>
                             </div>
                         </div>
+                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
+                            @csrf
+                            <button type="submit" class="icon-btn" id="logoutBtn" title="Keluar" aria-label="Keluar">
+                                <span class="material-symbols-outlined">logout</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -281,7 +309,7 @@
                                         </td>
                                         <td class="center">
                                             <div class="row-actions">
-                                                @if($canManage)
+                                                @if($canManage && $u->role !== 'superadmin')
                                                     <button type="button" title="Atur Hak Akses" class="row-action-btn btn-access-row"
                                                         data-id="{{ $u->id }}"
                                                         data-name="{{ $u->name }}"
@@ -291,13 +319,16 @@
                                                         <span class="material-symbols-outlined">shield_person</span>
                                                     </button>
                                                 @else
-                                                    <button type="button" title="Lihat Hak Akses" class="row-action-btn btn-access-row"
+                                                    <button type="button"
+                                                        title="{{ $u->role === 'superadmin' ? 'Superadmin selalu memiliki akses penuh dan tidak bisa dibatasi' : 'Lihat Hak Akses' }}"
+                                                        class="row-action-btn btn-access-row"
                                                         data-id="{{ $u->id }}"
                                                         data-name="{{ $u->name }}"
                                                         data-nim_nidn="{{ $u->nim_nidn ?? '-' }}"
                                                         data-role="{{ $u->role }}"
                                                         data-levels="{{ urlencode(json_encode($row['levels'])) }}"
-                                                        data-readonly="1">
+                                                        data-readonly="1"
+                                                        @if($u->role === 'superadmin') data-readonly-reason="Superadmin selalu memiliki akses penuh ke semua menu dan tidak bisa dibatasi lewat halaman ini." @endif>
                                                         <span class="material-symbols-outlined">visibility</span>
                                                     </button>
                                                 @endif
@@ -359,6 +390,8 @@
                     </div>
                 </div>
             </div>
+
+            <p class="modal-subtitle" id="modalReadonlyNote" hidden></p>
 
             <!-- Sidebar kiri -->
             <aside class="access-side">
@@ -609,6 +642,7 @@
 
         const accessUserAvatar = document.getElementById('accessUserAvatar');
         const accessUserName = document.getElementById('accessUserName');
+        const modalReadonlyNote = document.getElementById('modalReadonlyNote');
         const accessUserRole = document.getElementById('accessUserRole');
         const accessUserEmail = document.getElementById('accessUserEmail');
 
@@ -626,6 +660,14 @@
 
             document.getElementById('form-user_id').value = data.id || '';
             modalTitle.textContent = data.readonly ? 'Lihat Hak Akses' : 'Atur Hak Akses';
+
+            if (data.readonlyReason) {
+                modalReadonlyNote.textContent = data.readonlyReason;
+                modalReadonlyNote.hidden = false;
+            } else {
+                modalReadonlyNote.textContent = '';
+                modalReadonlyNote.hidden = true;
+            }
 
             accessUserName.textContent = data.name || '-';
             accessUserEmail.textContent = data.nim_nidn || '-';
@@ -802,6 +844,7 @@
                     role: accessBtn.dataset.role,
                     levels: accessBtn.dataset.levels,
                     readonly: accessBtn.dataset.readonly === '1',
+                    readonlyReason: accessBtn.dataset.readonlyReason || '',
                 });
             }
         });

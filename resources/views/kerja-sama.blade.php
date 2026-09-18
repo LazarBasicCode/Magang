@@ -61,6 +61,11 @@
                     <span class="material-symbols-outlined">manage_accounts</span>
                     <span>Data Master</span>
                 </a>
+
+                <a href="{{ url('/hak-akses') }}" class="nav-link">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                    <span>Hak Akses</span>
+                </a>
             </div>
         </nav>
 
@@ -293,80 +298,80 @@
                             </thead>
                             <tbody id="kerjaSamaTableBody">
                                 @php
-                                    $jenisBadge = [
-                                        'conference_internasional' => ['label' => 'Conference Int.', 'class' => 'badge-info'],
-                                        'pkl' => ['label' => 'PKL', 'class' => 'badge-primary'],
-                                        'sharing_session' => ['label' => 'Sharing Session', 'class' => 'badge-warning'],
-                                        'keynote_session' => ['label' => 'Keynote Speaker', 'class' => 'badge-success'],
-                                        'guest_lecture' => ['label' => 'Guest Lecture', 'class' => 'badge-info'],
-                                        'pengabdian_internasional' => ['label' => 'Pengabdian Int.', 'class' => 'badge-danger'],
-                                        'research_internasional' => ['label' => 'Research Int.', 'class' => 'badge-neutral'],
-                                    ];
-                                    $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                $jenisBadge = [
+                                'conference_internasional' => ['label' => 'Conference Int.', 'class' => 'badge-info'],
+                                'pkl' => ['label' => 'PKL', 'class' => 'badge-primary'],
+                                'sharing_session' => ['label' => 'Sharing Session', 'class' => 'badge-warning'],
+                                'keynote_session' => ['label' => 'Keynote Speaker', 'class' => 'badge-success'],
+                                'guest_lecture' => ['label' => 'Guest Lecture', 'class' => 'badge-info'],
+                                'pengabdian_internasional' => ['label' => 'Pengabdian Int.', 'class' => 'badge-danger'],
+                                'research_internasional' => ['label' => 'Research Int.', 'class' => 'badge-neutral'],
+                                ];
+                                $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
                                 @forelse($items as $item)
-                                    @php
-                                        $nama = $item->user->name ?? 'Tanpa Nama';
-                                        $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
-                                        $avatarColor = $colors[$item->user_id % count($colors)];
-                                        $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
-                                        $periode = optional($item->tanggal_mulai)->translatedFormat('d M Y') . ' - ' . optional($item->tanggal_selesai)->translatedFormat('d M Y');
-                                    @endphp
-                                    <tr data-id="{{ $item->id }}">
-                                        <td><span class="nim-code">{{ $item->user->nim_nidn ?? '-' }}</span></td>
-                                        <td>
-                                            <div class="student-cell">
-                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
-                                                <div class="student-name"><span class="name">{{ $nama }}</span></div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="activity-title" title="{{ $item->judul_kegiatan }}">{{ $item->judul_kegiatan }}</span>
-                                        </td>
-                                        <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
-                                        <td class="center"><span class="badge badge-neutral">{{ ucfirst($item->tipe_user) }}</span></td>
-                                        <td class="center">
-                                            @if($item->arah)
-                                                <span class="badge badge-primary">{{ ucfirst($item->arah) }}</span>
-                                            @else
-                                                <span class="plain-text">-</span>
-                                            @endif
-                                        </td>
-                                        <td class="center"><span class="plain-text">{{ $item->mitra }}</span></td>
-                                        <td class="center"><span class="year-chip">{{ $periode }}</span></td>
-                                        <td class="center">
-                                            <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                                                <span class="material-symbols-outlined">cloud</span>
-                                                <span>Lihat Bukti</span>
-                                            </a>
-                                        </td>
-                                        <td class="center">
-                                            <div class="row-actions">
-                                                <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                                                    data-id="{{ $item->id }}"
-                                                    data-user_id="{{ $item->user_id }}"
-                                                    data-tipe_user="{{ $item->tipe_user }}"
-                                                    data-jenis="{{ $item->jenis }}"
-                                                    data-arah="{{ $item->arah }}"
-                                                    data-mitra="{{ urlencode($item->mitra) }}"
-                                                    data-judul_kegiatan="{{ urlencode($item->judul_kegiatan) }}"
-                                                    data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
-                                                    data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
-                                                    data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}">
-                                                    <span class="material-symbols-outlined">edit</span>
-                                                </button>
-                                                <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
-                                                    <span class="material-symbols-outlined">delete</span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                @php
+                                $nama = $item->user->name ?? 'Tanpa Nama';
+                                $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                $avatarColor = $colors[$item->user_id % count($colors)];
+                                $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
+                                $periode = optional($item->tanggal_mulai)->translatedFormat('d M Y') . ' - ' . optional($item->tanggal_selesai)->translatedFormat('d M Y');
+                                @endphp
+                                <tr data-id="{{ $item->id }}">
+                                    <td><span class="nim-code">{{ $item->user->nim_nidn ?? '-' }}</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            <div class="student-name"><span class="name">{{ $nama }}</span></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="activity-title" title="{{ $item->judul_kegiatan }}">{{ $item->judul_kegiatan }}</span>
+                                    </td>
+                                    <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
+                                    <td class="center"><span class="badge badge-neutral">{{ ucfirst($item->tipe_user) }}</span></td>
+                                    <td class="center">
+                                        @if($item->arah)
+                                        <span class="badge badge-primary">{{ ucfirst($item->arah) }}</span>
+                                        @else
+                                        <span class="plain-text">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="center"><span class="plain-text">{{ $item->mitra }}</span></td>
+                                    <td class="center"><span class="year-chip">{{ $periode }}</span></td>
+                                    <td class="center">
+                                        <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
+                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span>Lihat Bukti</span>
+                                        </a>
+                                    </td>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                                                data-id="{{ $item->id }}"
+                                                data-user_id="{{ $item->user_id }}"
+                                                data-tipe_user="{{ $item->tipe_user }}"
+                                                data-jenis="{{ $item->jenis }}"
+                                                data-arah="{{ $item->arah }}"
+                                                data-mitra="{{ urlencode($item->mitra) }}"
+                                                data-judul_kegiatan="{{ urlencode($item->judul_kegiatan) }}"
+                                                data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
+                                                data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
+                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}">
+                                                <span class="material-symbols-outlined">edit</span>
+                                            </button>
+                                            <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
+                                                <span class="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                                 @empty
-                                    <tr id="emptyRow">
-                                        <td colspan="10" style="text-align:center; padding: 32px; color: var(--ink-faint);">
-                                            Belum ada data kerja sama. Klik "Tambah Kerja Sama" untuk mulai mengisi.
-                                        </td>
-                                    </tr>
+                                <tr id="emptyRow">
+                                    <td colspan="10" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                        Belum ada data kerja sama. Klik "Tambah Kerja Sama" untuk mulai mengisi.
+                                    </td>
+                                </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -379,7 +384,7 @@
                             dari <strong>{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">2026</span>
                         </div>
                         {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $items->links() }}
-                             setelah view paginator kamu disesuaikan dengan desain ini. --}}
+                        setelah view paginator kamu disesuaikan dengan desain ini. --}}
                     </div>
                 </div>
             </div>
@@ -414,7 +419,7 @@
                     </button>
                     <div class="dropdown-panel">
                         @foreach($userList as $u)
-                            <button type="button" class="dropdown-option" data-value="{{ $u->id }}" data-role="{{ $u->role }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} ({{ ucfirst($u->role) }})</button>
+                        <button type="button" class="dropdown-option" data-value="{{ $u->id }}" data-role="{{ $u->role }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} ({{ ucfirst($u->role) }})</button>
                         @endforeach
                     </div>
                 </div>
@@ -547,7 +552,10 @@
             options.forEach((o) => {
                 const isMatch = o.dataset.value === String(value);
                 o.classList.toggle('is-selected', isMatch);
-                if (isMatch) { valueEl.textContent = o.textContent.trim(); matched = true; }
+                if (isMatch) {
+                    valueEl.textContent = o.textContent.trim();
+                    matched = true;
+                }
             });
             if (hiddenInput) hiddenInput.value = matched ? value : '';
             if (!matched) valueEl.textContent = placeholder || (options[0] ? options[0].textContent.trim() : '');
@@ -666,7 +674,9 @@
         function openModal(mode, data = {}) {
             modalForm.reset();
             modalError.hidden = true;
-            modalCard.style.left = ''; modalCard.style.top = ''; modalCard.style.transform = '';
+            modalCard.style.left = '';
+            modalCard.style.top = '';
+            modalCard.style.transform = '';
 
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Kerja Sama' : 'Tambah Kerja Sama';
@@ -690,6 +700,7 @@
             modalCard.classList.add('is-active');
             modalCard.setAttribute('aria-hidden', 'false');
         }
+
         function closeModal() {
             modalBackdrop.classList.remove('is-active');
             modalCard.classList.remove('is-active');
@@ -699,51 +710,114 @@
         modalCloseBtn.addEventListener('click', closeModal);
         modalCancelBtn.addEventListener('click', closeModal);
         modalBackdrop.addEventListener('click', closeModal);
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal();
+        });
 
         // ---- Drag modal ----
         let dragState = null;
         dragHandle.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.modal-close-btn')) return;
             const rect = modalCard.getBoundingClientRect();
-            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
-            modalCard.style.left = rect.left + 'px'; modalCard.style.top = rect.top + 'px'; modalCard.style.transform = 'none';
+            dragState = {
+                startX: e.clientX,
+                startY: e.clientY,
+                originX: rect.left,
+                originY: rect.top
+            };
+            modalCard.style.left = rect.left + 'px';
+            modalCard.style.top = rect.top + 'px';
+            modalCard.style.transform = 'none';
             modalCard.classList.add('is-dragging');
             dragHandle.setPointerCapture(e.pointerId);
         });
         dragHandle.addEventListener('pointermove', (e) => {
             if (!dragState) return;
-            const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
-            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8, maxTop = window.innerHeight - modalCard.offsetHeight - 8;
+            const dx = e.clientX - dragState.startX,
+                dy = e.clientY - dragState.startY;
+            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8,
+                maxTop = window.innerHeight - modalCard.offsetHeight - 8;
             modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
             modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
         });
-        function endDrag(e) { if (!dragState) return; dragState = null; modalCard.classList.remove('is-dragging'); try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {} }
+
+        function endDrag(e) {
+            if (!dragState) return;
+            dragState = null;
+            modalCard.classList.remove('is-dragging');
+            try {
+                dragHandle.releasePointerCapture(e.pointerId);
+            } catch (_) {}
+        }
         dragHandle.addEventListener('pointerup', endDrag);
         dragHandle.addEventListener('pointercancel', endDrag);
 
         // ---- Bangun/ganti/hapus baris tabel ----
         const jenisBadge = {
-            conference_internasional: { label: 'Conference Int.', cls: 'badge-info' },
-            pkl: { label: 'PKL', cls: 'badge-primary' },
-            sharing_session: { label: 'Sharing Session', cls: 'badge-warning' },
-            keynote_session: { label: 'Keynote Speaker', cls: 'badge-success' },
-            guest_lecture: { label: 'Guest Lecture', cls: 'badge-info' },
-            pengabdian_internasional: { label: 'Pengabdian Int.', cls: 'badge-danger' },
-            research_internasional: { label: 'Research Int.', cls: 'badge-neutral' },
+            conference_internasional: {
+                label: 'Conference Int.',
+                cls: 'badge-info'
+            },
+            pkl: {
+                label: 'PKL',
+                cls: 'badge-primary'
+            },
+            sharing_session: {
+                label: 'Sharing Session',
+                cls: 'badge-warning'
+            },
+            keynote_session: {
+                label: 'Keynote Speaker',
+                cls: 'badge-success'
+            },
+            guest_lecture: {
+                label: 'Guest Lecture',
+                cls: 'badge-info'
+            },
+            pengabdian_internasional: {
+                label: 'Pengabdian Int.',
+                cls: 'badge-danger'
+            },
+            research_internasional: {
+                label: 'Research Int.',
+                cls: 'badge-neutral'
+            },
         };
-        function initials(name) { return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-'; }
-        function avatarColor(id) { const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger']; return c[Number(id) % c.length]; }
-        function esc(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }
+
+        function initials(name) {
+            return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
+        }
+
+        function avatarColor(id) {
+            const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+            return c[Number(id) % c.length];
+        }
+
+        function esc(str) {
+            const div = document.createElement('div');
+            div.textContent = str ?? '';
+            return div.innerHTML;
+        }
+
         function formatTanggal(iso) {
             if (!iso) return '-';
             const d = new Date(iso + 'T00:00:00');
-            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            return d.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
         }
-        function ucfirst(str) { return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''; }
+
+        function ucfirst(str) {
+            return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+        }
 
         function buildRowHTML(item) {
-            const jb = jenisBadge[item.jenis] || { label: item.jenis, cls: 'badge-neutral' };
+            const jb = jenisBadge[item.jenis] || {
+                label: item.jenis,
+                cls: 'badge-neutral'
+            };
             const arahHTML = item.arah ? `<span class="badge badge-primary">${esc(ucfirst(item.arah))}</span>` : '<span class="plain-text">-</span>';
             const periode = `${formatTanggal(item.tanggal_mulai)} - ${formatTanggal(item.tanggal_selesai)}`;
             return `
@@ -784,23 +858,31 @@
                 </td>
             </tr>`.trim();
         }
+
         function insertRow(item) {
             document.getElementById('emptyRow')?.remove();
-            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
-            const row = wrap.firstElementChild; row.classList.add('is-new');
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
+            const row = wrap.firstElementChild;
+            row.classList.add('is-new');
             tableBody.prepend(row);
         }
+
         function updateRow(item) {
             const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
             if (!existing) return insertRow(item);
-            const wrap = document.createElement('tbody'); wrap.innerHTML = buildRowHTML(item);
+            const wrap = document.createElement('tbody');
+            wrap.innerHTML = buildRowHTML(item);
             existing.replaceWith(wrap.firstElementChild);
         }
+
         function removeRow(id) {
             const row = tableBody.querySelector(`tr[data-id="${id}"]`);
             if (!row) return;
             row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), { once: true });
+            row.addEventListener('transitionend', () => row.remove(), {
+                once: true
+            });
         }
 
         modalForm.addEventListener('submit', async (e) => {
@@ -824,11 +906,15 @@
 
             if (!payload.user_id) {
                 modalError.textContent = 'Pilih mahasiswa/dosen terlebih dahulu.';
-                modalError.hidden = false; modalSubmitBtn.disabled = false; return;
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
             }
             if (!payload.tipe_user) {
                 modalError.textContent = 'Tipe user tidak terdeteksi, pilih ulang mahasiswa/dosen.';
-                modalError.hidden = false; modalSubmitBtn.disabled = false; return;
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
             }
 
             const url = id ? `/kerja-sama/${id}` : '/kerja-sama';
@@ -837,18 +923,26 @@
             try {
                 const res = await fetch(url, {
                     method,
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
                     body: JSON.stringify(payload),
                 });
                 const result = await res.json();
                 if (!res.ok) {
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
-                    modalError.textContent = firstError; modalError.hidden = false; return;
+                    modalError.textContent = firstError;
+                    modalError.hidden = false;
+                    return;
                 }
-                if (id) updateRow(result.data); else insertRow(result.data);
+                if (id) updateRow(result.data);
+                else insertRow(result.data);
                 closeModal();
             } catch (err) {
-                modalError.textContent = 'Gagal terhubung ke server.'; modalError.hidden = false;
+                modalError.textContent = 'Gagal terhubung ke server.';
+                modalError.hidden = false;
             } finally {
                 modalSubmitBtn.disabled = false;
             }
@@ -857,11 +951,19 @@
         async function handleDelete(id) {
             if (!confirm('Hapus data kerja sama ini? Tindakan tidak bisa dibatalkan.')) return;
             try {
-                const res = await fetch(`/kerja-sama/${id}`, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken } });
+                const res = await fetch(`/kerja-sama/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
                 const result = await res.json();
                 if (res.ok && result.success) removeRow(result.id);
                 else alert(result.message || 'Gagal menghapus data.');
-            } catch (err) { alert('Gagal terhubung ke server.'); }
+            } catch (err) {
+                alert('Gagal terhubung ke server.');
+            }
         }
 
         tableBody.addEventListener('click', (e) => {

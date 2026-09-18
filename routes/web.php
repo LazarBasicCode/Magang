@@ -14,8 +14,8 @@ Route::get('/', function () {
     return view('index');
 })->name('login');
 
-Route::get('/r', function () {
-    return view('data_master_users');
+Route::get('/hak-akses', function () {
+    return view('hak-akses');
 })->name('login');
 
 // Rute Pemrosesan Login & Logout

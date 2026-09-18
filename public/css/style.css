@@ -46,8 +46,8 @@
 }
 
 body.dark-mode {
-    --canvas: #0b0e14;
-    --card: #0e1525;
+    --canvas: #11131a;
+    --card: #11192b;
     --border: #232936;
     --border-strong: #313949;
     --ink: #f8fafc;
@@ -87,7 +87,7 @@ body.dark-mode .app-sidebar,
 body.dark-mode .modal-card,
 body.dark-mode .dropdown-panel {
     background-color: var(--card);
-    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 45%);
+    background-image: linear-gradient(180deg, rgba(77, 106, 235, 0.096) 0%, rgba(255, 255, 255, 0) 45%);
 }
 body.dark-mode .header-capsule { background-color: rgba(17, 21, 29, 0.85); }
 body.dark-mode .data-table thead tr { background: #161b26; }
@@ -507,3 +507,469 @@ body.dark-mode .badge-neutral { background: var(--neutral-bg); color: var(--neut
 body.dark-mode .badge-success { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
 body.dark-mode .badge-warning { background: var(--warning-bg); color: var(--warning); border-color: var(--warning-border); }
 body.dark-mode .badge-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+/* ==========================================================
+   13. HAK AKSES — ringkasan akses di tabel & modal matriks akses
+   (khusus halaman Hak Akses, tidak mengubah komponen dasar di atas)
+   ========================================================== */
+
+/* --- Ringkasan level akses di kolom tabel --- */
+.access-summary { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.access-chip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; border: 1px solid transparent; background: var(--canvas); color: var(--ink-muted);
+}
+.access-chip .access-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.access-chip.is-zero { opacity: .35; }
+.access-dot.penuh, .access-chip.penuh .access-dot { background: var(--success); }
+.access-dot.biasa, .access-chip.biasa .access-dot { background: var(--info); }
+.access-dot.readonly, .access-chip.readonly .access-dot { background: var(--warning); }
+.access-dot.none, .access-chip.none .access-dot { background: var(--neutral); }
+.access-chip.penuh { background: var(--success-bg); color: var(--success); }
+.access-chip.biasa { background: var(--info-bg); color: var(--info); }
+.access-chip.readonly { background: var(--warning-bg); color: var(--warning); }
+.access-chip.none { background: var(--neutral-bg); color: var(--neutral); }
+
+/* --- Modal Hak Akses: lebih lebar dari modal standar --- */
+#accessModal { width: min(560px, calc(100vw - 32px)); }
+
+/* --- Strip identitas pengguna di kepala body modal --- */
+.access-user-chip {
+    display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px;
+    background: var(--canvas); border: 1px solid var(--border);
+}
+.access-user-chip .avatar { width: 40px; height: 40px; font-size: 13px; }
+.access-user-chip-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.access-user-chip-name { font-size: 13.5px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.access-user-chip-meta { display: flex; align-items: center; gap: 6px; }
+
+/* --- Legenda level akses --- */
+.access-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 10px 12px; border-radius: 10px; background: var(--canvas); border: 1px dashed var(--border-strong); }
+.access-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--ink-muted); }
+
+/* --- Baris "terapkan ke semua" (bulk apply) --- */
+.access-bulk-row { display: flex; align-items: center; gap: 10px; }
+.access-bulk-row .dropdown { flex: 1; min-width: 0; }
+.access-bulk-row .btn-ghost { flex-shrink: 0; white-space: nowrap; padding: 10px 14px; }
+
+/* --- Divider tipis dengan label di tengah, pemisah legenda/bulk-row dari daftar menu --- */
+.access-divider { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 800; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .04em; }
+.access-divider::before, .access-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+/* --- Daftar matriks menu x level akses --- */
+.permission-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding-right: 2px; }
+.permission-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--card);
+    transition: border-color .15s ease, background-color .15s ease;
+}
+.permission-row:hover { border-color: var(--primary-border); }
+.permission-menu { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.permission-menu-icon {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary-border);
+}
+.permission-menu-icon .material-symbols-outlined { font-size: 18px; }
+.permission-menu-name { font-size: 12.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.permission-row .dropdown { width: 168px; flex-shrink: 0; }
+.permission-row .dropdown-trigger { padding: 8px 10px; font-size: 12px; }
+.permission-row .dropdown-panel { right: 0; left: auto; min-width: 178px; }
+
+/* Titik warna + ikon centang di dalam opsi dropdown level akses */
+.dropdown-option .access-dot { display: inline-block; margin-right: 8px; vertical-align: middle; }
+.dropdown-option .opt-check { font-size: 14px; vertical-align: middle; margin-left: 4px; color: var(--success); }
+
+@media (max-width: 480px) {
+    .permission-row { flex-wrap: wrap; }
+    .permission-row .dropdown { width: 100%; }
+    .access-bulk-row { flex-wrap: wrap; }
+    .access-bulk-row .btn-ghost { width: 100%; justify-content: center; }
+}
+
+/* ==========================================================
+   14. HAK AKSES — Modal + Tabel Ringkasan
+   Satu blok utuh. Semua komponen pakai token di :root.
+   ========================================================== */
+
+/* --- Palet level akses (4 warna, konsisten light & dark) --- */
+:root {
+    --acc-penuh:          #0f8a4d;  --acc-penuh-bg:    #e6f7ee;  --acc-penuh-border:    #9be0b9;
+    --acc-biasa:          #2563c9;  --acc-biasa-bg:    #e8f0fd;  --acc-biasa-border:    #a9c6f2;
+    --acc-readonly:       #b07000;  --acc-readonly-bg: #fff4d9;  --acc-readonly-border: #f0cf7a;
+    --acc-none:           #6b7280;  --acc-none-bg:     #f1f3f7;  --acc-none-border:     #d5d9e2;
+    --acc-accent:         #5b5fef;  --acc-accent-soft: #eef0ff;  --acc-accent-border:   #c9cbfb;
+}
+body.dark-mode {
+    --acc-penuh:          #4ade80;  --acc-penuh-bg:    #0f2a1c;  --acc-penuh-border:    #1e5136;
+    --acc-biasa:          #60a5fa;  --acc-biasa-bg:    #0f1f38;  --acc-biasa-border:    #1e3f6b;
+    --acc-readonly:       #fbbf24;  --acc-readonly-bg: #2a1f0b;  --acc-readonly-border: #4d3a15;
+    --acc-none:           #94a3b8;  --acc-none-bg:     #171b22;  --acc-none-border:     #2a303a;
+    --acc-accent:         #7c83ff;  --acc-accent-soft: #171a35;  --acc-accent-border:   #2e3468;
+}
+
+/* ---------- Ringkasan akses di tabel ---------- */
+.access-summary { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.access-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; line-height: 1;
+    border: 1px solid transparent;
+    transition: opacity .15s ease;
+}
+.access-chip .access-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.access-chip.is-zero { opacity: .3; }
+.access-chip.penuh    { background: var(--acc-penuh-bg);    color: var(--acc-penuh);    border-color: var(--acc-penuh-border); }
+.access-chip.biasa    { background: var(--acc-biasa-bg);    color: var(--acc-biasa);    border-color: var(--acc-biasa-border); }
+.access-chip.readonly { background: var(--acc-readonly-bg); color: var(--acc-readonly); border-color: var(--acc-readonly-border); }
+.access-chip.none     { background: var(--acc-none-bg);     color: var(--acc-none);     border-color: var(--acc-none-border); }
+.access-dot.penuh    { background: var(--acc-penuh); }
+.access-dot.biasa    { background: var(--acc-biasa); }
+.access-dot.readonly { background: var(--acc-readonly); }
+.access-dot.none     { background: var(--acc-none); }
+
+/* ==========================================================
+   MODAL HAK AKSES — layout bersih, tidak ada overlap
+   ========================================================== */
+#accessModal {
+    width: min(1080px, calc(100vw - 40px));
+    height: min(720px, calc(100vh - 40px));
+    max-height: min(720px, calc(100vh - 40px));
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;            /* FIX: cegah anak keluar dari card */
+}
+
+/* --- Header --- */
+#accessModal .modal-drag-handle {
+    position: relative;
+    flex: 0 0 auto;              /* FIX: header tidak boleh gepeng/melar */
+    padding: 18px 24px 18px 28px;
+    background: linear-gradient(180deg, var(--acc-accent-soft) 0%, transparent 100%);
+    border-bottom: 1px solid var(--acc-accent-border);
+    align-items: center;
+}
+#accessModal .modal-drag-handle::before {
+    content: "";
+    position: absolute;
+    left: 14px; top: 22px; bottom: 22px;
+    width: 4px; border-radius: 4px;
+    background: var(--acc-accent);
+}
+#accessModal .modal-title { font-size: 16px; }
+#accessModal .modal-close-btn {
+    background: color-mix(in srgb, var(--acc-accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--acc-accent) 20%, transparent);
+    color: var(--acc-accent);
+    transition: background .15s ease, color .15s ease;
+}
+#accessModal .modal-close-btn:hover {
+    background: var(--acc-accent);
+    color: #fff;
+}
+
+/* --- Body grid: 3 row, tinggi penuh --- */
+#accessModal .modal-body {
+    flex: 1 1 auto;              /* FIX: eksplisit grow+shrink */
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-auto-rows: 0;           /* FIX INTI: baris implisit tidak makan ruang */
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+    min-height: 0;
+    height: 100%;                /* FIX: pastikan mengisi parent */
+}
+
+/* --- User chip: row 1, span 2 kolom --- */
+#accessModal .access-user-chip {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-self: start;           /* FIX: jangan melar */
+    display: flex;               /* FIX: pastikan flex (sebelumnya andalkan global) */
+    align-items: center;
+    margin: 0;
+    padding: 14px 24px;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    gap: 14px;
+}
+#accessModal .access-user-chip .avatar { width: 42px; height: 42px; font-size: 13px; }
+#accessModal .access-user-chip-name { font-size: 14.5px; }
+
+/* --- Sidebar kiri (row 2, col 1) --- */
+#accessModal .access-side {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;         /* FIX: paksa stretch penuh */
+    height: 100%;                /* FIX */
+    padding: 18px 20px;
+    border-right: 1px solid var(--border);
+    background: var(--canvas);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    min-height: 0;
+}
+#accessModal .access-divider {
+    margin: 0;
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+#accessModal .access-divider::before,
+#accessModal .access-divider::after {
+    background: var(--border-strong);
+}
+
+/* Legend (kolom vertikal, rapi) */
+#accessModal .access-legend {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+}
+#accessModal .access-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+}
+#accessModal .access-legend-item .access-dot {
+    width: 9px; height: 9px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* Bulk apply (stack vertikal) */
+#accessModal .access-bulk-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+}
+#accessModal .access-bulk-row .dropdown { width: 100%; }
+#accessModal .access-bulk-row .dropdown-trigger { height: 38px; font-size: 12.5px; }
+#accessModal .access-bulk-row .btn-ghost {
+    width: 100%;
+    justify-content: center;
+    height: 38px;
+    background: var(--acc-accent-soft);
+    color: var(--acc-accent);
+    border-color: var(--acc-accent-border);
+}
+#accessModal .access-bulk-row .btn-ghost:hover {
+    background: var(--acc-accent);
+    color: #fff;
+    border-color: var(--acc-accent);
+}
+
+/* --- Area kanan (row 2, col 2) --- */
+#accessModal .access-main {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: stretch;         /* FIX INTI: paksa stretch penuh */
+    height: 100%;                /* FIX INTI: isi seluruh tinggi row */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 22px;          /* FIX: tambah padding bawah */
+    overflow: hidden;
+    min-height: 0;
+    background: var(--card);
+}
+
+/* --- Permission list: scroll sendiri --- */
+#accessModal .permission-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;        
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-y: auto;
+    padding: 0 4px 0 0;
+}
+
+#accessModal .permission-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 12px 10px 16px;
+    min-height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    transition: background-color .12s ease;
+}
+#accessModal .permission-row:last-child { border-bottom: none; }
+#accessModal .permission-row:hover { background: var(--canvas); }
+
+/* Garis aksen kiri sesuai state */
+#accessModal .permission-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 0;
+    border-radius: 0 3px 3px 0;
+    background: var(--acc-none);
+    transition: height .18s ease, background-color .18s ease;
+}
+#accessModal .permission-row[data-state="penuh"]::before    { height: 60%; background: var(--acc-penuh); }
+#accessModal .permission-row[data-state="biasa"]::before    { height: 60%; background: var(--acc-biasa); }
+#accessModal .permission-row[data-state="readonly"]::before { height: 60%; background: var(--acc-readonly); }
+
+/* Icon menu — default netral, berubah warna sesuai state */
+#accessModal .permission-menu {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+#accessModal .permission-menu-icon {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--canvas);
+    color: var(--ink-muted);
+    border: 1px solid var(--border);
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+#accessModal .permission-menu-icon .material-symbols-outlined { font-size: 18px; }
+#accessModal .permission-menu-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+#accessModal .permission-row[data-state="penuh"]    .permission-menu-icon { background: var(--acc-penuh-bg);    color: var(--acc-penuh);    border-color: var(--acc-penuh-border); }
+#accessModal .permission-row[data-state="biasa"]    .permission-menu-icon { background: var(--acc-biasa-bg);    color: var(--acc-biasa);    border-color: var(--acc-biasa-border); }
+#accessModal .permission-row[data-state="readonly"] .permission-menu-icon { background: var(--acc-readonly-bg); color: var(--acc-readonly); border-color: var(--acc-readonly-border); }
+
+/* Dropdown per baris */
+#accessModal .permission-row .dropdown { width: 190px; flex-shrink: 0; }
+#accessModal .permission-row .dropdown-trigger {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 12.5px;
+    border-radius: 8px;
+}
+#accessModal .permission-row[data-state="penuh"]    .dropdown-trigger { border-color: var(--acc-penuh-border);    color: var(--acc-penuh);    background: var(--acc-penuh-bg); }
+#accessModal .permission-row[data-state="biasa"]    .dropdown-trigger { border-color: var(--acc-biasa-border);    color: var(--acc-biasa);    background: var(--acc-biasa-bg); }
+#accessModal .permission-row[data-state="readonly"] .dropdown-trigger { border-color: var(--acc-readonly-border); color: var(--acc-readonly); background: var(--acc-readonly-bg); }
+#accessModal .permission-row[data-state="none"]     .dropdown-trigger { border-color: var(--border-strong);       color: var(--ink-muted);    background: var(--card); }
+
+/* --- Footer: row 3, span 2 kolom --- */
+#accessModal .modal-footer {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    align-self: end;             /* FIX: pastikan nempel bawah */
+    display: flex;               /* FIX: eksplisit */
+    margin: 0;
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--canvas);
+    justify-content: flex-end;
+    gap: 10px;
+}
+#accessModal .modal-footer .btn-ghost {
+    height: 38px;
+    padding: 0 16px;
+    font-size: 12.5px;
+    background: var(--card);
+    border-color: var(--border-strong);
+    color: var(--ink-muted);
+}
+#accessModal .modal-footer .btn-ghost:hover {
+    background: var(--canvas);
+    color: var(--ink);
+    border-color: var(--ink-faint);
+}
+#accessModal .modal-footer .btn-apply {
+    height: 38px;
+    padding: 0 18px;
+    font-size: 12.5px;
+    background: var(--acc-accent);
+    border-color: var(--acc-accent);
+}
+#accessModal .modal-footer .btn-apply:hover { filter: brightness(.92); }
+
+/* --- Error message --- */
+#accessModal .modal-error {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    align-self: start;           /* FIX: jangan melar */
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid var(--danger-border);
+    border-bottom: none;
+}
+#accessModal .modal-error[hidden] {
+    display: none !important;    /* FIX: paksa hidden bekerja */
+}
+
+/* --- Dark mode override --- */
+body.dark-mode #accessModal .access-side,
+body.dark-mode #accessModal .modal-footer {
+    background: #0a0f1a;
+}
+body.dark-mode #accessModal .access-user-chip,
+body.dark-mode #accessModal .access-main {
+    background: var(--card);
+}
+
+/* --- Dropdown panel: warna opsi sesuai level --- */
+.dropdown-option[data-value="penuh"]    .access-dot { background: var(--acc-penuh); }
+.dropdown-option[data-value="biasa"]    .access-dot { background: var(--acc-biasa); }
+.dropdown-option[data-value="readonly"] .access-dot { background: var(--acc-readonly); }
+.dropdown-option[data-value="none"]     .access-dot { background: var(--acc-none); }
+.dropdown-option[data-value="penuh"].is-selected    { background: var(--acc-penuh-bg);    color: var(--acc-penuh); }
+.dropdown-option[data-value="biasa"].is-selected    { background: var(--acc-biasa-bg);    color: var(--acc-biasa); }
+.dropdown-option[data-value="readonly"].is-selected { background: var(--acc-readonly-bg); color: var(--acc-readonly); }
+.dropdown-option[data-value="none"].is-selected     { background: var(--acc-none-bg);     color: var(--acc-none); }
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+    #accessModal {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 20px);
+        max-height: calc(100vh - 20px);
+    }
+    #accessModal .modal-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr auto;
+    }
+    #accessModal .access-side {
+        grid-column: 1;
+        grid-row: 2;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+        max-height: 200px;
+    }
+    #accessModal .access-side .access-legend { flex: 1; min-width: 180px; }
+    #accessModal .access-side .access-bulk-row { flex: 1; min-width: 200px; flex-direction: column; }
+    #accessModal .access-main { grid-column: 1; grid-row: 3; padding: 14px 16px; }
+    #accessModal .modal-footer { grid-row: 4; }
+    #accessModal .permission-row .dropdown { width: 150px; }
+}

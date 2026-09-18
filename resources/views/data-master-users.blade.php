@@ -172,12 +172,12 @@
                     </div>
                 </div>
 
-                <!-- FILTER BAR (tampilan saja untuk saat ini, belum disambung ke query) -->
+                <!-- FILTER BAR (aktif: filter & pencarian jalan otomatis tanpa reload) -->
                 <div class="filter-card">
                     <div class="filter-grid">
                         <div class="field">
                             <label class="field-label">Role Pengguna</label>
-                            <div class="dropdown" data-dropdown>
+                            <div class="dropdown" data-dropdown id="dd-filter-role">
                                 <input type="hidden" id="filter-role" value="semua" />
                                 <button type="button" class="dropdown-trigger">
                                     <span class="dropdown-value">Semua Role</span>
@@ -199,7 +199,7 @@
                             <label class="field-label" for="filter-search">Pencarian Cepat</label>
                             <div class="field-control">
                                 <span class="material-symbols-outlined icon-search">search</span>
-                                <input id="filter-search" type="text" placeholder="Cari nama, NIM, atau NIDN..." />
+                                <input id="filter-search" type="text" placeholder="Cari ID, nama, NIM, atau NIDN..." />
                             </div>
                         </div>
                     </div>
@@ -207,10 +207,6 @@
                         <button type="button" id="btn-reset-filter" class="btn-ghost">
                             <span class="material-symbols-outlined">restart_alt</span>
                             <span>Reset</span>
-                        </button>
-                        <button type="button" id="btn-apply-filter" class="btn-apply">
-                            <span class="material-symbols-outlined">filter_alt</span>
-                            <span>Terapkan Filter</span>
                         </button>
                     </div>
                 </div>
@@ -243,69 +239,74 @@
                             </thead>
                             <tbody id="userTableBody">
                                 @forelse($users as $item)
-                                    @php
-                                        $initials = collect(explode(' ', $item->name))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
-                                        $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
-                                        $avatarColor = $colors[$item->id % count($colors)];
-                                        $roleBadge = [
-                                            'superadmin' => 'badge-danger',
-                                            'admin' => 'badge-warning',
-                                            'dosen' => 'badge-info',
-                                            'mahasiswa' => 'badge-success',
-                                        ][$item->role] ?? 'badge-neutral';
-                                        $roleLabel = ucfirst($item->role);
-                                        $identifier = $item->role === 'mahasiswa'
-                                            ? optional($item->mahasiswa)->nim
-                                            : ($item->role === 'dosen' ? optional($item->dosen)->nidn : null);
-                                    @endphp
-                                    <tr data-id="{{ $item->id }}">
-                                        <td><span class="nim-code">USR-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</span></td>
-                                        <td>
-                                            <div class="student-cell">
-                                                <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
-                                                <div class="student-name">
-                                                    <span class="name">{{ $item->name }}</span>
-                                                </div>
+                                @php
+                                $initials = collect(explode(' ', $item->name))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+                                $avatarColor = $colors[$item->id % count($colors)];
+                                $roleBadge = [
+                                'superadmin' => 'badge-danger',
+                                'admin' => 'badge-warning',
+                                'dosen' => 'badge-info',
+                                'mahasiswa' => 'badge-success',
+                                ][$item->role] ?? 'badge-neutral';
+                                $roleLabel = ucfirst($item->role);
+                                $identifier = $item->role === 'mahasiswa'
+                                ? optional($item->mahasiswa)->nim
+                                : ($item->role === 'dosen' ? optional($item->dosen)->nidn : null);
+                                @endphp
+                                <tr data-id="{{ $item->id }}">
+                                    <td><span class="nim-code">USR-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</span></td>
+                                    <td>
+                                        <div class="student-cell">
+                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            <div class="student-name">
+                                                <span class="name">{{ $item->name }}</span>
                                             </div>
-                                        </td>
-                                        <td class="center"><span class="badge {{ $roleBadge }}">{{ $roleLabel }}</span></td>
-                                        <td class="center">
-                                            <span class="plain-text">{{ $identifier ?? '—' }}</span>
-                                        </td>
-                                        <td class="center">
-                                            <div class="row-actions">
-                                                <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                                                    data-id="{{ $item->id }}"
-                                                    data-name="{{ urlencode($item->name) }}"
-                                                    data-role="{{ $item->role }}"
-                                                    data-identifier="{{ urlencode($identifier ?? '') }}">
-                                                    <span class="material-symbols-outlined">edit</span>
-                                                </button>
-                                                <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
-                                                    data-id="{{ $item->id }}">
-                                                    <span class="material-symbols-outlined">delete</span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+                                    </td>
+                                    <td class="center"><span class="badge {{ $roleBadge }}">{{ $roleLabel }}</span></td>
+                                    <td class="center">
+                                        <span class="plain-text">{{ $identifier ?? '—' }}</span>
+                                    </td>
+                                    <td class="center">
+                                        <div class="row-actions">
+                                            <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                                                data-id="{{ $item->id }}"
+                                                data-name="{{ urlencode($item->name) }}"
+                                                data-role="{{ $item->role }}"
+                                                data-identifier="{{ urlencode($identifier ?? '') }}">
+                                                <span class="material-symbols-outlined">edit</span>
+                                            </button>
+                                            <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
+                                                data-id="{{ $item->id }}">
+                                                <span class="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                                 @empty
-                                    <tr id="emptyRow">
-                                        <td colspan="5" style="text-align:center; padding: 32px; color: var(--ink-faint);">
-                                            Belum ada data pengguna. Klik "Tambah Pengguna" untuk mulai mengisi.
-                                        </td>
-                                    </tr>
+                                <tr id="emptyRow">
+                                    <td colspan="5" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                        Belum ada data pengguna. Klik "Tambah Pengguna" untuk mulai mengisi.
+                                    </td>
+                                </tr>
                                 @endforelse
+                                <tr id="noResultsRow" hidden>
+                                    <td colspan="5" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                        Tidak ada pengguna yang cocok dengan filter/pencarian.
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>{{ $users->firstItem() ?? 0 }}-{{ $users->lastItem() ?? 0 }}</strong>
+                            Menampilkan <strong id="footerVisibleCount">{{ $users->firstItem() ?? 0 }}-{{ $users->lastItem() ?? 0 }}</strong>
                             dari <strong>{{ $users->total() }}</strong> data pengguna
                         </div>
                         {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $users->links() }}
-                             setelah view paginator kamu disesuaikan dengan desain ini. --}}
+                        setelah view paginator kamu disesuaikan dengan desain ini. --}}
                     </div>
                 </div>
             </div>
@@ -347,7 +348,6 @@
                             <span class="material-symbols-outlined caret">expand_more</span>
                         </button>
                         <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option" data-value="superadmin">Superadmin</button>
                             <button type="button" class="dropdown-option" data-value="admin">Admin</button>
                             <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
                             <button type="button" class="dropdown-option is-selected" data-value="mahasiswa">Mahasiswa</button>
@@ -387,6 +387,62 @@
         // ---------------- Custom Dropdown (dipakai di filter bar & modal) ----------------
         const dropdowns = document.querySelectorAll('[data-dropdown]');
 
+        // Dropdown yang letaknya di dalam modal akan "dipindah" (portal) ke <body>
+        // saat dibuka, supaya panel-nya tidak terpotong/ikut ter-scroll oleh
+        // modal-body (overflow-y: auto) dan tidak merusak tampilan modal.
+        const dropdownPanelHome = new Map(); // dropdown -> { panel, parent }
+        dropdowns.forEach((dropdown) => {
+            const panel = dropdown.querySelector('.dropdown-panel');
+            if (panel) dropdownPanelHome.set(dropdown, {
+                panel,
+                parent: dropdown
+            });
+        });
+
+        function isDropdownInModal(dropdown) {
+            return !!dropdown.closest('.modal-card');
+        }
+
+        function openDropdownPortal(dropdown) {
+            const entry = dropdownPanelHome.get(dropdown);
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            if (!entry || !trigger || !isDropdownInModal(dropdown)) return;
+            const rect = trigger.getBoundingClientRect();
+            const panel = entry.panel;
+            panel.classList.add('dropdown-panel--portal');
+            panel.style.display = 'flex';
+            panel.style.position = 'fixed';
+            panel.style.left = rect.left + 'px';
+            panel.style.top = (rect.bottom + 6) + 'px';
+            panel.style.width = rect.width + 'px';
+            panel.style.right = 'auto';
+            panel.style.zIndex = 9999;
+            document.body.appendChild(panel);
+        }
+
+        function closeDropdownPortal(dropdown) {
+            const entry = dropdownPanelHome.get(dropdown);
+            if (!entry) return;
+            const panel = entry.panel;
+            if (!panel.classList.contains('dropdown-panel--portal')) return;
+            panel.classList.remove('dropdown-panel--portal');
+            panel.style.display = '';
+            panel.style.position = '';
+            panel.style.left = '';
+            panel.style.top = '';
+            panel.style.width = '';
+            panel.style.right = '';
+            panel.style.zIndex = '';
+            entry.parent.appendChild(panel);
+        }
+
+        function closeAllDropdowns() {
+            dropdowns.forEach((d) => {
+                d.classList.remove('is-open');
+                closeDropdownPortal(d);
+            });
+        }
+
         dropdowns.forEach((dropdown) => {
             const trigger = dropdown.querySelector('.dropdown-trigger');
             const valueEl = dropdown.querySelector('.dropdown-value');
@@ -396,24 +452,41 @@
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const wasOpen = dropdown.classList.contains('is-open');
-                dropdowns.forEach((d) => d.classList.remove('is-open'));
-                if (!wasOpen) dropdown.classList.add('is-open');
+                closeAllDropdowns();
+                if (!wasOpen) {
+                    dropdown.classList.add('is-open');
+                    openDropdownPortal(dropdown);
+                }
             });
 
             options.forEach((option) => {
-                option.addEventListener('click', () => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     options.forEach((o) => o.classList.remove('is-selected'));
                     option.classList.add('is-selected');
                     valueEl.textContent = option.textContent.trim();
                     if (hiddenInput) hiddenInput.value = option.dataset.value;
                     dropdown.classList.remove('is-open');
+                    closeDropdownPortal(dropdown);
+                    // Dropdown filter (Role Pengguna) langsung memicu pencarian otomatis
+                    if (dropdown.closest('.filter-grid')) applyFilters();
                 });
             });
         });
 
         document.addEventListener('click', () => {
-            dropdowns.forEach((d) => d.classList.remove('is-open'));
+            closeAllDropdowns();
         });
+        // Tutup dropdown yang lagi terbuka kalau halaman di-scroll, supaya
+        // panel yang di-portal tidak "nyangkut" di posisi lama.
+        window.addEventListener('scroll', () => {
+            dropdowns.forEach((d) => {
+                if (d.classList.contains('is-open')) {
+                    d.classList.remove('is-open');
+                    closeDropdownPortal(d);
+                }
+            });
+        }, true);
 
         function selectDropdownValue(dropdownEl, value) {
             if (!dropdownEl) return;
@@ -449,18 +522,77 @@
             });
         }
 
+        // ================================================================
+        // FILTER & PENCARIAN: jalan otomatis (live) di sisi klien, tanpa reload.
+        // Mencari di kolom ID, Nama, dan NIM/NIDN; role difilter dari dropdown.
+        // ================================================================
+        const filterSearchInput = document.getElementById('filter-search');
+        const filterRoleInput = document.getElementById('filter-role');
+        const userTableBodyForFilter = document.getElementById('userTableBody');
+        const noResultsRow = document.getElementById('noResultsRow');
+        const footerVisibleCount = document.getElementById('footerVisibleCount');
+
+        function applyFilters() {
+            if (!userTableBodyForFilter) return;
+            const term = (filterSearchInput?.value || '').trim().toLowerCase();
+            const role = filterRoleInput?.value || 'semua';
+
+            const rows = userTableBodyForFilter.querySelectorAll('tr[data-id]');
+            let visibleCount = 0;
+
+            rows.forEach((row) => {
+                const idText = (row.querySelector('.nim-code')?.textContent || '').toLowerCase();
+                const nameText = (row.querySelector('.student-name .name')?.textContent || '').toLowerCase();
+                const identifierText = (row.querySelector('td:nth-child(4) .plain-text')?.textContent || '').toLowerCase();
+                const roleText = (row.querySelector('td:nth-child(3) .badge')?.textContent || '').trim().toLowerCase();
+
+                const matchesSearch = !term ||
+                    idText.includes(term) ||
+                    nameText.includes(term) ||
+                    identifierText.includes(term);
+                const matchesRole = role === 'semua' || roleText === role;
+                const visible = matchesSearch && matchesRole;
+
+                row.hidden = !visible;
+                if (visible) visibleCount++;
+            });
+
+            const emptyRow = document.getElementById('emptyRow');
+            const hasData = rows.length > 0;
+            if (noResultsRow) {
+                noResultsRow.hidden = !(hasData && visibleCount === 0);
+            }
+            if (footerVisibleCount) {
+                footerVisibleCount.textContent = visibleCount;
+            }
+            if (emptyRow) {
+                // Baris "belum ada data" cuma relevan kalau memang tidak ada data sama sekali
+                emptyRow.hidden = hasData;
+            }
+        }
+
+        // Debounce kecil supaya tidak query ulang di tiap keystroke terlalu agresif
+        let searchDebounceTimer = null;
+        filterSearchInput?.addEventListener('input', () => {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(applyFilters, 150);
+        });
+
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
             document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
-            const search = document.getElementById('filter-search');
-            if (search) search.value = '';
+            if (filterSearchInput) filterSearchInput.value = '';
+            applyFilters();
         });
 
         document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
             const btn = document.getElementById('btn-apply-filter');
+            applyFilters();
             if (btn) {
                 const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-                setTimeout(() => { btn.innerHTML = originalHTML; }, 400);
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 400);
             }
         });
 
@@ -475,6 +607,7 @@
             sidebarOverlay.classList.add('is-active');
             document.body.style.overflow = 'hidden';
         }
+
         function closeSidebar() {
             sidebar.classList.remove('is-open');
             sidebarOverlay.classList.remove('is-active');
@@ -483,7 +616,9 @@
         sidebarToggleBtn?.addEventListener('click', openSidebar);
         sidebarCloseBtn?.addEventListener('click', closeSidebar);
         sidebarOverlay?.addEventListener('click', closeSidebar);
-        window.addEventListener('resize', () => { if (window.innerWidth >= 1024) closeSidebar(); });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) closeSidebar();
+        });
 
         // ---------------- Dark Mode ----------------
         const themeToggleBtn = document.getElementById('themeToggleBtn');
@@ -565,6 +700,7 @@
         }
 
         function closeModal() {
+            closeAllDropdowns();
             modalBackdrop.classList.remove('is-active');
             modalCard.classList.remove('is-active');
             modalCard.setAttribute('aria-hidden', 'true');
@@ -583,8 +719,14 @@
 
         dragHandle.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.modal-close-btn')) return;
+            closeAllDropdowns();
             const rect = modalCard.getBoundingClientRect();
-            dragState = { startX: e.clientX, startY: e.clientY, originX: rect.left, originY: rect.top };
+            dragState = {
+                startX: e.clientX,
+                startY: e.clientY,
+                originX: rect.left,
+                originY: rect.top
+            };
             modalCard.style.left = rect.left + 'px';
             modalCard.style.top = rect.top + 'px';
             modalCard.style.transform = 'none';
@@ -602,11 +744,14 @@
             modalCard.style.left = newLeft + 'px';
             modalCard.style.top = newTop + 'px';
         });
+
         function endDrag(e) {
             if (!dragState) return;
             dragState = null;
             modalCard.classList.remove('is-dragging');
-            try { dragHandle.releasePointerCapture(e.pointerId); } catch (_) {}
+            try {
+                dragHandle.releasePointerCapture(e.pointerId);
+            } catch (_) {}
         }
         dragHandle.addEventListener('pointerup', endDrag);
         dragHandle.addEventListener('pointercancel', endDrag);
@@ -615,21 +760,31 @@
         function initials(name) {
             return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
         }
+
         function avatarColor(userId) {
             const colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
             return colors[Number(userId) % colors.length];
         }
+
         function esc(str) {
             const div = document.createElement('div');
             div.textContent = str ?? '';
             return div.innerHTML;
         }
+
         function roleBadgeClass(role) {
-            return { superadmin: 'badge-danger', admin: 'badge-warning', dosen: 'badge-info', mahasiswa: 'badge-success' }[role] || 'badge-neutral';
+            return {
+                superadmin: 'badge-danger',
+                admin: 'badge-warning',
+                dosen: 'badge-info',
+                mahasiswa: 'badge-success'
+            } [role] || 'badge-neutral';
         }
+
         function roleLabel(role) {
             return role ? role.charAt(0).toUpperCase() + role.slice(1) : '-';
         }
+
         function buildRowHTML(item) {
             return `
             <tr data-id="${item.id}">
@@ -656,6 +811,7 @@
                 </td>
             </tr>`.trim();
         }
+
         function insertRow(item) {
             document.getElementById('emptyRow')?.remove();
             const wrap = document.createElement('tbody');
@@ -664,6 +820,7 @@
             row.classList.add('is-new');
             tableBody.prepend(row);
         }
+
         function updateRow(item) {
             const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
             if (!existing) return insertRow(item);
@@ -671,11 +828,17 @@
             wrap.innerHTML = buildRowHTML(item);
             existing.replaceWith(wrap.firstElementChild);
         }
+
         function removeRow(id) {
             const row = tableBody.querySelector(`tr[data-id="${id}"]`);
             if (!row) return;
             row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), { once: true });
+            row.addEventListener('transitionend', () => {
+                row.remove();
+                applyFilters();
+            }, {
+                once: true
+            });
         }
 
         // ---- Submit form (create / update) ----
@@ -727,7 +890,9 @@
                     return;
                 }
 
-                if (id) updateRow(result.data); else insertRow(result.data);
+                if (id) updateRow(result.data);
+                else insertRow(result.data);
+                applyFilters();
                 closeModal();
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
@@ -743,7 +908,10 @@
             try {
                 const res = await fetch(`/data-master/users/${id}`, {
                     method: 'DELETE',
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
                 });
                 const result = await res.json();
                 if (res.ok && result.success) removeRow(result.id);
@@ -760,6 +928,9 @@
             const delBtn = e.target.closest('.btn-delete-row');
             if (delBtn) handleDelete(delBtn.dataset.id);
         });
+
+        // Inisialisasi tampilan filter saat halaman pertama kali dimuat
+        applyFilters();
     </script>
 </body>
 

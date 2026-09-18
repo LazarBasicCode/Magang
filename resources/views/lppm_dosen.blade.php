@@ -184,13 +184,8 @@
                         </div>
                     </div>
                     <div class="filter-actions">
-                        <button type="button" id="btn-reset-filter" class="btn-ghost">
+                        <button type="button" id="btn-reset-filter" class="btn-ghost" title="Reset Filter">
                             <span class="material-symbols-outlined">restart_alt</span>
-                            <span>Reset</span>
-                        </button>
-                        <button type="button" id="btn-apply-filter" class="btn-apply">
-                            <span class="material-symbols-outlined">filter_alt</span>
-                            <span>Terapkan Filter</span>
                         </button>
                     </div>
                 </div>
@@ -237,7 +232,7 @@
                                 $buktiLabel = $item->link_doi ? 'Link DOI' : 'Lihat Bukti';
                                 $buktiUrl = $item->link_doi ?: $item->bukti_kegiatan;
                                 @endphp
-                                <tr data-id="{{ $item->id }}">
+                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}">
                                     <td><span class="nim-code">{{ $item->dosen->nidn ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
@@ -514,14 +509,50 @@
             document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
             const search = document.getElementById('filter-search');
             if (search) search.value = '';
+            applyFilters();
         });
-        document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
-            const btn = document.getElementById('btn-apply-filter');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Memuat...</span>';
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-            }, 400);
+
+        // ---------------- Live Filter (otomatis, tanpa tombol "Terapkan") ----------------
+        function applyFilters() {
+            const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
+            const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+            const rows = tableBody.querySelectorAll('tr[data-id]');
+            let visibleCount = 0;
+
+            rows.forEach((row) => {
+                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
+                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
+                const visible = matchesJenis && matchesSearch;
+                row.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            });
+
+            let noResultRow = document.getElementById('noResultRow');
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!noResultRow) {
+                    noResultRow = document.createElement('tr');
+                    noResultRow.id = 'noResultRow';
+                    const colCount = tableBody.closest('table')?.querySelectorAll('thead th').length || 8;
+                    noResultRow.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding: 32px; color: var(--ink-faint);">Tidak ada data yang cocok dengan filter.</td>`;
+                    tableBody.appendChild(noResultRow);
+                }
+                noResultRow.style.display = '';
+            } else if (noResultRow) {
+                noResultRow.style.display = 'none';
+            }
+        }
+
+        document.querySelectorAll('#filter-jenis').forEach((input) => {
+            const dropdownEl = input.closest('[data-dropdown]');
+            dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
+                opt.addEventListener('click', () => applyFilters());
+            });
+        });
+
+        let searchDebounce;
+        document.getElementById('filter-search')?.addEventListener('input', () => {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(applyFilters, 150);
         });
 
         // ---------------- Sidebar Drawer ----------------
@@ -704,7 +735,7 @@
             const buktiLabel = item.link_doi ? 'Link DOI' : 'Lihat Bukti';
             const buktiIcon = item.link_doi ? 'link' : 'cloud';
             return `
-            <tr data-id="${item.id}">
+            <tr data-id="${item.id}" data-jenis="${item.jenis}">
                 <td><span class="nim-code">${esc(item.nidn)}</span></td>
                 <td>
                     <div class="student-cell">
@@ -817,6 +848,7 @@
                 }
                 if (id) updateRow(result.data);
                 else insertRow(result.data);
+                applyFilters();
                 closeModal();
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';

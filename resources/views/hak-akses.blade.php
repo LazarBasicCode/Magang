@@ -182,7 +182,6 @@
                                     <button type="button" class="dropdown-option" data-value="admin">Admin</button>
                                     <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
                                     <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
-                                    <button type="button" class="dropdown-option" data-value="operator">Operator</button>
                                 </div>
                             </div>
                         </div>

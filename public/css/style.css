@@ -46,8 +46,8 @@
 }
 
 body.dark-mode {
-    --canvas: #0b0e14;
-    --card: #0e1525;
+    --canvas: #11131a;
+    --card: #11192b;
     --border: #232936;
     --border-strong: #313949;
     --ink: #f8fafc;
@@ -87,7 +87,7 @@ body.dark-mode .app-sidebar,
 body.dark-mode .modal-card,
 body.dark-mode .dropdown-panel {
     background-color: var(--card);
-    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 45%);
+    background-image: linear-gradient(180deg, rgba(77, 106, 235, 0.096) 0%, rgba(255, 255, 255, 0) 45%);
 }
 body.dark-mode .header-capsule { background-color: rgba(17, 21, 29, 0.85); }
 body.dark-mode .data-table thead tr { background: #161b26; }
@@ -636,11 +636,13 @@ body.dark-mode {
     border-radius: 16px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;            /* FIX: cegah anak keluar dari card */
 }
 
 /* --- Header --- */
 #accessModal .modal-drag-handle {
     position: relative;
+    flex: 0 0 auto;              /* FIX: header tidak boleh gepeng/melar */
     padding: 18px 24px 18px 28px;
     background: linear-gradient(180deg, var(--acc-accent-soft) 0%, transparent 100%);
     border-bottom: 1px solid var(--acc-accent-border);
@@ -667,20 +669,25 @@ body.dark-mode {
 
 /* --- Body grid: 3 row, tinggi penuh --- */
 #accessModal .modal-body {
-    flex: 1;
+    flex: 1 1 auto;              /* FIX: eksplisit grow+shrink */
     display: grid;
     grid-template-columns: 280px 1fr;
     grid-template-rows: auto 1fr auto;
+    grid-auto-rows: 0;           /* FIX INTI: baris implisit tidak makan ruang */
     gap: 0;
     padding: 0;
     overflow: hidden;
     min-height: 0;
+    height: 100%;                /* FIX: pastikan mengisi parent */
 }
 
 /* --- User chip: row 1, span 2 kolom --- */
 #accessModal .access-user-chip {
     grid-column: 1 / -1;
     grid-row: 1;
+    align-self: start;           /* FIX: jangan melar */
+    display: flex;               /* FIX: pastikan flex (sebelumnya andalkan global) */
+    align-items: center;
     margin: 0;
     padding: 14px 24px;
     border-radius: 0;
@@ -696,6 +703,8 @@ body.dark-mode {
 #accessModal .access-side {
     grid-column: 1;
     grid-row: 2;
+    align-self: stretch;         /* FIX: paksa stretch penuh */
+    height: 100%;                /* FIX */
     padding: 18px 20px;
     border-right: 1px solid var(--border);
     background: var(--canvas);
@@ -772,10 +781,12 @@ body.dark-mode {
 #accessModal .access-main {
     grid-column: 2;
     grid-row: 2;
+    align-self: stretch;         /* FIX INTI: paksa stretch penuh */
+    height: 100%;                /* FIX INTI: isi seluruh tinggi row */
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 18px 22px 0;
+    padding: 18px 22px;          /* FIX: tambah padding bawah */
     overflow: hidden;
     min-height: 0;
     background: var(--card);
@@ -783,13 +794,14 @@ body.dark-mode {
 
 /* --- Permission list: scroll sendiri --- */
 #accessModal .permission-list {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;        
     display: flex;
     flex-direction: column;
     gap: 0;
     overflow-y: auto;
-    padding: 0 4px 12px 0;
-    min-height: 0;
+    padding: 0 4px 0 0;
 }
 
 #accessModal .permission-row {
@@ -867,6 +879,8 @@ body.dark-mode {
 #accessModal .modal-footer {
     grid-column: 1 / -1;
     grid-row: 3;
+    align-self: end;             /* FIX: pastikan nempel bawah */
+    display: flex;               /* FIX: eksplisit */
     margin: 0;
     padding: 14px 24px;
     border-top: 1px solid var(--border);
@@ -900,12 +914,16 @@ body.dark-mode {
 #accessModal .modal-error {
     grid-column: 1 / -1;
     grid-row: 3;
+    align-self: start;           /* FIX: jangan melar */
     margin: 0;
     border-radius: 0;
     border-left: none;
     border-right: none;
     border-top: 1px solid var(--danger-border);
     border-bottom: none;
+}
+#accessModal .modal-error[hidden] {
+    display: none !important;    /* FIX: paksa hidden bekerja */
 }
 
 /* --- Dark mode override --- */
@@ -951,7 +969,7 @@ body.dark-mode #accessModal .access-main {
     }
     #accessModal .access-side .access-legend { flex: 1; min-width: 180px; }
     #accessModal .access-side .access-bulk-row { flex: 1; min-width: 200px; flex-direction: column; }
-    #accessModal .access-main { grid-column: 1; grid-row: 3; padding: 14px 16px 0; }
+    #accessModal .access-main { grid-column: 1; grid-row: 3; padding: 14px 16px; }
     #accessModal .modal-footer { grid-row: 4; }
     #accessModal .permission-row .dropdown { width: 150px; }
 }

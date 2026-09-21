@@ -196,45 +196,72 @@
                         </div>
                     </div>
 
-                    <!-- BAR CHART: per periode (harian/mingguan/bulanan/tahunan) -->
-                    <div class="dash-card reveal">
+                    <!-- KURVA TREN: per periode (harian/mingguan/bulanan/tahunan) -->
+                    <div class="dash-card trend-card reveal">
                         <div class="trend-card-top">
                             <div>
-                                <h2 class="dash-card-title">Kegiatan per Periode</h2>
-                                <p class="dash-card-sub">Gabungan 4 kategori</p>
+                                <h2 class="dash-card-title">Kurva Tren Kegiatan</h2>
+                                <p class="dash-card-sub">Akademik vs Eksternal &middot; bandingkan keseimbangan portofoliomu dari waktu ke waktu</p>
                             </div>
                             <span class="trend-hint">
                                 <span class="material-symbols-outlined">info</span>
-                                Arahkan kursor ke batang untuk detail
+                                Arahkan kursor ke titik untuk detail
                             </span>
                         </div>
-                        <div class="period-switcher" id="periodSwitcher" role="tablist">
+                        <div class="period-switcher" id="trendPeriodSwitcher" role="tablist">
                             <button type="button" class="period-btn" data-period="harian">Harian</button>
                             <button type="button" class="period-btn" data-period="mingguan">Mingguan</button>
                             <button type="button" class="period-btn is-active" data-period="bulanan">Bulanan</button>
                             <button type="button" class="period-btn" data-period="tahunan">Tahunan</button>
                         </div>
-                        <div class="bar-chart-holder" data-barchart data-active-period="bulanan" data-chart-sets='@json($barDatasets)'></div>
+                        <div class="trend-legend-row" id="trendLegend"></div>
+                        <div class="trend-chart-holder" data-trendchart data-active-period="bulanan" data-chart-sets='@json($trendDatasets)'></div>
                     </div>
 
-                    <!-- AKTIVITAS TERBARU -->
-                    <div class="dash-card reveal" style="transition-delay:80ms">
-                        <h2 class="dash-card-title">Aktivitas Terbaru</h2>
-                        <p class="dash-card-sub">6 kegiatan terakhir yang kamu tambahkan</p>
-                        <div class="recent-list">
-                            @forelse($recent as $item)
-                                <div class="recent-item">
-                                    <div class="recent-item-icon">
-                                        <span class="material-symbols-outlined">{{ $item['icon'] }}</span>
+                    <!-- BAR CHART + AKTIVITAS TERBARU: digabung 1 kartu, bersebelahan -->
+                    <div class="dash-card trend-card reveal">
+                        <div class="periode-recent-split">
+                            <div class="periode-recent-col periode-recent-col-chart">
+                                <div class="trend-card-top">
+                                    <div>
+                                        <h2 class="dash-card-title">Kegiatan per Periode</h2>
+                                        <p class="dash-card-sub">Gabungan 4 kategori</p>
                                     </div>
-                                    <div class="recent-item-text">
-                                        <span class="recent-item-title">{{ $item['title'] ?? '(tanpa judul)' }}</span>
-                                        <span class="recent-item-meta">{{ $item['menu'] }} &middot; {{ $item['date']?->translatedFormat('d M Y') }}</span>
-                                    </div>
+                                    <span class="trend-hint">
+                                        <span class="material-symbols-outlined">info</span>
+                                        Arahkan kursor ke batang untuk detail
+                                    </span>
                                 </div>
-                            @empty
-                                <div class="recent-empty">Belum ada aktivitas yang tercatat.</div>
-                            @endforelse
+                                <div class="period-switcher" id="periodSwitcher" role="tablist">
+                                    <button type="button" class="period-btn" data-period="harian">Harian</button>
+                                    <button type="button" class="period-btn" data-period="mingguan">Mingguan</button>
+                                    <button type="button" class="period-btn is-active" data-period="bulanan">Bulanan</button>
+                                    <button type="button" class="period-btn" data-period="tahunan">Tahunan</button>
+                                </div>
+                                <div class="bar-chart-holder" data-barchart data-active-period="bulanan" data-chart-sets='@json($barDatasets)'></div>
+                            </div>
+
+                            <div class="periode-recent-divider"></div>
+
+                            <div class="periode-recent-col periode-recent-col-recent">
+                                <h2 class="dash-card-title">Aktivitas Terbaru</h2>
+                                <p class="dash-card-sub">Kegiatan terakhir yang kamu tambahkan</p>
+                                <div class="recent-list">
+                                    @forelse($recent as $item)
+                                        <div class="recent-item">
+                                            <div class="recent-item-icon">
+                                                <span class="material-symbols-outlined">{{ $item['icon'] }}</span>
+                                            </div>
+                                            <div class="recent-item-text">
+                                                <span class="recent-item-title">{{ $item['title'] ?? '(tanpa judul)' }}</span>
+                                                <span class="recent-item-meta">{{ $item['menu'] }} &middot; {{ $item['date']?->translatedFormat('d M Y') }}</span>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <div class="recent-empty">Belum ada aktivitas yang tercatat.</div>
+                                    @endforelse
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -411,6 +438,154 @@
         document.querySelectorAll('[data-donut]').forEach(renderDonut);
 
         // ================================================================
+        // KURVA TREN (per periode: harian/mingguan/bulanan/tahunan)
+        // Sengaja pakai garis lurus antar titik (bukan bezier/smooth curve)
+        // dan marker kotak, bukan lingkaran, sesuai gaya "kaku" dashboard ini.
+        // ================================================================
+        function renderTrendChart(holder, periodOverride) {
+            let allSets = {};
+            try { allSets = JSON.parse(holder.dataset.chartSets || '{}'); } catch (_) { allSets = {}; }
+
+            const period = periodOverride || holder.dataset.activePeriod || 'bulanan';
+            holder.dataset.activePeriod = period;
+            const dataset = allSets[period] || { labels: [], series: [] };
+            const labels = dataset.labels || [];
+            const series = dataset.series || [];
+
+            const legend = document.getElementById('trendLegend');
+            if (legend) {
+                legend.innerHTML = series.map((s) => `
+                    <span class="trend-legend-item">
+                        <span class="trend-legend-line" style="background:${s.color}"></span>
+                        <span>${s.label}</span>
+                    </span>
+                `).join('');
+            }
+
+            holder.innerHTML = '';
+
+            const hasData = labels.length > 0 && series.some((s) => (s.data || []).some((v) => Number(v) > 0));
+            if (!hasData) {
+                holder.innerHTML = '<div class="donut-empty">Belum ada data untuk ditampilkan.</div>';
+                return;
+            }
+
+            // Pakai ukuran asli div di layar sebagai viewBox (bukan angka tetap),
+            // supaya 1 unit SVG = 1 pixel asli dan font tidak ikut melar/mengecil
+            // saat div dilebar/dikecilkan.
+            const rectNow = holder.getBoundingClientRect();
+            const W = Math.max(280, Math.round(rectNow.width)) || 640;
+            const H = Math.max(160, Math.round(rectNow.height)) || 220;
+            const padL = 28, padR = 12, padT = 20, padB = 30;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            const maxVal = Math.max(1, ...series.flatMap((s) => (s.data || []).map((v) => Number(v) || 0)));
+            const niceMax = Math.ceil(maxVal / 4) * 4 || 4;
+
+            const ns = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            const slot = labels.length > 1 ? plotW / (labels.length - 1) : 0;
+            const xAt = (i) => labels.length > 1 ? padL + slot * i : padL + plotW / 2;
+            const yAt = (v) => padT + plotH - (Number(v) / niceMax) * plotH;
+
+            // Grid horizontal + label sumbu Y
+            [0, 0.25, 0.5, 0.75, 1].forEach((f) => {
+                const y = padT + plotH * (1 - f);
+                const line = document.createElementNS(ns, 'line');
+                line.setAttribute('x1', padL); line.setAttribute('x2', W - padR);
+                line.setAttribute('y1', y); line.setAttribute('y2', y);
+                line.setAttribute('class', 'trend-grid-line');
+                svg.appendChild(line);
+
+                const text = document.createElementNS(ns, 'text');
+                text.setAttribute('x', 2); text.setAttribute('y', y + 3);
+                text.setAttribute('class', 'trend-axis-label');
+                text.textContent = Math.round(niceMax * f);
+                svg.appendChild(text);
+            });
+
+            // Label sumbu X (dijarangkan otomatis kalau titiknya banyak)
+            const xLabelStep = Math.max(1, Math.ceil(labels.length / 8));
+            labels.forEach((label, i) => {
+                if (i % xLabelStep !== 0 && i !== labels.length - 1) return;
+                const text = document.createElementNS(ns, 'text');
+                text.setAttribute('x', xAt(i));
+                text.setAttribute('y', H - 8);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('class', 'trend-axis-label');
+                text.textContent = label;
+                svg.appendChild(text);
+            });
+
+            // Satu <path> bergaris LURUS (perintah L, tanpa kurva C/Q) per series
+            series.forEach((s) => {
+                const data = s.data || [];
+                if (!data.length) return;
+
+                let d = '';
+                data.forEach((v, i) => {
+                    const x = xAt(i), y = yAt(v);
+                    d += (i === 0 ? 'M' : 'L') + x + ' ' + y + ' ';
+                });
+
+                const path = document.createElementNS(ns, 'path');
+                path.setAttribute('d', d.trim());
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', s.color);
+                path.setAttribute('class', 'trend-line');
+                svg.appendChild(path);
+
+                // Marker kotak (bukan lingkaran) di tiap titik + tooltip
+                data.forEach((v, i) => {
+                    const x = xAt(i), y = yAt(v);
+                    const size = 7;
+                    const marker = document.createElementNS(ns, 'rect');
+                    marker.setAttribute('x', x - size / 2);
+                    marker.setAttribute('y', y - size / 2);
+                    marker.setAttribute('width', size);
+                    marker.setAttribute('height', size);
+                    marker.setAttribute('fill', s.color);
+                    marker.setAttribute('class', 'trend-point');
+                    const showTip = () => {
+                        const rBound = holder.getBoundingClientRect();
+                        const scaleX = rBound.width / W, scaleY = rBound.height / H;
+                        showChartTooltip(rBound.left + x * scaleX, rBound.top + y * scaleY, `${s.label} · ${labels[i]}: ${v}`);
+                        marker.classList.add('is-active');
+                    };
+                    marker.addEventListener('mouseenter', showTip);
+                    marker.addEventListener('touchstart', showTip, { passive: true });
+                    marker.addEventListener('mouseleave', () => { hideChartTooltip(); marker.classList.remove('is-active'); });
+                    svg.appendChild(marker);
+                });
+            });
+
+            holder.appendChild(svg);
+        }
+
+        document.querySelectorAll('[data-trendchart]').forEach((holder) => renderTrendChart(holder));
+
+        // ---------------- Segmented control: ganti periode kurva tren ----------------
+        const trendPeriodSwitcher = document.getElementById('trendPeriodSwitcher');
+        const trendHolder = document.querySelector('[data-trendchart]');
+        trendPeriodSwitcher?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.period-btn');
+            if (!btn || !trendHolder) return;
+
+            trendPeriodSwitcher.querySelectorAll('.period-btn').forEach((b) => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
+            trendHolder.classList.add('is-switching');
+            setTimeout(() => {
+                renderTrendChart(trendHolder, btn.dataset.period);
+                trendHolder.classList.remove('is-switching');
+            }, 180);
+        });
+
+        // ================================================================
         // BAR CHART (per periode: harian/mingguan/bulanan/tahunan)
         // ================================================================
         function renderBarChart(holder, periodOverride) {
@@ -428,7 +603,11 @@
                 return;
             }
 
-            const W = 640, H = 220;
+            // Sama seperti kurva tren: pakai ukuran div asli di layar, bukan
+            // angka tetap, supaya teks label tidak ikut melar/mengecil.
+            const rectNow = holder.getBoundingClientRect();
+            const W = Math.max(280, Math.round(rectNow.width)) || 640;
+            const H = Math.max(160, Math.round(rectNow.height)) || 220;
             const padL = 28, padR = 12, padT = 20, padB = 30;
             const plotW = W - padL - padR;
             const plotH = H - padT - padB;
@@ -545,6 +724,18 @@
                 renderBarChart(barHolder, btn.dataset.period);
                 barHolder.classList.remove('is-switching');
             }, 180);
+        });
+
+        // ---------------- Render ulang saat ukuran window berubah ----------------
+        // Supaya viewBox (yang sekarang ikut ukuran div asli) selalu presisi,
+        // bukan cuma dihitung sekali saat halaman pertama dimuat.
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (trendHolder) renderTrendChart(trendHolder);
+                if (barHolder) renderBarChart(barHolder);
+            }, 150);
         });
     </script>
 </body>

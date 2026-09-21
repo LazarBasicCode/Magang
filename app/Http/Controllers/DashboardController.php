@@ -87,28 +87,117 @@ class DashboardController extends Controller
             ];
         }
 
-        // Kurva tren bulanan (12 bulan terakhir, termasuk bulan ini): Akademik vs Eksternal
+        // Label sumbu bawah yang adaptif per granularitas, dipakai bersama
+        // oleh kurva tren dan bar chart supaya konsisten:
+        // - harian  : nama hari (Mon, Tue, ...)
+        // - mingguan: cuma tanggal; nama bulan muncul hanya saat bulan berganti
+        // - bulanan : nama bulan tiap titik; tahun muncul hanya saat tahun berganti
+        // - tahunan : cuma angka tahun
+        $smartLabel = function ($point, $prevPoint, $unit) {
+            switch ($unit) {
+                case 'day':
+                    return $point->translatedFormat('D');
+                case 'week':
+                    $isNewMonth = !$prevPoint || $point->month !== $prevPoint->month || $point->year !== $prevPoint->year;
+                    return $isNewMonth ? $point->translatedFormat('d M') : $point->translatedFormat('d');
+                case 'month':
+                    $isNewYear = !$prevPoint || $point->year !== $prevPoint->year;
+                    return $isNewYear ? $point->translatedFormat('M Y') : $point->translatedFormat('M');
+                default:
+                    return (string) $point;
+            }
+        };
+
+        $mapSmartLabels = function ($points, $unit) use ($smartLabel) {
+            $prev = null;
+            return $points->values()->map(function ($p) use (&$prev, $unit, $smartLabel) {
+                $label = $smartLabel($p, $prev, $unit);
+                $prev = $p;
+                return $label;
+            })->values();
+        };
+
         $now = now();
-        $months = collect(range(11, 0))->map(fn ($i) => $now->copy()->subMonths($i)->startOfMonth());
-        $monthLabels = $months->map(fn ($m) => $m->translatedFormat('M'))->values();
+        $dailyPoints = collect(range(13, 0))->map(fn ($i) => $now->copy()->subDays($i)->startOfDay())->values();
+        $weeklyPoints = collect(range(7, 0))->map(fn ($i) => $now->copy()->subWeeks($i)->startOfWeek())->values();
+        $months = collect(range(11, 0))->map(fn ($i) => $now->copy()->subMonths($i)->startOfMonth())->values();
+
+        $dailyLabels = $mapSmartLabels($dailyPoints, 'day');
+        $weeklyLabels = $mapSmartLabels($weeklyPoints, 'week');
+        $monthlyLabels = $mapSmartLabels($months, 'month');
 
         $akademikSource = $kemahasiswaan->concat($lppmMahasiswa);
         $eksternalSource = $rekognisi->concat($kerjaSama);
 
-        $countByMonth = function ($collection) use ($months) {
-            return $months->map(function ($month) use ($collection) {
-                return $collection->filter(function ($item) use ($month) {
-                    return $item->created_at && $item->created_at->isSameMonth($month) && $item->created_at->isSameYear($month);
-                })->count();
-            })->values();
+        $countBetweenFor = function ($collection, $start, $end) {
+            return $collection->filter(function ($item) use ($start, $end) {
+                return $item->created_at && $item->created_at->between($start, $end);
+            })->count();
         };
 
-        $trend = [
-            'labels' => $monthLabels,
-            'series' => [
-                ['label' => 'Akademik (Kemahasiswaan + LPPM)', 'color' => 'var(--chart-1)', 'data' => $countByMonth($akademikSource)],
-                ['label' => 'Eksternal (Rekognisi + Kerja Sama)', 'color' => 'var(--chart-5)', 'data' => $countByMonth($eksternalSource)],
-            ],
+        $buildTrend = function ($points, $labels, $startFn, $endFn) use ($akademikSource, $eksternalSource, $countBetweenFor) {
+            return [
+                'labels' => $labels,
+                'series' => [
+                    [
+                        'label' => 'Akademik (Kemahasiswaan + LPPM)',
+                        'color' => 'var(--chart-1)',
+                        'data' => $points->map(fn ($p) => $countBetweenFor($akademikSource, $startFn($p), $endFn($p)))->values(),
+                    ],
+                    [
+                        'label' => 'Eksternal (Rekognisi + Kerja Sama)',
+                        'color' => 'var(--chart-5)',
+                        'data' => $points->map(fn ($p) => $countBetweenFor($eksternalSource, $startFn($p), $endFn($p)))->values(),
+                    ],
+                ],
+            ];
+        };
+
+        $dailyTrend = $buildTrend(
+            $dailyPoints,
+            $dailyLabels,
+            fn ($d) => $d,
+            fn ($d) => $d->copy()->endOfDay()
+        );
+
+        $weeklyTrend = $buildTrend(
+            $weeklyPoints,
+            $weeklyLabels,
+            fn ($w) => $w,
+            fn ($w) => $w->copy()->endOfWeek()
+        );
+
+        $monthlyTrend = $buildTrend(
+            $months,
+            $monthlyLabels,
+            fn ($m) => $m->copy()->startOfMonth(),
+            fn ($m) => $m->copy()->endOfMonth()
+        );
+
+        // Tahunan: sampai 6 tahun terakhir yang punya data (fallback tahun ini kalau kosong)
+        $yearPoints = collect([
+            $kemahasiswaan->pluck('created_at'),
+            $lppmMahasiswa->pluck('created_at'),
+            $rekognisi->pluck('created_at'),
+            $kerjaSama->pluck('created_at'),
+        ])->flatten()->filter()->map(fn ($d) => $d->year)->unique()->sort()->values();
+        if ($yearPoints->isEmpty()) {
+            $yearPoints = collect([$now->year]);
+        }
+        $yearPoints = $yearPoints->slice(-6)->values();
+        $yearlyLabels = $yearPoints->map(fn ($y) => (string) $y)->values();
+        $yearlyTrend = $buildTrend(
+            $yearPoints,
+            $yearlyLabels,
+            fn ($y) => Carbon::create($y, 1, 1)->startOfYear(),
+            fn ($y) => Carbon::create($y, 1, 1)->endOfYear()
+        );
+
+        $trendDatasets = [
+            'harian'   => $dailyTrend,
+            'mingguan' => $weeklyTrend,
+            'bulanan'  => $monthlyTrend,
+            'tahunan'  => $yearlyTrend,
         ];
 
         // Bar chart: total kegiatan per tahun (gabungan 4 sumber)
@@ -136,6 +225,9 @@ class DashboardController extends Controller
         // Bar chart untuk granularitas lain (harian/mingguan/bulanan) memakai
         // waktu input data (created_at) karena field "tahun" tidak punya
         // presisi harian. Digabung dari 4 sumber yang sama seperti di atas.
+        // Titik & label memakai $dailyPoints/$weeklyPoints/$months dan
+        // $dailyLabels/$weeklyLabels/$monthlyLabels yang sama dengan kurva tren,
+        // supaya kedua chart konsisten.
         $allActivities = $kemahasiswaan->concat($lppmMahasiswa)->concat($rekognisi)->concat($kerjaSama);
 
         $countBetween = function ($start, $end) use ($allActivities) {
@@ -144,29 +236,23 @@ class DashboardController extends Controller
             })->count();
         };
 
-        // Harian: 14 hari terakhir
-        $dailyBar = collect(range(13, 0))->map(function ($i) use ($now, $countBetween) {
-            $day = $now->copy()->subDays($i)->startOfDay();
+        $dailyBar = $dailyPoints->map(function ($day, $i) use ($dailyLabels, $countBetween) {
             return [
-                'label' => $day->translatedFormat('d M'),
+                'label' => $dailyLabels[$i],
                 'value' => $countBetween($day, $day->copy()->endOfDay()),
             ];
         })->values();
 
-        // Mingguan: 8 minggu terakhir
-        $weeklyBar = collect(range(7, 0))->map(function ($i) use ($now, $countBetween) {
-            $weekStart = $now->copy()->subWeeks($i)->startOfWeek();
-            $weekEnd = $weekStart->copy()->endOfWeek();
+        $weeklyBar = $weeklyPoints->map(function ($weekStart, $i) use ($weeklyLabels, $countBetween) {
             return [
-                'label' => $weekStart->translatedFormat('d M'),
-                'value' => $countBetween($weekStart, $weekEnd),
+                'label' => $weeklyLabels[$i],
+                'value' => $countBetween($weekStart, $weekStart->copy()->endOfWeek()),
             ];
         })->values();
 
-        // Bulanan: 12 bulan terakhir
-        $monthlyBar = $months->map(function ($month) use ($countBetween) {
+        $monthlyBar = $months->map(function ($month, $i) use ($monthlyLabels, $countBetween) {
             return [
-                'label' => $month->translatedFormat('M Y'),
+                'label' => $monthlyLabels[$i],
                 'value' => $countBetween($month->copy()->startOfMonth(), $month->copy()->endOfMonth()),
             ];
         })->values();
@@ -206,11 +292,11 @@ class DashboardController extends Controller
             ]))
             ->filter(fn ($i) => !is_null($i['date']))
             ->sortByDesc('date')
-            ->take(4)
+            ->take(10)
             ->values();
 
         return view('dashboard-mahasiswa', compact(
-            'stats', 'kategoriDonut', 'tingkatDonut', 'trend', 'barDatasets', 'recent'
+            'stats', 'kategoriDonut', 'tingkatDonut', 'trendDatasets', 'barDatasets', 'recent'
         ));
     }
 }

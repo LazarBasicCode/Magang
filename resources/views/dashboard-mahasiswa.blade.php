@@ -449,7 +449,7 @@
 
             const ns = 'http://www.w3.org/2000/svg';
             const xStep = labels.length > 1 ? plotW / (labels.length - 1) : 0;
-            const yFor = (v) => padT + plotH - (v / niceMax) * plotH;
+            const yFor = (v) => padT + plotH - (v / niceMax) * plotH - (v === 0 ? 2.5 : 0);
             const xFor = (i) => padL + i * xStep;
 
             // Grid horizontal + label sumbu Y
@@ -479,8 +479,8 @@
                 svg.appendChild(text);
             });
 
-            series.forEach((s) => {
-                const points = s.data.map((v, i) => ({ x: xFor(i), y: yFor(v), value: v }));
+            series.forEach((s, sIdx) => {
+                const points = s.data.map((v, i) => ({ x: xFor(i), y: yFor(v) - (v === 0 ? sIdx * 3 : 0), value: v }));
                 const linePath = smoothPath(points);
 
                 const area = document.createElementNS(ns, 'path');
@@ -540,27 +540,94 @@
                 return;
             }
 
+            const W = 640, H = 220;
+            const padL = 28, padR = 12, padT = 20, padB = 30;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
             const maxVal = Math.max(1, ...data.map((d) => Number(d.value) || 0));
+            const niceMax = Math.ceil(maxVal / 4) * 4 || 4;
 
-            data.forEach((d) => {
-                const value = Number(d.value) || 0;
-                const pct = Math.max(4, Math.round((value / maxVal) * 100));
+            const ns = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
 
-                const col = document.createElement('div');
-                col.className = 'bar-col';
-                col.innerHTML = `
-                    <span class="bar-value">${value}</span>
-                    <div class="bar-rect" style="height:${pct}%"></div>
-                    <span class="bar-label">${d.label}</span>
-                `;
-                const rect = col.querySelector('.bar-rect');
-                rect.addEventListener('mouseenter', () => {
-                    const r = rect.getBoundingClientRect();
-                    showChartTooltip(r.left + r.width / 2, r.top, `${d.label}: ${value} kegiatan`);
-                });
-                rect.addEventListener('mouseleave', hideChartTooltip);
-                holder.appendChild(col);
+            // Gradient dipakai semua batang
+            const defs = document.createElementNS(ns, 'defs');
+            const gradient = document.createElementNS(ns, 'linearGradient');
+            gradient.setAttribute('id', 'barGradient');
+            gradient.setAttribute('x1', '0'); gradient.setAttribute('y1', '1');
+            gradient.setAttribute('x2', '0'); gradient.setAttribute('y2', '0');
+            gradient.innerHTML = `
+                <stop offset="0%" stop-color="var(--chart-1)" />
+                <stop offset="100%" stop-color="var(--chart-2)" />
+            `;
+            defs.appendChild(gradient);
+            svg.appendChild(defs);
+
+            // Grid horizontal + label sumbu Y (sama gaya seperti kurva tren)
+            [0, 0.25, 0.5, 0.75, 1].forEach((f) => {
+                const y = padT + plotH * (1 - f);
+                const line = document.createElementNS(ns, 'line');
+                line.setAttribute('x1', padL); line.setAttribute('x2', W - padR);
+                line.setAttribute('y1', y); line.setAttribute('y2', y);
+                line.setAttribute('class', 'trend-grid-line');
+                svg.appendChild(line);
+
+                const text = document.createElementNS(ns, 'text');
+                text.setAttribute('x', 2); text.setAttribute('y', y + 3);
+                text.setAttribute('class', 'trend-axis-label');
+                text.textContent = Math.round(niceMax * f);
+                svg.appendChild(text);
             });
+
+            // Batang + label nilai + label sumbu X
+            const slot = plotW / data.length;
+            const barWidth = Math.min(46, slot * 0.5);
+
+            data.forEach((d, i) => {
+                const value = Number(d.value) || 0;
+                const barH = (value / niceMax) * plotH;
+                const cx = padL + slot * (i + 0.5);
+                const x = cx - barWidth / 2;
+                const y = padT + plotH - barH;
+
+                const rect = document.createElementNS(ns, 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', barWidth);
+                rect.setAttribute('height', Math.max(3, barH));
+                rect.setAttribute('rx', 6);
+                rect.setAttribute('class', 'bar-rect');
+                const showTip = () => {
+                    const rBound = holder.getBoundingClientRect();
+                    const scaleX = rBound.width / W, scaleY = rBound.height / H;
+                    showChartTooltip(rBound.left + cx * scaleX, rBound.top + y * scaleY, `${d.label}: ${value} kegiatan`);
+                    rect.classList.add('is-active');
+                };
+                rect.addEventListener('mouseenter', showTip);
+                rect.addEventListener('touchstart', showTip, { passive: true });
+                rect.addEventListener('mouseleave', () => { hideChartTooltip(); rect.classList.remove('is-active'); });
+                svg.appendChild(rect);
+
+                const valueLabel = document.createElementNS(ns, 'text');
+                valueLabel.setAttribute('x', cx);
+                valueLabel.setAttribute('y', y - 8);
+                valueLabel.setAttribute('class', 'bar-value-label');
+                valueLabel.textContent = value;
+                svg.appendChild(valueLabel);
+
+                const xLabel = document.createElementNS(ns, 'text');
+                xLabel.setAttribute('x', cx);
+                xLabel.setAttribute('y', H - 8);
+                xLabel.setAttribute('text-anchor', 'middle');
+                xLabel.setAttribute('class', 'trend-axis-label');
+                xLabel.textContent = d.label;
+                svg.appendChild(xLabel);
+            });
+
+            holder.appendChild(svg);
         }
 
         document.querySelectorAll('[data-barchart]').forEach(renderBarChart);

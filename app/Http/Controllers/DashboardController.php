@@ -132,7 +132,7 @@ class DashboardController extends Controller
             return ['label' => (string) $year, 'value' => $count];
         })->values();
 
-        // Aktivitas terbaru: gabungan 4 sumber, diurutkan dari yang terbaru
+        // Aktivitas terbaru: gabungan 4 sumber, diurutkan dari yang terbaru (maks. 4)
         $recent = collect()
             ->concat($kemahasiswaan->map(fn ($i) => [
                 'title' => $i->nama_kegiatan,
@@ -160,7 +160,7 @@ class DashboardController extends Controller
             ]))
             ->filter(fn ($i) => !is_null($i['date']))
             ->sortByDesc('date')
-            ->take(6)
+            ->take(4)
             ->values();
 
         return view('dashboard-mahasiswa', compact(

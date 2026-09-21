@@ -291,16 +291,6 @@
                             <h2 class="table-card-title">Daftar Rekap Kerja Sama</h2>
                             <p class="table-card-subtitle">Data kerja sama sesuai format Kemitraan 2026</p>
                         </div>
-                        <div class="table-card-tools">
-                            <button type="button" class="tool-btn">
-                                <span class="material-symbols-outlined">density_small</span>
-                                <span>Kepadatan</span>
-                            </button>
-                            <button type="button" class="tool-btn">
-                                <span class="material-symbols-outlined">view_column</span>
-                                <span>Kolom</span>
-                            </button>
-                        </div>
                     </div>
 
                     <div class="table-scroll">
@@ -500,15 +490,49 @@
 
             <div class="field-row">
                 <div class="field">
-                    <label class="field-label" for="form-tanggal_mulai">Tanggal Mulai</label>
-                    <div class="field-control">
-                        <input id="form-tanggal_mulai" type="date" required>
+                    <label class="field-label">Tanggal Mulai</label>
+                    <div class="datepicker" data-datepicker id="dp-tanggal_mulai">
+                        <input type="hidden" id="form-tanggal_mulai" value="" required />
+                        <button type="button" class="datepicker-trigger">
+                            <span class="material-symbols-outlined dp-icon">calendar_month</span>
+                            <span class="datepicker-value">Pilih tanggal</span>
+                        </button>
+                        <div class="datepicker-panel">
+                            <div class="dp-header">
+                                <button type="button" class="dp-nav dp-prev" aria-label="Bulan sebelumnya"><span class="material-symbols-outlined">chevron_left</span></button>
+                                <span class="dp-month-label"></span>
+                                <button type="button" class="dp-nav dp-next" aria-label="Bulan berikutnya"><span class="material-symbols-outlined">chevron_right</span></button>
+                            </div>
+                            <div class="dp-weekdays"><span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span></div>
+                            <div class="dp-days"></div>
+                            <div class="dp-footer">
+                                <button type="button" class="dp-today-btn">Hari ini</button>
+                                <button type="button" class="dp-clear-btn">Bersihkan</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="field">
-                    <label class="field-label" for="form-tanggal_selesai">Tanggal Selesai</label>
-                    <div class="field-control">
-                        <input id="form-tanggal_selesai" type="date" required>
+                    <label class="field-label">Tanggal Selesai</label>
+                    <div class="datepicker" data-datepicker id="dp-tanggal_selesai">
+                        <input type="hidden" id="form-tanggal_selesai" value="" required />
+                        <button type="button" class="datepicker-trigger">
+                            <span class="material-symbols-outlined dp-icon">calendar_month</span>
+                            <span class="datepicker-value">Pilih tanggal</span>
+                        </button>
+                        <div class="datepicker-panel">
+                            <div class="dp-header">
+                                <button type="button" class="dp-nav dp-prev" aria-label="Bulan sebelumnya"><span class="material-symbols-outlined">chevron_left</span></button>
+                                <span class="dp-month-label"></span>
+                                <button type="button" class="dp-nav dp-next" aria-label="Bulan berikutnya"><span class="material-symbols-outlined">chevron_right</span></button>
+                            </div>
+                            <div class="dp-weekdays"><span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span></div>
+                            <div class="dp-days"></div>
+                            <div class="dp-footer">
+                                <button type="button" class="dp-today-btn">Hari ini</button>
+                                <button type="button" class="dp-clear-btn">Bersihkan</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -564,6 +588,238 @@
 
         document.addEventListener('click', () => {
             dropdowns.forEach((d) => d.classList.remove('is-open'));
+        });
+
+        // ---------------- Custom Datepicker ----------------
+        const MONTH_NAMES_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const DAY_MS = 24 * 60 * 60 * 1000;
+
+        function pad2(n) {
+            return String(n).padStart(2, '0');
+        }
+
+        function toISO(y, m, d) {
+            return `${y}-${pad2(m + 1)}-${pad2(d)}`;
+        }
+
+        function parseISO(str) {
+            if (!str) return null;
+            const [y, m, d] = str.split('-').map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+        }
+
+        function formatDisplayDate(dateObj) {
+            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${MONTH_NAMES_ID[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+        }
+
+        function createDatepicker(rootEl) {
+            const hiddenInput = rootEl.querySelector('input[type="hidden"]');
+            const trigger = rootEl.querySelector('.datepicker-trigger');
+            const valueEl = rootEl.querySelector('.datepicker-value');
+            const panel = rootEl.querySelector('.datepicker-panel');
+            const monthLabel = rootEl.querySelector('.dp-month-label');
+            const daysGrid = rootEl.querySelector('.dp-days');
+            const prevBtn = rootEl.querySelector('.dp-prev');
+            const nextBtn = rootEl.querySelector('.dp-next');
+            const todayBtn = rootEl.querySelector('.dp-today-btn');
+            const clearBtn = rootEl.querySelector('.dp-clear-btn');
+
+            // Pindahkan panel kalender ke <body> supaya posisinya lepas dari overflow modal
+            // dan tidak pernah menggeser/mengubah ukuran modal saat dibuka.
+            document.body.appendChild(panel);
+
+            let selected = null;
+            let minDate = null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let view = {
+                year: today.getFullYear(),
+                month: today.getMonth()
+            };
+
+            function render() {
+                monthLabel.textContent = `${MONTH_NAMES_ID[view.month]} ${view.year}`;
+                daysGrid.innerHTML = '';
+
+                const firstDay = new Date(view.year, view.month, 1);
+                const startWeekday = firstDay.getDay();
+                const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+
+                for (let i = 0; i < startWeekday; i++) {
+                    const blank = document.createElement('span');
+                    blank.className = 'dp-day is-empty';
+                    daysGrid.appendChild(blank);
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const cellDate = new Date(view.year, view.month, d);
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'dp-day';
+                    btn.textContent = d;
+
+                    if (cellDate.getTime() === today.getTime()) btn.classList.add('is-today');
+                    if (selected && cellDate.getTime() === selected.getTime()) btn.classList.add('is-selected');
+                    if (minDate && cellDate.getTime() < minDate.getTime()) btn.disabled = true;
+
+                    btn.addEventListener('click', () => selectDate(cellDate));
+                    daysGrid.appendChild(btn);
+                }
+            }
+
+            function positionPanel() {
+                const rect = trigger.getBoundingClientRect();
+                const panelWidth = panel.offsetWidth || 268;
+                let left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
+                left = Math.max(8, left);
+                panel.style.left = left + 'px';
+
+                const panelHeight = panel.offsetHeight;
+                let top = rect.bottom + 6;
+                if (top + panelHeight > window.innerHeight - 8) {
+                    const above = rect.top - panelHeight - 6;
+                    top = above > 8 ? above : Math.max(8, window.innerHeight - panelHeight - 8);
+                }
+                panel.style.top = top + 'px';
+            }
+
+            function selectDate(dateObj) {
+                selected = dateObj;
+                hiddenInput.value = toISO(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+                valueEl.textContent = formatDisplayDate(dateObj);
+                valueEl.classList.add('has-value');
+                closePanel();
+                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
+                    detail: {
+                        date: dateObj,
+                        iso: hiddenInput.value
+                    }
+                }));
+            }
+
+            function clear() {
+                selected = null;
+                hiddenInput.value = '';
+                valueEl.textContent = 'Pilih tanggal';
+                valueEl.classList.remove('has-value');
+                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
+                    detail: {
+                        date: null,
+                        iso: ''
+                    }
+                }));
+            }
+
+            function openPanel() {
+                closeAllDatepickers();
+                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
+                view = selected ? {
+                    year: selected.getFullYear(),
+                    month: selected.getMonth()
+                } : {
+                    year: today.getFullYear(),
+                    month: today.getMonth()
+                };
+                render();
+                panel.style.display = 'block';
+                positionPanel();
+                rootEl.classList.add('is-open');
+                activeDatepickers.add(api);
+            }
+
+            function closePanel() {
+                panel.style.display = 'none';
+                rootEl.classList.remove('is-open');
+                activeDatepickers.delete(api);
+            }
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wasOpen = rootEl.classList.contains('is-open');
+                closeAllDatepickers();
+                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
+                if (!wasOpen) openPanel();
+            });
+            panel.addEventListener('click', (e) => e.stopPropagation());
+            prevBtn.addEventListener('click', () => {
+                view.month--;
+                if (view.month < 0) {
+                    view.month = 11;
+                    view.year--;
+                }
+                render();
+            });
+            nextBtn.addEventListener('click', () => {
+                view.month++;
+                if (view.month > 11) {
+                    view.month = 0;
+                    view.year++;
+                }
+                render();
+            });
+            todayBtn.addEventListener('click', () => selectDate(new Date(today)));
+            clearBtn.addEventListener('click', clear);
+
+            render();
+
+            const api = {
+                el: rootEl,
+                panel,
+                isOpen: () => rootEl.classList.contains('is-open'),
+                close: closePanel,
+                reposition: positionPanel,
+                setValue(iso) {
+                    const d = parseISO(iso);
+                    if (d) {
+                        selected = d;
+                        valueEl.textContent = formatDisplayDate(d);
+                        valueEl.classList.add('has-value');
+                        hiddenInput.value = iso;
+                    } else {
+                        selected = null;
+                        valueEl.textContent = 'Pilih tanggal';
+                        valueEl.classList.remove('has-value');
+                        hiddenInput.value = '';
+                    }
+                },
+                setMinDate(iso) {
+                    minDate = parseISO(iso);
+                },
+                clear,
+            };
+            return api;
+        }
+
+        const activeDatepickers = new Set();
+
+        function closeAllDatepickers() {
+            activeDatepickers.forEach((dp) => dp.close());
+        }
+
+        const dpMulai = createDatepicker(document.getElementById('dp-tanggal_mulai'));
+        const dpSelesai = createDatepicker(document.getElementById('dp-tanggal_selesai'));
+
+        // Tutup kalender saat klik di luar trigger maupun panel (panel kini ada di <body>)
+        document.addEventListener('click', (e) => {
+            [dpMulai, dpSelesai].forEach((dp) => {
+                if (!dp.isOpen()) return;
+                if (dp.el.contains(e.target) || dp.panel.contains(e.target)) return;
+                dp.close();
+            });
+        });
+        // Reposisi ulang kalender saat window di-resize atau ada scroll di mana pun (termasuk isi modal)
+        window.addEventListener('resize', () => activeDatepickers.forEach((dp) => dp.reposition()));
+        document.addEventListener('scroll', () => activeDatepickers.forEach((dp) => dp.reposition()), true);
+
+        // Tanggal selesai tidak boleh sebelum tanggal mulai
+        document.getElementById('dp-tanggal_mulai').addEventListener('datepicker:change', (e) => {
+            dpSelesai.setMinDate(e.detail.iso || null);
+            const selesaiVal = document.getElementById('form-tanggal_selesai').value;
+            if (e.detail.iso && selesaiVal && selesaiVal < e.detail.iso) {
+                dpSelesai.clear();
+            }
         });
 
         function selectDropdownValue(dropdownEl, value, placeholder) {

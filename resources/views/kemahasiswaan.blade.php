@@ -129,8 +129,8 @@
                             <img alt="Profile"
                                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
                             <div class="header-profile-text">
-                                <span class="header-profile-name">Admin Kemahasiswaan</span>
-                                <span class="header-profile-role">Institut Asia Malang</span>
+                                <span class="header-profile-name">{{ auth()->user()->name }}</span>
+                                <span class="header-profile-role">{{ auth()->user()->role }}</span>
                             </div>
                         </div>
                         <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
@@ -295,12 +295,6 @@
                             <h2 class="table-card-title">Daftar Rekap Prestasi Mahasiswa</h2>
                             <p class="table-card-subtitle">Data kegiatan terverifikasi sesuai format resmi SIM
                                 Kemahasiswaan 2026</p>
-                        </div>
-                        <div class="table-card-tools">
-                            <button type="button" class="tool-btn">
-                                <span class="material-symbols-outlined">density_small</span>
-                                <span>Kepadatan</span>
-                            </button>
                         </div>
                     </div>
 

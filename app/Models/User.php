@@ -89,6 +89,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Label peran yang enak dibaca untuk ditampilkan di UI (header profil, dsb).
+     */
+    public function roleLabel(): string
+    {
+        return match ($this->role) {
+            'superadmin' => 'Super Admin',
+            'admin'      => 'Admin',
+            'dosen'      => 'Dosen',
+            'mahasiswa'  => 'Mahasiswa',
+            default      => ucfirst($this->role ?? '-'),
+        };
+    }
+
+    /**
+     * Label yang ditampilkan di bawah nama pada header, menyesuaikan hak akses
+     * user untuk menu yang sedang dibuka. Kalau levelnya "readonly", tampilkan
+     * keterangan pratinjau; selain itu tampilkan label peran (Super Admin/Admin/
+     * Dosen/Mahasiswa).
+     */
+    public function accessLabelFor(string $menu): string
+    {
+        return $this->menuLevel($menu) === 'readonly'
+            ? 'Pratinjau · Hanya Lihat'
+            : $this->roleLabel();
+    }
+    /**
      * Semua level akses user ini, per menu (dipakai untuk mengisi modal
      * Hak Akses & menghitung status/ringkasan tanpa query berulang).
      */

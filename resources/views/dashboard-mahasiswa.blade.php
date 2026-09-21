@@ -85,7 +85,7 @@
                             <img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
                             <div class="header-profile-text">
                                 <span class="header-profile-name">{{ auth()->user()->name }}</span>
-                                <span class="header-profile-role">Mahasiswa</span>
+                                <span class="header-profile-role">{{ auth()->user()->accessLabelFor('dashboard') }}</span>
                             </div>
                         </div>
                     </div>
@@ -164,16 +164,6 @@
                 <!-- DASHBOARD GRID -->
                 <div class="dash-grid">
 
-                    <!-- KURVA TREN BULANAN (full width) -->
-                    <div class="dash-card trend-card reveal">
-                        <h2 class="dash-card-title">Tren Kegiatan Bulanan</h2>
-                        <p class="dash-card-sub">Akademik vs Eksternal &middot; 12 bulan terakhir &middot; arahkan kursor ke titik untuk detail</p>
-                        <div class="trend-legend-row" id="trendLegend"></div>
-                        <div class="trend-chart-holder" data-trend data-chart='@json($trend)'>
-                            <svg viewBox="0 0 640 210" preserveAspectRatio="none"></svg>
-                        </div>
-                    </div>
-
                     <!-- DONUT: kategori -->
                     <div class="dash-card donut-card reveal">
                         <h2 class="dash-card-title">Distribusi Kegiatan per Kategori</h2>
@@ -206,11 +196,25 @@
                         </div>
                     </div>
 
-                    <!-- BAR CHART: per tahun -->
+                    <!-- BAR CHART: per periode (harian/mingguan/bulanan/tahunan) -->
                     <div class="dash-card reveal">
-                        <h2 class="dash-card-title">Kegiatan per Tahun</h2>
-                        <p class="dash-card-sub">Gabungan 4 kategori &middot; arahkan kursor ke batang untuk detail</p>
-                        <div class="bar-chart-holder" data-barchart data-chart='@json($yearlyBar)'></div>
+                        <div class="trend-card-top">
+                            <div>
+                                <h2 class="dash-card-title">Kegiatan per Periode</h2>
+                                <p class="dash-card-sub">Gabungan 4 kategori</p>
+                            </div>
+                            <span class="trend-hint">
+                                <span class="material-symbols-outlined">info</span>
+                                Arahkan kursor ke batang untuk detail
+                            </span>
+                        </div>
+                        <div class="period-switcher" id="periodSwitcher" role="tablist">
+                            <button type="button" class="period-btn" data-period="harian">Harian</button>
+                            <button type="button" class="period-btn" data-period="mingguan">Mingguan</button>
+                            <button type="button" class="period-btn is-active" data-period="bulanan">Bulanan</button>
+                            <button type="button" class="period-btn" data-period="tahunan">Tahunan</button>
+                        </div>
+                        <div class="bar-chart-holder" data-barchart data-active-period="bulanan" data-chart-sets='@json($barDatasets)'></div>
                     </div>
 
                     <!-- AKTIVITAS TERBARU -->
@@ -407,132 +411,16 @@
         document.querySelectorAll('[data-donut]').forEach(renderDonut);
 
         // ================================================================
-        // KURVA TREN (line + area chart, 2 seri, smooth curve)
+        // BAR CHART (per periode: harian/mingguan/bulanan/tahunan)
         // ================================================================
-        function smoothPath(points) {
-            if (points.length < 2) return '';
-            let d = `M ${points[0].x} ${points[0].y}`;
-            for (let i = 0; i < points.length - 1; i++) {
-                const p0 = points[i - 1] || points[i];
-                const p1 = points[i];
-                const p2 = points[i + 1];
-                const p3 = points[i + 2] || p2;
-                const cp1x = p1.x + (p2.x - p0.x) / 6;
-                const cp1y = p1.y + (p2.y - p0.y) / 6;
-                const cp2x = p2.x - (p3.x - p1.x) / 6;
-                const cp2y = p2.y - (p3.y - p1.y) / 6;
-                d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
-            }
-            return d;
-        }
+        function renderBarChart(holder, periodOverride) {
+            let allSets = {};
+            try { allSets = JSON.parse(holder.dataset.chartSets || '{}'); } catch (_) { allSets = {}; }
 
-        function renderTrend(holder) {
-            let chart = { labels: [], series: [] };
-            try { chart = JSON.parse(holder.dataset.chart || '{}'); } catch (_) { chart = { labels: [], series: [] }; }
+            const period = periodOverride || holder.dataset.activePeriod || 'bulanan';
+            holder.dataset.activePeriod = period;
+            const data = allSets[period] || [];
 
-            const svg = holder.querySelector('svg');
-            const legendEl = document.getElementById('trendLegend');
-            svg.innerHTML = '';
-            legendEl.innerHTML = '';
-
-            const labels = chart.labels || [];
-            const series = chart.series || [];
-            if (labels.length === 0 || series.length === 0) return;
-
-            const W = 640, H = 210;
-            const padL = 28, padR = 12, padT = 14, padB = 30;
-            const plotW = W - padL - padR;
-            const plotH = H - padT - padB;
-
-            const maxVal = Math.max(1, ...series.flatMap((s) => s.data));
-            const niceMax = Math.ceil(maxVal / 4) * 4 || 4;
-
-            const ns = 'http://www.w3.org/2000/svg';
-            const xStep = labels.length > 1 ? plotW / (labels.length - 1) : 0;
-            const yFor = (v) => padT + plotH - (v / niceMax) * plotH - (v === 0 ? 2.5 : 0);
-            const xFor = (i) => padL + i * xStep;
-
-            // Grid horizontal + label sumbu Y
-            [0, 0.25, 0.5, 0.75, 1].forEach((f) => {
-                const y = padT + plotH * (1 - f);
-                const line = document.createElementNS(ns, 'line');
-                line.setAttribute('x1', padL); line.setAttribute('x2', W - padR);
-                line.setAttribute('y1', y); line.setAttribute('y2', y);
-                line.setAttribute('class', 'trend-grid-line');
-                svg.appendChild(line);
-
-                const text = document.createElementNS(ns, 'text');
-                text.setAttribute('x', 2); text.setAttribute('y', y + 3);
-                text.setAttribute('class', 'trend-axis-label');
-                text.textContent = Math.round(niceMax * f);
-                svg.appendChild(text);
-            });
-
-            // Label sumbu X (bulan)
-            labels.forEach((label, i) => {
-                const text = document.createElementNS(ns, 'text');
-                text.setAttribute('x', xFor(i));
-                text.setAttribute('y', H - 8);
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('class', 'trend-axis-label');
-                text.textContent = label;
-                svg.appendChild(text);
-            });
-
-            series.forEach((s, sIdx) => {
-                const points = s.data.map((v, i) => ({ x: xFor(i), y: yFor(v) - (v === 0 ? sIdx * 3 : 0), value: v }));
-                const linePath = smoothPath(points);
-
-                const area = document.createElementNS(ns, 'path');
-                area.setAttribute('d', `${linePath} L ${points[points.length - 1].x} ${padT + plotH} L ${points[0].x} ${padT + plotH} Z`);
-                area.setAttribute('fill', s.color);
-                area.setAttribute('class', 'trend-area');
-                svg.appendChild(area);
-
-                const line = document.createElementNS(ns, 'path');
-                line.setAttribute('d', linePath);
-                line.setAttribute('stroke', s.color);
-                line.setAttribute('class', 'trend-line');
-                svg.appendChild(line);
-
-                points.forEach((p, i) => {
-                    const dot = document.createElementNS(ns, 'circle');
-                    dot.setAttribute('cx', p.x); dot.setAttribute('cy', p.y); dot.setAttribute('r', 3.2);
-                    dot.setAttribute('fill', s.color);
-                    dot.setAttribute('class', 'trend-point-dot');
-                    svg.appendChild(dot);
-
-                    const hit = document.createElementNS(ns, 'circle');
-                    hit.setAttribute('cx', p.x); hit.setAttribute('cy', p.y); hit.setAttribute('r', 10);
-                    hit.setAttribute('class', 'trend-point-hit');
-                    const showTip = () => {
-                        const rect = holder.getBoundingClientRect();
-                        const scaleX = rect.width / W, scaleY = rect.height / H;
-                        showChartTooltip(rect.left + p.x * scaleX, rect.top + p.y * scaleY, `${s.label} &middot; ${labels[i]}: ${p.value}`.replace('&middot;', '\u00B7'));
-                        hit.classList.add('is-active');
-                        dot.setAttribute('r', 5.5);
-                    };
-                    hit.addEventListener('mouseenter', showTip);
-                    hit.addEventListener('touchstart', showTip, { passive: true });
-                    hit.addEventListener('mouseleave', () => { hideChartTooltip(); hit.classList.remove('is-active'); dot.setAttribute('r', 3.2); });
-                    svg.appendChild(hit);
-                });
-
-                const legendItem = document.createElement('div');
-                legendItem.className = 'trend-legend-item';
-                legendItem.innerHTML = `<span class="trend-legend-line" style="background:${s.color}"></span><span>${s.label}</span>`;
-                legendEl.appendChild(legendItem);
-            });
-        }
-
-        document.querySelectorAll('[data-trend]').forEach(renderTrend);
-
-        // ================================================================
-        // BAR CHART (per tahun)
-        // ================================================================
-        function renderBarChart(holder) {
-            let data = [];
-            try { data = JSON.parse(holder.dataset.chart || '[]'); } catch (_) { data = []; }
             holder.innerHTML = '';
 
             if (!data.length) {
@@ -586,6 +474,16 @@
             const slot = plotW / data.length;
             const barWidth = Math.min(46, slot * 0.5);
 
+            // Grid vertikal tipis di tengah tiap slot batang
+            data.forEach((d, i) => {
+                const cx = padL + slot * (i + 0.5);
+                const vLine = document.createElementNS(ns, 'line');
+                vLine.setAttribute('x1', cx); vLine.setAttribute('x2', cx);
+                vLine.setAttribute('y1', padT); vLine.setAttribute('y2', padT + plotH);
+                vLine.setAttribute('class', 'trend-grid-line-v');
+                svg.appendChild(vLine);
+            });
+
             data.forEach((d, i) => {
                 const value = Number(d.value) || 0;
                 const barH = (value / niceMax) * plotH;
@@ -630,7 +528,24 @@
             holder.appendChild(svg);
         }
 
-        document.querySelectorAll('[data-barchart]').forEach(renderBarChart);
+        document.querySelectorAll('[data-barchart]').forEach((holder) => renderBarChart(holder));
+
+        // ---------------- Segmented control: ganti periode bar chart ----------------
+        const periodSwitcher = document.getElementById('periodSwitcher');
+        const barHolder = document.querySelector('[data-barchart]');
+        periodSwitcher?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.period-btn');
+            if (!btn || !barHolder) return;
+
+            periodSwitcher.querySelectorAll('.period-btn').forEach((b) => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
+            barHolder.classList.add('is-switching');
+            setTimeout(() => {
+                renderBarChart(barHolder, btn.dataset.period);
+                barHolder.classList.remove('is-switching');
+            }, 180);
+        });
     </script>
 </body>
 

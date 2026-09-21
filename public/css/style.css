@@ -3481,6 +3481,92 @@ body.dark-mode .chart-tooltip::after {
     margin: -6px 0 14px;
 }
 
+/* --- Header baris atas kartu tren/bar: judul di kiri, hint kecil di kanan --- */
+.trend-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.trend-card-top .dash-card-sub {
+    margin-bottom: 0;
+}
+
+.trend-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.trend-hint .material-symbols-outlined {
+    font-size: 14px;
+}
+
+@media (max-width: 560px) {
+    .trend-hint { white-space: normal; }
+}
+
+/* --- Garis grid vertikal (per titik data) pada kurva tren & bar chart --- */
+.trend-grid-line-v {
+    stroke: var(--border);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+    opacity: .6;
+}
+
+/* --- Segmented control pemilih periode (Harian/Mingguan/Bulanan/Tahunan) --- */
+.period-switcher {
+    display: inline-flex;
+    gap: 3px;
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 16px;
+}
+
+.period-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 13px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.period-btn:hover {
+    color: var(--ink);
+}
+
+.period-btn.is-active {
+    background: var(--card);
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(16, 24, 40, .12);
+}
+
+.bar-chart-holder svg {
+    transition: opacity .2s ease;
+}
+
+.bar-chart-holder.is-switching svg {
+    opacity: 0;
+}
+
 .trend-legend-item {
     display: flex;
     align-items: center;

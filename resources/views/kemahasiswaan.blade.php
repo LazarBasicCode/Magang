@@ -129,8 +129,8 @@
                             <img alt="Profile"
                                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
                             <div class="header-profile-text">
-                                <span class="header-profile-name">{{ auth()->user()->name }}</span>
-                                <span class="header-profile-role">{{ auth()->user()->role }}</span>
+                                <span class="header-profile-name">{{ $__user->name }}</span>
+                                <span class="header-profile-role">{{ $__user->accessLabelFor('kemahasiswaan') }}</span>
                             </div>
                         </div>
                         <form method="POST" action="{{ url('/logout') }}" id="logoutForm">

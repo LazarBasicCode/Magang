@@ -87,7 +87,7 @@
                         <div class="header-profile">
                             <div class="header-profile-text">
                                 <span class="header-profile-name">{{ $user->name }}</span>
-                                <span class="header-profile-role">{{ ucfirst($user->role) }}</span>
+                                <span class="header-profile-role">{{ $user->accessLabelFor('dashboard') }}</span>
                             </div>
                         </div>
                     </div>

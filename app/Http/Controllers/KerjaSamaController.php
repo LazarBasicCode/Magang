@@ -11,14 +11,24 @@ class KerjaSamaController extends Controller
     /**
      * Halaman utama Kerja Sama (server-rendered untuk load pertama & SEO).
      * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
+     *
+     * Akses "biasa" (default mahasiswa/dosen) hanya bisa melihat & mengisi
+     * datanya sendiri. Akses "penuh"/"readonly" melihat & mengelola semua.
      */
     public function index(Request $request)
     {
-        $items = KerjaSama::with('user')->latest()->paginate(10);
+        $user = $request->user();
+        $ownScope = $user->menuLevel('kerja_sama') === 'biasa';
 
-        $userList = User::whereIn('role', ['mahasiswa', 'dosen'])
-            ->orderBy('name')
-            ->get();
+        $query = KerjaSama::with('user')->latest();
+        if ($ownScope) {
+            $query->where('user_id', $user->id);
+        }
+        $items = $query->paginate(10);
+
+        $userList = $ownScope
+            ? collect([$user])
+            : User::whereIn('role', ['mahasiswa', 'dosen'])->orderBy('name')->get();
 
         $internasionalJenis = [
             'conference_internasional',
@@ -27,11 +37,15 @@ class KerjaSamaController extends Controller
             'research_internasional',
         ];
 
+        $statsQuery = fn () => $ownScope
+            ? KerjaSama::where('user_id', $user->id)
+            : KerjaSama::query();
+
         $stats = [
-            'total'         => KerjaSama::count(),
-            'mahasiswa'     => KerjaSama::where('tipe_user', 'mahasiswa')->count(),
-            'dosen'         => KerjaSama::where('tipe_user', 'dosen')->count(),
-            'internasional' => KerjaSama::whereIn('jenis', $internasionalJenis)->count(),
+            'total'         => (clone $statsQuery())->count(),
+            'mahasiswa'     => (clone $statsQuery())->where('tipe_user', 'mahasiswa')->count(),
+            'dosen'         => (clone $statsQuery())->where('tipe_user', 'dosen')->count(),
+            'internasional' => (clone $statsQuery())->whereIn('jenis', $internasionalJenis)->count(),
         ];
 
         return view('kerja-sama', compact('items', 'userList', 'stats'));
@@ -40,6 +54,7 @@ class KerjaSamaController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $this->enforceOwnUser($request, $data);
 
         $item = KerjaSama::create($data)->load('user');
 
@@ -51,7 +66,10 @@ class KerjaSamaController extends Controller
 
     public function update(Request $request, KerjaSama $kerjaSama)
     {
+        $this->authorizeOwnership($request, $kerjaSama);
+
         $data = $this->validated($request);
+        $this->enforceOwnUser($request, $data);
 
         $kerjaSama->update($data);
         $kerjaSama->load('user');
@@ -62,8 +80,10 @@ class KerjaSamaController extends Controller
         ]);
     }
 
-    public function destroy(KerjaSama $kerjaSama)
+    public function destroy(Request $request, KerjaSama $kerjaSama)
     {
+        $this->authorizeOwnership($request, $kerjaSama);
+
         $id = $kerjaSama->id;
         $kerjaSama->delete();
 
@@ -71,6 +91,31 @@ class KerjaSamaController extends Controller
             'success' => true,
             'id'      => $id,
         ]);
+    }
+
+    private function enforceOwnUser(Request $request, array &$data): void
+    {
+        $actor = $request->user();
+        if ($actor->menuLevel('kerja_sama') !== 'biasa') {
+            return;
+        }
+
+        $data['user_id'] = $actor->id;
+        $data['tipe_user'] = $actor->role === 'dosen' ? 'dosen' : 'mahasiswa';
+    }
+
+    private function authorizeOwnership(Request $request, KerjaSama $kerjaSama): void
+    {
+        $actor = $request->user();
+        if ($actor->menuLevel('kerja_sama') !== 'biasa') {
+            return;
+        }
+
+        abort_if(
+            $kerjaSama->user_id !== $actor->id,
+            403,
+            'Kamu hanya bisa mengelola data kerja sama milikmu sendiri.'
+        );
     }
 
     private function validated(Request $request): array

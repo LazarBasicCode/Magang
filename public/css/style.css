@@ -983,3 +983,319 @@ body.dark-mode #accessModal .access-main {
     #accessModal .modal-footer { grid-row: 4; }
     #accessModal .permission-row .dropdown { width: 150px; }
 }
+/* ==========================================================
+   15. DASHBOARD MAHASISWA — Donut Chart, Tooltip, Scroll Reveal
+   ========================================================== */
+
+/* --- Palet warna chart (5 warna, beda tone light vs dark) --- */
+:root {
+    --chart-1: #5b5fef;
+    --chart-2: #0680a3;
+    --chart-3: #1a8a3d;
+    --chart-4: #c67f00;
+    --chart-5: #8b3fd1;
+}
+body.dark-mode {
+    --chart-1: #4c8dff;
+    --chart-2: #2aecf3;
+    --chart-3: #3ddc84;
+    --chart-4: #f2b642;
+    --chart-5: #b98bff;
+}
+
+/* --- Animasi reveal saat elemen masuk viewport, mengulang tiap kali di-scroll ulang --- */
+.reveal {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(.88);
+    transition: opacity .6s cubic-bezier(.22, .68, 0, 1),
+                filter .6s cubic-bezier(.22, .68, 0, 1),
+                transform .6s cubic-bezier(.22, .68, 0, 1);
+    will-change: opacity, filter, transform;
+}
+.reveal.is-visible {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+    .reveal { transition: opacity .2s ease; filter: none; transform: none; opacity: 1; }
+}
+
+/* --- Welcome banner --- */
+.dash-welcome {
+    border-radius: var(--radius-lg);
+    padding: 26px 28px;
+    margin-bottom: 20px;
+    background: linear-gradient(120deg, var(--primary) 0%, #8b6ff0 100%);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}
+.dash-welcome::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(60% 120% at 90% 0%, rgba(255,255,255,.22) 0%, transparent 60%);
+    pointer-events: none;
+}
+.dash-welcome-title { font-size: 20px; font-weight: 800; margin: 0 0 4px; }
+.dash-welcome-sub { font-size: 13px; opacity: .92; margin: 0; }
+
+/* --- Grid dashboard --- */
+.dash-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+    margin-top: 20px;
+}
+@media (max-width: 1100px) {
+    .dash-grid { grid-template-columns: 1fr; }
+}
+
+.dash-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+}
+.dash-card-title { font-size: 15px; font-weight: 800; color: var(--ink); margin: 0 0 2px; }
+.dash-card-sub { font-size: 12px; color: var(--ink-muted); margin: 0 0 18px; }
+
+/* Background khusus kartu donut: beda treatment light vs dark mode */
+.donut-card {
+    background: linear-gradient(160deg, #f3f2ff 0%, #ffffff 55%, #eefaf4 100%);
+}
+body.dark-mode .donut-card {
+    background-color: var(--card);
+    background-image:
+        radial-gradient(120% 120% at 25% 0%, rgba(76, 141, 255, .18) 0%, transparent 60%),
+        linear-gradient(180deg, rgba(77, 106, 235, .10) 0%, transparent 45%);
+}
+
+/* --- Donut chart --- */
+.donut-widget { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
+.donut-svg-holder { position: relative; width: 176px; height: 176px; flex-shrink: 0; }
+.donut-svg-holder svg { width: 100%; height: 100%; overflow: visible; }
+.donut-slice {
+    cursor: pointer;
+    transform-origin: 100px 100px;
+    transition: transform .18s ease, filter .18s ease, opacity .18s ease;
+    stroke: var(--card);
+    stroke-width: 2;
+}
+.donut-slice:hover, .donut-slice.is-active { transform: scale(1.05); filter: brightness(1.08); }
+.donut-center-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: none; text-align: center;
+}
+.donut-center-value { font-size: 26px; font-weight: 800; color: var(--ink); line-height: 1; }
+.donut-center-caption { font-size: 10.5px; color: var(--ink-muted); font-weight: 700; margin-top: 4px; letter-spacing: .02em; text-transform: uppercase; }
+.donut-empty { font-size: 12.5px; color: var(--ink-faint); text-align: center; padding: 20px 10px; }
+
+.donut-legend { display: flex; flex-direction: column; gap: 11px; min-width: 150px; flex: 1; }
+.donut-legend-item { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-muted); font-weight: 600; }
+.donut-legend-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.donut-legend-value { margin-left: auto; font-weight: 800; color: var(--ink); font-size: 13px; }
+
+/* Tooltip bubble ala gambar acuan: bulat hitam, angka putih, penunjuk segitiga */
+.chart-tooltip {
+    position: fixed;
+    left: 0; top: 0;
+    transform: translate(-50%, calc(-100% - 14px)) scale(.82);
+    background: #14161f; color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 800;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 200;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, .28);
+}
+.chart-tooltip::after {
+    content: '';
+    position: absolute; left: 50%; top: 100%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #14161f;
+}
+.chart-tooltip.is-active { opacity: 1; transform: translate(-50%, calc(-100% - 20px)) scale(1); }
+body.dark-mode .chart-tooltip { background: #f8fafc; color: #14161f; }
+body.dark-mode .chart-tooltip::after { border-top-color: #f8fafc; }
+
+/* --- Aktivitas terbaru --- */
+.recent-list { display: flex; flex-direction: column; gap: 2px; }
+.recent-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 4px; border-bottom: 1px solid var(--border);
+}
+.recent-item:last-child { border-bottom: none; }
+.recent-item-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--primary-soft); color: var(--primary);
+}
+.recent-item-icon .material-symbols-outlined { font-size: 19px; }
+.recent-item-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.recent-item-title { font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.recent-item-meta { font-size: 11.5px; color: var(--ink-faint); }
+.recent-empty { font-size: 12.5px; color: var(--ink-faint); padding: 16px 4px; text-align: center; }
+
+@media (max-width: 560px) {
+    .donut-widget { flex-direction: column; align-items: flex-start; }
+    .recent-item-title { max-width: 60vw; }
+}
+
+/* ==========================================================
+   16. DASHBOARD MAHASISWA — Kurva Tren, Bar Chart, Hero Card
+   ========================================================== */
+
+/* --- Kartu hero gradient (mirip 2 kartu berwarna di referensi) --- */
+.hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.hero-card {
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    min-height: 108px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.hero-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(70% 140% at 100% 0%, rgba(255,255,255,.25) 0%, transparent 60%);
+    pointer-events: none;
+}
+.hero-card.tone-a { background: linear-gradient(135deg, #b06ab3 0%, #6f6ef0 100%); }
+.hero-card.tone-b { background: linear-gradient(135deg, #17ead9 0%, #6078ea 100%); }
+.hero-card.tone-c { background: linear-gradient(135deg, #ff8a5c 0%, #ff5c8a 100%); }
+.hero-card-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: .92; margin: 0 0 8px; position: relative; z-index: 1; }
+.hero-card-value { font-size: 26px; font-weight: 800; line-height: 1; position: relative; z-index: 1; }
+.hero-card-unit { font-size: 13px; font-weight: 600; opacity: .85; margin-left: 4px; }
+.hero-card-sub { font-size: 11.5px; opacity: .88; margin-top: 6px; position: relative; z-index: 1; }
+
+/* --- Kartu chart (kurva & bar) --- */
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 22px; position: relative; overflow: hidden; }
+.chart-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.chart-legend-row { display: flex; gap: 16px; flex-wrap: wrap; }
+.chart-legend-row .donut-legend-item { font-size: 12px; }
+
+.area-chart-wrap { width: 100%; margin-top: 14px; }
+.area-chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+.area-chart-point { r: 3.4; stroke: var(--card); stroke-width: 1.6; transition: r .15s ease; cursor: pointer; }
+.area-chart-point:hover, .area-chart-point.is-active { r: 5.5; }
+.area-chart-hit { fill: transparent; cursor: pointer; }
+.area-chart-axis-label { font-size: 10.5px; fill: var(--ink-faint); font-family: 'Public Sans', sans-serif; }
+
+.bar-chart-wrap { width: 100%; margin-top: 16px; }
+.bar-chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+.bar-chart-bar { rx: 6; cursor: pointer; transition: opacity .15s ease; }
+.bar-chart-bar:hover, .bar-chart-bar.is-active { opacity: .82; }
+.bar-chart-label { font-size: 11px; fill: var(--ink-muted); font-family: 'Public Sans', sans-serif; font-weight: 600; }
+.bar-chart-value-label { font-size: 10.5px; fill: var(--ink-faint); font-family: 'Public Sans', sans-serif; font-weight: 700; }
+
+@media (max-width: 640px) {
+    .hero-card-value { font-size: 22px; }
+}
+
+/* ==========================================================
+   16. DASHBOARD MAHASISWA — Hero Stat, Kurva Tren, Bar Chart
+   ========================================================== */
+
+/* --- Kartu stat hero (gradient, angka besar) --- */
+.stat-hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.stat-hero-card {
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    min-height: 96px;
+}
+.stat-hero-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(70% 100% at 100% 0%, rgba(255,255,255,.22) 0%, transparent 60%);
+    pointer-events: none;
+}
+.stat-hero-card.grad-1 { background: linear-gradient(135deg, #c86dd7 0%, #5a5fe0 100%); }
+.stat-hero-card.grad-2 { background: linear-gradient(135deg, #17c3c9 0%, #1866b8 100%); }
+.stat-hero-card.grad-3 { background: linear-gradient(135deg, #f2994a 0%, #d1495b 100%); }
+.stat-hero-label { font-size: 12px; font-weight: 700; opacity: .92; margin: 0 0 10px; position: relative; z-index: 1; }
+.stat-hero-value { font-size: 25px; font-weight: 800; display: flex; align-items: baseline; gap: 4px; position: relative; z-index: 1; }
+.stat-hero-unit { font-size: 12.5px; font-weight: 600; opacity: .88; }
+.stat-hero-icon { position: absolute; right: 14px; top: 14px; opacity: .32; font-size: 34px; z-index: 0; }
+
+/* --- Badge tren kecil (naik/turun) --- */
+.trend-badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.trend-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px 7px 10px;
+    font-size: 12.5px; font-weight: 700; color: var(--ink);
+    box-shadow: var(--shadow-card);
+}
+.trend-badge-dot { width: 8px; height: 8px; border-radius: 50%; }
+.trend-badge-up { color: var(--success); }
+.trend-badge-down { color: var(--danger); }
+
+/* --- Kartu tren (kurva) full width --- */
+.trend-card { grid-column: 1 / -1; }
+.trend-legend-row { display: flex; gap: 18px; flex-wrap: wrap; margin: -6px 0 14px; }
+.trend-legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.trend-legend-line { width: 16px; height: 3px; border-radius: 2px; }
+.trend-chart-holder { width: 100%; height: 230px; position: relative; }
+.trend-chart-holder svg { width: 100%; height: 100%; overflow: visible; }
+.trend-axis-label { font-size: 10.5px; fill: var(--ink-faint); font-family: 'Public Sans', sans-serif; }
+.trend-grid-line { stroke: var(--border); stroke-width: 1; }
+.trend-area { opacity: .16; }
+.trend-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.trend-point-hit { fill: transparent; cursor: pointer; }
+.trend-point-dot { transition: r .15s ease; pointer-events: none; }
+.trend-point-hit:hover + .trend-point-dot,
+.trend-point-hit.is-active + .trend-point-dot { r: 5.5; }
+
+/* --- Kartu bar chart --- */
+.bar-chart-holder {
+    width: 100%; height: 190px;
+    display: flex; align-items: flex-end; gap: 12px;
+    padding-top: 10px;
+}
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+.bar-value { font-size: 11px; font-weight: 800; color: var(--ink); }
+.bar-rect {
+    width: 100%; max-width: 38px; min-height: 4px;
+    border-radius: 8px 8px 3px 3px;
+    background: linear-gradient(180deg, var(--chart-2) 0%, var(--chart-1) 100%);
+    cursor: pointer;
+    transition: filter .15s ease, transform .15s ease;
+}
+.bar-rect:hover { filter: brightness(1.12); transform: scaleY(1.01); }
+.bar-label { font-size: 11px; color: var(--ink-faint); font-weight: 600; }
+
+@media (max-width: 700px) {
+    .trend-chart-holder { height: 190px; }
+    .bar-chart-holder { height: 160px; }
+}

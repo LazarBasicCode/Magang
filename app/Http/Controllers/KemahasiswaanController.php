@@ -12,18 +12,36 @@ class KemahasiswaanController extends Controller
     /**
      * Halaman utama Kemahasiswaan (server-rendered untuk load pertama & SEO).
      * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
+     *
+     * Akses "biasa" (default mahasiswa) hanya bisa melihat & mengisi datanya
+     * sendiri. Akses "penuh"/"readonly" (admin/superadmin, atau staf yang
+     * sengaja diberi readonly) melihat & mengelola data semua mahasiswa.
      */
     public function index(Request $request)
     {
-        $kegiatan = Kemahasiswaan::with('mahasiswa.user')->latest()->paginate(10);
+        $user = $request->user();
+        $ownScope = $user->menuLevel('kemahasiswaan') === 'biasa';
+        $mahasiswa = $user->mahasiswa;
 
-        $mahasiswaList = Mahasiswa::with('user')->orderBy('nim')->get();
+        $query = Kemahasiswaan::with('mahasiswa.user')->latest();
+        if ($ownScope) {
+            $query->where('mahasiswa_id', $mahasiswa->id ?? 0);
+        }
+        $kegiatan = $query->paginate(10);
+
+        $mahasiswaList = $ownScope
+            ? ($mahasiswa ? collect([$mahasiswa->load('user')]) : collect())
+            : Mahasiswa::with('user')->orderBy('nim')->get();
+
+        $statsQuery = fn () => $ownScope
+            ? Kemahasiswaan::where('mahasiswa_id', $mahasiswa->id ?? 0)
+            : Kemahasiswaan::query();
 
         $stats = [
-            'total'         => Kemahasiswaan::count(),
-            'nasional'      => Kemahasiswaan::where('tingkat', 'nasional')->count(),
-            'internasional' => Kemahasiswaan::where('tingkat', 'internasional')->count(),
-            'inbis'         => Kemahasiswaan::where('jenis', 'inbis')->count(),
+            'total'         => (clone $statsQuery())->count(),
+            'nasional'      => (clone $statsQuery())->where('tingkat', 'nasional')->count(),
+            'internasional' => (clone $statsQuery())->where('tingkat', 'internasional')->count(),
+            'inbis'         => (clone $statsQuery())->where('jenis', 'inbis')->count(),
         ];
 
         return view('kemahasiswaan', compact('kegiatan', 'mahasiswaList', 'stats'));
@@ -32,6 +50,7 @@ class KemahasiswaanController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $this->enforceOwnMahasiswa($request, $data);
 
         $item = Kemahasiswaan::create($data)->load('mahasiswa.user');
 
@@ -43,7 +62,10 @@ class KemahasiswaanController extends Controller
 
     public function update(Request $request, Kemahasiswaan $kemahasiswaan)
     {
+        $this->authorizeOwnership($request, $kemahasiswaan);
+
         $data = $this->validated($request);
+        $this->enforceOwnMahasiswa($request, $data);
 
         $kemahasiswaan->update($data);
         $kemahasiswaan->load('mahasiswa.user');
@@ -54,8 +76,10 @@ class KemahasiswaanController extends Controller
         ]);
     }
 
-    public function destroy(Kemahasiswaan $kemahasiswaan)
+    public function destroy(Request $request, Kemahasiswaan $kemahasiswaan)
     {
+        $this->authorizeOwnership($request, $kemahasiswaan);
+
         $id = $kemahasiswaan->id;
         $kemahasiswaan->delete();
 
@@ -63,6 +87,43 @@ class KemahasiswaanController extends Controller
             'success' => true,
             'id'      => $id,
         ]);
+    }
+
+    /**
+     * User dengan akses "biasa" tidak boleh menyimpan/memilih mahasiswa_id
+     * milik orang lain, walau nilainya dipaksakan lewat request mentah —
+     * mahasiswa_id selalu ditimpa jadi milik mereka sendiri.
+     */
+    private function enforceOwnMahasiswa(Request $request, array &$data): void
+    {
+        $user = $request->user();
+        if ($user->menuLevel('kemahasiswaan') !== 'biasa') {
+            return;
+        }
+
+        $mahasiswa = $user->mahasiswa;
+        abort_if(!$mahasiswa, 422, 'Profil mahasiswa kamu belum terhubung ke akun ini.');
+
+        $data['mahasiswa_id'] = $mahasiswa->id;
+    }
+
+    /**
+     * User dengan akses "biasa" hanya boleh mengubah/menghapus datanya
+     * sendiri. Selain itu (penuh/readonly) boleh mengelola siapa saja.
+     */
+    private function authorizeOwnership(Request $request, Kemahasiswaan $kemahasiswaan): void
+    {
+        $user = $request->user();
+        if ($user->menuLevel('kemahasiswaan') !== 'biasa') {
+            return;
+        }
+
+        $mahasiswa = $user->mahasiswa;
+        abort_if(
+            !$mahasiswa || $kemahasiswaan->mahasiswa_id !== $mahasiswa->id,
+            403,
+            'Kamu hanya bisa mengelola data kegiatan milikmu sendiri.'
+        );
     }
 
     private function validated(Request $request): array

@@ -9,6 +9,7 @@ use App\Http\Controllers\LppmRekognisiController;
 use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HakAksesController;
+use App\Http\Controllers\DashboardController;
 
 // Halaman Login (index.blade.php)
 Route::get('/', function () {
@@ -21,6 +22,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rute yang dilindungi (Hanya bisa diakses jika sudah login)
 Route::middleware(['auth'])->group(function () {
+    // ---- Dashboard ----
+    Route::middleware('menu.access:dashboard,readonly')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    });
+
     // ---- Kemahasiswaan ----
     Route::middleware('menu.access:kemahasiswaan,readonly')->group(function () {
         Route::get('/kemahasiswaan', [KemahasiswaanController::class, 'index'])->name('kemahasiswaan.index');

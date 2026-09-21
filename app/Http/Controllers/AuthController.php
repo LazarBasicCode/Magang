@@ -35,7 +35,7 @@ class AuthController extends Controller
             $role = Auth::user()->role;
             
             if ($role === 'mahasiswa') {
-                return redirect('/lppm/mahasiswa');
+                return redirect('/dashboard');
             } elseif ($role === 'dosen') {
                 return redirect('/lppm/dosen');
             } elseif ($role === 'admin' || $role === 'superadmin') {

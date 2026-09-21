@@ -8,16 +8,36 @@ use Illuminate\Http\Request;
 
 class LppmDosenController extends Controller
 {
+    /**
+     * Akses "biasa" (default dosen) hanya bisa melihat & mengisi
+     * publikasinya sendiri. Akses "penuh"/"readonly" melihat & mengelola
+     * data semua dosen.
+     */
     public function index(Request $request)
     {
-        $items = LppmDosen::with('dosen.user')->latest()->paginate(10);
-        $dosenList = Dosen::with('user')->orderBy('nidn')->get();
+        $user = $request->user();
+        $ownScope = $user->menuLevel('lppm_dosen') === 'biasa';
+        $dosen = $user->dosen;
+
+        $query = LppmDosen::with('dosen.user')->latest();
+        if ($ownScope) {
+            $query->where('dosen_id', $dosen->id ?? 0);
+        }
+        $items = $query->paginate(10);
+
+        $dosenList = $ownScope
+            ? ($dosen ? collect([$dosen->load('user')]) : collect())
+            : Dosen::with('user')->orderBy('nidn')->get();
+
+        $statsQuery = fn () => $ownScope
+            ? LppmDosen::where('dosen_id', $dosen->id ?? 0)
+            : LppmDosen::query();
 
         $stats = [
-            'total'   => LppmDosen::count(),
-            'jurnal'  => LppmDosen::where('jenis', 'q_internasional')->count(),
-            'sinta'   => LppmDosen::where('jenis', 'sinta_nasional')->count(),
-            'hki_buku'=> LppmDosen::whereIn('jenis', ['hki', 'book'])->count(),
+            'total'    => (clone $statsQuery())->count(),
+            'jurnal'   => (clone $statsQuery())->where('jenis', 'q_internasional')->count(),
+            'sinta'    => (clone $statsQuery())->where('jenis', 'sinta_nasional')->count(),
+            'hki_buku' => (clone $statsQuery())->whereIn('jenis', ['hki', 'book'])->count(),
         ];
 
         return view('lppm_dosen', compact('items', 'dosenList', 'stats'));
@@ -26,6 +46,8 @@ class LppmDosenController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $this->enforceOwnDosen($request, $data);
+
         $item = LppmDosen::create($data)->load('dosen.user');
 
         return response()->json(['success' => true, 'data' => $this->format($item)]);
@@ -33,19 +55,53 @@ class LppmDosenController extends Controller
 
     public function update(Request $request, LppmDosen $lppmDosen)
     {
+        $this->authorizeOwnership($request, $lppmDosen);
+
         $data = $this->validated($request);
+        $this->enforceOwnDosen($request, $data);
+
         $lppmDosen->update($data);
         $lppmDosen->load('dosen.user');
 
         return response()->json(['success' => true, 'data' => $this->format($lppmDosen)]);
     }
 
-    public function destroy(LppmDosen $lppmDosen)
+    public function destroy(Request $request, LppmDosen $lppmDosen)
     {
+        $this->authorizeOwnership($request, $lppmDosen);
+
         $id = $lppmDosen->id;
         $lppmDosen->delete();
 
         return response()->json(['success' => true, 'id' => $id]);
+    }
+
+    private function enforceOwnDosen(Request $request, array &$data): void
+    {
+        $user = $request->user();
+        if ($user->menuLevel('lppm_dosen') !== 'biasa') {
+            return;
+        }
+
+        $dosen = $user->dosen;
+        abort_if(!$dosen, 422, 'Profil dosen kamu belum terhubung ke akun ini.');
+
+        $data['dosen_id'] = $dosen->id;
+    }
+
+    private function authorizeOwnership(Request $request, LppmDosen $lppmDosen): void
+    {
+        $user = $request->user();
+        if ($user->menuLevel('lppm_dosen') !== 'biasa') {
+            return;
+        }
+
+        $dosen = $user->dosen;
+        abort_if(
+            !$dosen || $lppmDosen->dosen_id !== $dosen->id,
+            403,
+            'Kamu hanya bisa mengelola data publikasi milikmu sendiri.'
+        );
     }
 
     private function validated(Request $request): array

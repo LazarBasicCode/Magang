@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         // mengikuti tanpa perlu sentuh controller lain.
         View::composer([
             'kemahasiswaan',
+            'kemahasiswaan-dashboard',
             'lppm_dosen',
             'lppm_mahasiswa',
             'lppm_rekognisi',

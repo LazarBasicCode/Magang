@@ -19,4 +19,9 @@ class Mahasiswa extends Model
     {
         return $this->hasMany(Kemahasiswaan::class);
     }
+
+    public function lppmMahasiswa()
+    {
+        return $this->hasMany(LppmMahasiswa::class);
+    }
 }

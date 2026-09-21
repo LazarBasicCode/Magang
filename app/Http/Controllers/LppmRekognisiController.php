@@ -8,18 +8,36 @@ use Illuminate\Http\Request;
 
 class LppmRekognisiController extends Controller
 {
+    /**
+     * Akses "biasa" (default mahasiswa/dosen) hanya bisa melihat & mengisi
+     * rekognisinya sendiri. Akses "penuh"/"readonly" melihat & mengelola
+     * data semua orang.
+     */
     public function index(Request $request)
     {
-        $items = Rekognisi::with('user')->latest()->paginate(10);
+        $user = $request->user();
+        $ownScope = $user->menuLevel('rekognisi') === 'biasa';
+
+        $query = Rekognisi::with('user')->latest();
+        if ($ownScope) {
+            $query->where('user_id', $user->id);
+        }
+        $items = $query->paginate(10);
 
         // Semua user yang bisa punya rekognisi: dosen & mahasiswa
-        $userList = User::whereIn('role', ['dosen', 'mahasiswa'])->orderBy('name')->get();
+        $userList = $ownScope
+            ? collect([$user])
+            : User::whereIn('role', ['dosen', 'mahasiswa'])->orderBy('name')->get();
+
+        $statsQuery = fn () => $ownScope
+            ? Rekognisi::where('user_id', $user->id)
+            : Rekognisi::query();
 
         $stats = [
-            'total'         => Rekognisi::count(),
-            'nasional'      => Rekognisi::where('jenis', 'nasional')->count(),
-            'internasional' => Rekognisi::where('jenis', 'internasional')->count(),
-            'alumni'        => Rekognisi::where('jenis', 'alumni')->count(),
+            'total'         => (clone $statsQuery())->count(),
+            'nasional'      => (clone $statsQuery())->where('jenis', 'nasional')->count(),
+            'internasional' => (clone $statsQuery())->where('jenis', 'internasional')->count(),
+            'alumni'        => (clone $statsQuery())->where('jenis', 'alumni')->count(),
         ];
 
         return view('lppm_rekognisi', compact('items', 'userList', 'stats'));
@@ -28,6 +46,8 @@ class LppmRekognisiController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $this->enforceOwnUser($request, $data);
+
         $item = Rekognisi::create($data)->load('user');
 
         return response()->json(['success' => true, 'data' => $this->format($item)]);
@@ -35,19 +55,52 @@ class LppmRekognisiController extends Controller
 
     public function update(Request $request, Rekognisi $rekognisi)
     {
+        $this->authorizeOwnership($request, $rekognisi);
+
         $data = $this->validated($request);
+        $this->enforceOwnUser($request, $data);
+
         $rekognisi->update($data);
         $rekognisi->load('user');
 
         return response()->json(['success' => true, 'data' => $this->format($rekognisi)]);
     }
 
-    public function destroy(Rekognisi $rekognisi)
+    public function destroy(Request $request, Rekognisi $rekognisi)
     {
+        $this->authorizeOwnership($request, $rekognisi);
+
         $id = $rekognisi->id;
         $rekognisi->delete();
 
         return response()->json(['success' => true, 'id' => $id]);
+    }
+
+    private function enforceOwnUser(Request $request, array &$data): void
+    {
+        $actor = $request->user();
+        if ($actor->menuLevel('rekognisi') !== 'biasa') {
+            return;
+        }
+
+        // Timpa user_id (dan tipe_user turunannya) jadi milik mereka sendiri,
+        // berapa pun yang dikirim dari klien.
+        $data['user_id'] = $actor->id;
+        $data['tipe_user'] = $actor->role === 'dosen' ? 'dosen' : 'mahasiswa';
+    }
+
+    private function authorizeOwnership(Request $request, Rekognisi $rekognisi): void
+    {
+        $actor = $request->user();
+        if ($actor->menuLevel('rekognisi') !== 'biasa') {
+            return;
+        }
+
+        abort_if(
+            $rekognisi->user_id !== $actor->id,
+            403,
+            'Kamu hanya bisa mengelola data rekognisi milikmu sendiri.'
+        );
     }
 
     private function validated(Request $request): array

@@ -29,7 +29,7 @@
         <nav class="sidebar-nav">
             <div class="nav-group">
                 @if($__user->canAccessMenu('dashboard'))
-                <a href="#" class="nav-link">
+                <a href="{{ url('/dashboard') }}" class="nav-link">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>

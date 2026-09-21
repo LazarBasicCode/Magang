@@ -88,7 +88,8 @@ class DashboardController extends Controller
         }
 
         // Kurva tren bulanan (12 bulan terakhir, termasuk bulan ini): Akademik vs Eksternal
-        $months = collect(range(11, 0))->map(fn ($i) => now()->copy()->subMonths($i)->startOfMonth());
+        $now = now();
+        $months = collect(range(11, 0))->map(fn ($i) => $now->copy()->subMonths($i)->startOfMonth());
         $monthLabels = $months->map(fn ($m) => $m->translatedFormat('M'))->values();
 
         $akademikSource = $kemahasiswaan->concat($lppmMahasiswa);
@@ -132,7 +133,52 @@ class DashboardController extends Controller
             return ['label' => (string) $year, 'value' => $count];
         })->values();
 
-        // Aktivitas terbaru: gabungan 4 sumber, diurutkan dari yang terbaru
+        // Bar chart untuk granularitas lain (harian/mingguan/bulanan) memakai
+        // waktu input data (created_at) karena field "tahun" tidak punya
+        // presisi harian. Digabung dari 4 sumber yang sama seperti di atas.
+        $allActivities = $kemahasiswaan->concat($lppmMahasiswa)->concat($rekognisi)->concat($kerjaSama);
+
+        $countBetween = function ($start, $end) use ($allActivities) {
+            return $allActivities->filter(function ($item) use ($start, $end) {
+                return $item->created_at && $item->created_at->between($start, $end);
+            })->count();
+        };
+
+        // Harian: 14 hari terakhir
+        $dailyBar = collect(range(13, 0))->map(function ($i) use ($now, $countBetween) {
+            $day = $now->copy()->subDays($i)->startOfDay();
+            return [
+                'label' => $day->translatedFormat('d M'),
+                'value' => $countBetween($day, $day->copy()->endOfDay()),
+            ];
+        })->values();
+
+        // Mingguan: 8 minggu terakhir
+        $weeklyBar = collect(range(7, 0))->map(function ($i) use ($now, $countBetween) {
+            $weekStart = $now->copy()->subWeeks($i)->startOfWeek();
+            $weekEnd = $weekStart->copy()->endOfWeek();
+            return [
+                'label' => $weekStart->translatedFormat('d M'),
+                'value' => $countBetween($weekStart, $weekEnd),
+            ];
+        })->values();
+
+        // Bulanan: 12 bulan terakhir
+        $monthlyBar = $months->map(function ($month) use ($countBetween) {
+            return [
+                'label' => $month->translatedFormat('M Y'),
+                'value' => $countBetween($month->copy()->startOfMonth(), $month->copy()->endOfMonth()),
+            ];
+        })->values();
+
+        $barDatasets = [
+            'harian'  => $dailyBar,
+            'mingguan' => $weeklyBar,
+            'bulanan' => $monthlyBar,
+            'tahunan' => $yearlyBar,
+        ];
+
+        // Aktivitas terbaru: gabungan 4 sumber, diurutkan dari yang terbaru (maks. 4)
         $recent = collect()
             ->concat($kemahasiswaan->map(fn ($i) => [
                 'title' => $i->nama_kegiatan,
@@ -160,11 +206,11 @@ class DashboardController extends Controller
             ]))
             ->filter(fn ($i) => !is_null($i['date']))
             ->sortByDesc('date')
-            ->take(6)
+            ->take(4)
             ->values();
 
         return view('dashboard-mahasiswa', compact(
-            'stats', 'kategoriDonut', 'tingkatDonut', 'trend', 'yearlyBar', 'recent'
+            'stats', 'kategoriDonut', 'tingkatDonut', 'trend', 'barDatasets', 'recent'
         ));
     }
 }

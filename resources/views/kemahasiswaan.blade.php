@@ -172,7 +172,7 @@
                             <span class="stat-label">Total Kegiatan</span>
                             <span class="stat-value">{{ $stats['total'] }}</span>
                         </div>
-                        <div class="stat-icon primary">
+                        <div class="stat-icon info">
                             <span class="material-symbols-outlined">emoji_events</span>
                         </div>
                     </div>
@@ -190,7 +190,7 @@
                             <span class="stat-label">Tingkat Internasional</span>
                             <span class="stat-value">{{ $stats['internasional'] }}</span>
                         </div>
-                        <div class="stat-icon primary">
+                        <div class="stat-icon success">
                             <span class="material-symbols-outlined">public</span>
                         </div>
                     </div>
@@ -199,7 +199,7 @@
                             <span class="stat-label">Unit Inbis</span>
                             <span class="stat-value">{{ $stats['inbis'] }}</span>
                         </div>
-                        <div class="stat-icon primary">
+                        <div class="stat-icon warning">
                             <span class="material-symbols-outlined">storefront</span>
                         </div>
                     </div>

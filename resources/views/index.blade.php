@@ -387,14 +387,6 @@
             transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
         }
 
-        .forgot-icon {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 3rem; height: 3rem; border-radius: 1rem; margin-bottom: .9rem;
-            background: linear-gradient(135deg, var(--primary-a), var(--primary-b));
-            color: #fff; font-size: 1.15rem;
-            box-shadow: 0 12px 22px -10px var(--primary-b);
-        }
-
         .info-box {
             display: flex; align-items: flex-start; gap: .65rem;
             background: var(--field); border: 1px solid var(--field-line);
@@ -589,7 +581,7 @@
                 <div class="field">
                     <label for="passwordInput">Password</label>
                     <div class="field-wrap">
-                        <i class="fa-solid fa-lock icon-left"></i>
+                        <i class="fa-solid fa-key icon-left"></i>
                         <input class="has-toggle" id="passwordInput" name="password"
                             placeholder="Masukkan kata sandi Anda" required type="password"
                             autocomplete="current-password">
@@ -611,7 +603,6 @@
             </div>
 
             <div id="forgotSection" class="fade-switch fade-hidden">
-                <span class="forgot-icon"><i class="fa-solid fa-key"></i></span>
                 <h2>Lupa password?</h2>
                 <p class="sub-title">Masukkan NIM, NIDN, atau email terdaftar untuk menerima tautan pemulihan kata sandi.</p>
 

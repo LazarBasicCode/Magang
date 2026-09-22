@@ -62,6 +62,9 @@
             --err-bg: #fef2f2;
             --err-line: #fecaca;
             --err-ink: #b42318;
+            --ok-bg: #f0fdf4;
+            --ok-line: #bbf7d0;
+            --ok-ink: #15803d;
             --shadow: #5b6b90;
         }
 
@@ -87,6 +90,9 @@
             --err-bg: rgba(239, 68, 68, .14);
             --err-line: rgba(239, 68, 68, .4);
             --err-ink: #fca5a5;
+            --ok-bg: rgba(34, 197, 94, .14);
+            --ok-line: rgba(34, 197, 94, .4);
+            --ok-ink: #86efac;
             --shadow: #6366f1;
             --card-bg: #1b2333; --card-ink: #eaf0ff; --card-soft: #93a3c6; --card-line: #27345a;
             --chip-bg: #243050; --chip-ink: #9dbcff; --row-active: #222c42; --track: #2b3856;
@@ -111,6 +117,9 @@
                 --err-bg: rgba(239, 68, 68, .14);
                 --err-line: rgba(239, 68, 68, .4);
                 --err-ink: #fca5a5;
+                --ok-bg: rgba(34, 197, 94, .14);
+                --ok-line: rgba(34, 197, 94, .4);
+                --ok-ink: #86efac;
                 --card-bg: #1b2333; --card-ink: #eaf0ff; --card-soft: #93a3c6; --card-line: #27345a;
                 --chip-bg: #243050; --chip-ink: #9dbcff; --row-active: #222c42; --track: #2b3856;
             }
@@ -335,6 +344,9 @@
             background: var(--err-bg); border: 1px solid var(--err-line); color: var(--err-ink);
             padding: 9px 13px; border-radius: 10px; font-size: .78rem;
             display: flex; align-items: center; gap: 8px;
+        }
+        .alert-ok {
+            background: var(--ok-bg, #f0fdf4); border-color: var(--ok-line, #bbf7d0); color: var(--ok-ink, #15803d);
         }
 
         .field { display: flex; flex-direction: column; gap: .4rem; }
@@ -562,6 +574,12 @@
 
             <form id="loginForm" method="POST" action="{{ url('/login-process') }}" class="rise" style="--i:4">
                 @csrf
+                @if (session('status'))
+                <div class="alert alert-ok">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>{{ session('status') }}</span>
+                </div>
+                @endif
                 @error('username')
                 <div class="alert">
                     <i class="fa-solid fa-circle-exclamation"></i>
@@ -606,12 +624,14 @@
                 <h2>Lupa password?</h2>
                 <p class="sub-title">Masukkan NIM, NIDN, atau email terdaftar untuk menerima tautan pemulihan kata sandi.</p>
 
-                <form id="forgotForm" onsubmit="event.preventDefault();">
+                <form id="forgotForm">
+                    <div id="forgotAlert" class="alert" style="display:none;"></div>
+
                     <div class="field">
                         <label for="recoveryIdentity">NIM / NIDN / Email kampus</label>
                         <div class="field-wrap">
                             <i class="fa-regular fa-envelope icon-left"></i>
-                            <input id="recoveryIdentity"
+                            <input id="recoveryIdentity" name="identity"
                                 placeholder="Contoh: mahasiswa@asia.ac.id atau 222011005" required type="text">
                         </div>
                     </div>
@@ -622,7 +642,7 @@
                             terhubung dengan akun Anda.</span>
                     </div>
 
-                    <button class="btn-primary" type="submit">
+                    <button class="btn-primary" id="forgotSubmitBtn" type="submit">
                         <i class="fa-regular fa-paper-plane"></i>
                         <span>Kirim tautan reset password</span>
                     </button>
@@ -715,6 +735,57 @@
     }
     goToForgotBtn.addEventListener('click', (e) => { e.preventDefault(); swap(forgotSection, loginSection); });
     backToLoginBtn.addEventListener('click', () => { swap(loginSection, forgotSection); });
+
+    // Kirim permintaan reset password lewat fetch, tanpa reload halaman
+    const forgotForm = document.getElementById('forgotForm');
+    const forgotAlert = document.getElementById('forgotAlert');
+    const forgotSubmitBtn = document.getElementById('forgotSubmitBtn');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    function showForgotAlert(kind, message) {
+        forgotAlert.className = 'alert ' + (kind === 'ok' ? 'alert-ok' : '');
+        forgotAlert.innerHTML = '<i class="fa-solid ' +
+            (kind === 'ok' ? 'fa-circle-check' : 'fa-circle-exclamation') + '"></i><span>' +
+            message + '</span>';
+        forgotAlert.style.display = 'flex';
+    }
+
+    forgotForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        forgotAlert.style.display = 'none';
+
+        const identity = document.getElementById('recoveryIdentity').value.trim();
+        if (!identity) return;
+
+        forgotSubmitBtn.disabled = true;
+        const originalHtml = forgotSubmitBtn.innerHTML;
+        forgotSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Mengirim...</span>';
+
+        try {
+            const res = await fetch('{{ url('/forgot-password') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({ identity }),
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                showForgotAlert('ok', data.message);
+                forgotForm.reset();
+            } else {
+                showForgotAlert('err', data.message || 'Terjadi kesalahan. Silakan coba lagi.');
+            }
+        } catch (err) {
+            showForgotAlert('err', 'Tidak bisa terhubung ke server. Periksa koneksi internet Anda.');
+        } finally {
+            forgotSubmitBtn.disabled = false;
+            forgotSubmitBtn.innerHTML = originalHtml;
+        }
+    });
 </script>
 </body>
 </html>

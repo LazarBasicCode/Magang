@@ -20,6 +20,11 @@ Route::get('/', function () {
 Route::post('/login-process', [AuthController::class, 'loginProcess']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// ---- Lupa Password ----
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+
 // Rute yang dilindungi (Hanya bisa diakses jika sudah login)
 Route::middleware(['auth'])->group(function () {
     // ---- Dashboard ----

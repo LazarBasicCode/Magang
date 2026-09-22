@@ -38,6 +38,7 @@ class UserController extends Controller
             $user = User::create([
                 'name'     => $data['name'],
                 'nim_nidn' => $data['identifier'] ?? null,
+                'email'    => $data['email'] ?? null,
                 'password' => Hash::make($data['password']),
                 'role'     => $data['role'],
             ]);
@@ -55,12 +56,13 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $data = $this->validated($request, isUpdate: true);
+        $data = $this->validated($request, isUpdate: true, user: $user);
 
         DB::transaction(function () use ($user, $data) {
             $user->name = $data['name'];
             $user->role = $data['role'];
             $user->nim_nidn = $data['identifier'] ?? null;
+            $user->email = $data['email'] ?? null;
             if (!empty($data['password'])) {
                 $user->password = Hash::make($data['password']);
             }
@@ -90,7 +92,7 @@ class UserController extends Controller
         ]);
     }
 
-    private function validated(Request $request, bool $isUpdate): array
+    private function validated(Request $request, bool $isUpdate, ?User $user = null): array
     {
         return $request->validate([
             'name'       => ['required', 'string', 'max:255'],
@@ -99,6 +101,12 @@ class UserController extends Controller
             'identifier' => [
                 Rule::requiredIf(fn () => in_array($request->role, ['mahasiswa', 'dosen'])),
                 'nullable', 'string', 'max:50',
+            ],
+            // Email opsional — dipakai untuk fitur lupa password. Kalau diisi,
+            // harus unik supaya tautan reset tidak salah sasaran ke akun lain.
+            'email' => [
+                'nullable', 'string', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($user?->id),
             ],
         ]);
     }
@@ -141,6 +149,7 @@ class UserController extends Controller
             'name'       => $user->name,
             'role'       => $user->role,
             'identifier' => $user->nim_nidn,
+            'email'      => $user->email,
         ];
     }
 }

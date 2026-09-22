@@ -566,7 +566,6 @@ button {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
     padding: 18px 20px;
     display: flex;
     align-items: flex-start;
@@ -574,45 +573,41 @@ button {
     gap: 12px;
     position: relative;
     overflow: hidden;
-    transition: transform .22s cubic-bezier(.22, .68, 0, 1), box-shadow .22s ease, border-color .22s ease;
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    height: 3px;
-    background: var(--border);
-    opacity: 0;
-    transition: opacity .22s ease;
+    box-shadow: var(--shadow-card), 0px 5px 0px 0px var(--border), 0 0 0px 0px transparent;
+    transition: transform .12s ease, box-shadow .18s ease;
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 28px -12px rgba(15, 23, 42, .22);
-    border-color: var(--primary-border);
+    transform: translateY(5px);
+    box-shadow: var(--shadow-card), 0px 0px 0px 0px var(--border), 0 0 0px 0px transparent;
 }
 
-.stat-card:hover::before {
-    opacity: 1;
+.stat-card:has(.stat-icon.primary) {
+    box-shadow: var(--shadow-card), 0px 5px 0px 0px var(--chart-1), 0 0 0px 0px transparent;
+}
+.stat-card:has(.stat-icon.primary):hover {
+    box-shadow: var(--shadow-card), 0px 0px 0px 0px var(--chart-1);
 }
 
-.stat-card:has(.stat-icon.primary)::before {
-    background: linear-gradient(90deg, var(--primary), var(--chart-5));
+.stat-card:has(.stat-icon.warning) {
+    box-shadow: var(--shadow-card), 0px 5px 0px 0px var(--chart-4), 0 0 0px 0px transparent;
+}
+.stat-card:has(.stat-icon.warning):hover {
+    box-shadow: var(--shadow-card), 0px 0px 0px 0px var(--chart-4);
 }
 
-.stat-card:has(.stat-icon.warning)::before {
-    background: linear-gradient(90deg, var(--warning), var(--chart-4));
+.stat-card:has(.stat-icon.info) {
+    box-shadow: var(--shadow-card), 0px 5px 0px 0px var(--chart-2), 0 0 0px 0px transparent;
+}
+.stat-card:has(.stat-icon.info):hover {
+    box-shadow: var(--shadow-card), 0px 0px 0px 0px var(--chart-2);
 }
 
-.stat-card:has(.stat-icon.info)::before {
-    background: linear-gradient(90deg, var(--info), var(--chart-2));
+.stat-card:has(.stat-icon.success) {
+    box-shadow: var(--shadow-card), 0px 5px 0px 0px var(--chart-3), 0 0 0px 0px transparent;
 }
-
-.stat-card:has(.stat-icon.success)::before {
-    background: linear-gradient(90deg, var(--success), var(--chart-3));
+.stat-card:has(.stat-icon.success):hover {
+    box-shadow: var(--shadow-card), 0px 0px 0px 0px var(--chart-3);
 }
 
 .stat-info {

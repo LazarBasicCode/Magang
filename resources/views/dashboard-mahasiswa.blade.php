@@ -123,7 +123,7 @@
 
                 <!-- SUMMARY STAT CARDS -->
                 <div class="stat-grid">
-                    <div class="stat-card reveal" style="transition-delay:0ms">
+                    <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Kemahasiswaan</span>
                             <span class="stat-value">{{ $stats['kemahasiswaan'] }}</span>
@@ -132,7 +132,7 @@
                             <span class="material-symbols-outlined">school</span>
                         </div>
                     </div>
-                    <div class="stat-card reveal" style="transition-delay:70ms">
+                    <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">LPPM Mahasiswa</span>
                             <span class="stat-value">{{ $stats['lppm_mahasiswa'] }}</span>
@@ -141,7 +141,7 @@
                             <span class="material-symbols-outlined">person</span>
                         </div>
                     </div>
-                    <div class="stat-card reveal" style="transition-delay:140ms">
+                    <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Rekognisi</span>
                             <span class="stat-value">{{ $stats['rekognisi'] }}</span>
@@ -150,7 +150,7 @@
                             <span class="material-symbols-outlined">workspace_premium</span>
                         </div>
                     </div>
-                    <div class="stat-card reveal" style="transition-delay:210ms">
+                    <div class="stat-card">
                         <div class="stat-info">
                             <span class="stat-label">Kerja Sama</span>
                             <span class="stat-value">{{ $stats['kerja_sama'] }}</span>

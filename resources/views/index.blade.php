@@ -287,11 +287,6 @@
         .badge.b1 { top: -4%;  right: -7%; animation-delay: -1s; }
         .badge.b2 { bottom: 14%; right: -9%; animation-delay: -3s; width: 3.4rem; height: 3.4rem; }
         .badge.b3 { bottom: -9%; left: -6%; animation-delay: -5s; }
-        .badge.ghost {
-            top: 8%; left: -8%; width: 2.6rem; height: 2.6rem; font-size: .95rem; cursor: default;
-            background: rgba(255, 255, 255, .16); color: rgba(255, 255, 255, .7); box-shadow: none;
-            animation-delay: -2s;
-        }
         @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 
         /* ---------- animasi transisi: muncul dari bawah ke atas ---------- */
@@ -422,7 +417,6 @@
         ========================================================== */
         @media (max-height: 720px) {
             .headline p { display: none; }
-            .badge.ghost { display: none; }
         }
         @media (max-height: 600px) {
             .headline { display: none; }
@@ -430,7 +424,7 @@
         }
         @media (max-width: 1100px) {
             .badge.b1 { right: -3%; } .badge.b2 { right: -4%; }
-            .badge.b3 { left: -3%; }  .badge.ghost { left: -3%; }
+            .badge.b3 { left: -3%; } 
         }
         @media (max-width: 900px) {
             html, body { height: auto; }
@@ -552,7 +546,6 @@
                 <button class="badge b1 is-active" type="button" data-i="0" aria-label="Kemahasiswaan"><i class="fa-solid fa-trophy"></i></button>
                 <button class="badge b2" type="button" data-i="1" aria-label="LPPM"><i class="fa-solid fa-flask"></i></button>
                 <button class="badge b3" type="button" data-i="2" aria-label="Kerja Sama"><i class="fa-solid fa-earth-asia"></i></button>
-                <span class="badge ghost" aria-hidden="true"><i class="fa-solid fa-bullseye"></i></span>
             </div>
         </div>
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -14,9 +15,20 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'nim_nidn',
+        'email',
         'password',
         'role',
     ];
+
+    /**
+     * Kirim notifikasi reset password memakai template SIDA sendiri
+     * (bukan template default Laravel), supaya tautannya mengarah ke
+     * halaman /reset-password kita dan teksnya berbahasa Indonesia.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
 
     protected $hidden = [
         'password',

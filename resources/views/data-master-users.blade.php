@@ -265,6 +265,7 @@
                                     <th>Nama Lengkap</th>
                                     <th class="center">Role</th>
                                     <th class="center">NIM / NIDN</th>
+                                    <th class="center">Email</th>
                                     <th class="center">Aksi</th>
                                 </tr>
                             </thead>
@@ -300,12 +301,16 @@
                                         <span class="plain-text">{{ $identifier ?? '—' }}</span>
                                     </td>
                                     <td class="center">
+                                        <span class="plain-text">{{ $item->email ?? '—' }}</span>
+                                    </td>
+                                    <td class="center">
                                         <div class="row-actions">
                                             <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                                                 data-id="{{ $item->id }}"
                                                 data-name="{{ urlencode($item->name) }}"
                                                 data-role="{{ $item->role }}"
-                                                data-identifier="{{ urlencode($identifier ?? '') }}">
+                                                data-identifier="{{ urlencode($identifier ?? '') }}"
+                                                data-email="{{ urlencode($item->email ?? '') }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
@@ -317,13 +322,13 @@
                                 </tr>
                                 @empty
                                 <tr id="emptyRow">
-                                    <td colspan="5" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="6" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data pengguna. Klik "Tambah Pengguna" untuk mulai mengisi.
                                     </td>
                                 </tr>
                                 @endforelse
                                 <tr id="noResultsRow" hidden>
-                                    <td colspan="5" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="6" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Tidak ada pengguna yang cocok dengan filter/pencarian.
                                     </td>
                                 </tr>
@@ -391,6 +396,14 @@
                         <input id="form-identifier" type="text" placeholder="Contoh: 222011005">
                     </div>
                 </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="form-email">Email</label>
+                <div class="field-control">
+                    <input id="form-email" type="email" placeholder="Contoh: budi@kampus.ac.id">
+                </div>
+                <p class="field-hint">Opsional. Dipakai untuk mengirim tautan reset password ke pengguna ini.</p>
             </div>
 
             <div class="field">
@@ -575,12 +588,14 @@
                 const idText = (row.querySelector('.nim-code')?.textContent || '').toLowerCase();
                 const nameText = (row.querySelector('.student-name .name')?.textContent || '').toLowerCase();
                 const identifierText = (row.querySelector('td:nth-child(4) .plain-text')?.textContent || '').toLowerCase();
+                const emailText = (row.querySelector('td:nth-child(5) .plain-text')?.textContent || '').toLowerCase();
                 const roleText = (row.querySelector('td:nth-child(3) .badge')?.textContent || '').trim().toLowerCase();
 
                 const matchesSearch = !term ||
                     idText.includes(term) ||
                     nameText.includes(term) ||
-                    identifierText.includes(term);
+                    identifierText.includes(term) ||
+                    emailText.includes(term);
                 const matchesRole = role === 'semua' || roleText === role;
                 const visible = matchesSearch && matchesRole;
 
@@ -709,6 +724,7 @@
             selectDropdownValue(document.getElementById('dd-role'), role);
             syncIdentifierField(role);
             inputIdentifier.value = data.identifier ? decodeURIComponent(data.identifier) : '';
+            document.getElementById('form-email').value = data.email ? decodeURIComponent(data.email) : '';
 
             document.getElementById('form-password').value = '';
             document.getElementById('form-password').required = mode !== 'edit';
@@ -816,11 +832,13 @@
                 </td>
                 <td class="center"><span class="badge ${roleBadgeClass(item.role)}">${esc(roleLabel(item.role))}</span></td>
                 <td class="center"><span class="plain-text">${esc(item.identifier || '—')}</span></td>
+                <td class="center"><span class="plain-text">${esc(item.email || '—')}</span></td>
                 <td class="center">
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" data-role="${item.role}"
-                            data-identifier="${encodeURIComponent(item.identifier || '')}">
+                            data-identifier="${encodeURIComponent(item.identifier || '')}"
+                            data-email="${encodeURIComponent(item.email || '')}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -871,6 +889,7 @@
                 name: document.getElementById('form-name').value,
                 role: document.getElementById('form-role').value,
                 identifier: document.getElementById('form-identifier').value,
+                email: document.getElementById('form-email').value,
                 password: document.getElementById('form-password').value,
             };
 

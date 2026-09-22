@@ -29,9 +29,9 @@
 
             /* background */
             --page-bg:
-                linear-gradient(135deg, #4d7fff 0%, #1f45d3 42%, #2814ac 100%);
+                linear-gradient(135deg, #7554fb 0%, #4f1fd3 42%, #2814ac 100%);
             --orb: rgba(255, 255, 255, .10);
-            --solid-shadow: #7db4ff;   /* lapisan solid di belakang panel form */
+            --solid-shadow: #867dff;   /* lapisan solid di belakang panel form */
             --ring: rgba(255, 255, 255, .22);
             --hero-ink: #ffffff;
             --hero-ink-soft: rgba(255, 255, 255, .80);
@@ -43,7 +43,7 @@
             --card-ink: #0f1b3d;
             --card-soft: #64739a;
             --card-line: #e6ecf8;
-            --tile: #0f1a3c;
+            --tile: #203164;
             --chip-bg: #eef3ff;
             --chip-ink: #2447c9;
             --row-active: #f5f8ff;
@@ -74,7 +74,7 @@
             --ring: rgba(255, 255, 255, .14);
             --badge-bg: #22273a;
             --badge-ink: #1d3fbf;
-            --tile: #182238;
+            --tile: #242d42;
             --panel: #111827;
             --ink: #eaf0ff;
             --ink-soft: #93a3c6;

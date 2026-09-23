@@ -10,6 +10,7 @@ use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HakAksesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LoginAuditController;
 
 // Halaman Login (index.blade.php)
 Route::get('/', function () {
@@ -17,7 +18,8 @@ Route::get('/', function () {
 })->name('login');
 
 // Rute Pemrosesan Login & Logout
-Route::post('/login-process', [AuthController::class, 'loginProcess']);
+Route::post('/login-process', [AuthController::class, 'loginProcess'])
+    ->middleware('throttle:login-ip');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ---- Lupa Password ----
@@ -102,4 +104,12 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('menu.access:hak_akses,biasa')->group(function () {
         Route::put('/hak-akses/{user}', [HakAksesController::class, 'update'])->name('hak-akses.update');
     });
+
+    // ---- Audit Percobaan Login ----
+    // Dibatasi ke role superadmin langsung di controller (lihat
+    // LoginAuditController), bukan lewat menu.access, karena isinya data
+    // keamanan yang belum perlu masuk sistem hak-akses per-menu.
+    Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
+    Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');
+    Route::get('/login-audit/{attempt}', [LoginAuditController::class, 'show'])->name('login-audit.show');
 });

@@ -96,28 +96,66 @@
         <main class="app-main">
             <div class="page-wrap">
 
-                <!-- WELCOME BANNER -->
-                <div class="dash-welcome reveal">
-                    <p class="dash-welcome-title">Halo, {{ auth()->user()->name }} 👋</p>
-                    <p class="dash-welcome-sub">Ringkasan kegiatanmu di Sistem Informasi Data Akademik &middot; 2026</p>
-                </div>
+                <!-- WELCOME + STAT: satu panel gabungan -->
+                @php
+                    $jamSekarang = (int) now()->format('G');
+                    if ($jamSekarang >= 4 && $jamSekarang < 11) {
+                        $sapaan = 'Selamat Pagi';
+                    } elseif ($jamSekarang >= 11 && $jamSekarang < 15) {
+                        $sapaan = 'Selamat Siang';
+                    } elseif ($jamSekarang >= 15 && $jamSekarang < 18) {
+                        $sapaan = 'Selamat Sore';
+                    } else {
+                        $sapaan = 'Selamat Malam';
+                    }
+                @endphp
+                <div class="dash-panel reveal">
+                    <div class="dash-welcome">
+                        <div class="dash-welcome-main">
+                            <p class="dash-welcome-brand">SIDA</p>
+                            <p class="dash-welcome-title">{{ $sapaan }}, {{ auth()->user()->name }} 👋</p>
+                            <p class="dash-welcome-sub">Ringkasan kegiatanmu di Sistem Informasi Data Akademik &middot; 2026</p>
+                        </div>
+                        <div class="dash-welcome-clock">
+                            <div class="dash-welcome-clock-time" id="dashWelcomeClock">{{ now()->format('H:i') }}</div>
+                            <div class="dash-welcome-clock-date">{{ now()->translatedFormat('l, d F Y') }}</div>
+                        </div>
+                    </div>
 
-                <!-- HERO STAT CARDS (gradient) -->
-                <div class="stat-hero-grid">
-                    <div class="stat-hero-card grad-1 reveal" style="transition-delay:0ms">
-                        <span class="material-symbols-outlined stat-hero-icon">local_fire_department</span>
-                        <p class="stat-hero-label">Total Kegiatan</p>
-                        <div class="stat-hero-value">{{ $stats['total'] }} <span class="stat-hero-unit">kegiatan</span></div>
-                    </div>
-                    <div class="stat-hero-card grad-2 reveal" style="transition-delay:70ms">
-                        <span class="material-symbols-outlined stat-hero-icon">trending_up</span>
-                        <p class="stat-hero-label">Rata-rata per Bulan</p>
-                        <div class="stat-hero-value">{{ $stats['avg_per_month'] }} <span class="stat-hero-unit">kegiatan/bln</span></div>
-                    </div>
-                    <div class="stat-hero-card grad-3 reveal" style="transition-delay:140ms">
-                        <span class="material-symbols-outlined stat-hero-icon">public</span>
-                        <p class="stat-hero-label">Capaian Internasional</p>
-                        <div class="stat-hero-value">{{ $stats['internasional_pct'] }}<span class="stat-hero-unit">%</span></div>
+                    <div class="dash-panel-divider"></div>
+
+                    <script>
+                        (function () {
+                            var clockEl = document.getElementById('dashWelcomeClock');
+                            if (!clockEl) return;
+                            function tick() {
+                                var now = new Date();
+                                var hh = String(now.getHours()).padStart(2, '0');
+                                var mm = String(now.getMinutes()).padStart(2, '0');
+                                clockEl.textContent = hh + ':' + mm;
+                            }
+                            tick();
+                            setInterval(tick, 1000 * 30);
+                        })();
+                    </script>
+
+                    <!-- HERO STAT CARDS: menempel di dalam dash-panel, tanpa shadow sendiri -->
+                    <div class="stat-hero-grid">
+                        <div class="stat-hero-card grad-1">
+                            <span class="material-symbols-outlined stat-hero-icon">local_fire_department</span>
+                            <p class="stat-hero-label">Total Kegiatan</p>
+                            <div class="stat-hero-value">{{ $stats['total'] }} <span class="stat-hero-unit">kegiatan</span></div>
+                        </div>
+                        <div class="stat-hero-card grad-2">
+                            <span class="material-symbols-outlined stat-hero-icon">trending_up</span>
+                            <p class="stat-hero-label">Rata-rata per Bulan</p>
+                            <div class="stat-hero-value">{{ $stats['avg_per_month'] }} <span class="stat-hero-unit">kegiatan/bln</span></div>
+                        </div>
+                        <div class="stat-hero-card grad-3">
+                            <span class="material-symbols-outlined stat-hero-icon">public</span>
+                            <p class="stat-hero-label">Capaian Internasional</p>
+                            <div class="stat-hero-value">{{ $stats['internasional_pct'] }}<span class="stat-hero-unit">%</span></div>
+                        </div>
                     </div>
                 </div>
 
@@ -321,7 +359,7 @@
                 entries.forEach((entry) => {
                     entry.target.classList.toggle('is-visible', entry.isIntersecting);
                 });
-            }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+            }, { threshold: 0.10, rootMargin: '0px 0px 0px 0px' });
             revealEls.forEach((el) => revealObserver.observe(el));
         } else {
             revealEls.forEach((el) => el.classList.add('is-visible'));

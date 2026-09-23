@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LoginAttempt;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
@@ -42,6 +44,8 @@ class AuthController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($throttleKey);
 
+            $this->logAttempt($request, null, 'locked');
+
             return back()->withErrors([
                 'username' => "Terlalu banyak percobaan login yang gagal. Silakan coba lagi dalam {$seconds} detik.",
             ])->onlyInput('username');
@@ -63,6 +67,8 @@ class AuthController extends Controller
             // Login berhasil: hapus riwayat percobaan gagal untuk kombinasi ini
             RateLimiter::clear($throttleKey);
 
+            $this->logAttempt($request, Auth::user(), 'success');
+
             $request->session()->regenerate();
             
             // Redirect berdasarkan role dari tabel users
@@ -83,6 +89,8 @@ class AuthController extends Controller
         // gagal berturut-turut, kombinasi ini dikunci selama LOGIN_LOCKOUT_SECONDS.
         RateLimiter::hit($throttleKey, self::LOGIN_LOCKOUT_SECONDS);
 
+        $this->logAttempt($request, $user, 'failed');
+
         // Jika percobaan ini yang membuatnya melewati batas, langsung beri
         // tahu sisa waktu tunggu alih-alih pesan generik biasa.
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
@@ -97,6 +105,27 @@ class AuthController extends Controller
         return back()->withErrors([
             'username' => 'User, NIM, atau Password tidak ditemukan.',
         ])->onlyInput('username');
+    }
+
+    /**
+     * Simpan satu baris jejak audit percobaan login. Dibungkus try/catch
+     * supaya kalau tabel audit ini bermasalah (mis. migration belum
+     * dijalankan), proses login utama tetap jalan seperti biasa — audit
+     * log itu pelengkap, bukan syarat login berhasil/gagal.
+     */
+    private function logAttempt(Request $request, ?User $user, string $status): void
+    {
+        try {
+            LoginAttempt::create([
+                'user_id'         => $user?->id,
+                'username_input'  => (string) $request->input('username'),
+                'ip_address'      => (string) $request->ip(),
+                'user_agent'      => Str::limit((string) $request->userAgent(), 255, ''),
+                'status'          => $status,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function logout(Request $request)
@@ -182,8 +211,19 @@ class AuthController extends Controller
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
                 $user->forceFill([
-                    'password' => Hash::make($password),
+                    'password'       => Hash::make($password),
+                    // Sekalian di-random ulang, supaya cookie "remember me"
+                    // lama (kalau ada) juga ikut tidak berlaku lagi.
+                    'remember_token' => Str::random(60),
                 ])->save();
+
+                // Paksa keluar semua sesi login yang sedang aktif untuk akun
+                // ini di device/browser manapun. Tanpa ini, kalau akun sempat
+                // dipakai orang lain sebelum passwordnya diganti, sesi orang
+                // itu akan tetap jalan terus walau passwordnya sudah beda —
+                // reset password baru menutup pintu masuk yang BARU, bukan
+                // mengusir yang sudah kepalang berada di dalam.
+                DB::table('sessions')->where('user_id', $user->id)->delete();
             }
         );
 

@@ -43,7 +43,7 @@
             --card-ink: #0f1b3d;
             --card-soft: #64739a;
             --card-line: #e6ecf8;
-            --tile: #0f1a3c;
+            --tile: #263972;
             --chip-bg: #eef3ff;
             --chip-ink: #2447c9;
             --row-active: #f5f8ff;
@@ -77,7 +77,7 @@
             --ring: rgba(255, 255, 255, .14);
             --badge-bg: #22273a;
             --badge-ink: #1d3fbf;
-            --tile: #182238;
+            --tile: #223151;
             --panel: #111827;
             --ink: #eaf0ff;
             --ink-soft: #93a3c6;

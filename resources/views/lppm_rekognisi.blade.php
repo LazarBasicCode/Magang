@@ -190,6 +190,22 @@
                 <!-- FILTER BAR (tampilan saja, belum disambung ke query) -->
                 <div class="filter-card">
                     <div class="filter-grid">
+                        <!-- Tipe User -->
+                        <div class="field">
+                            <label class="field-label">Tipe User</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-tipe-user" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Tipe</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Tipe</button>
+                                    <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
+                                    <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="field">
                             <label class="field-label">Jenis Rekognisi</label>
                             <div class="dropdown" data-dropdown>
@@ -265,7 +281,7 @@
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
                                 $avatarColor = $colors[$item->user_id % count($colors)];
                                 @endphp
-                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}">
+                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tipe_user="{{ $item->tipe_user }}">
                                     <td><span class="nim-code">{{ optional($item->user)->nim_nidn ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
@@ -767,17 +783,19 @@
             applyFilters();
         });
 
-        // ---------------- Live Filter (otomatis, tanpa tombol "Terapkan") ----------------
+        // ---------------- Live Filter ----------------
         function applyFilters() {
+            const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
             const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
             const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
             const rows = tableBody.querySelectorAll('tr[data-id]');
             let visibleCount = 0;
 
             rows.forEach((row) => {
+                const matchesTipeUser = tipeUserVal === 'semua' || row.dataset.tipe_user === tipeUserVal;
                 const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
                 const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                const visible = matchesJenis && matchesSearch;
+                const visible = matchesTipeUser && matchesJenis && matchesSearch;
                 row.style.display = visible ? '' : 'none';
                 if (visible) visibleCount++;
             });
@@ -797,7 +815,7 @@
             }
         }
 
-        document.querySelectorAll('#filter-jenis').forEach((input) => {
+        document.querySelectorAll('#filter-tipe-user, #filter-jenis').forEach((input) => {
             const dropdownEl = input.closest('[data-dropdown]');
             dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
                 opt.addEventListener('click', () => applyFilters());
@@ -987,7 +1005,7 @@
 
         function buildRowHTML(item) {
             return `
-            <tr data-id="${item.id}" data-jenis="${item.jenis}">
+            <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tipe_user="${item.tipe_user}">
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
                 <td>
                     <div class="student-cell">

@@ -180,7 +180,7 @@
                             <span class="stat-label">Mahasiswa</span>
                             <span class="stat-value">{{ $stats['mahasiswa'] }}</span>
                         </div>
-                        <div class="stat-icon primary">
+                        <div class="stat-icon info">
                             <span class="material-symbols-outlined">person</span>
                         </div>
                     </div>
@@ -189,7 +189,7 @@
                             <span class="stat-label">Dosen</span>
                             <span class="stat-value">{{ $stats['dosen'] }}</span>
                         </div>
-                        <div class="stat-icon primary">
+                        <div class="stat-icon success">
                             <span class="material-symbols-outlined">co_present</span>
                         </div>
                     </div>
@@ -198,7 +198,7 @@
                             <span class="stat-label">Admin &amp; Superadmin</span>
                             <span class="stat-value">{{ $stats['admin'] }}</span>
                         </div>
-                        <div class="stat-icon primary">
+                        <div class="stat-icon danger">
                             <span class="material-symbols-outlined">admin_panel_settings</span>
                         </div>
                     </div>
@@ -249,12 +249,12 @@
                             <h2 class="table-card-title">Daftar Pengguna Sistem</h2>
                             <p class="table-card-subtitle">Data akun Superadmin, Admin, Dosen, dan Mahasiswa</p>
                         </div>
-                        <div class="table-card-tools">
+                        <!-- <div class="table-card-tools">
                             <button type="button" class="tool-btn">
                                 <span class="material-symbols-outlined">density_small</span>
                                 <span>Kepadatan</span>
                             </button>
-                        </div>
+                        </div> -->
                     </div>
 
                     <div class="table-scroll">

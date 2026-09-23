@@ -16,25 +16,25 @@
     --primary-soft: #e2e2fd;
     --primary-border: #b9baf7;
 
-    --success: #1a8a3d;
+    --success: #1bb84d;
     --success-bg: #d6f5df;
     --success-border: #9fe3b4;
 
-    --info: #0680a3;
+    --info: #17a0c6;
     --info-bg: #cdf2fa;
     --info-border: #82dcef;
 
-    --warning: #a15c00;
+    --warning: #c17007;
     --warning-bg: #ffe6b8;
     --warning-border: #ffcb70;
 
-    --danger: #c62f14;
+    --danger: #d12c0f;
     --danger-bg: #ffd9d0;
     --danger-border: #ffab97;
 
-    --neutral: #57534e;
-    --neutral-bg: #ede9e3;
-    --neutral-border: #d8d2c8;
+    --neutral: #6a6c73;
+    --neutral-bg: #e3e4ed;
+    --neutral-border: #c8ccd8;
 
     --shadow-card: 0 1px 3px rgba(88, 105, 146, 0.13), 0 1px 2px rgba(57, 72, 110, 0.06);
     --shadow-btn: 0 3px 8px rgba(91, 95, 239, 0.38);
@@ -610,6 +610,13 @@ button {
     box-shadow: var(--shadow-card), 0px 0px 0px 0px var(--chart-3);
 }
 
+.stat-card:has(.stat-icon.danger) {
+    box-shadow: var(--shadow-card), 0px 5px 0px 0px var(--chart-5), 0 0 0px 0px transparent;
+}
+.stat-card:has(.stat-icon.danger):hover {
+    box-shadow: var(--shadow-card), 0px 0px 0px 0px var(--chart-5);
+}
+
 .stat-info {
     display: flex;
     flex-direction: column;
@@ -670,6 +677,12 @@ button {
     background: var(--success-bg);
     color: var(--success);
     border: 1px solid var(--success-border);
+}
+
+.stat-icon.danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
 }
 
 /* ==========================================================
@@ -786,11 +799,11 @@ button {
     justify-content: space-between;
     gap: 8px;
     text-align: left;
-    transition: border-color .15s ease, box-shadow .15s ease;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 
 .dropdown-trigger:hover {
-    border-color: var(--primary-border);
+    background-color: var(--canvas);
 }
 
 .dropdown-trigger .caret {
@@ -1635,343 +1648,58 @@ body.dark-mode .badge-danger {
 }
 
 /* ==========================================================
-   13. HAK AKSES — ringkasan akses di tabel & modal matriks akses
-   (khusus halaman Hak Akses, tidak mengubah komponen dasar di atas)
+   13. HAK AKSES — ringkasan akses (tabel) & modal atur akses
+   Satu sumber definisi per komponen (tidak ada duplikat) supaya
+   tidak ada border/garis yang bertumpuk. Warna level akses memakai
+   token status yang sama dengan komponen lain (badge, filter, dsb)
+   agar konsisten di light & dark mode.
    ========================================================== */
-
-/* --- Ringkasan level akses di kolom tabel --- */
-.access-summary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.access-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 800;
-    border: 1px solid transparent;
-    background: var(--canvas);
-    color: var(--ink-muted);
-}
-
-.access-chip .access-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.access-chip.is-zero {
-    opacity: .35;
-}
-
-.access-dot.penuh,
-.access-chip.penuh .access-dot {
-    background: var(--success);
-}
-
-.access-dot.biasa,
-.access-chip.biasa .access-dot {
-    background: var(--info);
-}
-
-.access-dot.readonly,
-.access-chip.readonly .access-dot {
-    background: var(--warning);
-}
-
-.access-dot.none,
-.access-chip.none .access-dot {
-    background: var(--neutral);
-}
-
-.access-chip.penuh {
-    background: var(--success-bg);
-    color: var(--success);
-}
-
-.access-chip.biasa {
-    background: var(--info-bg);
-    color: var(--info);
-}
-
-.access-chip.readonly {
-    background: var(--warning-bg);
-    color: var(--warning);
-}
-
-.access-chip.none {
-    background: var(--neutral-bg);
-    color: var(--neutral);
-}
-
-/* --- Modal Hak Akses: lebih lebar dari modal standar --- */
-#accessModal {
-    width: min(560px, calc(100vw - 32px));
-}
-
-/* --- Strip identitas pengguna di kepala body modal --- */
-.access-user-chip {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 12px;
-    background: var(--canvas);
-    border: 1px solid var(--border);
-}
-
-.access-user-chip .avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 13px;
-}
-
-.access-user-chip-text {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-}
-
-.access-user-chip-name {
-    font-size: 13.5px;
-    font-weight: 800;
-    color: var(--ink);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.access-user-chip-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* --- Legenda level akses --- */
-.access-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 16px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--canvas);
-    border: 1px dashed var(--border-strong);
-}
-
-.access-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--ink-muted);
-}
-
-/* --- Baris "terapkan ke semua" (bulk apply) --- */
-.access-bulk-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.access-bulk-row .dropdown {
-    flex: 1;
-    min-width: 0;
-}
-
-.access-bulk-row .btn-ghost {
-    flex-shrink: 0;
-    white-space: nowrap;
-    padding: 10px 14px;
-}
-
-/* --- Divider tipis dengan label di tengah, pemisah legenda/bulk-row dari daftar menu --- */
-.access-divider {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--ink-faint);
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
-
-.access-divider::before,
-.access-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-}
-
-/* --- Daftar matriks menu x level akses --- */
-.permission-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 320px;
-    overflow-y: auto;
-    padding-right: 2px;
-}
-
-.permission-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--card);
-    transition: border-color .15s ease, background-color .15s ease;
-}
-
-.permission-row:hover {
-    border-color: var(--primary-border);
-}
-
-.permission-menu {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
-.permission-menu-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--primary-soft);
-    color: var(--primary);
-    border: 1px solid var(--primary-border);
-}
-
-.permission-menu-icon .material-symbols-outlined {
-    font-size: 18px;
-}
-
-.permission-menu-name {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: var(--ink);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.permission-row .dropdown {
-    width: 168px;
-    flex-shrink: 0;
-}
-
-.permission-row .dropdown-trigger {
-    padding: 8px 10px;
-    font-size: 12px;
-}
-
-.permission-row .dropdown-panel {
-    right: 0;
-    left: auto;
-    min-width: 178px;
-}
-
-/* Titik warna + ikon centang di dalam opsi dropdown level akses */
-.dropdown-option .access-dot {
-    display: inline-block;
-    margin-right: 8px;
-    vertical-align: middle;
-}
-
-.dropdown-option .opt-check {
-    font-size: 14px;
-    vertical-align: middle;
-    margin-left: 4px;
-    color: var(--success);
-}
-
-@media (max-width: 480px) {
-    .permission-row {
-        flex-wrap: wrap;
-    }
-
-    .permission-row .dropdown {
-        width: 100%;
-    }
-
-    .access-bulk-row {
-        flex-wrap: wrap;
-    }
-
-    .access-bulk-row .btn-ghost {
-        width: 100%;
-        justify-content: center;
-    }
-}
-
-/* ==========================================================
-   14. HAK AKSES — Modal + Tabel Ringkasan
-   Satu blok utuh. Semua komponen pakai token di :root.
-   ========================================================== */
-
-/* --- Palet level akses (4 warna, konsisten light & dark) --- */
 :root {
-    --acc-penuh: #0f8a4d;
-    --acc-penuh-bg: #e6f7ee;
-    --acc-penuh-border: #9be0b9;
-    --acc-biasa: #2563c9;
-    --acc-biasa-bg: #e8f0fd;
-    --acc-biasa-border: #a9c6f2;
-    --acc-readonly: #b07000;
-    --acc-readonly-bg: #fff4d9;
-    --acc-readonly-border: #f0cf7a;
-    --acc-none: #6b7280;
-    --acc-none-bg: #f1f3f7;
-    --acc-none-border: #d5d9e2;
-    --acc-accent: #5b5fef;
-    --acc-accent-soft: #eef0ff;
-    --acc-accent-border: #c9cbfb;
+    --acc-penuh: var(--success);
+    --acc-penuh-bg: var(--success-bg);
+    --acc-penuh-border: var(--success-border);
+    --acc-biasa: var(--info);
+    --acc-biasa-bg: var(--info-bg);
+    --acc-biasa-border: var(--info-border);
+    --acc-readonly: var(--warning);
+    --acc-readonly-bg: var(--warning-bg);
+    --acc-readonly-border: var(--warning-border);
+    --acc-none: var(--neutral);
+    --acc-none-bg: var(--neutral-bg);
+    --acc-none-border: var(--neutral-border);
+    --acc-accent: var(--primary);
+    --acc-accent-soft: var(--primary-soft);
+    --acc-accent-border: var(--primary-border);
 }
-
+/* Di dark mode token status (--success/--info/--warning) dibuat cukup neon
+   untuk teks badge kecil — untuk elemen yang lebih besar di modal ini
+   (border, bar aksen, teks trigger dropdown) warnanya diredupkan sedikit
+   supaya tidak terlalu terang/menyala. */
 body.dark-mode {
     --acc-penuh: #4ade80;
-    --acc-penuh-bg: #0f2a1c;
-    --acc-penuh-border: #1e5136;
+    --acc-penuh-bg: #185435;
+    --acc-penuh-border: #266b46;
     --acc-biasa: #60a5fa;
-    --acc-biasa-bg: #0f1f38;
-    --acc-biasa-border: #1e3f6b;
+    --acc-biasa-bg: #193768;
+    --acc-biasa-border: #284a78;
     --acc-readonly: #fbbf24;
-    --acc-readonly-bg: #2a1f0b;
-    --acc-readonly-border: #4d3a15;
+    --acc-readonly-bg: #503b13;
+    --acc-readonly-border: #6c511c;
     --acc-none: #94a3b8;
-    --acc-none-bg: #171b22;
-    --acc-none-border: #2a303a;
+    --acc-none-bg: #333b48;
+    --acc-none-border: #414d62;
     --acc-accent: #7c83ff;
-    --acc-accent-soft: #171a35;
-    --acc-accent-border: #2e3468;
+    --acc-accent-soft: #2d336a;
+    --acc-accent-border: #373f8d;
 }
 
-/* ---------- Ringkasan akses di tabel ---------- */
+/* ---------- Ringkasan level akses (kolom tabel) ---------- */
 .access-summary {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
 }
-
 .access-chip {
     display: inline-flex;
     align-items: center;
@@ -1982,342 +1710,363 @@ body.dark-mode {
     font-weight: 800;
     line-height: 1;
     border: 1px solid transparent;
-    transition: opacity .15s ease;
+    transition: opacity 0.15s ease;
 }
-
-.access-chip .access-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
 .access-chip.is-zero {
-    opacity: .3;
+    opacity: 0.35;
 }
-
 .access-chip.penuh {
     background: var(--acc-penuh-bg);
     color: var(--acc-penuh);
     border-color: var(--acc-penuh-border);
 }
-
 .access-chip.biasa {
     background: var(--acc-biasa-bg);
     color: var(--acc-biasa);
     border-color: var(--acc-biasa-border);
 }
-
 .access-chip.readonly {
     background: var(--acc-readonly-bg);
     color: var(--acc-readonly);
     border-color: var(--acc-readonly-border);
 }
-
 .access-chip.none {
     background: var(--acc-none-bg);
     color: var(--acc-none);
     border-color: var(--acc-none-border);
 }
 
+/* Titik warna (dipakai di chip tabel, level akses, & opsi dropdown) */
+.access-dot,
+.access-chip .access-dot,
+.access-level-item .access-dot,
+.dropdown-option .access-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+.dropdown-option .access-dot {
+    margin-right: 2px;
+}
 .access-dot.penuh {
     background: var(--acc-penuh);
 }
-
 .access-dot.biasa {
     background: var(--acc-biasa);
 }
-
 .access-dot.readonly {
     background: var(--acc-readonly);
 }
-
 .access-dot.none {
     background: var(--acc-none);
 }
+.dropdown-option .opt-check {
+    font-size: 14px;
+    vertical-align: middle;
+    margin-left: 4px;
+    color: var(--acc-accent);
+}
 
-/* ==========================================================
-   MODAL HAK AKSES — layout bersih, tidak ada overlap
-   ========================================================== */
+/* Opsi dropdown / level akses yang disembunyikan (aturan pembatasan role) harus benar-benar hilang */
+.dropdown-option[hidden] {
+    display: none !important;
+}
+
+/* ---------- Ukuran & kerangka modal ---------- */
+/* --- Modal Hak Akses: glassmorphism, dipakai token warna yang sudah ada --- */
 #accessModal {
-    width: min(1080px, calc(100vw - 40px));
-    height: min(720px, calc(100vh - 40px));
-    max-height: min(720px, calc(100vh - 40px));
+    width: min(880px, calc(100vw - 40px));
+    height: min(660px, calc(100vh - 40px));
+    max-height: min(660px, calc(100vh - 40px));
     border-radius: 16px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* FIX: cegah anak keluar dari card */
+    background: color-mix(in srgb, var(--card) 78%, transparent);
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 65%, transparent);
+    box-shadow: 0 30px 70px -20px rgba(10, 14, 26, 0.35);
 }
 
-/* --- Header --- */
+/* Header — flat, sedikit lebih gelap dari body untuk kontras kaca */
 #accessModal .modal-drag-handle {
-    position: relative;
     flex: 0 0 auto;
-    /* FIX: header tidak boleh gepeng/melar */
-    padding: 18px 24px 18px 28px;
-    background: linear-gradient(180deg, var(--acc-accent-soft) 0%, transparent 100%);
-    border-bottom: 1px solid var(--acc-accent-border);
+    padding: 18px 22px;
+    background: color-mix(in srgb, var(--canvas) 55%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     align-items: center;
 }
-
-#accessModal .modal-drag-handle::before {
-    content: "";
-    position: absolute;
-    left: 14px;
-    top: 22px;
-    bottom: 22px;
-    width: 4px;
-    border-radius: 4px;
-    background: var(--acc-accent);
-}
-
 #accessModal .modal-title {
     font-size: 16px;
 }
-
 #accessModal .modal-close-btn {
-    background: color-mix(in srgb, var(--acc-accent) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--acc-accent) 20%, transparent);
-    color: var(--acc-accent);
-    transition: background .15s ease, color .15s ease;
+    background: color-mix(in srgb, var(--canvas) 70%, transparent);
+    border: 1px solid var(--border);
+    color: var(--ink-muted);
 }
-
 #accessModal .modal-close-btn:hover {
     background: var(--acc-accent);
+    border-color: var(--acc-accent);
     color: #fff;
 }
 
-/* --- Body grid: 3 row, tinggi penuh --- */
+/* Body: grid 3 baris (identitas / konten / footer), tinggi penuh */
 #accessModal .modal-body {
     flex: 1 1 auto;
-    /* FIX: eksplisit grow+shrink */
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 240px 1fr;
     grid-template-rows: auto 1fr auto;
     grid-auto-rows: 0;
-    /* FIX INTI: baris implisit tidak makan ruang */
     gap: 0;
     padding: 0;
     overflow: hidden;
     min-height: 0;
     height: 100%;
-    /* FIX: pastikan mengisi parent */
 }
 
-/* --- User chip: row 1, span 2 kolom --- */
-#accessModal .access-user-chip {
+/* Strip identitas pengguna — baris 1, span 2 kolom */
+.access-user-chip {
     grid-column: 1 / -1;
     grid-row: 1;
     align-self: start;
-    /* FIX: jangan melar */
     display: flex;
-    /* FIX: pastikan flex (sebelumnya andalkan global) */
     align-items: center;
+    gap: 12px;
     margin: 0;
-    padding: 14px 24px;
+    padding: 14px 22px;
     border-radius: 0;
     border: none;
-    border-bottom: 1px solid var(--border);
-    background: var(--card);
-    gap: 14px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    background: color-mix(in srgb, var(--card) 45%, transparent);
 }
-
-#accessModal .access-user-chip .avatar {
-    width: 42px;
-    height: 42px;
+.access-user-chip .avatar {
+    width: 40px;
+    height: 40px;
     font-size: 13px;
+    flex-shrink: 0;
+}
+.access-user-chip-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.access-user-chip-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.access-user-chip-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+/* Catatan mode lihat-saja / pembatasan role — teks kecil, tidak makan tempat */
+.access-readonly-note {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    line-height: 1.4;
+}
+.access-readonly-note[hidden] {
+    display: none !important;
 }
 
-#accessModal .access-user-chip-name {
-    font-size: 14.5px;
-}
-
-/* --- Sidebar kiri (row 2, col 1) --- */
-#accessModal .access-side {
+/* Sidebar kiri — baris 2, kolom 1 */
+.access-side {
     grid-column: 1;
     grid-row: 2;
     align-self: stretch;
-    /* FIX: paksa stretch penuh */
     height: 100%;
-    /* FIX */
-    padding: 18px 20px;
-    border-right: 1px solid var(--border);
-    background: var(--canvas);
+    padding: 18px 16px;
+    border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    background: color-mix(in srgb, var(--canvas) 60%, transparent);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
     overflow-y: auto;
     min-height: 0;
 }
-
-#accessModal .access-divider {
-    margin: 0;
-    font-size: 10.5px;
-    color: var(--ink-faint);
-    font-weight: 800;
-    letter-spacing: .08em;
-}
-
-#accessModal .access-divider::before,
-#accessModal .access-divider::after {
-    background: var(--border-strong);
-}
-
-/* Legend (kolom vertikal, rapi) */
-#accessModal .access-legend {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    padding: 6px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--card);
-}
-
-#accessModal .access-legend-item {
+.access-divider {
     display: flex;
     align-items: center;
     gap: 10px;
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.access-divider::before,
+.access-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+/* Level Akses — legenda & "terapkan cepat" digabung jadi satu daftar.
+   Klik salah satu baris = terapkan level itu ke semua menu; ikon panah
+   di kanan meredup saat idle dan menonjol saat baris di-hover. */
+.access-level-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--card) 55%, transparent);
+    backdrop-filter: blur(6px);
+}
+.access-level-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding: 9px 10px;
-    border-radius: 7px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+.access-level-item-main {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+.access-level-apply {
+    font-size: 16px;
+    opacity: 0.28;
+    transform: translateX(-2px);
+    color: var(--acc-accent);
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+}
+.access-level-item:hover,
+.access-level-item:focus-visible {
+    background: color-mix(in srgb, var(--acc-accent-soft) 75%, transparent);
     color: var(--ink);
 }
-
-#accessModal .access-legend-item .access-dot {
-    width: 9px;
-    height: 9px;
-    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent);
+.access-level-item:hover .access-level-apply,
+.access-level-item:focus-visible .access-level-apply {
+    opacity: 1;
+    transform: translateX(0);
 }
-
-/* Bulk apply (stack vertikal) */
-#accessModal .access-bulk-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--card);
-}
-
-#accessModal .access-bulk-row .dropdown {
-    width: 100%;
-}
-
-#accessModal .access-bulk-row .dropdown-trigger {
-    height: 38px;
-    font-size: 12.5px;
-}
-
-#accessModal .access-bulk-row .btn-ghost {
-    width: 100%;
-    justify-content: center;
-    height: 38px;
+.access-level-item:active {
     background: var(--acc-accent-soft);
-    color: var(--acc-accent);
-    border-color: var(--acc-accent-border);
+}
+.access-level-item[hidden] {
+    display: none !important;
+}
+.access-level-list.is-locked .access-level-item,
+.access-level-item:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    pointer-events: none;
+}
+.access-level-hint {
+    margin: 0;
+    font-size: 10.5px;
+    line-height: 1.5;
+    color: var(--ink-faint);
+    padding: 0 2px;
 }
 
-#accessModal .access-bulk-row .btn-ghost:hover {
-    background: var(--acc-accent);
-    color: #fff;
-    border-color: var(--acc-accent);
-}
-
-/* --- Area kanan (row 2, col 2) --- */
-#accessModal .access-main {
+/* Area kanan — daftar menu, baris 2 kolom 2 */
+.access-main {
     grid-column: 2;
     grid-row: 2;
     align-self: stretch;
-    /* FIX INTI: paksa stretch penuh */
     height: 100%;
-    /* FIX INTI: isi seluruh tinggi row */
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 18px 22px;
-    /* FIX: tambah padding bawah */
+    gap: 12px;
+    padding: 18px 20px;
     overflow: hidden;
     min-height: 0;
-    background: var(--card);
+    background: color-mix(in srgb, var(--card) 40%, transparent);
 }
 
-/* --- Permission list: scroll sendiri --- */
-#accessModal .permission-list {
+/* Daftar menu — satu definisi, tanpa duplikasi border */
+.permission-list {
     flex: 1 1 auto;
     min-height: 0;
-    max-height: none;
     display: flex;
     flex-direction: column;
-    gap: 0;
     overflow-y: auto;
-    padding: 0 4px 0 0;
+    padding-right: 4px;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--card) 35%, transparent);
 }
-
-#accessModal .permission-row {
+.permission-row {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    padding: 10px 12px 10px 16px;
-    min-height: 52px;
-    border-bottom: 1px solid var(--border);
+    gap: 14px;
+    padding: 12px 14px 12px 18px;
+    min-height: 58px;
     background: transparent;
-    transition: background-color .12s ease;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    transition: background-color 0.12s ease;
 }
-
-#accessModal .permission-row:last-child {
+.permission-row:last-child {
     border-bottom: none;
 }
-
-#accessModal .permission-row:hover {
-    background: var(--canvas);
+.permission-row:hover {
+    background: color-mix(in srgb, var(--canvas) 55%, transparent);
 }
-
-/* Garis aksen kiri sesuai state */
-#accessModal .permission-row::before {
+/* Indikator warna di sisi kiri, mengikuti level akses */
+.permission-row::before {
     content: "";
     position: absolute;
     left: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 10px;
+    bottom: 10px;
     width: 3px;
-    height: 0;
     border-radius: 0 3px 3px 0;
-    background: var(--acc-none);
-    transition: height .18s ease, background-color .18s ease;
+    background: transparent;
+    transition: background-color 0.15s ease;
 }
-
-#accessModal .permission-row[data-state="penuh"]::before {
-    height: 60%;
+.permission-row[data-state="penuh"]::before {
     background: var(--acc-penuh);
 }
-
-#accessModal .permission-row[data-state="biasa"]::before {
-    height: 60%;
+.permission-row[data-state="biasa"]::before {
     background: var(--acc-biasa);
 }
-
-#accessModal .permission-row[data-state="readonly"]::before {
-    height: 60%;
+.permission-row[data-state="readonly"]::before {
     background: var(--acc-readonly);
 }
+.permission-row[data-state="none"]::before {
+    background: var(--acc-none-border);
+}
 
-/* Icon menu — default netral, berubah warna sesuai state */
-#accessModal .permission-menu {
+.permission-menu {
     display: flex;
     align-items: center;
     gap: 12px;
     min-width: 0;
 }
-
-#accessModal .permission-menu-icon {
-    width: 34px;
-    height: 34px;
+.permission-menu-icon {
+    width: 32px;
+    height: 32px;
     border-radius: 9px;
     flex-shrink: 0;
     display: flex;
@@ -2326,90 +2075,83 @@ body.dark-mode {
     background: var(--canvas);
     color: var(--ink-muted);
     border: 1px solid var(--border);
-    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
-
-#accessModal .permission-menu-icon .material-symbols-outlined {
-    font-size: 18px;
+.permission-menu-icon .material-symbols-outlined {
+    font-size: 17px;
 }
-
-#accessModal .permission-menu-name {
+.permission-menu-name {
     font-size: 13px;
     font-weight: 600;
     color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-#accessModal .permission-row[data-state="penuh"] .permission-menu-icon {
-    background: var(--acc-penuh-bg);
-    color: var(--acc-penuh);
-    border-color: var(--acc-penuh-border);
-}
-
-#accessModal .permission-row[data-state="biasa"] .permission-menu-icon {
-    background: var(--acc-biasa-bg);
-    color: var(--acc-biasa);
-    border-color: var(--acc-biasa-border);
-}
-
-#accessModal .permission-row[data-state="readonly"] .permission-menu-icon {
-    background: var(--acc-readonly-bg);
-    color: var(--acc-readonly);
-    border-color: var(--acc-readonly-border);
-}
-
-/* Dropdown per baris */
-#accessModal .permission-row .dropdown {
-    width: 190px;
+/* Dropdown per baris menu */
+.permission-row .dropdown {
+    width: 178px;
     flex-shrink: 0;
 }
-
-#accessModal .permission-row .dropdown-trigger {
+.permission-row .dropdown-trigger {
     height: 36px;
-    padding: 0 12px;
+    padding: 0 10px;
     font-size: 12.5px;
     border-radius: 8px;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
 }
-
-#accessModal .permission-row[data-state="penuh"] .dropdown-trigger {
+.permission-row .dropdown-panel {
+    right: 0;
+    left: auto;
+    min-width: 178px;
+}
+.permission-row[data-state="penuh"] .dropdown-trigger {
     border-color: var(--acc-penuh-border);
     color: var(--acc-penuh);
     background: var(--acc-penuh-bg);
 }
-
-#accessModal .permission-row[data-state="biasa"] .dropdown-trigger {
+.permission-row[data-state="biasa"] .dropdown-trigger {
     border-color: var(--acc-biasa-border);
     color: var(--acc-biasa);
     background: var(--acc-biasa-bg);
 }
-
-#accessModal .permission-row[data-state="readonly"] .dropdown-trigger {
+.permission-row[data-state="readonly"] .dropdown-trigger {
     border-color: var(--acc-readonly-border);
     color: var(--acc-readonly);
     background: var(--acc-readonly-bg);
 }
-
-#accessModal .permission-row[data-state="none"] .dropdown-trigger {
+.permission-row[data-state="none"] .dropdown-trigger {
     border-color: var(--border-strong);
     color: var(--ink-muted);
     background: var(--card);
 }
 
-/* --- Footer: row 3, span 2 kolom --- */
+.permission-row[data-state="penuh"] .dropdown-trigger:hover {
+    border-color: color-mix(in srgb, var(--acc-penuh-border) 90%, white 10%);
+}
+.permission-row[data-state="biasa"] .dropdown-trigger:hover {
+    border-color: color-mix(in srgb, var(--acc-biasa-border) 90%, white 10%);
+}
+.permission-row[data-state="readonly"] .dropdown-trigger:hover {
+    border-color: color-mix(in srgb, var(--acc-readonly-border) 90%, white 10%);
+}
+.permission-row[data-state="none"] .dropdown-trigger:hover {
+    border-color: color-mix(in srgb, var(--border-strong) 90%, white 10%);
+}
+
+/* Footer — baris 3, span 2 kolom */
 #accessModal .modal-footer {
     grid-column: 1 / -1;
     grid-row: 3;
     align-self: end;
-    /* FIX: pastikan nempel bawah */
     display: flex;
-    /* FIX: eksplisit */
     margin: 0;
-    padding: 14px 24px;
-    border-top: 1px solid var(--border);
-    background: var(--canvas);
+    padding: 14px 22px;
+    border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    background: color-mix(in srgb, var(--canvas) 55%, transparent);
     justify-content: flex-end;
     gap: 10px;
 }
-
 #accessModal .modal-footer .btn-ghost {
     height: 38px;
     padding: 0 16px;
@@ -2418,13 +2160,11 @@ body.dark-mode {
     border-color: var(--border-strong);
     color: var(--ink-muted);
 }
-
 #accessModal .modal-footer .btn-ghost:hover {
     background: var(--canvas);
     color: var(--ink);
     border-color: var(--ink-faint);
 }
-
 #accessModal .modal-footer .btn-apply {
     height: 38px;
     padding: 0 18px;
@@ -2432,17 +2172,15 @@ body.dark-mode {
     background: var(--acc-accent);
     border-color: var(--acc-accent);
 }
-
 #accessModal .modal-footer .btn-apply:hover {
-    filter: brightness(.92);
+    filter: brightness(0.94);
 }
 
-/* --- Error message --- */
+/* Pesan error — baris 3, di atas footer */
 #accessModal .modal-error {
     grid-column: 1 / -1;
     grid-row: 3;
     align-self: start;
-    /* FIX: jangan melar */
     margin: 0;
     border-radius: 0;
     border-left: none;
@@ -2450,107 +2188,78 @@ body.dark-mode {
     border-top: 1px solid var(--danger-border);
     border-bottom: none;
 }
-
 #accessModal .modal-error[hidden] {
     display: none !important;
-    /* FIX: paksa hidden bekerja */
 }
 
-/* --- Dark mode override --- */
-body.dark-mode #accessModal .access-side,
-body.dark-mode #accessModal .modal-footer {
-    background: #0a0f1a;
-}
-
-body.dark-mode #accessModal .access-user-chip,
-body.dark-mode #accessModal .access-main {
-    background: var(--card);
-}
-
-/* --- Dropdown panel: warna opsi sesuai level --- */
+/* Opsi dropdown level akses — warna sesuai token status */
 .dropdown-option[data-value="penuh"] .access-dot {
     background: var(--acc-penuh);
 }
-
 .dropdown-option[data-value="biasa"] .access-dot {
     background: var(--acc-biasa);
 }
-
 .dropdown-option[data-value="readonly"] .access-dot {
     background: var(--acc-readonly);
 }
-
 .dropdown-option[data-value="none"] .access-dot {
     background: var(--acc-none);
 }
-
 .dropdown-option[data-value="penuh"].is-selected {
     background: var(--acc-penuh-bg);
     color: var(--acc-penuh);
 }
-
 .dropdown-option[data-value="biasa"].is-selected {
     background: var(--acc-biasa-bg);
     color: var(--acc-biasa);
 }
-
 .dropdown-option[data-value="readonly"].is-selected {
     background: var(--acc-readonly-bg);
     color: var(--acc-readonly);
 }
-
 .dropdown-option[data-value="none"].is-selected {
     background: var(--acc-none-bg);
     color: var(--acc-none);
 }
 
-/* --- Responsive --- */
+/* ---------- Responsif ---------- */
 @media (max-width: 900px) {
     #accessModal {
         width: calc(100vw - 20px);
         height: calc(100vh - 20px);
         max-height: calc(100vh - 20px);
     }
-
     #accessModal .modal-body {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto 1fr auto;
     }
-
-    #accessModal .access-side {
+    .access-side {
         grid-column: 1;
         grid-row: 2;
         border-right: none;
         border-bottom: 1px solid var(--border);
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 12px;
         max-height: 200px;
     }
-
-    #accessModal .access-side .access-legend {
-        flex: 1;
-        min-width: 180px;
-    }
-
-    #accessModal .access-side .access-bulk-row {
-        flex: 1;
-        min-width: 200px;
-        flex-direction: column;
-    }
-
-    #accessModal .access-main {
+    .access-main {
         grid-column: 1;
         grid-row: 3;
         padding: 14px 16px;
     }
-
-    #accessModal .modal-footer {
+    #accessModal .modal-footer,
+    #accessModal .modal-error {
         grid-row: 4;
     }
-
-    #accessModal .permission-row .dropdown {
+    .permission-row .dropdown {
         width: 150px;
+    }
+}
+@media (max-width: 480px) {
+    .permission-row {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .permission-row .dropdown {
+        width: 100%;
     }
 }
 
@@ -2561,10 +2270,10 @@ body.dark-mode #accessModal .access-main {
 /* --- Palet warna chart (5 warna, beda tone light vs dark) --- */
 :root {
     --chart-1: #5b5fef;
-    --chart-2: #0680a3;
-    --chart-3: #1a8a3d;
-    --chart-4: #c67f00;
-    --chart-5: #8b3fd1;
+    --chart-2: #1da8ce;
+    --chart-3: #1abb4d;
+    --chart-4: #dc7a17;
+    --chart-5: #d21515;
 }
 
 body.dark-mode {
@@ -2572,7 +2281,7 @@ body.dark-mode {
     --chart-2: #2aecf3;
     --chart-3: #3ddc84;
     --chart-4: #f2b642;
-    --chart-5: #b98bff;
+    --chart-5: #ff6868;
 }
 
 /* --- Animasi reveal saat elemen masuk viewport, mengulang tiap kali di-scroll ulang --- */
@@ -4084,4 +3793,234 @@ body.dark-mode .chart-tooltip::after {
 .dp-clear-btn:hover {
     background: var(--canvas);
     color: var(--ink-muted);
+}
+
+/* ========================================================== 18. PANEL NOTIFIKASI ========================================================== */
+.notif-dropdown {
+    position: relative;
+    z-index: 95;
+}
+.notif-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 90;
+    width: min(360px, calc(100vw - 32px));
+    max-height: 460px;
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 40px -10px rgba(31, 41, 66, 0.22);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px) scale(0.98);
+    transition:
+        opacity 0.16s ease,
+        transform 0.16s ease,
+        visibility 0.16s ease;
+}
+.notif-dropdown.is-open .notif-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+.notif-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.notif-panel-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--ink);
+    margin: 0;
+}
+.notif-mark-all {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--primary);
+    background: transparent;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+.notif-mark-all:hover {
+    background: var(--primary-soft);
+}
+.notif-panel-body {
+    overflow-y: auto;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.notif-group-label {
+    padding: 10px 10px 4px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+}
+.notif-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+.notif-item:hover {
+    background: var(--canvas);
+}
+.notif-item.is-unread {
+    background: var(--primary-soft);
+}
+.notif-item.is-unread:hover {
+    background: var(--primary-soft);
+    filter: brightness(0.97);
+}
+.notif-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--canvas);
+    color: var(--ink-muted);
+    border: 1px solid var(--border);
+}
+.notif-item-icon.c-primary {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-color: var(--primary-border);
+}
+.notif-item-icon.c-success {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success-border);
+}
+.notif-item-icon.c-info {
+    background: var(--info-bg);
+    color: var(--info);
+    border-color: var(--info-border);
+}
+.notif-item-icon.c-warning {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-color: var(--warning-border);
+}
+.notif-item-icon.c-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger-border);
+}
+.notif-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.notif-item-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.35;
+}
+.notif-item-desc {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.notif-item-time {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    margin-top: 2px;
+}
+.notif-item-dot {
+    position: absolute;
+    top: 14px;
+    right: 10px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--primary);
+    flex-shrink: 0;
+}
+.notif-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    padding: 40px 20px;
+}
+.notif-empty-icon {
+    font-size: 30px;
+    color: var(--ink-faint);
+    background: var(--canvas);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+.notif-empty-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0;
+}
+.notif-empty-desc {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin: 0;
+    max-width: 220px;
+}
+.notif-panel-footer {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+.notif-view-all {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+}
+.notif-view-all:hover {
+    text-decoration: underline;
+}
+@media (max-width: 480px) {
+    .notif-panel {
+        position: fixed;
+        top: calc(var(--header-h) + 6px);
+        right: 12px;
+        left: 12px;
+        width: auto;
+    }
 }

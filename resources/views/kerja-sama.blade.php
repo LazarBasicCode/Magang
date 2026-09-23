@@ -241,7 +241,7 @@
                         </div>
 
                         <!-- Arah (untuk Guest Lecture) -->
-                        <div class="field">
+                        <div class="field" id="field-filter-arah">
                             <label class="field-label">Arah (Guest Lecture)</label>
                             <div class="dropdown" data-dropdown>
                                 <input type="hidden" id="filter-arah" value="semua" />
@@ -860,10 +860,25 @@
             document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
             const search = document.getElementById('filter-search');
             if (search) search.value = '';
+            updateFilterArahVisibility();
             applyFilters();
         });
 
-        // ---------------- Live Filter (otomatis, tanpa tombol "Terapkan") ----------------
+        // ---------------- Live Filter ----------------
+        const fieldFilterArah = document.getElementById('field-filter-arah');
+
+        function updateFilterArahVisibility() {
+            const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
+            const isGuestLecture = jenisVal === 'guest_lecture';
+            fieldFilterArah.classList.toggle('hidden', !isGuestLecture);
+            fieldFilterArah.style.display = isGuestLecture ? '' : 'none';
+            // Jenis selain guest_lecture: kembalikan filter arah ke "Semua Arah"
+            // supaya tidak nyangkut memfilter data yang sudah tersembunyi dropdown-nya.
+            if (!isGuestLecture) {
+                resetDropdown(fieldFilterArah.querySelector('[data-dropdown]'));
+            }
+        }
+
         function applyFilters() {
             const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
             const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
@@ -900,9 +915,15 @@
         document.querySelectorAll('#filter-tipe-user, #filter-jenis, #filter-arah').forEach((input) => {
             const dropdownEl = input.closest('[data-dropdown]');
             dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
-                opt.addEventListener('click', () => applyFilters());
+                opt.addEventListener('click', () => {
+                    if (input.id === 'filter-jenis') updateFilterArahVisibility();
+                    applyFilters();
+                });
             });
         });
+
+        // Set kondisi awal (default jenis = semua -> field arah disembunyikan)
+        updateFilterArahVisibility();
 
         let searchDebounce;
         document.getElementById('filter-search')?.addEventListener('input', () => {
@@ -975,6 +996,13 @@
         function updateConditionalFields(jenis) {
             const isGuestLecture = jenis === 'guest_lecture';
             fieldArah.classList.toggle('hidden', !isGuestLecture);
+            // Jaring pengaman: paksa display walau class .hidden belum/tidak ada di CSS
+            fieldArah.style.display = isGuestLecture ? '' : 'none';
+            // Saat jenis bukan guest_lecture, kembalikan pilihan arah ke default
+            // supaya tidak ada nilai "nyangkut" dari pilihan sebelumnya.
+            if (!isGuestLecture) {
+                selectDropdownValue(document.getElementById('dd-arah'), 'inbound', 'Inbound');
+            }
         }
         document.querySelectorAll('#dd-jenis .dropdown-option').forEach((opt) => {
             opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));

@@ -388,41 +388,44 @@
                         <span class="badge badge-primary" id="accessUserRole">user</span>
                         <span class="plain-text" id="accessUserEmail">-</span>
                     </div>
+                    <p class="access-readonly-note" id="modalReadonlyNote" hidden></p>
                 </div>
             </div>
-
-            <p class="modal-subtitle" id="modalReadonlyNote" hidden></p>
 
             <!-- Sidebar kiri -->
             <aside class="access-side">
                 <div class="access-divider">Level Akses</div>
-                <div class="access-legend">
-                    <div class="access-legend-item"><span class="access-dot penuh"></span> Akses Penuh</div>
-                    <div class="access-legend-item"><span class="access-dot biasa"></span> Akses Biasa</div>
-                    <div class="access-legend-item"><span class="access-dot readonly"></span> Read Only</div>
-                    <div class="access-legend-item"><span class="access-dot none"></span> Tidak Diberi Akses</div>
-                </div>
-
-                <div class="access-divider">Terapkan Cepat</div>
-                <div class="access-bulk-row">
-                    <div class="dropdown" data-dropdown id="dd-bulk">
-                        <input type="hidden" id="bulk-value" value="" />
-                        <button type="button" class="dropdown-trigger">
-                            <span class="dropdown-value">Pilih level...</span>
-                            <span class="material-symbols-outlined caret">expand_more</span>
-                        </button>
-                        <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option" data-value="penuh"><span class="access-dot penuh"></span> Akses Penuh</button>
-                            <button type="button" class="dropdown-option" data-value="biasa"><span class="access-dot biasa"></span> Akses Biasa</button>
-                            <button type="button" class="dropdown-option" data-value="readonly"><span class="access-dot readonly"></span> Read Only</button>
-                            <button type="button" class="dropdown-option" data-value="none"><span class="access-dot none"></span> Tidak Diberi Akses</button>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-ghost" id="btnBulkApply">
-                        <span class="material-symbols-outlined">done_all</span>
-                        <span>Terapkan ke Semua</span>
+                <div class="access-level-list" id="accessLevelList">
+                    <button type="button" class="access-level-item" data-value="penuh">
+                        <span class="access-level-item-main">
+                            <span class="access-dot penuh"></span>
+                            <span>Akses Penuh</span>
+                        </span>
+                        <span class="access-level-apply material-symbols-outlined" title="Terapkan ke semua menu">arrow_forward</span>
+                    </button>
+                    <button type="button" class="access-level-item" data-value="biasa">
+                        <span class="access-level-item-main">
+                            <span class="access-dot biasa"></span>
+                            <span>Akses Biasa</span>
+                        </span>
+                        <span class="access-level-apply material-symbols-outlined" title="Terapkan ke semua menu">arrow_forward</span>
+                    </button>
+                    <button type="button" class="access-level-item" data-value="readonly">
+                        <span class="access-level-item-main">
+                            <span class="access-dot readonly"></span>
+                            <span>Read Only</span>
+                        </span>
+                        <span class="access-level-apply material-symbols-outlined" title="Terapkan ke semua menu">arrow_forward</span>
+                    </button>
+                    <button type="button" class="access-level-item" data-value="none">
+                        <span class="access-level-item-main">
+                            <span class="access-dot none"></span>
+                            <span>Tidak Diberi Akses</span>
+                        </span>
+                        <span class="access-level-apply material-symbols-outlined" title="Terapkan ke semua menu">arrow_forward</span>
                     </button>
                 </div>
+                <p class="access-level-hint">Klik salah satu level untuk menerapkannya ke semua menu.</p>
             </aside>
 
             <!-- Area kanan: daftar menu -->
@@ -503,21 +506,26 @@
         });
         document.addEventListener('click', () => dropdowns.forEach((d) => d.classList.remove('is-open')));
 
+        // Helper: opsi pertama yang TIDAK disembunyikan (fallback saat sebuah
+        // level, mis. "Akses Penuh", disembunyikan untuk role tertentu)
+        function firstVisibleOption(dropdownEl) {
+            return Array.from(dropdownEl.querySelectorAll('.dropdown-option')).find((o) => !o.hidden);
+        }
+
         function selectDropdownValue(dropdownEl, value) {
             if (!dropdownEl) return;
             const options = dropdownEl.querySelectorAll('.dropdown-option');
             const valueEl = dropdownEl.querySelector('.dropdown-value');
             const hiddenInput = dropdownEl.querySelector('input[type="hidden"]');
-            let matched = false;
-            options.forEach((o) => {
-                const isMatch = o.dataset.value === String(value);
-                o.classList.toggle('is-selected', isMatch);
-                if (isMatch) { valueEl.textContent = o.textContent.trim(); matched = true; }
-            });
-            if (hiddenInput) hiddenInput.value = matched ? value : (options[0]?.dataset.value ?? '');
-            if (!matched && options.length) valueEl.textContent = options[0].textContent.trim();
+            let target = Array.from(options).find((o) => !o.hidden && o.dataset.value === String(value));
+            if (!target) target = firstVisibleOption(dropdownEl);
+            options.forEach((o) => o.classList.toggle('is-selected', o === target));
+            if (target) {
+                valueEl.textContent = target.textContent.trim();
+                if (hiddenInput) hiddenInput.value = target.dataset.value;
+            }
             const row = dropdownEl.closest('.permission-row');
-            if (row) row.dataset.state = matched ? value : (options[0]?.dataset.value ?? '');
+            if (row) row.dataset.state = target ? target.dataset.value : '';
         }
 
         function resetDropdown(dropdown) {
@@ -525,13 +533,30 @@
             const options = dropdown.querySelectorAll('.dropdown-option');
             const valueEl = dropdown.querySelector('.dropdown-value');
             const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            options.forEach((o, i) => {
-                o.classList.toggle('is-selected', i === 0);
-                if (i === 0) {
-                    valueEl.textContent = o.textContent.trim();
-                    if (hiddenInput) hiddenInput.value = o.dataset.value;
-                }
+            const target = firstVisibleOption(dropdown);
+            options.forEach((o) => o.classList.toggle('is-selected', o === target));
+            if (target) {
+                valueEl.textContent = target.textContent.trim();
+                if (hiddenInput) hiddenInput.value = target.dataset.value;
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // ATURAN EMAS: role "mahasiswa" & "dosen" tidak boleh diberi
+        // "Akses Penuh". Opsi itu disembunyikan total dari semua dropdown
+        // level akses di modal (per-menu maupun "Terapkan Cepat"), dan dari
+        // legenda, selama modal dibuka untuk pengguna dengan role tersebut.
+        // ----------------------------------------------------------------
+        const ROLES_WITHOUT_FULL_ACCESS = ['mahasiswa', 'dosen'];
+
+        function applyRoleAccessRules(role) {
+            const restricted = ROLES_WITHOUT_FULL_ACCESS.includes((role || '').toLowerCase());
+            document.querySelectorAll('#accessModal .dropdown-option[data-value="penuh"]').forEach((opt) => {
+                opt.hidden = restricted;
             });
+            const fullLevelItem = document.querySelector('#accessModal .access-level-item[data-value="penuh"]');
+            if (fullLevelItem) fullLevelItem.hidden = restricted;
+            return restricted;
         }
 
         // ================================================================
@@ -674,24 +699,31 @@
             accessUserRole.textContent = data.role || 'user';
             accessUserAvatar.textContent = initials(data.name);
 
+            // Terapkan aturan emas: sembunyikan "Akses Penuh" untuk role
+            // mahasiswa/dosen, sebelum level dipasang ke tiap dropdown.
+            const restricted = applyRoleAccessRules(data.role);
+
             let levels = {};
             try { levels = JSON.parse(decodeURIComponent(data.levels || '{}')); } catch (_) { levels = {}; }
 
             document.querySelectorAll('.permission-value').forEach((input) => {
                 const menu = input.dataset.menu;
+                let level = levels[menu] || 'none';
+                // Jaga-jaga: jika data lama menyimpan "penuh" untuk role yang
+                // dibatasi, turunkan ke "biasa" supaya tidak macet di opsi tersembunyi.
+                if (restricted && level === 'penuh') level = 'biasa';
                 selectDropdownValue(
                     document.querySelector(`[data-permission-dropdown][data-menu="${menu}"]`),
-                    levels[menu] || 'none'
+                    level
                 );
             });
 
-            resetDropdown(document.getElementById('dd-bulk'));
-
-            // Mode lihat-saja: sembunyikan tombol simpan & bulk apply
+            // Mode lihat-saja: sembunyikan tombol simpan & kunci "Level Akses" (terapkan cepat)
             modalSubmitBtn.hidden = !!data.readonly;
-            document.getElementById('btnBulkApply').hidden = !!data.readonly;
-            document.getElementById('dd-bulk').style.pointerEvents = data.readonly ? 'none' : '';
-            document.getElementById('dd-bulk').style.opacity = data.readonly ? '.5' : '';
+            document.getElementById('accessLevelList').classList.toggle('is-locked', !!data.readonly);
+            document.querySelectorAll('.access-level-item').forEach((btn) => {
+                btn.disabled = !!data.readonly;
+            });
 
             modalBackdrop.classList.add('is-active');
             modalCard.classList.add('is-active');
@@ -741,17 +773,22 @@
         dragHandle.addEventListener('pointerup', endDrag);
         dragHandle.addEventListener('pointercancel', endDrag);
 
-        // ---- Bulk apply ----
-        document.getElementById('btnBulkApply')?.addEventListener('click', () => {
-            const bulkValue = document.getElementById('bulk-value').value;
-            if (!bulkValue) return;
+        // ---- "Level Akses" gabungan = legenda + terapkan cepat ----
+        // Klik salah satu level menerapkannya langsung ke semua menu.
+        function applyLevelToAll(value) {
+            if (!canManage) return;
             document.querySelectorAll('.permission-value').forEach((input) => {
                 const menu = input.dataset.menu;
                 selectDropdownValue(
                     document.querySelector(`[data-permission-dropdown][data-menu="${menu}"]`),
-                    bulkValue
+                    value
                 );
             });
+        }
+        document.getElementById('accessLevelList')?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.access-level-item');
+            if (!btn || btn.disabled || btn.hidden) return;
+            applyLevelToAll(btn.dataset.value);
         });
 
         // ---- Bangun ulang isi baris (dipakai setelah simpan sukses) ----

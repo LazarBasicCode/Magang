@@ -117,10 +117,52 @@
                         <span class="current">Data Prestasi &amp; Kegiatan</span>
                     </div>
                     <div class="header-actions">
-                        <button type="button" class="icon-btn" aria-label="Notifikasi">
-                            <span class="material-symbols-outlined">notifications</span>
-                            <span class="dot"></span>
-                        </button>
+                        <!-- ============ NOTIFIKASI ============ -->
+                        <div class="notif-dropdown" id="notifDropdown">
+                            <button type="button" class="icon-btn" id="notifToggleBtn" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false">
+                                <span class="material-symbols-outlined">notifications</span>
+                            </button>
+
+                            <div class="notif-panel" id="notifPanel" role="menu" aria-hidden="true">
+                                <div class="notif-panel-header">
+                                    <h3 class="notif-panel-title">Notifikasi</h3>
+                                    <button type="button" class="notif-mark-all" id="notifMarkAllBtn">Tandai semua dibaca</button>
+                                </div>
+
+                                <div class="notif-panel-body" id="notifListWrap" hidden>
+                                    {{--
+                                        STRUKTUR ITEM NOTIFIKASI (referensi utk nanti, saat sudah connect ke controller):
+
+                                        <div class="notif-group-label">Hari Ini</div>
+                                        <a href="#" class="notif-item is-unread" data-id="1">
+                                            <span class="notif-item-icon c-primary"><span class="material-symbols-outlined">workspace_premium</span></span>
+                                            <span class="notif-item-body">
+                                                <span class="notif-item-title">Judul notifikasi</span>
+                                                <span class="notif-item-desc">Deskripsi singkat notifikasi.</span>
+                                                <span class="notif-item-time">10 menit lalu</span>
+                                            </span>
+                                            <span class="notif-item-dot" aria-hidden="true"></span>
+                                        </a>
+
+                                        Ganti @forelse($notifications as $n) ... @endforelse di sini,
+                                        lalu hapus atribut "hidden" pada div ini dan pada #notifEmpty di bawah
+                                        (di-toggle sesuai $notifications->isEmpty()).
+                                    --}}
+                                </div>
+
+                                {{-- Tampilan saat tidak ada notifikasi --}}
+                                <div class="notif-empty" id="notifEmpty">
+                                    <span class="material-symbols-outlined notif-empty-icon">notifications</span>
+                                    <p class="notif-empty-title">Belum ada notifikasi</p>
+                                    <p class="notif-empty-desc">Pemberitahuan baru akan muncul di sini.</p>
+                                </div>
+
+                                <div class="notif-panel-footer">
+                                    <a href="#" class="notif-view-all">Lihat semua notifikasi</a>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ============ /NOTIFIKASI ============ -->
                         <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="Ganti Tema">
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
@@ -536,6 +578,44 @@
 
         document.addEventListener('click', () => {
             dropdowns.forEach((d) => d.classList.remove('is-open'));
+        });
+
+        // ---------------- Panel Notifikasi (UI saja — logika/controller menyusul) ----------------
+        const notifDropdown = document.getElementById('notifDropdown');
+        const notifToggleBtn = document.getElementById('notifToggleBtn');
+        const notifPanel = document.getElementById('notifPanel');
+        const notifDot = document.getElementById('notifDot');
+        const notifMarkAllBtn = document.getElementById('notifMarkAllBtn');
+
+        function closeNotifPanel() {
+            notifDropdown.classList.remove('is-open');
+            notifToggleBtn.setAttribute('aria-expanded', 'false');
+            notifPanel.setAttribute('aria-hidden', 'true');
+        }
+
+        notifToggleBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdowns.forEach((d) => d.classList.remove('is-open')); // tutup dropdown filter/form lain
+            const willOpen = !notifDropdown.classList.contains('is-open');
+            notifDropdown.classList.toggle('is-open', willOpen);
+            notifToggleBtn.setAttribute('aria-expanded', String(willOpen));
+            notifPanel.setAttribute('aria-hidden', String(!willOpen));
+        });
+
+        notifPanel?.addEventListener('click', (e) => e.stopPropagation());
+
+        document.addEventListener('click', closeNotifPanel);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeNotifPanel();
+        });
+
+        // Tandai semua dibaca: hilangkan penanda unread + titik merah di ikon lonceng.
+        // Sementara efek visual saja; nanti dihubungkan ke endpoint controller.
+        notifMarkAllBtn?.addEventListener('click', () => {
+            document.querySelectorAll('.notif-item.is-unread').forEach((item) => {
+                item.classList.remove('is-unread');
+            });
+            notifDot?.remove();
         });
 
         function selectDropdownValue(dropdownEl, value) {

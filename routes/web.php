@@ -17,7 +17,8 @@ Route::get('/', function () {
 })->name('login');
 
 // Rute Pemrosesan Login & Logout
-Route::post('/login-process', [AuthController::class, 'loginProcess']);
+Route::post('/login-process', [AuthController::class, 'loginProcess'])
+    ->middleware('throttle:login-ip');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ---- Lupa Password ----

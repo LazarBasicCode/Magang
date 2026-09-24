@@ -85,6 +85,18 @@ class HakAksesController extends Controller
         // Cuma terima key menu yang valid & dikenal sistem
         $levels = array_intersect_key($data['levels'], array_flip($menuKeys));
 
+        // Jaring pengaman: menu khusus admin/superadmin (Log, Hak Akses,
+        // Data Master) dipaksa "none" untuk target mahasiswa/dosen, apa pun
+        // yang dikirim dari klien — role tsb memang tidak pernah relevan
+        // untuk menu-menu ini (lihat juga filter di sisi UI, hak-akses.blade.php).
+        if (in_array($user->role, ['mahasiswa', 'dosen'], true)) {
+            foreach (HakAkses::ADMIN_ONLY_MENUS as $adminOnlyMenu) {
+                if (array_key_exists($adminOnlyMenu, $levels)) {
+                    $levels[$adminOnlyMenu] = 'none';
+                }
+            }
+        }
+
         DB::transaction(function () use ($user, $levels) {
             foreach ($levels as $menu => $level) {
                 HakAkses::updateOrCreate(

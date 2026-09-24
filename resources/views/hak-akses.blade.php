@@ -73,7 +73,7 @@
                 </a>
                 @endif
 
-                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
+                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses') || $__user->canAccessMenu('log'))
                 <div class="nav-heading">Administrasi</div>
                 @endif
                 @if($__user->canAccessMenu('data_master'))
@@ -86,6 +86,12 @@
                 <a href="{{ url('/hak-akses') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">shield_person</span>
                     <span>Hak Akses</span>
+                </a>
+                @endif
+                @if($__user->canAccessMenu('log'))
+                <a href="{{ url('/login-audit') }}" class="nav-link">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>Log Aktivitas</span>
                 </a>
                 @endif
             </div>
@@ -548,6 +554,9 @@
         // legenda, selama modal dibuka untuk pengguna dengan role tersebut.
         // ----------------------------------------------------------------
         const ROLES_WITHOUT_FULL_ACCESS = ['mahasiswa', 'dosen'];
+        // Menu yang cuma relevan buat admin/superadmin — harus sinkron dengan
+        // HakAkses::ADMIN_ONLY_MENUS di backend.
+        const ADMIN_ONLY_MENUS = ['log', 'hak_akses', 'data_master'];
 
         function applyRoleAccessRules(role) {
             const restricted = ROLES_WITHOUT_FULL_ACCESS.includes((role || '').toLowerCase());
@@ -556,6 +565,15 @@
             });
             const fullLevelItem = document.querySelector('#accessModal .access-level-item[data-value="penuh"]');
             if (fullLevelItem) fullLevelItem.hidden = restricted;
+
+            // Sembunyikan total baris Log/Hak Akses/Data Master kalau target-nya
+            // mahasiswa/dosen — mereka memang tidak pernah bisa mengaksesnya,
+            // jadi opsinya tidak perlu ditampilkan sama sekali di daftar menu.
+            ADMIN_ONLY_MENUS.forEach((menuKey) => {
+                const row = document.querySelector(`#permissionList .permission-row[data-menu="${menuKey}"]`);
+                if (row) row.hidden = restricted;
+            });
+
             return restricted;
         }
 

@@ -72,7 +72,7 @@
                 </a>
                 @endif
 
-                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
+                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses') || $__user->canAccessMenu('log'))
                 <div class="nav-heading">Administrasi</div>
                 @endif
                 @if($__user->canAccessMenu('data_master'))
@@ -86,6 +86,12 @@
                 <a href="{{ url('/hak-akses') }}" class="nav-link">
                     <span class="material-symbols-outlined">admin_panel_settings</span>
                     <span>Hak Akses</span>
+                </a>
+                @endif
+                @if($__user->canAccessMenu('log'))
+                <a href="{{ url('/login-audit') }}" class="nav-link">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>Log Aktivitas</span>
                 </a>
                 @endif
             </div>

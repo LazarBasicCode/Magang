@@ -26,41 +26,70 @@
 
         <nav class="sidebar-nav">
             <div class="nav-group">
+                @if($user->canAccessMenu('dashboard'))
                 <a href="{{ url('/dashboard') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
+                @endif
+                @if($user->canAccessMenu('kemahasiswaan'))
                 <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
                     <span>Kemahasiswaan</span>
                 </a>
+                @endif
+
+                @if($user->canAccessMenu('lppm_mahasiswa') || $user->canAccessMenu('lppm_dosen') || $user->canAccessMenu('rekognisi'))
                 <div class="nav-heading">LPPM</div>
+                @endif
+                @if($user->canAccessMenu('lppm_mahasiswa'))
                 <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
                     <span class="material-symbols-outlined">person</span>
                     <span>Mahasiswa</span>
                 </a>
+                @endif
+                @if($user->canAccessMenu('lppm_dosen'))
                 <a href="{{ url('/lppm/dosen') }}" class="nav-link">
                     <span class="material-symbols-outlined">co_present</span>
                     <span>Dosen</span>
                 </a>
+                @endif
+                @if($user->canAccessMenu('rekognisi'))
                 <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
                     <span class="material-symbols-outlined">workspace_premium</span>
                     <span>Rekognisi</span>
                 </a>
+                @endif
+
+                @if($user->canAccessMenu('kerja_sama'))
                 <div class="nav-heading">Kemitraan</div>
                 <a href="{{ url('/kerja-sama') }}" class="nav-link">
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
                 </a>
+                @endif
+
+                @if($user->canAccessMenu('data_master') || $user->canAccessMenu('hak_akses') || $user->canAccessMenu('log'))
                 <div class="nav-heading">Administrasi</div>
+                @endif
+                @if($user->canAccessMenu('data_master'))
                 <a href="{{ url('/data-master/users') }}" class="nav-link">
                     <span class="material-symbols-outlined">manage_accounts</span>
                     <span>Data Master</span>
                 </a>
+                @endif
+                @if($user->canAccessMenu('hak_akses'))
                 <a href="{{ url('/hak-akses') }}" class="nav-link">
                     <span class="material-symbols-outlined">shield_person</span>
                     <span>Hak Akses</span>
                 </a>
+                @endif
+                @if($user->canAccessMenu('log'))
+                <a href="{{ url('/login-audit') }}" class="nav-link">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>Log Aktivitas</span>
+                </a>
+                @endif
             </div>
         </nav>
 
@@ -90,6 +119,12 @@
                                 <span class="header-profile-role">{{ $user->accessLabelFor('dashboard') }}</span>
                             </div>
                         </div>
+                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
+                            @csrf
+                            <button type="submit" class="icon-btn" id="logoutBtn" title="Keluar" aria-label="Keluar">
+                                <span class="material-symbols-outlined">logout</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -34,7 +34,18 @@ class HakAkses extends Model
         'kerja_sama'      => ['label' => 'Kerja Sama', 'icon' => 'handshake'],
         'data_master'     => ['label' => 'Data Master', 'icon' => 'manage_accounts'],
         'hak_akses'       => ['label' => 'Hak Akses', 'icon' => 'shield_person'],
+        // Khusus admin/superadmin: mahasiswa & dosen tidak pernah punya akses
+        // ke menu ini (lihat defaultsForRole dan filter di halaman Hak Akses).
+        'log'             => ['label' => 'Log Aktivitas', 'icon' => 'history'],
     ];
+
+    /**
+     * Menu yang memang hanya diperuntukkan admin/superadmin. Dipakai untuk
+     * menyembunyikannya total dari daftar menu saat mengatur hak akses milik
+     * mahasiswa/dosen (bukan cuma dikunci ke "none", tapi tidak ditampilkan
+     * sama sekali karena memang tidak relevan buat role tsb).
+     */
+    public const ADMIN_ONLY_MENUS = ['log', 'hak_akses', 'data_master'];
 
     public const LEVELS = ['none', 'readonly', 'biasa', 'penuh'];
 
@@ -68,6 +79,7 @@ class HakAkses extends Model
                 'kerja_sama'     => 'penuh',
                 'data_master'    => 'penuh',
                 'hak_akses'      => 'none', // tergantung diatur superadmin
+                'log'            => 'none', // tergantung diatur superadmin
             ],
             'dosen' => [
                 'dashboard'      => 'biasa',
@@ -78,6 +90,7 @@ class HakAkses extends Model
                 'kerja_sama'     => 'biasa',
                 'data_master'    => 'none',
                 'hak_akses'      => 'none',
+                'log'            => 'none', // dosen tidak pernah punya akses log
             ],
             'mahasiswa' => [
                 'dashboard'      => 'biasa',
@@ -88,6 +101,7 @@ class HakAkses extends Model
                 'kerja_sama'     => 'biasa',
                 'data_master'    => 'none',
                 'hak_akses'      => 'none',
+                'log'            => 'none', // mahasiswa tidak pernah punya akses log
             ],
             default => array_fill_keys(array_keys(self::MENUS), 'none'),
         };

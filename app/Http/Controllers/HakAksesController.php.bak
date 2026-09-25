@@ -57,11 +57,17 @@ class HakAksesController extends Controller
     {
         $actor = $request->user();
 
+        // Safety: hanya superadmin yang boleh mengubah hak akses milik superadmin lain.
+        if ($user->role === 'superadmin' && $actor->role !== 'superadmin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya superadmin yang boleh mengubah hak akses superadmin lain.',
+            ], 403);
+        }
+
         // Superadmin selalu 'penuh' untuk semua menu (lihat User::menuLevel()),
-        // jadi menyimpan baris hak_akses untuk user superadmin tidak akan
-        // pernah terlihat berubah, siapa pun aktornya (termasuk sesama
-        // superadmin) — bypass di menuLevel() membuat perubahan itu percuma.
-        // Tolak di sini supaya jelas, bukan diam-diam no-op.
+        // jadi menyimpan baris hak_akses untuk user superadmin tidak akan pernah
+        // terlihat berubah. Tolak di sini supaya jelas, bukan diam-diam no-op.
         if ($user->role === 'superadmin') {
             return response()->json([
                 'success' => false,
@@ -87,28 +93,6 @@ class HakAksesController extends Controller
             foreach (HakAkses::ADMIN_ONLY_MENUS as $adminOnlyMenu) {
                 if (array_key_exists($adminOnlyMenu, $levels)) {
                     $levels[$adminOnlyMenu] = 'none';
-                }
-            }
-        }
-
-        // Jaring pengaman lain: seorang admin (non-superadmin) tidak boleh
-        // mengubah akses menu admin-only (Log, Hak Akses, Data Master) untuk
-        // AKUN ADMIN MANA PUN — dirinya sendiri maupun admin lain. Tanpa ini,
-        // admin dengan akses "biasa" ke menu hak_akses bisa:
-        //   a) membuka modal ini untuk akunnya sendiri dan memberi dirinya
-        //      "penuh" di Data Master/Hak Akses/Log, atau
-        //   b) menaikkan akses admin lain, lalu berkolusi supaya admin itu
-        //      balas menaikkan akses dirinya.
-        // Kedua jalur ini setara dengan menjadikan diri (atau sesama admin)
-        // superadmin secara fungsional. Hanya superadmin yang boleh
-        // mengubah baris admin-only untuk akun admin.
-        if ($user->role === 'admin' && $actor->role !== 'superadmin') {
-            foreach (HakAkses::ADMIN_ONLY_MENUS as $adminOnlyMenu) {
-                if (array_key_exists($adminOnlyMenu, $levels)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Hanya superadmin yang boleh mengubah hak akses menu admin-only (Data Master, Hak Akses, Log) untuk akun admin.',
-                    ], 403);
                 }
             }
         }

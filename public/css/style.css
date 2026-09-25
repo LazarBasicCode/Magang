@@ -52,8 +52,8 @@ body.dark-mode {
     --border: #35425f;
     --border-strong: #384766;
     --ink: #f8fafc;
-    --ink-muted: #94a3b8;
-    --ink-faint: #64748b;
+    --ink-muted: #8b9fbc;
+    --ink-faint: #5c7393;
     --primary: #5674d4;
     --primary-dark: #4262c8;
     --primary-soft: #2a3354;
@@ -98,6 +98,10 @@ body.dark-mode .modal-card {
 
 body.dark-mode .dropdown-panel {
     background-color: var(--card);
+}
+
+body.dark-mode .notif-panel {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .header-capsule {
@@ -174,6 +178,11 @@ button {
     font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
     line-height: 1;
 }
+
+::placeholder { color: var(--ink-faint); opacity: 1; }
+::-webkit-input-placeholder { color: var(--ink-faint); opacity: 1; }
+::-moz-placeholder { color: var(--ink-faint); opacity: 1; }
+:-ms-input-placeholder { color: var(--ink-faint); opacity: 1; }
 
 /* ==========================================================
    3. LAYOUT SHELL
@@ -3927,7 +3936,7 @@ body.dark-mode .chart-tooltip::after {
     background: var(--card);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
-    box-shadow: 0 20px 30px -10px rgba(11, 15, 29, 0.5);
+    box-shadow: 0 10px 30px rgba(39, 46, 74, 0.2);
     opacity: 0;
     visibility: hidden;
     transform: translateY(-6px) scale(0.98);

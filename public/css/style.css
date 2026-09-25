@@ -3927,7 +3927,7 @@ body.dark-mode .chart-tooltip::after {
     background: var(--card);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
-    box-shadow: 0 20px 40px -10px rgba(31, 41, 66, 0.22);
+    box-shadow: 0 20px 30px -10px rgba(11, 15, 29, 0.5);
     opacity: 0;
     visibility: hidden;
     transform: translateY(-6px) scale(0.98);

@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <title>LPPM Mahasiswa &middot; SIDA</title>
 </head>
 
@@ -146,6 +147,8 @@
                                 </div>
 
                                 {{-- Tampilan saat tidak ada notifikasi --}}
+                                <div class="notif-panel-body" id="notifListWrap" hidden></div>
+
                                 <div class="notif-empty" id="notifEmpty">
                                     <span class="material-symbols-outlined notif-empty-icon">notifications</span>
                                     <p class="notif-empty-title">Belum ada notifikasi</p>
@@ -705,7 +708,8 @@
             if (delBtn) handleDelete(delBtn.dataset.id);
         });
     </script>
-
+    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/notifications.js') }}"></script>
 </body>
 
 </html>

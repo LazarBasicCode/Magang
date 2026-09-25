@@ -8,15 +8,17 @@ use Illuminate\Http\Request;
 class LoginAuditController extends Controller
 {
     /**
-     * Halaman ini sengaja dibatasi langsung ke role superadmin (bukan lewat
-     * sistem hak-akses per-menu yang dipakai menu lain), karena isinya data
-     * keamanan sensitif (siapa mencoba login, dari IP mana) yang semestinya
-     * memang cuma boleh dilihat pemegang akses tertinggi.
+     * Halaman ini sekarang ikut sistem hak-akses per-menu (menu "log"):
+     * superadmin selalu bisa (bypass, lihat User::menuLevel()), admin cuma
+     * bisa kalau superadmin memberi akses lewat halaman Hak Akses, dan
+     * mahasiswa/dosen tidak pernah punya opsi ini sama sekali. Middleware
+     * route sudah menolak sebelum sampai sini; pengecekan ini cuma
+     * jaring pengaman kedua untuk endpoint JSON yang dipanggil lewat fetch().
      */
-    private function ensureSuperadmin(Request $request): void
+    private function ensureLogAccess(Request $request): void
     {
-        if ($request->user()->role !== 'superadmin') {
-            abort(403, 'Halaman ini hanya bisa diakses oleh Super Admin.');
+        if (! $request->user()->canAccessMenu('log', 'readonly')) {
+            abort(403, 'Kamu tidak punya akses ke Log Aktivitas.');
         }
     }
 
@@ -27,7 +29,7 @@ class LoginAuditController extends Controller
      */
     public function index(Request $request)
     {
-        $this->ensureSuperadmin($request);
+        $this->ensureLogAccess($request);
 
         return view('login-audit');
     }
@@ -38,7 +40,7 @@ class LoginAuditController extends Controller
      */
     public function data(Request $request)
     {
-        $this->ensureSuperadmin($request);
+        $this->ensureLogAccess($request);
 
         $status = $request->query('status');
         $search = trim((string) $request->query('q', ''));
@@ -83,7 +85,7 @@ class LoginAuditController extends Controller
      */
     public function show(Request $request, LoginAttempt $attempt)
     {
-        $this->ensureSuperadmin($request);
+        $this->ensureLogAccess($request);
 
         $attempt->load('user:id,name,nim_nidn,email,role,created_at');
 

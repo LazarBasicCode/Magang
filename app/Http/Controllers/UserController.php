@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Mahasiswa;
 use App\Models\Dosen;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -58,7 +59,7 @@ class UserController extends Controller
     {
         $data = $this->validated($request, isUpdate: true, user: $user);
 
-        DB::transaction(function () use ($user, $data) {
+        DB::transaction(function () use ($request, $user, $data) {
             $user->name = $data['name'];
             $user->role = $data['role'];
             $user->nim_nidn = $data['identifier'] ?? null;
@@ -69,6 +70,17 @@ class UserController extends Controller
             $user->save();
 
             $this->syncIdentifier($user, $data['role'], $data['identifier'] ?? null);
+
+            // Beri tahu pemilik akun kalau datanya diubah oleh orang lain
+            // (admin/superadmin) — bukan oleh dirinya sendiri.
+            $actor = $request->user();
+            if ($actor && $actor->id !== $user->id) {
+                UserNotification::send($user->id, 'data_updated', [
+                    'title'       => 'Data akun Anda diperbarui',
+                    'description' => "Diubah oleh {$actor->name} ({$actor->role}).",
+                    'data'        => ['actor_id' => $actor->id, 'actor_name' => $actor->name],
+                ]);
+            }
         });
 
         $user->load('mahasiswa', 'dosen');

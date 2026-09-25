@@ -1,0 +1,182 @@
+/*
+ * Sistem toast notifikasi SIDA — dipakai di semua halaman lewat
+ * <link rel="stylesheet" href="{{ asset('css/toast.css') }}"> +
+ * <script src="{{ asset('js/toast.js') }}"></script>
+ *
+ * Dipakai lewat: Toast.show({ type: 'success'|'info'|'warning'|'error', message: '...' })
+ */
+
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column-reverse; /* item terbaru ditambahkan di akhir DOM = muncul paling atas visual */
+    gap: 0.6em;
+    max-width: min(92vw, 360px);
+    pointer-events: none; /* biar area kosong di sekitar toast tidak menghalangi klik ke halaman */
+}
+
+.toast-item {
+    pointer-events: auto;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.85em;
+    overflow: hidden;
+    padding: 12px 14px;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px -10px rgba(20, 30, 80, .35);
+    background-color: #f3f3f3;
+    color: #12204a;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.85em;
+    will-change: transform, opacity, filter;
+    transform-origin: bottom right;
+}
+
+/* ---------- Animasi masuk: kanan -> kiri, kecil -> besar, blur -> normal, atas -> bawah, digabung jadi satu ---------- */
+@keyframes toastEnter {
+    0% {
+        opacity: 0;
+        transform: translateX(46px) translateY(-18px) scale(0.82);
+        filter: blur(6px);
+    }
+    60% {
+        opacity: 1;
+        filter: blur(0.4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+.toast-item.is-entering {
+    animation: toastEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- Animasi keluar (auto-dismiss / ditutup manual) ---------- */
+@keyframes toastExit {
+    0% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        filter: blur(0);
+        max-height: 120px;
+        margin-top: 0;
+    }
+    60% {
+        opacity: 0;
+        transform: translateX(30px) scale(0.92);
+        filter: blur(4px);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(30px) scale(0.92);
+        filter: blur(4px);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-top: -0.6em; /* menutup gap flex supaya toast di bawahnya rapat naik */
+    }
+}
+.toast-item.is-leaving {
+    animation: toastExit 320ms cubic-bezier(0.4, 0, 1, 1) both;
+    pointer-events: none;
+}
+
+/* ---------- Efek "geser turun + blur sebentar" saat toast lain didorong oleh toast baru ---------- */
+.toast-item.is-shifting {
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease;
+}
+.toast-item.is-shifting.is-blur-pulse {
+    filter: blur(2px);
+}
+
+.toast-item:hover { transform: scale(1.015); }
+
+.toast-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.toast-icon svg {
+    width: 1.15em;
+    height: 1.15em;
+}
+
+.toast-content {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.6em;
+    min-width: 0;
+}
+.toast-text {
+    font-size: 0.95em;
+    line-height: 1.35;
+    user-select: none;
+    word-break: break-word;
+}
+.toast-text strong {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 1px;
+}
+
+.toast-close {
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+    transition: background-color 150ms ease;
+    flex-shrink: 0;
+    display: flex;
+}
+.toast-close:hover { background-color: rgba(0, 0, 0, .08); }
+.toast-close svg { width: 1em; height: 1em; }
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    transform: translateX(-100%);
+    animation: toastProgress 5000ms linear forwards;
+}
+@keyframes toastProgress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(0%); }
+}
+
+/* ---------- Varian warna ---------- */
+.toast-item.t-success { background-color: #d9fce7; color: #047857; }
+.toast-item.t-success .toast-progress { background-color: #047857; }
+
+.toast-item.t-info { background-color: #dcebff; color: #1e3a8a; }
+.toast-item.t-info .toast-progress { background-color: #1e3a8a; }
+
+.toast-item.t-warning { background-color: #fff2cf; color: #78350f; }
+.toast-item.t-warning .toast-progress { background-color: #78350f; }
+
+.toast-item.t-error { background-color: #ffdcdc; color: #7f1d1d; }
+.toast-item.t-error .toast-progress { background-color: #7f1d1d; }
+
+/* ---------- Dark mode: ngikut konvensi yang sudah dipakai di seluruh app ---------- */
+body.dark-mode .toast-item,
+[data-theme="dark"] .toast-item {
+    background-color: #1b2333;
+    color: #eaf0ff;
+    box-shadow: 0 12px 32px -10px rgba(0, 0, 0, .55);
+}
+body.dark-mode .toast-item.t-success, [data-theme="dark"] .toast-item.t-success { background-color: rgba(16, 185, 129, .16); color: #6ee7b7; }
+body.dark-mode .toast-item.t-info, [data-theme="dark"] .toast-item.t-info { background-color: rgba(59, 131, 246, .16); color: #93c5fd; }
+body.dark-mode .toast-item.t-warning, [data-theme="dark"] .toast-item.t-warning { background-color: rgba(245, 159, 11, .16); color: #fcd34d; }
+body.dark-mode .toast-item.t-error, [data-theme="dark"] .toast-item.t-error { background-color: rgba(239, 68, 68, .16); color: #fca5a5; }
+body.dark-mode .toast-close:hover, [data-theme="dark"] .toast-close:hover { background-color: rgba(255, 255, 255, .1); }
+
+@media (max-width: 480px) {
+    .toast-container { right: 10px; bottom: 10px; left: 10px; max-width: none; }
+}

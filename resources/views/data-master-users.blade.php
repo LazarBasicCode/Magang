@@ -12,6 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <title>Data Master Pengguna &middot; SIDA</title>
 </head>
 
@@ -117,10 +118,28 @@
                         <span class="current">Data Master Pengguna</span>
                     </div>
                     <div class="header-actions">
-                        <button type="button" class="icon-btn" aria-label="Notifikasi">
-                            <span class="material-symbols-outlined">notifications</span>
-                            <span class="dot"></span>
-                        </button>
+                        <!-- ============ NOTIFIKASI ============ -->
+                        <div class="notif-dropdown" id="notifDropdown">
+                            <button type="button" class="icon-btn" id="notifToggleBtn" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false">
+                                <span class="material-symbols-outlined">notifications</span>
+                            </button>
+
+                            <div class="notif-panel" id="notifPanel" role="menu" aria-hidden="true">
+                                <div class="notif-panel-header">
+                                    <h3 class="notif-panel-title">Notifikasi</h3>
+                                    <button type="button" class="notif-mark-all" id="notifMarkAllBtn">Tandai semua dibaca</button>
+                                </div>
+
+                                <div class="notif-panel-body" id="notifListWrap" hidden></div>
+
+                                <div class="notif-empty" id="notifEmpty">
+                                    <span class="material-symbols-outlined notif-empty-icon">notifications</span>
+                                    <p class="notif-empty-title">Belum ada notifikasi</p>
+                                    <p class="notif-empty-desc">Pemberitahuan baru akan muncul di sini.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ============ /NOTIFIKASI ============ -->
                         <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="Ganti Tema">
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
@@ -925,6 +944,7 @@
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
                     modalError.textContent = firstError;
                     modalError.hidden = false;
+                    Toast.show({ type: 'error', title: 'Gagal menyimpan', message: firstError });
                     return;
                 }
 
@@ -932,9 +952,14 @@
                 else insertRow(result.data);
                 applyFilters();
                 closeModal();
+                Toast.show({
+                    type: 'success',
+                    message: id ? 'Data pengguna berhasil diperbarui.' : 'Pengguna baru berhasil ditambahkan.',
+                });
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
+                Toast.show({ type: 'error', title: 'Gagal menyimpan', message: 'Tidak bisa terhubung ke server. Coba lagi.' });
             } finally {
                 modalSubmitBtn.disabled = false;
             }
@@ -952,10 +977,14 @@
                     },
                 });
                 const result = await res.json();
-                if (res.ok && result.success) removeRow(result.id);
-                else alert(result.message || 'Gagal menghapus data.');
+                if (res.ok && result.success) {
+                    removeRow(result.id);
+                    Toast.show({ type: 'success', message: 'Data pengguna berhasil dihapus.' });
+                } else {
+                    Toast.show({ type: 'error', title: 'Gagal menghapus', message: result.message || 'Gagal menghapus data.' });
+                }
             } catch (err) {
-                alert('Gagal terhubung ke server.');
+                Toast.show({ type: 'error', title: 'Gagal menghapus', message: 'Tidak bisa terhubung ke server.' });
             }
         }
 
@@ -970,6 +999,8 @@
         // Inisialisasi tampilan filter saat halaman pertama kali dimuat
         applyFilters();
     </script>
+    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/notifications.js') }}"></script>
 </body>
 
 </html>

@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <title>Kerja Sama &middot; SIDA</title>
 </head>
 
@@ -72,7 +73,7 @@
                 </a>
                 @endif
 
-                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses') || $__user->canAccessMenu('log'))
+                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
                 <div class="nav-heading">Administrasi</div>
                 @endif
                 @if($__user->canAccessMenu('data_master'))
@@ -86,12 +87,6 @@
                 <a href="{{ url('/hak-akses') }}" class="nav-link">
                     <span class="material-symbols-outlined">admin_panel_settings</span>
                     <span>Hak Akses</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('log'))
-                <a href="{{ url('/login-audit') }}" class="nav-link">
-                    <span class="material-symbols-outlined">history</span>
-                    <span>Log Aktivitas</span>
                 </a>
                 @endif
             </div>
@@ -118,10 +113,28 @@
                         <span class="current">Kerja Sama</span>
                     </div>
                     <div class="header-actions">
-                        <button type="button" class="icon-btn" aria-label="Notifikasi">
-                            <span class="material-symbols-outlined">notifications</span>
-                            <span class="dot"></span>
-                        </button>
+                        <!-- ============ NOTIFIKASI ============ -->
+                        <div class="notif-dropdown" id="notifDropdown">
+                            <button type="button" class="icon-btn" id="notifToggleBtn" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false">
+                                <span class="material-symbols-outlined">notifications</span>
+                            </button>
+
+                            <div class="notif-panel" id="notifPanel" role="menu" aria-hidden="true">
+                                <div class="notif-panel-header">
+                                    <h3 class="notif-panel-title">Notifikasi</h3>
+                                    <button type="button" class="notif-mark-all" id="notifMarkAllBtn">Tandai semua dibaca</button>
+                                </div>
+
+                                <div class="notif-panel-body" id="notifListWrap" hidden></div>
+
+                                <div class="notif-empty" id="notifEmpty">
+                                    <span class="material-symbols-outlined notif-empty-icon">notifications</span>
+                                    <p class="notif-empty-title">Belum ada notifikasi</p>
+                                    <p class="notif-empty-desc">Pemberitahuan baru akan muncul di sini.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ============ /NOTIFIKASI ============ -->
                         <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="Ganti Tema">
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
@@ -1327,6 +1340,8 @@
         // Set kondisi awal field arah saat modal pertama kali di-load
         updateConditionalFields(document.getElementById('form-jenis').value);
     </script>
+    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/notifications.js') }}"></script>
 </body>
 
 </html>

@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
 
     <script>
         (function () {
@@ -574,18 +575,6 @@
 
             <form id="loginForm" method="POST" action="{{ url('/login-process') }}" class="rise" style="--i:4">
                 @csrf
-                @if (session('status'))
-                <div class="alert alert-ok">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>{{ session('status') }}</span>
-                </div>
-                @endif
-                @error('username')
-                <div class="alert">
-                    <i class="fa-solid fa-circle-exclamation"></i>
-                    <span>{{ $message }}</span>
-                </div>
-                @enderror
                 <div class="field">
                     <label for="usernameInput">User / NIM / NIDN</label>
                     <div class="field-wrap">
@@ -786,6 +775,18 @@
             forgotSubmitBtn.innerHTML = originalHtml;
         }
     });
+</script>
+<script src="{{ asset('js/toast.js') }}"></script>
+<script>
+    // Pesan hasil login gagal / reset password berhasil, dulunya box <div class="alert">
+    // statis di dalam form — sekarang ditampilkan sebagai toast (dengan suara) begitu
+    // halaman ini selesai dimuat.
+    @if (session('status'))
+        Toast.show({ type: 'success', message: @json(session('status')) });
+    @endif
+    @error('username')
+        Toast.show({ type: 'error', title: 'Login gagal', message: @json($message) });
+    @enderror
 </script>
 </body>
 </html>

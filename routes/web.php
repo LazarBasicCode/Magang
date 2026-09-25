@@ -11,6 +11,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\HakAksesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginAuditController;
+use App\Http\Controllers\NotificationController;
 
 // Halaman Login (index.blade.php)
 Route::get('/', function () {
@@ -105,13 +106,16 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/hak-akses/{user}', [HakAksesController::class, 'update'])->name('hak-akses.update');
     });
 
-    // ---- Log Aktivitas (audit percobaan login) ----
-    // Superadmin selalu bisa (bypass, lihat User::menuLevel()); admin cuma
-    // bisa kalau superadmin memberi akses lewat halaman Hak Akses.
-    // Mahasiswa/dosen tidak pernah punya opsi ini sama sekali.
-    Route::middleware('menu.access:log,readonly')->group(function () {
-        Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
-        Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');
-        Route::get('/login-audit/{attempt}', [LoginAuditController::class, 'show'])->name('login-audit.show');
-    });
+    // ---- Audit Percobaan Login ----
+    // Dibatasi ke role superadmin langsung di controller (lihat
+    // LoginAuditController), bukan lewat menu.access, karena isinya data
+    // keamanan yang belum perlu masuk sistem hak-akses per-menu.
+    Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
+    Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');
+    Route::get('/login-audit/{attempt}', [LoginAuditController::class, 'show'])->name('login-audit.show');
+
+    // ---- Notifikasi (untuk semua user yang login, bukan cuma admin) ----
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::post('/notifications/{userNotification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 });

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LoginAttempt;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,13 @@ class AuthController extends Controller
 
             $this->logAttempt($request, Auth::user(), 'success');
 
+            // Cek dulu SEBELUM session di-regenerate: kalau akun ini sudah
+            // punya sesi aktif lain (di device/browser berbeda), berarti ada
+            // login "kedua" yang terjadi sementara sesi pertama masih hidup.
+            // Beri tahu pemiliknya lewat notifikasi — supaya kalau itu bukan
+            // dia sendiri, dia langsung sadar dan bisa reset password.
+            $this->notifyIfConcurrentLogin($request, Auth::user());
+
             $request->session()->regenerate();
             
             // Redirect berdasarkan role dari tabel users
@@ -113,6 +121,36 @@ class AuthController extends Controller
      * dijalankan), proses login utama tetap jalan seperti biasa — audit
      * log itu pelengkap, bukan syarat login berhasil/gagal.
      */
+    /**
+     * Deteksi apakah akun ini sudah punya sesi aktif lain saat login ini
+     * terjadi. Kalau iya, kirim notifikasi ke pemilik akun berisi info
+     * kapan & dari IP mana login "tambahan" ini terjadi — baik sesi lama
+     * maupun sesi baru sama-sama akan melihat notifikasi ini karena
+     * keduanya menuju akun yang sama.
+     */
+    private function notifyIfConcurrentLogin(Request $request, User $user): void
+    {
+        try {
+            $hasOtherActiveSession = DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('id', '!=', $request->session()->getId())
+                ->exists();
+
+            if (!$hasOtherActiveSession) {
+                return;
+            }
+
+            UserNotification::send($user->id, 'concurrent_login', [
+                'title'       => 'Login baru terdeteksi',
+                'description' => 'Akun Anda baru saja login dari perangkat/IP lain ('.$request->ip()
+                    .') sementara sesi sebelumnya masih aktif. Kalau ini bukan Anda, segera ganti password.',
+                'data' => ['ip' => $request->ip(), 'user_agent' => $request->userAgent()],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     private function logAttempt(Request $request, ?User $user, string $status): void
     {
         try {

@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <title>Hak Akses &middot; SIDA</title>
 </head>
 
@@ -73,7 +74,7 @@
                 </a>
                 @endif
 
-                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses') || $__user->canAccessMenu('log'))
+                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
                 <div class="nav-heading">Administrasi</div>
                 @endif
                 @if($__user->canAccessMenu('data_master'))
@@ -86,12 +87,6 @@
                 <a href="{{ url('/hak-akses') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">shield_person</span>
                     <span>Hak Akses</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('log'))
-                <a href="{{ url('/login-audit') }}" class="nav-link">
-                    <span class="material-symbols-outlined">history</span>
-                    <span>Log Aktivitas</span>
                 </a>
                 @endif
             </div>
@@ -118,10 +113,28 @@
                         <span class="current">Hak Akses</span>
                     </div>
                     <div class="header-actions">
-                        <button type="button" class="icon-btn" aria-label="Notifikasi">
-                            <span class="material-symbols-outlined">notifications</span>
-                            <span class="dot"></span>
-                        </button>
+                        <!-- ============ NOTIFIKASI ============ -->
+                        <div class="notif-dropdown" id="notifDropdown">
+                            <button type="button" class="icon-btn" id="notifToggleBtn" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false">
+                                <span class="material-symbols-outlined">notifications</span>
+                            </button>
+
+                            <div class="notif-panel" id="notifPanel" role="menu" aria-hidden="true">
+                                <div class="notif-panel-header">
+                                    <h3 class="notif-panel-title">Notifikasi</h3>
+                                    <button type="button" class="notif-mark-all" id="notifMarkAllBtn">Tandai semua dibaca</button>
+                                </div>
+
+                                <div class="notif-panel-body" id="notifListWrap" hidden></div>
+
+                                <div class="notif-empty" id="notifEmpty">
+                                    <span class="material-symbols-outlined notif-empty-icon">notifications</span>
+                                    <p class="notif-empty-title">Belum ada notifikasi</p>
+                                    <p class="notif-empty-desc">Pemberitahuan baru akan muncul di sini.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ============ /NOTIFIKASI ============ -->
                         <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="Ganti Tema">
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
@@ -554,9 +567,6 @@
         // legenda, selama modal dibuka untuk pengguna dengan role tersebut.
         // ----------------------------------------------------------------
         const ROLES_WITHOUT_FULL_ACCESS = ['mahasiswa', 'dosen'];
-        // Menu yang cuma relevan buat admin/superadmin — harus sinkron dengan
-        // HakAkses::ADMIN_ONLY_MENUS di backend.
-        const ADMIN_ONLY_MENUS = ['log', 'hak_akses', 'data_master'];
 
         function applyRoleAccessRules(role) {
             const restricted = ROLES_WITHOUT_FULL_ACCESS.includes((role || '').toLowerCase());
@@ -565,15 +575,6 @@
             });
             const fullLevelItem = document.querySelector('#accessModal .access-level-item[data-value="penuh"]');
             if (fullLevelItem) fullLevelItem.hidden = restricted;
-
-            // Sembunyikan total baris Log/Hak Akses/Data Master kalau target-nya
-            // mahasiswa/dosen — mereka memang tidak pernah bisa mengaksesnya,
-            // jadi opsinya tidak perlu ditampilkan sama sekali di daftar menu.
-            ADMIN_ONLY_MENUS.forEach((menuKey) => {
-                const row = document.querySelector(`#permissionList .permission-row[data-menu="${menuKey}"]`);
-                if (row) row.hidden = restricted;
-            });
-
             return restricted;
         }
 
@@ -907,6 +908,8 @@
         // Inisialisasi tampilan filter saat halaman pertama kali dimuat
         applyFilters();
     </script>
+    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/notifications.js') }}"></script>
 </body>
 
 </html>

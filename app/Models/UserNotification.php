@@ -18,6 +18,7 @@ class UserNotification extends Model
         'title',
         'description',
         'data',
+        'read_at',
     ];
 
     protected $casts = [

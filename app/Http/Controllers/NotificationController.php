@@ -53,15 +53,17 @@ class NotificationController extends Controller
     private function transform(UserNotification $n): array
     {
         return [
-            'id'          => $n->id,
-            'type'        => $n->type,
-            'color'       => $n->color,
-            'icon'        => $n->icon,
-            'title'       => $n->title,
-            'description' => $n->description,
-            'time_rel'    => $n->created_at->diffForHumans(),
-            'group'       => $n->created_at->isToday() ? 'Hari Ini' : ($n->created_at->isYesterday() ? 'Kemarin' : $n->created_at->format('d M Y')),
-            'is_unread'   => is_null($n->read_at),
+            'id'             => $n->id,
+            'type'           => $n->type,
+            'color'          => $n->color,
+            'icon'           => $n->icon,
+            'title'          => $n->title,
+            'description'    => $n->description,
+            'time_rel'       => $n->created_at->diffForHumans(),
+            'time_full'      => $n->created_at->translatedFormat('d F Y, H:i'),
+            'group'          => $n->created_at->isToday() ? 'Hari Ini' : ($n->created_at->isYesterday() ? 'Kemarin' : $n->created_at->format('d M Y')),
+            'is_unread'      => is_null($n->read_at),
+            'data'           => $n->data,
         ];
     }
 }

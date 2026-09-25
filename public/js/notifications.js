@@ -24,6 +24,7 @@
     if (!dropdown || !toggleBtn || !panel) return;
 
     let seenIds = null; // null = belum pernah polling sama sekali (initial load)
+    let lastNotifications = []; // cache hasil poll() terakhir, dipakai modal detail biar buka instan tanpa fetch ulang
 
     const COLOR_TO_TOAST_TYPE = {
         success: 'success',
@@ -31,6 +32,12 @@
         warning: 'warning',
         info: 'info',
         primary: 'info',
+    };
+
+    const TYPE_LABELS = {
+        data_updated: 'Perubahan Data',
+        concurrent_login: 'Keamanan Akun',
+        account_deleted: 'Akun Dihapus',
     };
 
     function ensureDot() {
@@ -121,11 +128,84 @@
             }
 
             render(notifications, json.unread_count || 0);
+            lastNotifications = notifications;
         } catch (e) {
             // Diam saja kalau polling gagal (mis. koneksi putus sebentar) —
             // tidak perlu ganggu user dengan error di lonceng notifikasi.
         }
     }
+
+    // ---------------- Modal Detail Notifikasi ----------------
+    let modalOverlay = null;
+
+    function buildModal() {
+        if (modalOverlay) return modalOverlay;
+
+        modalOverlay = document.createElement('div');
+        modalOverlay.className = 'notifm-overlay';
+        modalOverlay.innerHTML = `
+            <div class="notifm-box" role="dialog" aria-modal="true">
+                <button type="button" class="notifm-close" aria-label="Tutup">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+                <div class="notifm-icon" id="notifmIcon"><span class="material-symbols-outlined" id="notifmIconGlyph"></span></div>
+                <div class="notifm-type" id="notifmType"></div>
+                <h3 class="notifm-title" id="notifmTitle"></h3>
+                <p class="notifm-desc" id="notifmDesc"></p>
+                <div class="notifm-meta" id="notifmMeta"></div>
+            </div>
+        `;
+        document.body.appendChild(modalOverlay);
+
+        modalOverlay.querySelector('.notifm-close').addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('is-open')) closeModal();
+        });
+
+        return modalOverlay;
+    }
+
+    function closeModal() {
+        if (!modalOverlay || !modalOverlay.classList.contains('is-open')) return;
+        modalOverlay.classList.add('is-closing');
+        modalOverlay.classList.remove('is-open');
+        setTimeout(() => modalOverlay.classList.remove('is-closing'), 220);
+    }
+
+    function openDetailModal(id) {
+        const n = lastNotifications.find((item) => String(item.id) === String(id));
+        if (!n) return;
+
+        const overlay = buildModal();
+        const iconWrap = overlay.querySelector('#notifmIcon');
+        iconWrap.className = `notifm-icon c-${n.color}`;
+        overlay.querySelector('#notifmIconGlyph').textContent = n.icon;
+        overlay.querySelector('#notifmType').textContent = TYPE_LABELS[n.type] || 'Notifikasi';
+        overlay.querySelector('#notifmTitle').textContent = n.title;
+        overlay.querySelector('#notifmDesc').textContent = n.description;
+
+        const metaRows = [];
+        metaRows.push(`<div class="notifm-meta-row"><span class="material-symbols-outlined">schedule</span> ${escapeHtml(n.time_full || n.time_rel)}</div>`);
+        if (n.data && n.data.actor_name) {
+            metaRows.push(`<div class="notifm-meta-row"><span class="material-symbols-outlined">person</span> Dilakukan oleh ${escapeHtml(n.data.actor_name)}</div>`);
+        }
+        if (n.data && n.data.ip) {
+            metaRows.push(`<div class="notifm-meta-row"><span class="material-symbols-outlined">lan</span> IP: ${escapeHtml(n.data.ip)}</div>`);
+        }
+        overlay.querySelector('#notifmMeta').innerHTML = metaRows.join('');
+
+        // Reset animasi tiap kali dibuka (biar animasi masuk selalu replay walau modal yang sama)
+        overlay.classList.remove('is-closing');
+        void overlay.offsetHeight;
+        overlay.classList.add('is-open');
+
+        closePanel(); // tutup dropdown lonceng biar gak nabrak modal
+    }
+
+    // ---------------- Wiring umum ----------------
 
     function closePanel() {
         dropdown.classList.remove('is-open');
@@ -167,11 +247,14 @@
         } catch (e) { /* UI sudah terlanjur update optimistis, aman diabaikan */ }
     });
 
-    // Klik satu notifikasi -> tandai dibaca (tanpa reload / tanpa menutup panel)
+    // Klik satu notifikasi -> buka modal detail + tandai dibaca (kalau belum)
     listWrap.addEventListener('click', (e) => {
         const item = e.target.closest('.notif-item');
         if (!item) return;
         e.preventDefault();
+
+        openDetailModal(item.dataset.id);
+
         if (!item.classList.contains('is-unread')) return;
 
         item.classList.remove('is-unread');

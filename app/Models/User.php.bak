@@ -138,48 +138,4 @@ class User extends Authenticatable
         }
         return $levels;
     }
-
-    /**
-     * Urutan peringkat role, dipakai untuk perbandingan hierarki
-     * (superadmin > admin > dosen/mahasiswa). Dosen & mahasiswa sengaja
-     * diberi peringkat sama karena tidak ada relasi kelola di antara
-     * keduanya lewat Data Master.
-     */
-    public const ROLE_RANK = [
-        'superadmin' => 3,
-        'admin'      => 2,
-        'dosen'      => 1,
-        'mahasiswa'  => 1,
-    ];
-
-    public function roleRank(): int
-    {
-        return self::ROLE_RANK[$this->role] ?? 0;
-    }
-
-    /**
-     * True kalau user ini ($this, sebagai "actor") boleh mengelola
-     * (edit/hapus/ubah role) akun $target lewat Data Master Pengguna.
-     *
-     * Aturan hierarki:
-     * - superadmin boleh mengelola siapa saja, termasuk superadmin lain.
-     * - admin hanya boleh mengelola role di bawahnya sendiri (dosen,
-     *   mahasiswa) — TIDAK admin lain, TIDAK superadmin, TIDAK dirinya
-     *   sendiri (pakai id check terpisah untuk kasus itu di controller).
-     * - dosen/mahasiswa tidak pernah boleh mengelola user lain lewat
-     *   endpoint ini (mereka semestinya tidak lolos middleware menu.access
-     *   sama sekali, tapi dicek juga di sini sebagai jaring pengaman).
-     */
-    public function canManageTargetUser(User $target): bool
-    {
-        if ($this->role === 'superadmin') {
-            return true;
-        }
-
-        if ($this->role === 'admin') {
-            return $target->roleRank() < $this->roleRank();
-        }
-
-        return false;
-    }
 }

@@ -3978,6 +3978,9 @@ body.dark-mode .chart-tooltip::after {
     flex-direction: column;
     gap: 2px;
 }
+.notif-panel-body[hidden] {
+    display: none;
+}
 .notif-group-label {
     padding: 10px 10px 4px;
     font-size: 10.5px;
@@ -4089,6 +4092,9 @@ body.dark-mode .chart-tooltip::after {
     text-align: center;
     gap: 6px;
     padding: 40px 20px;
+}
+.notif-empty[hidden] {
+    display: none;
 }
 .notif-empty-icon {
     font-size: 30px;

@@ -115,8 +115,8 @@
     min-width: 0;
 }
 .toast-text {
-    font-size: 0.95em;
-    line-height: 1.35;
+    font-size: 1.20em;
+    line-height: 1.50;
     user-select: none;
     word-break: break-word;
 }

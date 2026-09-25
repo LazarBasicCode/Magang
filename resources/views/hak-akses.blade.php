@@ -155,7 +155,7 @@
                 </div>
 
                 @unless($canManage)
-                <div class="filter-card" style="margin-bottom: 20px; display:flex; align-items:center; gap:10px; padding: 14px 18px;">
+                <div class="filter-card" style="margin-bottom: .3rem; display:flex; align-items:center; gap:10px; padding: 14px 18px;">
                     <span class="material-symbols-outlined" style="color: var(--warning);">visibility</span>
                     <span class="plain-text">Kamu hanya punya akses <strong>Read Only</strong> di menu ini &mdash; bisa melihat data, tapi tidak bisa mengubah hak akses siapa pun.</span>
                 </div>

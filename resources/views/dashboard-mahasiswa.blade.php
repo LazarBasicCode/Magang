@@ -141,17 +141,18 @@
 
                     <!-- HERO STAT CARDS: menempel di dalam dash-panel, tanpa shadow sendiri -->
                     <div class="stat-hero-grid">
-                        <div class="stat-hero-card grad-1">
+                        <div class="stat-hero-card grad-1"></div>
+                        <div class="stat-hero-card grad-2">
                             <span class="material-symbols-outlined stat-hero-icon">local_fire_department</span>
                             <p class="stat-hero-label">Total Kegiatan</p>
                             <div class="stat-hero-value">{{ $stats['total'] }} <span class="stat-hero-unit">kegiatan</span></div>
                         </div>
-                        <div class="stat-hero-card grad-2">
+                        <div class="stat-hero-card grad-3">
                             <span class="material-symbols-outlined stat-hero-icon">trending_up</span>
                             <p class="stat-hero-label">Rata-rata per Bulan</p>
                             <div class="stat-hero-value">{{ $stats['avg_per_month'] }} <span class="stat-hero-unit">kegiatan/bln</span></div>
                         </div>
-                        <div class="stat-hero-card grad-3">
+                        <div class="stat-hero-card grad-4">
                             <span class="material-symbols-outlined stat-hero-icon">public</span>
                             <p class="stat-hero-label">Capaian Internasional</p>
                             <div class="stat-hero-value">{{ $stats['internasional_pct'] }}<span class="stat-hero-unit">%</span></div>

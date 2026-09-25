@@ -2,10 +2,11 @@
    1. TOKENS (design variables)
    ========================================================== */
 :root {
-    --canvas: #eef0f7;
+    --canvas: #eceef8;
     --card: #ffffff;
-    --border: #dfe3f1;
-    --border-strong: #ced5ea;
+    --border: #dde1f1;
+    --border-strong: #ced3e4;
+    --modal: #eff0f8;
 
     --ink: #2f3349;
     --ink-muted: #6b7280;
@@ -36,8 +37,8 @@
     --neutral-bg: #e3e4ed;
     --neutral-border: #c8ccd8;
 
-    --shadow-card: 0 1px 3px rgba(88, 105, 146, 0.13), 0 1px 2px rgba(57, 72, 110, 0.06);
-    --shadow-btn: 0 3px 8px rgba(91, 95, 239, 0.38);
+    --shadow-card: 0 1px 3px rgba(88, 105, 146, 0.2), 0 1px 2px rgba(57, 72, 110, 0.06);
+    --shadow-btn: 0 3px 8px rgba(91, 95, 239, 0.4);
 
     --sidebar-w: 260px;
     --header-h: 64px;
@@ -48,8 +49,8 @@
 body.dark-mode {
     --canvas: #21273c;
     --card: #252c43;
-    --border: #2f3c5a;
-    --border-strong: #344364;
+    --border: #35425f;
+    --border-strong: #384766;
     --ink: #f8fafc;
     --ink-muted: #94a3b8;
     --ink-faint: #64748b;
@@ -89,9 +90,9 @@ body.dark-mode .app-sidebar {
 }
 
 body.dark-mode .modal-card {
-    background: rgba(17, 25, 43, 0.5);
-    backdrop-filter: blur(2rem);
-    -webkit-backdrop-filter: blur(2rem);
+    background: rgba(37, 49, 78, 0.35);
+    backdrop-filter: blur(1.5rem);
+    -webkit-backdrop-filter: blur(1.5rem);
     /* background-image: linear-gradient(180deg, rgba(77, 106, 235, 0.096) 0%, rgba(255, 255, 255, 0) 45%); */
 }
 
@@ -554,7 +555,7 @@ button {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 18px;
-    margin-bottom: .5rem;
+    margin-bottom: .3rem;
 }
 
 @media (min-width: 1024px) {
@@ -746,7 +747,7 @@ button {
     width: 100%;
     height: 40px;
     border-radius: 8px;
-    border: 1px solid var(--border-strong);
+    border: 1px solid var(--border);
     background: var(--card);
     color: var(--ink);
     font-size: 13px;
@@ -789,7 +790,7 @@ button {
     width: 100%;
     height: 40px;
     border-radius: 8px;
-    border: 1px solid var(--border-strong);
+    border: 1px solid var(--border);
     background: var(--card);
     color: var(--ink);
     font-size: 13px;
@@ -1409,6 +1410,10 @@ table.data-table {
     visibility: visible;
 }
 
+body.dark-mode .modal-backdrop {
+    background: rgba(12, 14, 19, 0.45);
+}
+
 .modal-card {
     position: fixed;
     top: 50%;
@@ -1421,9 +1426,7 @@ table.data-table {
     flex-direction: column;
     border-radius: 18px;
     overflow: hidden;
-    background-color: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(1rem);
-    -webkit-backdrop-filter: blur(1rem);
+    background-color: var(--modal);
     border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.1);
     opacity: 0;
@@ -2320,9 +2323,62 @@ body.dark-mode {
     padding: 26px 28px 28px;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    /* Gradasi biru → ungu muda, lembut dan konsisten */
-    background: linear-gradient(135deg, #1938c2 0%, #6655e7 55%, #9d7bf5 100%);
+    /* Gradasi ungu yang lebih terang, bergerak lembut seperti bendera berkibar */
+    background:
+        radial-gradient(circle at 100% 0%, rgba(25, 12, 86, .72) 0, rgba(25, 12, 86, .42) 18%, transparent 43%),
+        radial-gradient(circle at 0% 100%, rgba(31, 18, 112, .76) 0, rgba(31, 18, 112, .44) 20%, transparent 46%),
+        linear-gradient(120deg, #0a0950 0%, #5135cf 38%, #8265ff 58%, #221172 100%);
+    background-size: 155% 155%, 155% 155%, 240% 240%;
+    background-position: 100% 0%, 0% 100%, 0% 50%;
+    animation: dash-gradient-shift 9s ease-in-out infinite alternate;
     box-shadow: var(--shadow-card);
+}
+
+@keyframes dash-gradient-shift {
+    0% {
+        background-position: 100% 0%, 0% 100%, 0% 48%;
+    }
+    35% {
+        background-position: 92% 8%, 8% 92%, 42% 52%;
+    }
+    70% {
+        background-position: 100% 0%, 0% 100%, 78% 48%;
+    }
+    100% {
+        background-position: 94% 6%, 6% 94%, 100% 52%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dash-panel {
+        animation: none;
+    }
+}
+
+/* Bright mode: gradient lebih terang dengan basis ungu #5135cf */
+body:not(.dark-mode) .dash-panel {
+    background:
+        radial-gradient(circle at 100% 0%, rgba(73, 49, 212, 0.38) 0, rgba(72, 44, 199, 0.16) 18%, transparent 43%),
+        radial-gradient(circle at 0% 100%, rgba(102, 76, 231, 0.42) 0, rgba(105, 80, 230, 0.18) 20%, transparent 46%),
+        linear-gradient(120deg, #4a3ee6 0%, #685fe0 38%, #9d9cf4 58%, #5a51d5 100%);
+    background-size: 155% 155%, 155% 155%, 240% 240%;
+    background-position: 100% 0%, 0% 100%, 0% 50%;
+    animation-name: dash-gradient-shift-bright;
+}
+
+@keyframes dash-gradient-shift-bright {
+    0% {
+        background-position: 100% 0%, 0% 100%, 0% 48%;
+    }
+    35% {
+        background-position: 92% 8%, 8% 92%, 42% 52%;
+    }
+    70% {
+        background-position: 100% 0%, 0% 100%, 78% 48%;
+    }
+    100% {
+        background-position: 94% 6%, 6% 94%, 100% 52%;
+    }
 }
 
 .dash-panel::before,
@@ -2401,7 +2457,7 @@ body.dark-mode {
 }
 
 .dash-welcome-title {
-    font-size: 1.7rem;
+    font-size: 1.9rem;
     font-weight: 800;
     margin: 0 0 4px;
     letter-spacing: -.01em;
@@ -2475,10 +2531,11 @@ body.dark-mode {
     z-index: 1;
 }
 
-/* --- Baris bawah: 3 stat, tetap di tengah panel (bukan mepet ke satu sisi) --- */
+/* --- Baris bawah --- */
 .stat-hero-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* Kartu mengikuti kebutuhan teks, lalu hanya mengisi ruang tersisa. */
+    grid-template-columns: repeat(4, minmax(max-content, 1fr));
     gap: 18px;
     position: relative;
     z-index: 1;
@@ -2493,7 +2550,7 @@ body.dark-mode {
 /* Tile stat: menempel erat dengan panel utama, TANPA shadow sendiri.
    Border tipis translucent + tone kaca sebagai satu-satunya pemisah visual. */
 .stat-hero-card {
-    border-radius: 12px;
+    border-radius: 1rem;
     padding: 16px 18px;
     color: #fff;
     position: relative;
@@ -2502,17 +2559,55 @@ body.dark-mode {
     box-shadow: none;
 }
 
-/* Tiga varian gradasi jelas berbeda, tapi tetap satu keluarga biru–ungu */
 .stat-hero-card.grad-1 {
-    background: linear-gradient(45deg, #ff853f 0%, #aa1cce 100%);
+    padding: 0; 
 }
-
 .stat-hero-card.grad-2 {
-    background: linear-gradient(45deg, #9d95f8 0%, #640ada 100%);
+    background: linear-gradient(45deg, rgba(255, 130, 58, 0.6) 0%, rgba(128, 8, 88, 0.2) 50%, rgba(51, 3, 90, 0.3) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, .18);
 }
 
 .stat-hero-card.grad-3 {
-    background: linear-gradient(45deg, #5ed4f8 0%, #0bcc82 100%);
+    background: linear-gradient(45deg, rgba(160, 151, 255, 0.6) 0%, rgba(77, 11, 131, 0.2) 50%, rgba(38, 3, 83, 0.3) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, .18);
+}
+
+.stat-hero-card.grad-4 {
+    background: linear-gradient(45deg, rgba(94, 212, 248, 0.6) 0%, rgba(14, 134, 118, 0.2) 50%, rgba(3, 77, 48, 0.3) 100%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, .18);
+}
+
+.stat-hero-card.grad-2,
+.stat-hero-card.grad-3,
+.stat-hero-card.grad-4 {
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease, filter .25s ease;
+}
+
+.stat-hero-card.grad-2:hover,
+.stat-hero-card.grad-3:hover,
+.stat-hero-card.grad-4:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, .55);
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+    filter: saturate(1.15) brightness(1.08);
+}
+
+.stat-hero-card.grad-2:hover .stat-hero-icon,
+.stat-hero-card.grad-3:hover .stat-hero-icon,
+.stat-hero-card.grad-4:hover .stat-hero-icon {
+    color: #fff;
+    opacity: .95;
+    transform: scale(1.14) rotate(-4deg);
+}
+
+.stat-hero-icon {
+    transition: color .25s ease, opacity .25s ease, transform .25s ease;
 }
 
 .stat-hero-label {
@@ -2525,7 +2620,7 @@ body.dark-mode {
 }
 
 .stat-hero-value {
-    font-size: 30px;
+    font-size: 2rem;
     font-weight: 800;
     display: flex;
     align-items: baseline;

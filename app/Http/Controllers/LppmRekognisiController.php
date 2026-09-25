@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Rekognisi;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 
 class LppmRekognisiController extends Controller
@@ -50,6 +51,8 @@ class LppmRekognisiController extends Controller
 
         $item = Rekognisi::create($data)->load('user');
 
+        $this->notifyOwnerIfByOthers($request, $item, 'ditambahkan');
+
         return response()->json(['success' => true, 'data' => $this->format($item)]);
     }
 
@@ -63,6 +66,8 @@ class LppmRekognisiController extends Controller
         $rekognisi->update($data);
         $rekognisi->load('user');
 
+        $this->notifyOwnerIfByOthers($request, $rekognisi, 'diperbarui');
+
         return response()->json(['success' => true, 'data' => $this->format($rekognisi)]);
     }
 
@@ -70,10 +75,34 @@ class LppmRekognisiController extends Controller
     {
         $this->authorizeOwnership($request, $rekognisi);
 
+        $rekognisi->loadMissing('user');
+        $this->notifyOwnerIfByOthers($request, $rekognisi, 'dihapus');
+
         $id = $rekognisi->id;
         $rekognisi->delete();
 
         return response()->json(['success' => true, 'id' => $id]);
+    }
+
+    /**
+     * Kalau yang menambah/mengubah/menghapus BUKAN pemilik data rekognisi
+     * itu sendiri (berarti admin/staf yang mengelola data dosen/mahasiswa
+     * lain), beri tahu pemiliknya lewat notifikasi.
+     */
+    private function notifyOwnerIfByOthers(Request $request, Rekognisi $item, string $aksi): void
+    {
+        $actor = $request->user();
+        $ownerId = $item->user_id;
+
+        if (!$actor || !$ownerId || $actor->id === $ownerId) {
+            return;
+        }
+
+        UserNotification::send($ownerId, 'data_updated', [
+            'title'       => "Data rekognisi Anda {$aksi}",
+            'description' => "\"{$item->mitra}\" ({$item->jenis}) {$aksi} oleh {$actor->name} ({$actor->role}).",
+            'data'        => ['actor_id' => $actor->id, 'actor_name' => $actor->name, 'rekognisi_id' => $item->id],
+        ]);
     }
 
     private function enforceOwnUser(Request $request, array &$data): void

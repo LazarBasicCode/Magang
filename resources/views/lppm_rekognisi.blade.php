@@ -1131,15 +1131,21 @@
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
                     modalError.textContent = firstError;
                     modalError.hidden = false;
+                    Toast.show({ type: 'error', title: 'Gagal menyimpan', message: firstError });
                     return;
                 }
                 if (id) updateRow(result.data);
                 else insertRow(result.data);
                 applyFilters();
                 closeModal();
+                Toast.show({
+                    type: 'success',
+                    message: id ? 'Data rekognisi berhasil diperbarui.' : 'Data rekognisi baru berhasil ditambahkan.',
+                });
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
+                Toast.show({ type: 'error', title: 'Gagal menyimpan', message: 'Tidak bisa terhubung ke server. Coba lagi.' });
             } finally {
                 modalSubmitBtn.disabled = false;
             }
@@ -1156,10 +1162,14 @@
                     }
                 });
                 const result = await res.json();
-                if (res.ok && result.success) removeRow(result.id);
-                else alert(result.message || 'Gagal menghapus data.');
+                if (res.ok && result.success) {
+                    removeRow(result.id);
+                    Toast.show({ type: 'success', message: 'Data rekognisi berhasil dihapus.' });
+                } else {
+                    Toast.show({ type: 'error', title: 'Gagal menghapus', message: result.message || 'Gagal menghapus data.' });
+                }
             } catch (err) {
-                alert('Gagal terhubung ke server.');
+                Toast.show({ type: 'error', title: 'Gagal menghapus', message: 'Tidak bisa terhubung ke server.' });
             }
         }
 

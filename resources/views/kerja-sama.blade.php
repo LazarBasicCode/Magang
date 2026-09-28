@@ -1010,6 +1010,43 @@ $__accessRows = $__user->accessBreakdown();
         // Set kondisi awal (default jenis = semua -> field arah disembunyikan)
         updateFilterArahVisibility();
 
+        // ---- Batasi pilihan "Jenis" sesuai "Tipe User" yang dipilih di filter ----
+        // Mahasiswa: hanya Conference, PKL, Sharing Session.
+        // Dosen    : semua jenis kecuali PKL.
+        // Semua    : semua jenis.
+        const JENIS_ALLOWED_BY_TIPE = {
+            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
+            dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
+                    'pengabdian_internasional', 'research_internasional', 'lainnya'],
+        };
+
+        function syncFilterJenisOptions() {
+            const tipe = document.getElementById('filter-tipe-user')?.value || 'semua';
+            const allowed = JENIS_ALLOWED_BY_TIPE[tipe]; // undefined = semua boleh
+            const jenisDropdown = document.getElementById('filter-jenis')?.closest('[data-dropdown]');
+            if (!jenisDropdown) return;
+
+            jenisDropdown.querySelectorAll('.dropdown-option').forEach((opt) => {
+                const v = opt.dataset.value;
+                const show = v === 'semua' || !allowed || allowed.includes(v);
+                opt.style.display = show ? '' : 'none';
+            });
+
+            // Kalau jenis yang sedang dipilih tidak valid untuk tipe ini, kembalikan ke "Semua Jenis".
+            const current = document.getElementById('filter-jenis').value;
+            if (current !== 'semua' && allowed && !allowed.includes(current)) {
+                resetDropdown(jenisDropdown);
+                updateFilterArahVisibility();
+                applyFilters();
+            }
+        }
+
+        document.getElementById('filter-tipe-user')?.closest('[data-dropdown]')
+            ?.querySelectorAll('.dropdown-option')
+            .forEach((opt) => opt.addEventListener('click', () => setTimeout(syncFilterJenisOptions, 0)));
+
+        syncFilterJenisOptions();
+
         let searchDebounce;
         document.getElementById('filter-search')?.addEventListener('input', () => {
             clearTimeout(searchDebounce);

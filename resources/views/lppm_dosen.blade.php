@@ -138,19 +138,82 @@
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
                         <div class="header-divider"></div>
-                        <div class="header-profile">
-                            <img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
-                            <div class="header-profile-text">
-                                <span class="header-profile-name">{{ $__user->name }}</span>
-                                <span class="header-profile-role">{{ $__user->accessLabelFor('lppm_dosen') }}</span>
+
+
+                        {{-- ============ PROFILE DROPDOWN ============ --}}
+                        @php
+                        $__initials = $__user->initials();
+                        $__avatarColor = $__user->avatarColorClass();
+                        $__accessRows = $__user->accessBreakdown();
+                        @endphp
+                        <div class="header-profile-dropdown" id="profileDropdown">
+                            <button type="button" class="header-profile-trigger" id="profileToggleBtn"
+                                aria-haspopup="true" aria-expanded="false">
+                                <div class="header-profile-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                <div class="header-profile-text">
+                                    <span class="header-profile-name">{{ $__user->name }}</span>
+                                    <span class="header-profile-role">{{ $__user->accessLabelFor('lppm_dosen') }}</span>
+                                </div>
+                                <span class="material-symbols-outlined header-profile-caret">expand_more</span>
+                            </button>
+
+                            <div class="header-profile-panel" id="profilePanel" role="menu" aria-hidden="true">
+                                {{-- ---- View 1: menu utama ---- --}}
+                                <div class="header-profile-view is-active" id="profileViewMain">
+                                    <div class="header-profile-panel-header">
+                                        <div class="header-profile-panel-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                        <div>
+                                            <span class="header-profile-panel-name">{{ $__user->name }}</span>
+                                            <span class="header-profile-panel-role">{{ $__user->accessLabelFor('lppm_dosen') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="header-profile-menu">
+                                        <button type="button" class="header-profile-menu-item" id="btnShowAccessInfo">
+                                            <span class="material-symbols-outlined">shield_person</span>
+                                            <span>Informasi Akses</span>
+                                        </button>
+                                        {{-- UI saja untuk saat ini, belum ada endpoint di baliknya --}}
+                                        <button type="button" class="header-profile-menu-item" id="btnGantiPassword">
+                                            <span class="material-symbols-outlined">key</span>
+                                            <span>Ganti Password</span>
+                                        </button>
+                                        <button type="button" class="header-profile-menu-item" id="btnEmailPemulihan">
+                                            <span class="material-symbols-outlined">mark_email_unread</span>
+                                            <span>Email Pemulihan</span>
+                                        </button>
+                                        <div class="header-profile-menu-divider"></div>
+                                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
+                                            @csrf
+                                            <button type="submit" class="header-profile-menu-item is-danger">
+                                                <span class="material-symbols-outlined">logout</span>
+                                                <span>Keluar</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {{-- ---- View 2: rincian hak akses per menu ---- --}}
+                                <div class="header-profile-view" id="profileViewAccess">
+                                    <button type="button" class="header-profile-panel-back" id="btnBackToMain">
+                                        <span class="material-symbols-outlined">arrow_back</span>
+                                        <span>Informasi Akses</span>
+                                    </button>
+                                    <div class="access-info-list">
+                                        @foreach($__accessRows as $row)
+                                        <div class="access-info-row {{ $row['level'] === 'none' ? 'is-zero' : '' }}">
+                                            <span class="material-symbols-outlined">{{ $row['icon'] }}</span>
+                                            <span class="access-info-row-label">{{ $row['label'] }}</span>
+                                            <span class="access-chip {{ $row['level'] }}">
+                                                <span class="access-dot {{ $row['level'] }}"></span>
+                                                {{ $row['level_label'] }}
+                                            </span>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
-                            @csrf
-                            <button type="submit" class="icon-btn" id="logoutBtn" title="Keluar" aria-label="Keluar">
-                                <span class="material-symbols-outlined">logout</span>
-                            </button>
-                        </form>
+                        {{-- ============ /PROFILE DROPDOWN ============ --}}
                     </div>
                 </div>
             </div>
@@ -161,11 +224,6 @@
 
                 <div class="title-bar">
                     <div>
-                        <div class="breadcrumb">
-                            <span>LPPM</span>
-                            <span class="material-symbols-outlined">chevron_right</span>
-                            <span class="current">Data Dosen</span>
-                        </div>
                         <h1 class="page-title">Publikasi, HKI &amp; Buku Dosen</h1>
                         <p class="page-subtitle">Pendataan luaran Jurnal Q1-Q4, SINTA, HKI, dan Buku Dosen &middot; Tahun 2026</p>
                     </div>
@@ -495,159 +553,20 @@
         </form>
     </div>
 
+    <script src="{{ asset('js/script.js') }}"></script>
     <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-
-        // ---------------- Custom Dropdown ----------------
-        const dropdowns = document.querySelectorAll('[data-dropdown]');
-        dropdowns.forEach((dropdown) => {
-            const trigger = dropdown.querySelector('.dropdown-trigger');
-            const valueEl = dropdown.querySelector('.dropdown-value');
-            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            const options = dropdown.querySelectorAll('.dropdown-option');
-
-            trigger.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const wasOpen = dropdown.classList.contains('is-open');
-                dropdowns.forEach((d) => d.classList.remove('is-open'));
-                if (!wasOpen) dropdown.classList.add('is-open');
-            });
-
-            options.forEach((option) => {
-                option.addEventListener('click', () => {
-                    options.forEach((o) => o.classList.remove('is-selected'));
-                    option.classList.add('is-selected');
-                    valueEl.textContent = option.textContent.trim();
-                    if (hiddenInput) hiddenInput.value = option.dataset.value;
-                    dropdown.classList.remove('is-open');
-                });
-            });
-        });
-        document.addEventListener('click', () => dropdowns.forEach((d) => d.classList.remove('is-open')));
-
-        function selectDropdownValue(dropdownEl, value, placeholder) {
-            if (!dropdownEl) return;
-            const options = dropdownEl.querySelectorAll('.dropdown-option');
-            const valueEl = dropdownEl.querySelector('.dropdown-value');
-            const hiddenInput = dropdownEl.querySelector('input[type="hidden"]');
-            let matched = false;
-            options.forEach((o) => {
-                const isMatch = o.dataset.value === String(value);
-                o.classList.toggle('is-selected', isMatch);
-                if (isMatch) {
-                    valueEl.textContent = o.textContent.trim();
-                    matched = true;
-                }
-            });
-            if (hiddenInput) hiddenInput.value = matched ? value : '';
-            if (!matched) valueEl.textContent = placeholder || (options[0] ? options[0].textContent.trim() : '');
-        }
-
-        function resetDropdown(dropdown) {
-            if (!dropdown) return;
-            const options = dropdown.querySelectorAll('.dropdown-option');
-            const valueEl = dropdown.querySelector('.dropdown-value');
-            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            options.forEach((o, i) => {
-                o.classList.toggle('is-selected', i === 0);
-                if (i === 0) {
-                    valueEl.textContent = o.textContent.trim();
-                    if (hiddenInput) hiddenInput.value = o.dataset.value;
-                }
-            });
-        }
-        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
-            const search = document.getElementById('filter-search');
-            if (search) search.value = '';
-            applyFilters();
-        });
-
-        // ---------------- Live Filter (otomatis, tanpa tombol "Terapkan") ----------------
-        function applyFilters() {
-            const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
-            const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-            const rows = tableBody.querySelectorAll('tr[data-id]');
-            let visibleCount = 0;
-
-            rows.forEach((row) => {
-                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
-                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                const visible = matchesJenis && matchesSearch;
-                row.style.display = visible ? '' : 'none';
-                if (visible) visibleCount++;
-            });
-
-            let noResultRow = document.getElementById('noResultRow');
-            if (visibleCount === 0 && rows.length > 0) {
-                if (!noResultRow) {
-                    noResultRow = document.createElement('tr');
-                    noResultRow.id = 'noResultRow';
-                    const colCount = tableBody.closest('table')?.querySelectorAll('thead th').length || 8;
-                    noResultRow.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding: 32px; color: var(--ink-faint);">Tidak ada data yang cocok dengan filter.</td>`;
-                    tableBody.appendChild(noResultRow);
-                }
-                noResultRow.style.display = '';
-            } else if (noResultRow) {
-                noResultRow.style.display = 'none';
-            }
-        }
-
-        document.querySelectorAll('#filter-jenis').forEach((input) => {
-            const dropdownEl = input.closest('[data-dropdown]');
-            dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
-                opt.addEventListener('click', () => applyFilters());
-            });
-        });
-
-        let searchDebounce;
-        document.getElementById('filter-search')?.addEventListener('input', () => {
-            clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(applyFilters, 150);
-        });
-
-        // ---------------- Sidebar Drawer ----------------
-        const sidebar = document.querySelector('.app-sidebar');
-        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        function openSidebar() {
-            sidebar.classList.add('is-open');
-            sidebarOverlay.classList.add('is-active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeSidebar() {
-            sidebar.classList.remove('is-open');
-            sidebarOverlay.classList.remove('is-active');
-            document.body.style.overflow = '';
-        }
-        sidebarToggleBtn?.addEventListener('click', openSidebar);
-        sidebarCloseBtn?.addEventListener('click', closeSidebar);
-        sidebarOverlay?.addEventListener('click', closeSidebar);
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024) closeSidebar();
-        });
-
-        // ---------------- Dark Mode ----------------
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const themeIcon = document.getElementById('themeIcon');
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-            if (themeIcon) themeIcon.textContent = 'light_mode';
-        }
-        themeToggleBtn?.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            if (themeIcon) themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
-
         // ================================================================
-        // MODAL: buka/tutup, drag, field kondisional, dan CRUD via fetch
+        // Bagian ini KHUSUS halaman LPPM Dosen:
+        // endpoint API, bentuk baris tabel, field form, field kondisional,
+        // dan filter tambahan. Semua yang generik (dropdown, sidebar,
+        // dark mode, notifikasi, modal buka/tutup/drag, live search,
+        // profile dropdown) sudah ditangani public/js/script.js via SIDA.
         // ================================================================
+        const csrfToken = SIDA.util.csrfToken();
+        const { esc, initials, avatarColor } = SIDA.util;
+
+        // ---- Elemen tabel & modal ----
+        const tableBody = document.getElementById('lppmDosenTableBody');
         const modalBackdrop = document.getElementById('modalBackdrop');
         const modalCard = document.getElementById('lppmDosenModal');
         const modalTitle = document.getElementById('modalTitle');
@@ -657,9 +576,9 @@
         const modalCloseBtn = document.getElementById('modalCloseBtn');
         const modalCancelBtn = document.getElementById('modalCancelBtn');
         const btnTambah = document.getElementById('btnTambahLppmDosen');
-        const tableBody = document.getElementById('lppmDosenTableBody');
         const dragHandle = document.getElementById('modalDragHandle');
 
+        // ---- Field kondisional (khusus halaman ini) ----
         const fieldJurnalExtra = document.getElementById('field-jurnal-extra');
         const fieldLinkDoi = document.getElementById('field-link_doi');
         const fieldJenisHki = document.getElementById('field-jenis_hki');
@@ -676,88 +595,7 @@
             opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));
         });
 
-        function openModal(mode, data = {}) {
-            modalForm.reset();
-            modalError.hidden = true;
-            modalCard.style.left = '';
-            modalCard.style.top = '';
-            modalCard.style.transform = '';
-
-            document.getElementById('form-id').value = data.id || '';
-            modalTitle.textContent = mode === 'edit' ? 'Edit Data Dosen' : 'Tambah Data Dosen';
-
-            selectDropdownValue(document.getElementById('dd-dosen'), data.dosen_id || '', 'Pilih dosen...');
-            const jenis = data.jenis || 'q_internasional';
-            selectDropdownValue(document.getElementById('dd-jenis'), jenis);
-            selectDropdownValue(document.getElementById('dd-jenis_hki'), data.jenis_hki || 'hak_cipta');
-            selectDropdownValue(document.getElementById('dd-kategori_buku'), data.kategori_buku || 'ajar');
-            updateConditionalFields(jenis);
-
-            document.getElementById('form-tahun').value = data.tahun || 2026;
-            document.getElementById('form-judul').value = data.judul ? decodeURIComponent(data.judul) : '';
-            document.getElementById('form-penulis').value = data.penulis ? decodeURIComponent(data.penulis) : '';
-            document.getElementById('form-nama_jurnal').value = data.nama_jurnal ? decodeURIComponent(data.nama_jurnal) : '';
-            document.getElementById('form-peringkat').value = data.peringkat ? decodeURIComponent(data.peringkat) : '';
-            document.getElementById('form-link_doi').value = data.link_doi ? decodeURIComponent(data.link_doi) : '';
-            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
-
-            modalBackdrop.classList.add('is-active');
-            modalCard.classList.add('is-active');
-            modalCard.setAttribute('aria-hidden', 'false');
-        }
-
-        function closeModal() {
-            modalBackdrop.classList.remove('is-active');
-            modalCard.classList.remove('is-active');
-            modalCard.setAttribute('aria-hidden', 'true');
-        }
-        btnTambah?.addEventListener('click', () => openModal('create'));
-        modalCloseBtn.addEventListener('click', closeModal);
-        modalCancelBtn.addEventListener('click', closeModal);
-        modalBackdrop.addEventListener('click', closeModal);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal();
-        });
-
-        // ---- Drag ----
-        let dragState = null;
-        dragHandle.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('.modal-close-btn')) return;
-            const rect = modalCard.getBoundingClientRect();
-            dragState = {
-                startX: e.clientX,
-                startY: e.clientY,
-                originX: rect.left,
-                originY: rect.top
-            };
-            modalCard.style.left = rect.left + 'px';
-            modalCard.style.top = rect.top + 'px';
-            modalCard.style.transform = 'none';
-            modalCard.classList.add('is-dragging');
-            dragHandle.setPointerCapture(e.pointerId);
-        });
-        dragHandle.addEventListener('pointermove', (e) => {
-            if (!dragState) return;
-            const dx = e.clientX - dragState.startX,
-                dy = e.clientY - dragState.startY;
-            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8,
-                maxTop = window.innerHeight - modalCard.offsetHeight - 8;
-            modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
-            modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
-        });
-
-        function endDrag(e) {
-            if (!dragState) return;
-            dragState = null;
-            modalCard.classList.remove('is-dragging');
-            try {
-                dragHandle.releasePointerCapture(e.pointerId);
-            } catch (_) {}
-        }
-        dragHandle.addEventListener('pointerup', endDrag);
-        dragHandle.addEventListener('pointercancel', endDrag);
-
-        // ---- Bangun/ganti/hapus baris tabel ----
+        // ---- Label jenis (khusus halaman ini) ----
         const jenisLabel = {
             q_internasional: 'Jurnal Int.',
             sinta_nasional: 'Jurnal Nasional',
@@ -765,21 +603,7 @@
             book: 'Buku'
         };
 
-        function initials(name) {
-            return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
-        }
-
-        function avatarColor(id) {
-            const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
-            return c[Number(id) % c.length];
-        }
-
-        function esc(str) {
-            const div = document.createElement('div');
-            div.textContent = str ?? '';
-            return div.innerHTML;
-        }
-
+        // ---- Bangun HTML baris tabel dari data JSON (khusus halaman ini) ----
         function buildRowHTML(item) {
             const kategori = item.peringkat || item.jenis_hki || item.kategori_buku || '-';
             const buktiUrl = item.link_doi || item.bukti_kegiatan;
@@ -822,33 +646,61 @@
                 </td>
             </tr>`.trim();
         }
+        const { insertRow, updateRow, removeRow } = SIDA.table.create(tableBody, buildRowHTML);
 
-        function insertRow(item) {
-            document.getElementById('emptyRow')?.remove();
-            const wrap = document.createElement('tbody');
-            wrap.innerHTML = buildRowHTML(item);
-            const row = wrap.firstElementChild;
-            row.classList.add('is-new');
-            tableBody.prepend(row);
+        // ---- Live filter (khusus halaman ini: 1 dropdown + search) ----
+        const applyFilters = SIDA.filter.setup({
+            tableBody,
+            dropdownFilterIds: ['filter-jenis'],
+            searchInputId: 'filter-search',
+            matches: (row) => {
+                const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
+                const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
+                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
+                return matchesJenis && matchesSearch;
+            },
+            emptyMessage: 'Tidak ada data yang cocok dengan filter.',
+        });
+
+        // ---- Modal: mekanisme buka/tutup/drag dari script.js ----
+        const { open: openModalBase, close: closeModal } = SIDA.modal.attach({
+            backdrop: modalBackdrop,
+            card: modalCard,
+            closeBtn: modalCloseBtn,
+            cancelBtn: modalCancelBtn,
+            dragHandle: dragHandle,
+        });
+
+        // ---- Isi form modal (khusus halaman ini) ----
+        function openModal(mode, data = {}) {
+            modalForm.reset();
+            modalError.hidden = true;
+
+            document.getElementById('form-id').value = data.id || '';
+            modalTitle.textContent = mode === 'edit' ? 'Edit Data Dosen' : 'Tambah Data Dosen';
+
+            SIDA.dropdown.select(document.getElementById('dd-dosen'), data.dosen_id || '', 'Pilih dosen...');
+            const jenis = data.jenis || 'q_internasional';
+            SIDA.dropdown.select(document.getElementById('dd-jenis'), jenis);
+            SIDA.dropdown.select(document.getElementById('dd-jenis_hki'), data.jenis_hki || 'hak_cipta');
+            SIDA.dropdown.select(document.getElementById('dd-kategori_buku'), data.kategori_buku || 'ajar');
+            updateConditionalFields(jenis);
+
+            document.getElementById('form-tahun').value = data.tahun || 2026;
+            document.getElementById('form-judul').value = data.judul ? decodeURIComponent(data.judul) : '';
+            document.getElementById('form-penulis').value = data.penulis ? decodeURIComponent(data.penulis) : '';
+            document.getElementById('form-nama_jurnal').value = data.nama_jurnal ? decodeURIComponent(data.nama_jurnal) : '';
+            document.getElementById('form-peringkat').value = data.peringkat ? decodeURIComponent(data.peringkat) : '';
+            document.getElementById('form-link_doi').value = data.link_doi ? decodeURIComponent(data.link_doi) : '';
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+
+            openModalBase();
         }
 
-        function updateRow(item) {
-            const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
-            if (!existing) return insertRow(item);
-            const wrap = document.createElement('tbody');
-            wrap.innerHTML = buildRowHTML(item);
-            existing.replaceWith(wrap.firstElementChild);
-        }
+        btnTambah?.addEventListener('click', () => openModal('create'));
 
-        function removeRow(id) {
-            const row = tableBody.querySelector(`tr[data-id="${id}"]`);
-            if (!row) return;
-            row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), {
-                once: true
-            });
-        }
-
+        // ---- Submit form (create / update) — endpoint khusus halaman ini ----
         modalForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             modalError.hidden = true;
@@ -886,17 +738,19 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
+                        'X-CSRF-TOKEN': csrfToken,
                     },
                     body: JSON.stringify(payload),
                 });
                 const result = await res.json();
+
                 if (!res.ok) {
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
                     modalError.textContent = firstError;
                     modalError.hidden = false;
                     return;
                 }
+
                 if (id) updateRow(result.data);
                 else insertRow(result.data);
                 applyFilters();
@@ -909,6 +763,7 @@
             }
         });
 
+        // ---- Delete — endpoint khusus halaman ini ----
         async function handleDelete(id) {
             if (!confirm('Hapus data ini? Tindakan tidak bisa dibatalkan.')) return;
             try {
@@ -917,7 +772,7 @@
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
-                    }
+                    },
                 });
                 const result = await res.json();
                 if (res.ok && result.success) removeRow(result.id);
@@ -927,6 +782,7 @@
             }
         }
 
+        // ---- Event delegation: tombol Edit & Hapus di tiap baris (termasuk baris baru) ----
         tableBody.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.btn-edit-row');
             if (editBtn) return openModal('edit', editBtn.dataset);

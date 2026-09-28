@@ -139,19 +139,77 @@
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
                         <div class="header-divider"></div>
-                        <div class="header-profile">
-                            <img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
-                            <div class="header-profile-text">
-                                <span class="header-profile-name">{{ $__user->name }}</span>
-                                <span class="header-profile-role">{{ $__user->accessLabelFor('hak_akses') }}</span>
+                        {{-- ============ PROFILE DROPDOWN ============ --}}
+@php
+$__initials = $__user->initials();
+$__avatarColor = $__user->avatarColorClass();
+$__accessRows = $__user->accessBreakdown();
+@endphp
+<div class="header-profile-dropdown" id="profileDropdown">
+                            <button type="button" class="header-profile-trigger" id="profileToggleBtn"
+                                aria-haspopup="true" aria-expanded="false">
+                                <div class="header-profile-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                <div class="header-profile-text">
+                                    <span class="header-profile-name">{{ $__user->name }}</span>
+                                    <span class="header-profile-role">{{ $__user->accessLabelFor('hak_akses') }}</span>
+                                </div>
+                                <span class="material-symbols-outlined header-profile-caret">expand_more</span>
+                            </button>
+
+                            <div class="header-profile-panel" id="profilePanel" role="menu" aria-hidden="true">
+                                <div class="header-profile-view is-active" id="profileViewMain">
+                                    <div class="header-profile-panel-header">
+                                        <div class="header-profile-panel-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                        <div>
+                                            <span class="header-profile-panel-name">{{ $__user->name }}</span>
+                                            <span class="header-profile-panel-role">{{ $__user->accessLabelFor('hak_akses') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="header-profile-menu">
+                                        <button type="button" class="header-profile-menu-item" id="btnShowAccessInfo">
+                                            <span class="material-symbols-outlined">shield_person</span>
+                                            <span>Informasi Akses</span>
+                                        </button>
+                                        <button type="button" class="header-profile-menu-item" id="btnGantiPassword">
+                                            <span class="material-symbols-outlined">key</span>
+                                            <span>Ganti Password</span>
+                                        </button>
+                                        <button type="button" class="header-profile-menu-item" id="btnEmailPemulihan">
+                                            <span class="material-symbols-outlined">mark_email_unread</span>
+                                            <span>Email Pemulihan</span>
+                                        </button>
+                                        <div class="header-profile-menu-divider"></div>
+                                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
+                                            @csrf
+                                            <button type="submit" class="header-profile-menu-item is-danger">
+                                                <span class="material-symbols-outlined">logout</span>
+                                                <span>Keluar</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="header-profile-view" id="profileViewAccess">
+                                    <button type="button" class="header-profile-panel-back" id="btnBackToMain">
+                                        <span class="material-symbols-outlined">arrow_back</span>
+                                        <span>Informasi Akses</span>
+                                    </button>
+                                    <div class="access-info-list">
+                                        @foreach($__accessRows as $row)
+                                        <div class="access-info-row {{ $row['level'] === 'none' ? 'is-zero' : '' }}">
+                                            <span class="material-symbols-outlined">{{ $row['icon'] }}</span>
+                                            <span class="access-info-row-label">{{ $row['label'] }}</span>
+                                            <span class="access-chip {{ $row['level'] }}">
+                                                <span class="access-dot {{ $row['level'] }}"></span>
+                                                {{ $row['level_label'] }}
+                                            </span>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
-                            @csrf
-                            <button type="submit" class="icon-btn" id="logoutBtn" title="Keluar" aria-label="Keluar">
-                                <span class="material-symbols-outlined">logout</span>
-                            </button>
-                        </form>
+                        {{-- ============ /PROFILE DROPDOWN ============ --}}
                     </div>
                 </div>
             </div>
@@ -163,11 +221,6 @@
                 <!-- PAGE TITLE -->
                 <div class="title-bar">
                     <div>
-                        <div class="breadcrumb">
-                            <span>Administrasi</span>
-                            <span class="material-symbols-outlined">chevron_right</span>
-                            <span class="current">Hak Akses</span>
-                        </div>
                         <h1 class="page-title">Manajemen Hak Akses</h1>
                         <p class="page-subtitle">Atur akses menu per pengguna &middot; Sistem Informasi Data Akademik 2026</p>
                     </div>
@@ -674,6 +727,7 @@
         // ================================================================
         // MODAL HAK AKSES: buka/tutup, drag, bulk apply, simpan ke database
         // ================================================================
+
         const modalBackdrop = document.getElementById('modalBackdrop');
         const modalCard = document.getElementById('accessModal');
         const modalTitle = document.getElementById('modalTitle');

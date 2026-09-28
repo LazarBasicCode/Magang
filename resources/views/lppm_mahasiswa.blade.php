@@ -165,19 +165,81 @@
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
                         <div class="header-divider"></div>
-                        <div class="header-profile">
-                            <img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
-                            <div class="header-profile-text">
-                                <span class="header-profile-name">{{ $__user->name }}</span>
-                                <span class="header-profile-role">{{ $__user->accessLabelFor('lppm_mahasiswa') }}</span>
+
+                        {{-- ============ PROFILE DROPDOWN ============ --}}
+                        @php
+                        $__initials = $__user->initials();
+                        $__avatarColor = $__user->avatarColorClass();
+                        $__accessRows = $__user->accessBreakdown();
+                        @endphp
+                        <div class="header-profile-dropdown" id="profileDropdown">
+                            <button type="button" class="header-profile-trigger" id="profileToggleBtn"
+                                aria-haspopup="true" aria-expanded="false">
+                                <div class="header-profile-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                <div class="header-profile-text">
+                                    <span class="header-profile-name">{{ $__user->name }}</span>
+                                    <span class="header-profile-role">{{ $__user->accessLabelFor('lppm_mahasiswa') }}</span>
+                                </div>
+                                <span class="material-symbols-outlined header-profile-caret">expand_more</span>
+                            </button>
+
+                            <div class="header-profile-panel" id="profilePanel" role="menu" aria-hidden="true">
+                                {{-- ---- View 1: menu utama ---- --}}
+                                <div class="header-profile-view is-active" id="profileViewMain">
+                                    <div class="header-profile-panel-header">
+                                        <div class="header-profile-panel-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                        <div>
+                                            <span class="header-profile-panel-name">{{ $__user->name }}</span>
+                                            <span class="header-profile-panel-role">{{ $__user->accessLabelFor('lppm_mahasiswa') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="header-profile-menu">
+                                        <button type="button" class="header-profile-menu-item" id="btnShowAccessInfo">
+                                            <span class="material-symbols-outlined">shield_person</span>
+                                            <span>Informasi Akses</span>
+                                        </button>
+                                        {{-- UI saja untuk saat ini, belum ada endpoint di baliknya --}}
+                                        <button type="button" class="header-profile-menu-item" id="btnGantiPassword">
+                                            <span class="material-symbols-outlined">key</span>
+                                            <span>Ganti Password</span>
+                                        </button>
+                                        <button type="button" class="header-profile-menu-item" id="btnEmailPemulihan">
+                                            <span class="material-symbols-outlined">mark_email_unread</span>
+                                            <span>Email Pemulihan</span>
+                                        </button>
+                                        <div class="header-profile-menu-divider"></div>
+                                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
+                                            @csrf
+                                            <button type="submit" class="header-profile-menu-item is-danger">
+                                                <span class="material-symbols-outlined">logout</span>
+                                                <span>Keluar</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {{-- ---- View 2: rincian hak akses per menu ---- --}}
+                                <div class="header-profile-view" id="profileViewAccess">
+                                    <button type="button" class="header-profile-panel-back" id="btnBackToMain">
+                                        <span class="material-symbols-outlined">arrow_back</span>
+                                        <span>Informasi Akses</span>
+                                    </button>
+                                    <div class="access-info-list">
+                                        @foreach($__accessRows as $row)
+                                        <div class="access-info-row {{ $row['level'] === 'none' ? 'is-zero' : '' }}">
+                                            <span class="material-symbols-outlined">{{ $row['icon'] }}</span>
+                                            <span class="access-info-row-label">{{ $row['label'] }}</span>
+                                            <span class="access-chip {{ $row['level'] }}">
+                                                <span class="access-dot {{ $row['level'] }}"></span>
+                                                {{ $row['level_label'] }}
+                                            </span>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
-                            @csrf
-                            <button type="submit" class="icon-btn" id="logoutBtn" title="Keluar" aria-label="Keluar">
-                                <span class="material-symbols-outlined">logout</span>
-                            </button>
-                        </form>
+                        {{-- ============ /PROFILE DROPDOWN ============ --}}
                     </div>
                 </div>
             </div>
@@ -188,11 +250,6 @@
 
                 <div class="title-bar">
                     <div>
-                        <div class="breadcrumb">
-                            <span>LPPM</span>
-                            <span class="material-symbols-outlined">chevron_right</span>
-                            <span class="current">Data Mahasiswa</span>
-                        </div>
                         <h1 class="page-title">Publikasi &amp; Conference Mahasiswa</h1>
                         <p class="page-subtitle">Pendataan luaran publikasi SINTA Nasional, Conference, dan Jurnal Internasional &middot; Tahun 2026</p>
                     </div>

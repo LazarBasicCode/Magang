@@ -514,6 +514,12 @@
                         @endforeach
                     </div>
                 </div>
+                <div class="field-locked" id="userLocked" style="display:none;">
+                    <div class="field-locked-inner">
+                        <span class="material-symbols-outlined">lock</span>
+                        <span class="field-locked-value" id="userLockedValue"></span>
+                    </div>
+                </div>
             </div>
 
             <div class="field-row">
@@ -1144,8 +1150,40 @@
         document.querySelectorAll('#dd-user .dropdown-option').forEach((opt) => {
             opt.addEventListener('click', () => {
                 document.getElementById('form-tipe_user').value = opt.dataset.role || '';
+                syncFormJenisOptions();
             });
         });
+
+        // Pilihan "Jenis" di modal mengikuti role user yang dipilih.
+        // Mahasiswa: Conference, PKL, Sharing Session. Dosen: semua kecuali PKL.
+        // Belum ada user dipilih: semua jenis tampil.
+        const FORM_JENIS_ALLOWED = {
+            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
+            dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
+                    'pengabdian_internasional', 'research_internasional', 'lainnya'],
+        };
+
+        function syncFormJenisOptions() {
+            const role = document.getElementById('form-tipe_user').value;
+            const allowed = FORM_JENIS_ALLOWED[role];
+            const dd = document.getElementById('dd-jenis');
+            dd.querySelectorAll('.dropdown-option').forEach((opt) => {
+                opt.style.display = (!allowed || allowed.includes(opt.dataset.value)) ? '' : 'none';
+            });
+            const current = document.getElementById('form-jenis').value;
+            if (allowed && !allowed.includes(current)) {
+                selectDropdownValue(dd, allowed[0]);
+                updateConditionalFields(allowed[0]);
+            }
+        }
+
+        // Mode edit: dropdown mahasiswa/dosen diganti tampilan terkunci.
+        function setUserLocked(locked, label = '') {
+            document.getElementById('dd-user').style.display = locked ? 'none' : '';
+            const box = document.getElementById('userLocked');
+            box.style.display = locked ? '' : 'none';
+            document.getElementById('userLockedValue').textContent = label;
+        }
 
         function openModal(mode, data = {}) {
             modalForm.reset();
@@ -1160,9 +1198,14 @@
             selectDropdownValue(ddUser, data.user_id || '', 'Pilih mahasiswa/dosen...');
             document.getElementById('form-tipe_user').value = data.tipe_user || '';
 
+            // Edit: kunci nama. Tambah: dropdown normal.
+            const selectedOpt = ddUser.querySelector('.dropdown-option.is-selected');
+            setUserLocked(mode === 'edit', selectedOpt ? selectedOpt.textContent.trim() : '');
+
             const jenis = data.jenis || 'conference_internasional';
             selectDropdownValue(document.getElementById('dd-jenis'), jenis);
             updateConditionalFields(jenis);
+            syncFormJenisOptions();
             document.getElementById('form-jenis_lainnya').value = data.jenis_lainnya ? decodeURIComponent(data.jenis_lainnya) : '';
 
             selectDropdownValue(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');

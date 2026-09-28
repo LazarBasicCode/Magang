@@ -590,68 +590,11 @@
         // public/js/script.js lewat objek global SIDA.
         // ================================================================
         const csrfToken = SIDA.util.csrfToken();
-        const { esc, initials, avatarColor } = SIDA.util;
-
-        // ---- Profile dropdown (avatar + info akses) ----
-        // Ditulis mandiri (bukan lewat SIDA.dropdown/SIDA.modal) karena
-        // perilakunya beda dari dropdown pilihan biasa: ada 2 "view" yang
-        // bisa berpindah (menu utama <-> rincian akses) di dalam 1 panel.
-        (function () {
-            const wrap = document.getElementById('profileDropdown');
-            const toggleBtn = document.getElementById('profileToggleBtn');
-            const panel = document.getElementById('profilePanel');
-            const viewMain = document.getElementById('profileViewMain');
-            const viewAccess = document.getElementById('profileViewAccess');
-            const btnShowAccess = document.getElementById('btnShowAccessInfo');
-            const btnBack = document.getElementById('btnBackToMain');
-            if (!wrap || !toggleBtn || !panel) return;
-
-            function showView(view) {
-                [viewMain, viewAccess].forEach((v) => v?.classList.remove('is-active'));
-                view?.classList.add('is-active');
-            }
-
-            function openPanel() {
-                wrap.classList.add('is-open');
-                toggleBtn.setAttribute('aria-expanded', 'true');
-                panel.setAttribute('aria-hidden', 'false');
-            }
-
-            function closePanel() {
-                wrap.classList.remove('is-open');
-                toggleBtn.setAttribute('aria-expanded', 'false');
-                panel.setAttribute('aria-hidden', 'true');
-                // Selalu kembali ke menu utama saat panel ditutup, supaya
-                // saat dibuka lagi tidak "nyangkut" di rincian akses.
-                showView(viewMain);
-            }
-
-            toggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                wrap.classList.contains('is-open') ? closePanel() : openPanel();
-            });
-
-            btnShowAccess?.addEventListener('click', () => showView(viewAccess));
-            btnBack?.addEventListener('click', () => showView(viewMain));
-
-            // Klik di luar panel -> tutup.
-            document.addEventListener('click', (e) => {
-                if (!wrap.contains(e.target)) closePanel();
-            });
-
-            // Esc -> tutup.
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closePanel();
-            });
-
-            // Placeholder UI-only: belum ada endpoint di baliknya.
-            document.getElementById('btnGantiPassword')?.addEventListener('click', () => {
-                alert('Fitur Ganti Password segera hadir.');
-            });
-            document.getElementById('btnEmailPemulihan')?.addEventListener('click', () => {
-                alert('Fitur Email Pemulihan segera hadir.');
-            });
-        })();
+        const {
+            esc,
+            initials,
+            avatarColor
+        } = SIDA.util;
 
         // ---- Elemen tabel & modal ----
         const tableBody = document.getElementById('kegiatanTableBody');
@@ -703,7 +646,11 @@
                 </td>
             </tr>`.trim();
         }
-        const { insertRow, updateRow, removeRow } = SIDA.table.create(tableBody, buildRowHTML);
+        const {
+            insertRow,
+            updateRow,
+            removeRow
+        } = SIDA.table.create(tableBody, buildRowHTML);
 
         // ---- Live filter (khusus halaman ini: 3 dropdown + search) ----
         const applyFilters = SIDA.filter.setup({
@@ -725,7 +672,10 @@
         });
 
         // ---- Modal: mekanisme buka/tutup/drag dari script.js ----
-        const { open: openModalBase, close: closeModal } = SIDA.modal.attach({
+        const {
+            open: openModalBase,
+            close: closeModal
+        } = SIDA.modal.attach({
             backdrop: modalBackdrop,
             card: modalCard,
             closeBtn: modalCloseBtn,
@@ -840,6 +790,8 @@
             if (delBtn) handleDelete(delBtn.dataset.id);
         });
     </script>
+    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/notifications.js') }}"></script>
 </body>
 
 </html>

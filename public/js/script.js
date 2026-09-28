@@ -549,11 +549,17 @@
     // AUTO-INIT bagian yang selalu ada di semua halaman berlayout ini
     // ---------------------------------------------------------------
     function autoInit() {
-        SIDA.dropdown.init();
-        SIDA.sidebar.init();
-        SIDA.theme.init();
-        SIDA.notif.init();
-        SIDA.profile.init();
+        const steps = [
+            ['dropdown', SIDA.dropdown],
+            ['sidebar',  SIDA.sidebar],
+            ['theme',    SIDA.theme],
+            // ['notif',    SIDA.notif],
+            ['profile',  SIDA.profile],
+        ];
+        steps.forEach(([name, mod]) => {
+            try { mod?.init?.(); }
+            catch (err) { console.error(`[SIDA] ${name}.init() gagal:`, err); }
+        });
     }
 
     if (document.readyState === "loading") {

@@ -514,6 +514,12 @@
                         @endforeach
                     </div>
                 </div>
+                <div class="field-locked" id="userLocked" style="display:none;">
+                    <div class="field-locked-inner">
+                        <span class="material-symbols-outlined">lock</span>
+                        <span class="field-locked-value" id="userLockedValue"></span>
+                    </div>
+                </div>
             </div>
 
             <div class="field-row">
@@ -641,41 +647,40 @@
         </form>
     </div>
 
+    <script src="{{ asset('js/script.js') }}"></script>
     <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        // ================================================================
+        // KHUSUS halaman Kerja Sama.
+        // Semua logika spesifik halaman ini dipertahankan 100%.
+        // Yang generik (sidebar, dark mode, profile, modal attach,
+        // util csrfToken/esc/initials/avatarColor) dipindah ke script.js.
+        // ================================================================
+        const csrfToken = SIDA.util.csrfToken();
+        const {
+            esc,
+            initials,
+            avatarColor
+        } = SIDA.util;
 
-        // ---------------- Custom Dropdown ----------------
-        const dropdowns = document.querySelectorAll('[data-dropdown]');
+        // ---- Elemen tabel & modal ----
+        const tableBody = document.getElementById('kerjaSamaTableBody');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalCard = document.getElementById('kerjaSamaModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalForm = document.getElementById('kerjaSamaForm');
+        const modalError = document.getElementById('modalError');
+        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const btnTambah = document.getElementById('btnTambahKerjaSama');
+        const dragHandle = document.getElementById('modalDragHandle');
+        const fieldArah = document.getElementById('field-arah');
+        const fieldLainnya = document.getElementById('field-lainnya');
+        const ddUser = document.getElementById('dd-user');
 
-        dropdowns.forEach((dropdown) => {
-            const trigger = dropdown.querySelector('.dropdown-trigger');
-            const valueEl = dropdown.querySelector('.dropdown-value');
-            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            const options = dropdown.querySelectorAll('.dropdown-option');
-
-            trigger.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const wasOpen = dropdown.classList.contains('is-open');
-                dropdowns.forEach((d) => d.classList.remove('is-open'));
-                if (!wasOpen) dropdown.classList.add('is-open');
-            });
-
-            options.forEach((option) => {
-                option.addEventListener('click', () => {
-                    options.forEach((o) => o.classList.remove('is-selected'));
-                    option.classList.add('is-selected');
-                    valueEl.textContent = option.textContent.trim();
-                    if (hiddenInput) hiddenInput.value = option.dataset.value;
-                    dropdown.classList.remove('is-open');
-                });
-            });
-        });
-
-        document.addEventListener('click', () => {
-            dropdowns.forEach((d) => d.classList.remove('is-open'));
-        });
-
-        // ---------------- Custom Datepicker ----------------
+        // ================================================================
+        // CUSTOM DATEPICKER (khusus halaman ini)
+        // ================================================================
         const MONTH_NAMES_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -712,7 +717,6 @@
             const clearBtn = rootEl.querySelector('.dp-clear-btn');
 
             // Pindahkan panel kalender ke <body> supaya posisinya lepas dari overflow modal
-            // dan tidak pernah menggeser/mengubah ukuran modal saat dibuka.
             document.body.appendChild(panel);
 
             let selected = null;
@@ -886,7 +890,6 @@
         const dpMulai = createDatepicker(document.getElementById('dp-tanggal_mulai'));
         const dpSelesai = createDatepicker(document.getElementById('dp-tanggal_selesai'));
 
-        // Tutup kalender saat klik di luar trigger maupun panel (panel kini ada di <body>)
         document.addEventListener('click', (e) => {
             [dpMulai, dpSelesai].forEach((dp) => {
                 if (!dp.isOpen()) return;
@@ -894,11 +897,9 @@
                 dp.close();
             });
         });
-        // Reposisi ulang kalender saat window di-resize atau ada scroll di mana pun (termasuk isi modal)
         window.addEventListener('resize', () => activeDatepickers.forEach((dp) => dp.reposition()));
         document.addEventListener('scroll', () => activeDatepickers.forEach((dp) => dp.reposition()), true);
 
-        // Tanggal selesai tidak boleh sebelum tanggal mulai
         document.getElementById('dp-tanggal_mulai').addEventListener('datepicker:change', (e) => {
             dpSelesai.setMinDate(e.detail.iso || null);
             const selesaiVal = document.getElementById('form-tanggal_selesai').value;
@@ -906,7 +907,13 @@
                 dpSelesai.clear();
             }
         });
+        // ================================================================
+        // /CUSTOM DATEPICKER
+        // ================================================================
 
+        // ----------------------------------------------------------------
+        // SELECT DROPDOWN VALUE (lokal — 3 argumen + return matched)
+        // ----------------------------------------------------------------
         function selectDropdownValue(dropdownEl, value, placeholder) {
             if (!dropdownEl) return;
             const options = dropdownEl.querySelectorAll('.dropdown-option');
@@ -926,7 +933,6 @@
             return matched;
         }
 
-        // Reset Dropdown
         function resetDropdown(dropdown) {
             if (!dropdown) return;
             const options = dropdown.querySelectorAll('.dropdown-option');
@@ -949,7 +955,9 @@
             applyFilters();
         });
 
-        // ---------------- Live Filter ----------------
+        // ----------------------------------------------------------------
+        // FILTER KONDISIONAL ARAH
+        // ----------------------------------------------------------------
         const fieldFilterArah = document.getElementById('field-filter-arah');
 
         function updateFilterArahVisibility() {
@@ -957,8 +965,6 @@
             const isGuestLecture = jenisVal === 'guest_lecture';
             fieldFilterArah.classList.toggle('hidden', !isGuestLecture);
             fieldFilterArah.style.display = isGuestLecture ? '' : 'none';
-            // Jenis selain guest_lecture: kembalikan filter arah ke "Semua Arah"
-            // supaya tidak nyangkut memfilter data yang sudah tersembunyi dropdown-nya.
             if (!isGuestLecture) {
                 resetDropdown(fieldFilterArah.querySelector('[data-dropdown]'));
             }
@@ -997,6 +1003,7 @@
             }
         }
 
+        // Listener filter — set nilai manual supaya tidak bergantung script.js
         document.querySelectorAll('#filter-tipe-user, #filter-jenis, #filter-arah').forEach((input) => {
             const dropdownEl = input.closest('[data-dropdown]');
             dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
@@ -1013,10 +1020,9 @@
         // Set kondisi awal (default jenis = semua -> field arah disembunyikan)
         updateFilterArahVisibility();
 
-        // ---- Batasi pilihan "Jenis" sesuai "Tipe User" yang dipilih di filter ----
-        // Mahasiswa: hanya Conference, PKL, Sharing Session.
-        // Dosen    : semua jenis kecuali PKL.
-        // Semua    : semua jenis.
+        // ----------------------------------------------------------------
+        // BATASI "JENIS" SESUAI "TIPE USER" DI FILTER (business rule)
+        // ----------------------------------------------------------------
         const JENIS_ALLOWED_BY_TIPE = {
             mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
             dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
@@ -1026,7 +1032,7 @@
 
         function syncFilterJenisOptions() {
             const tipe = document.getElementById('filter-tipe-user')?.value || 'semua';
-            const allowed = JENIS_ALLOWED_BY_TIPE[tipe]; // undefined = semua boleh
+            const allowed = JENIS_ALLOWED_BY_TIPE[tipe];
             const jenisDropdown = document.getElementById('filter-jenis')?.closest('[data-dropdown]');
             if (!jenisDropdown) return;
 
@@ -1036,7 +1042,6 @@
                 opt.style.display = show ? '' : 'none';
             });
 
-            // Kalau jenis yang sedang dipilih tidak valid untuk tipe ini, kembalikan ke "Semua Jenis".
             const current = document.getElementById('filter-jenis').value;
             if (current !== 'semua' && allowed && !allowed.includes(current)) {
                 resetDropdown(jenisDropdown);
@@ -1047,7 +1052,11 @@
 
         document.getElementById('filter-tipe-user')?.closest('[data-dropdown]')
             ?.querySelectorAll('.dropdown-option')
-            .forEach((opt) => opt.addEventListener('click', () => setTimeout(syncFilterJenisOptions, 0)));
+            .forEach((opt) => opt.addEventListener('click', () => {
+                const input = document.getElementById('filter-tipe-user');
+                if (input) input.value = opt.dataset.value;
+                setTimeout(syncFilterJenisOptions, 0);
+            }));
 
         syncFilterJenisOptions();
 
@@ -1057,69 +1066,19 @@
             searchDebounce = setTimeout(applyFilters, 150);
         });
 
-        // SIDEBAR Drawer Toggle Logic
-        const sidebar = document.querySelector('.app-sidebar');
-        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        function openSidebar() {
-            sidebar.classList.add('is-open');
-            sidebarOverlay.classList.add('is-active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeSidebar() {
-            sidebar.classList.remove('is-open');
-            sidebarOverlay.classList.remove('is-active');
-            document.body.style.overflow = '';
-        }
-
-        sidebarToggleBtn?.addEventListener('click', openSidebar);
-        sidebarCloseBtn?.addEventListener('click', closeSidebar);
-        sidebarOverlay?.addEventListener('click', closeSidebar);
-
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024) {
-                closeSidebar();
-            }
+        // ----------------------------------------------------------------
+        // MODAL
+        // ----------------------------------------------------------------
+        const {
+            open: openModalBase,
+            close: closeModal
+        } = SIDA.modal.attach({
+            backdrop: modalBackdrop,
+            card: modalCard,
+            closeBtn: modalCloseBtn,
+            cancelBtn: modalCancelBtn,
+            dragHandle: dragHandle,
         });
-
-        // Dark Mode Toggle Logic
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const themeIcon = document.getElementById('themeIcon');
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-            if (themeIcon) themeIcon.textContent = 'light_mode';
-        }
-        themeToggleBtn?.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            if (themeIcon) {
-                themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
-            }
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
-
-        // ================================================================
-        // MODAL: buka/tutup, drag, field kondisional, dan CRUD via fetch
-        // ================================================================
-
-        const modalBackdrop = document.getElementById('modalBackdrop');
-        const modalCard = document.getElementById('kerjaSamaModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalForm = document.getElementById('kerjaSamaForm');
-        const modalError = document.getElementById('modalError');
-        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
-        const modalCloseBtn = document.getElementById('modalCloseBtn');
-        const modalCancelBtn = document.getElementById('modalCancelBtn');
-        const btnTambah = document.getElementById('btnTambahKerjaSama');
-        const tableBody = document.getElementById('kerjaSamaTableBody');
-        const dragHandle = document.getElementById('modalDragHandle');
-        const fieldArah = document.getElementById('field-arah');
-        const fieldLainnya = document.getElementById('field-lainnya');
-        const ddUser = document.getElementById('dd-user');
 
         function updateConditionalFields(jenis) {
             const isLainnya = jenis === 'lainnya';
@@ -1128,10 +1087,7 @@
 
             const isGuestLecture = jenis === 'guest_lecture';
             fieldArah.classList.toggle('hidden', !isGuestLecture);
-            // Jaring pengaman: paksa display walau class .hidden belum/tidak ada di CSS
             fieldArah.style.display = isGuestLecture ? '' : 'none';
-            // Saat jenis bukan guest_lecture, kembalikan pilihan arah ke default
-            // supaya tidak ada nilai "nyangkut" dari pilihan sebelumnya.
             if (!isGuestLecture) {
                 selectDropdownValue(document.getElementById('dd-arah'), 'inbound', 'Inbound');
             }
@@ -1140,19 +1096,49 @@
             opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));
         });
 
-        // Saat memilih mahasiswa/dosen, otomatis set tipe_user sesuai role user tsb.
+        // Saat memilih mahasiswa/dosen → set tipe_user + sync jenis modal
         document.querySelectorAll('#dd-user .dropdown-option').forEach((opt) => {
             opt.addEventListener('click', () => {
                 document.getElementById('form-tipe_user').value = opt.dataset.role || '';
+                syncFormJenisOptions();
             });
         });
+
+        // ----------------------------------------------------------------
+        // BATASI "JENIS" DI MODAL SESUAI ROLE USER (business rule)
+        // ----------------------------------------------------------------
+        const FORM_JENIS_ALLOWED = {
+            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
+            dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
+                'pengabdian_internasional', 'research_internasional', 'lainnya'
+            ],
+        };
+
+        function syncFormJenisOptions() {
+            const role = document.getElementById('form-tipe_user').value;
+            const allowed = FORM_JENIS_ALLOWED[role];
+            const dd = document.getElementById('dd-jenis');
+            dd.querySelectorAll('.dropdown-option').forEach((opt) => {
+                opt.style.display = (!allowed || allowed.includes(opt.dataset.value)) ? '' : 'none';
+            });
+            const current = document.getElementById('form-jenis').value;
+            if (allowed && !allowed.includes(current)) {
+                selectDropdownValue(dd, allowed[0]);
+                updateConditionalFields(allowed[0]);
+            }
+        }
+
+        // Mode edit: dropdown user → tampilan terkunci
+        function setUserLocked(locked, label = '') {
+            document.getElementById('dd-user').style.display = locked ? 'none' : '';
+            const box = document.getElementById('userLocked');
+            box.style.display = locked ? '' : 'none';
+            document.getElementById('userLockedValue').textContent = label;
+        }
 
         function openModal(mode, data = {}) {
             modalForm.reset();
             modalError.hidden = true;
-            modalCard.style.left = '';
-            modalCard.style.top = '';
-            modalCard.style.transform = '';
 
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Kerja Sama' : 'Tambah Kerja Sama';
@@ -1160,76 +1146,33 @@
             selectDropdownValue(ddUser, data.user_id || '', 'Pilih mahasiswa/dosen...');
             document.getElementById('form-tipe_user').value = data.tipe_user || '';
 
+            // Edit: kunci nama user. Tambah: dropdown normal.
+            const selectedOpt = ddUser.querySelector('.dropdown-option.is-selected');
+            setUserLocked(mode === 'edit', selectedOpt ? selectedOpt.textContent.trim() : '');
+
             const jenis = data.jenis || 'conference_internasional';
             selectDropdownValue(document.getElementById('dd-jenis'), jenis);
             updateConditionalFields(jenis);
+            syncFormJenisOptions();
             document.getElementById('form-jenis_lainnya').value = data.jenis_lainnya ? decodeURIComponent(data.jenis_lainnya) : '';
 
             selectDropdownValue(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');
 
             document.getElementById('form-judul_kegiatan').value = data.judul_kegiatan ? decodeURIComponent(data.judul_kegiatan) : '';
             document.getElementById('form-mitra').value = data.mitra ? decodeURIComponent(data.mitra) : '';
-            document.getElementById('form-tanggal_mulai').value = data.tanggal_mulai || '';
-            document.getElementById('form-tanggal_selesai').value = data.tanggal_selesai || '';
+            dpMulai.setValue(data.tanggal_mulai || '');
+            dpSelesai.setMinDate(data.tanggal_mulai || null);
+            dpSelesai.setValue(data.tanggal_selesai || '');
             document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
 
-            modalBackdrop.classList.add('is-active');
-            modalCard.classList.add('is-active');
-            modalCard.setAttribute('aria-hidden', 'false');
+            openModalBase();
         }
 
-        function closeModal() {
-            modalBackdrop.classList.remove('is-active');
-            modalCard.classList.remove('is-active');
-            modalCard.setAttribute('aria-hidden', 'true');
-        }
         btnTambah?.addEventListener('click', () => openModal('create'));
-        modalCloseBtn.addEventListener('click', closeModal);
-        modalCancelBtn.addEventListener('click', closeModal);
-        modalBackdrop.addEventListener('click', closeModal);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal();
-        });
 
-        // ---- Drag modal ----
-        let dragState = null;
-        dragHandle.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('.modal-close-btn')) return;
-            const rect = modalCard.getBoundingClientRect();
-            dragState = {
-                startX: e.clientX,
-                startY: e.clientY,
-                originX: rect.left,
-                originY: rect.top
-            };
-            modalCard.style.left = rect.left + 'px';
-            modalCard.style.top = rect.top + 'px';
-            modalCard.style.transform = 'none';
-            modalCard.classList.add('is-dragging');
-            dragHandle.setPointerCapture(e.pointerId);
-        });
-        dragHandle.addEventListener('pointermove', (e) => {
-            if (!dragState) return;
-            const dx = e.clientX - dragState.startX,
-                dy = e.clientY - dragState.startY;
-            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8,
-                maxTop = window.innerHeight - modalCard.offsetHeight - 8;
-            modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
-            modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
-        });
-
-        function endDrag(e) {
-            if (!dragState) return;
-            dragState = null;
-            modalCard.classList.remove('is-dragging');
-            try {
-                dragHandle.releasePointerCapture(e.pointerId);
-            } catch (_) {}
-        }
-        dragHandle.addEventListener('pointerup', endDrag);
-        dragHandle.addEventListener('pointercancel', endDrag);
-
-        // ---- Bangun/ganti/hapus baris tabel ----
+        // ----------------------------------------------------------------
+        // BUILD / INSERT / UPDATE / REMOVE ROW
+        // ----------------------------------------------------------------
         const jenisBadge = {
             lainnya: {
                 label: 'Lainnya',
@@ -1264,21 +1207,6 @@
                 cls: 'badge-neutral'
             },
         };
-
-        function initials(name) {
-            return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
-        }
-
-        function avatarColor(id) {
-            const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
-            return c[Number(id) % c.length];
-        }
-
-        function esc(str) {
-            const div = document.createElement('div');
-            div.textContent = str ?? '';
-            return div.innerHTML;
-        }
 
         function formatTanggal(iso) {
             if (!iso) return '-';
@@ -1342,33 +1270,15 @@
                 </td>
             </tr>`.trim();
         }
+        const {
+            insertRow,
+            updateRow,
+            removeRow
+        } = SIDA.table.create(tableBody, buildRowHTML);
 
-        function insertRow(item) {
-            document.getElementById('emptyRow')?.remove();
-            const wrap = document.createElement('tbody');
-            wrap.innerHTML = buildRowHTML(item);
-            const row = wrap.firstElementChild;
-            row.classList.add('is-new');
-            tableBody.prepend(row);
-        }
-
-        function updateRow(item) {
-            const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
-            if (!existing) return insertRow(item);
-            const wrap = document.createElement('tbody');
-            wrap.innerHTML = buildRowHTML(item);
-            existing.replaceWith(wrap.firstElementChild);
-        }
-
-        function removeRow(id) {
-            const row = tableBody.querySelector(`tr[data-id="${id}"]`);
-            if (!row) return;
-            row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), {
-                once: true
-            });
-        }
-
+        // ----------------------------------------------------------------
+        // SUBMIT
+        // ----------------------------------------------------------------
         modalForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             modalError.hidden = true;
@@ -1441,6 +1351,9 @@
             }
         });
 
+        // ----------------------------------------------------------------
+        // DELETE
+        // ----------------------------------------------------------------
         async function handleDelete(id) {
             if (!confirm('Hapus data kerja sama ini? Tindakan tidak bisa dibatalkan.')) return;
             try {
@@ -1459,6 +1372,9 @@
             }
         }
 
+        // ----------------------------------------------------------------
+        // EVENT DELEGATION
+        // ----------------------------------------------------------------
         tableBody.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.btn-edit-row');
             if (editBtn) return openModal('edit', editBtn.dataset);

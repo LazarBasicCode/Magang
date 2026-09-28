@@ -115,17 +115,130 @@ class User extends Authenticatable
     }
 
     /**
+     * Menu "operasional" yang menentukan label peran dinamis admin di header
+     * profile (lihat adminRoleLabel()). Sengaja TIDAK termasuk menu
+     * admin-only (data_master, hak_akses, log): menu-menu itu administratif,
+     * bukan bidang kerja, dan admin baru selalu default 'penuh' di
+     * data_master — kalau ikut dihitung, semua admin baru akan langsung
+     * berlabel "Admin Data Master" alih-alih "Admin SIDA".
+     */
+    public const OPERATIONAL_MENUS = [
+        'kemahasiswaan',
+        'lppm_mahasiswa',
+        'lppm_dosen',
+        'rekognisi',
+        'kerja_sama',
+    ];
+
+    /**
+     * Label peran dinamis untuk admin, dipakai di header-profile-role.
+     * Aturan (lihat juga allMenuLevels() untuk levels-nya):
+     * - Tepat SATU menu operasional levelnya 'penuh', sisanya bukan 'penuh'
+     *   -> "Admin {Label Menu Itu}" (mis. "Admin Kemahasiswaan").
+     * - Tidak ada menu operasional yang 'penuh' (campuran none/readonly/
+     *   biasa) -> "Admin SIDA".
+     * - Dua menu operasional atau lebih yang 'penuh' -> "Admin SIDA" juga,
+     *   karena label tidak bisa mewakili spesialisasi tunggal.
+     * Hanya dipakai untuk role 'admin'; role lain pakai roleLabel() biasa.
+     */
+    public function adminRoleLabel(): string
+    {
+        $levels = $this->allMenuLevels();
+
+        $fullMenus = array_values(array_filter(
+            self::OPERATIONAL_MENUS,
+            fn ($menu) => ($levels[$menu] ?? 'none') === 'penuh'
+        ));
+
+        if (count($fullMenus) === 1) {
+            $menu = $fullMenus[0];
+            return 'Admin ' . (HakAkses::MENUS[$menu]['label'] ?? ucfirst($menu));
+        }
+
+        return 'Admin SIDA';
+    }
+
+    /**
      * Label yang ditampilkan di bawah nama pada header, menyesuaikan hak akses
-     * user untuk menu yang sedang dibuka. Kalau levelnya "readonly", tampilkan
-     * keterangan pratinjau; selain itu tampilkan label peran (Super Admin/Admin/
-     * Dosen/Mahasiswa).
+     * user untuk menu yang sedang dibuka.
+     * - "readonly" -> keterangan pratinjau, berlaku untuk semua role.
+     * - role 'admin' (bukan readonly) -> label dinamis dari adminRoleLabel()
+     *   (mis. "Admin Kemahasiswaan" / "Admin SIDA"), supaya header
+     *   mencerminkan bidang kerja admin sesuai hak akses yang superadmin
+     *   berikan, bukan cuma teks statis "Admin".
+     * - role lain (superadmin/dosen/mahasiswa) -> label peran biasa.
      */
     public function accessLabelFor(string $menu): string
     {
-        return $this->menuLevel($menu) === 'readonly'
-            ? 'Pratinjau · Hanya Lihat'
-            : $this->roleLabel();
+        if ($this->menuLevel($menu) === 'readonly') {
+            return 'Pratinjau · Hanya Lihat';
+        }
+
+        if ($this->role === 'admin') {
+            return $this->adminRoleLabel();
+        }
+
+        return $this->roleLabel();
     }
+
+    /**
+     * Ringkasan akses per menu untuk ditampilkan di dropdown "Informasi
+     * Akses" pada header profile: label menu, ikon, level, dan teks level
+     * yang enak dibaca. Menu dengan level 'none' tetap disertakan (dropdown
+     * yang menampilkannya boleh memilih untuk menyembunyikan atau meredupkan
+     * baris 'none' di sisi tampilan).
+     */
+    public function accessBreakdown(): array
+    {
+        $levels = $this->allMenuLevels();
+
+        $levelLabels = [
+            'penuh'    => 'Akses Penuh',
+            'biasa'    => 'Akses Biasa',
+            'readonly' => 'Hanya Lihat',
+            'none'     => 'Tidak Ada Akses',
+        ];
+
+        $rows = [];
+        foreach (HakAkses::MENUS as $key => $menu) {
+            $level = $levels[$key] ?? 'none';
+            $rows[] = [
+                'key'   => $key,
+                'label' => $menu['label'],
+                'icon'  => $menu['icon'],
+                'level' => $level,
+                'level_label' => $levelLabels[$level] ?? ucfirst($level),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Inisial nama (maks. 2 huruf) untuk avatar di header profile, memakai
+     * pola yang sama dengan avatar mahasiswa di tabel Kemahasiswaan
+     * (lihat kemahasiswaan.blade.php).
+     */
+    public function initials(): string
+    {
+        return collect(explode(' ', trim($this->name ?? '')))
+            ->filter()
+            ->take(2)
+            ->map(fn ($w) => strtoupper($w[0]))
+            ->implode('');
+    }
+
+    /**
+     * Kelas warna avatar (c-primary/c-info/dst, lihat style.css), dipilih
+     * konsisten berdasarkan id user supaya warnanya stabil setiap render,
+     * sama seperti avatarColor() untuk mahasiswa di tabel.
+     */
+    public function avatarColorClass(): string
+    {
+        $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
+        return $colors[$this->id % count($colors)];
+    }
+
     /**
      * Semua level akses user ini, per menu (dipakai untuk mengisi modal
      * Hak Akses & menghitung status/ringkasan tanpa query berulang).

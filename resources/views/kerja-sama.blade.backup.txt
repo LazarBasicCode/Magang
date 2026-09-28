@@ -140,12 +140,12 @@
                         </button>
                         <div class="header-divider"></div>
                         {{-- ============ PROFILE DROPDOWN ============ --}}
-                        @php
-                        $__initials = $__user->initials();
-                        $__avatarColor = $__user->avatarColorClass();
-                        $__accessRows = $__user->accessBreakdown();
-                        @endphp
-                        <div class="header-profile-dropdown" id="profileDropdown">
+@php
+$__initials = $__user->initials();
+$__avatarColor = $__user->avatarColorClass();
+$__accessRows = $__user->accessBreakdown();
+@endphp
+<div class="header-profile-dropdown" id="profileDropdown">
                             <button type="button" class="header-profile-trigger" id="profileToggleBtn"
                                 aria-haspopup="true" aria-expanded="false">
                                 <div class="header-profile-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
@@ -403,7 +403,7 @@
                                 $avatarColor = $colors[$item->user_id % count($colors)];
                                 $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
                                 if ($item->jenis === 'lainnya' && $item->jenis_lainnya) {
-                                $jb['label'] = $item->jenis_lainnya;
+                                    $jb['label'] = $item->jenis_lainnya;
                                 }
                                 $periode = optional($item->tanggal_mulai)->translatedFormat('d M Y') . ' - ' . optional($item->tanggal_selesai)->translatedFormat('d M Y');
                                 @endphp
@@ -1001,9 +1001,6 @@
             const dropdownEl = input.closest('[data-dropdown]');
             dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
                 opt.addEventListener('click', () => {
-                    // Set nilai manual — supaya filter baca nilai terbaru
-                    // tanpa bergantung pada listener script.js.
-                    if (input) input.value = opt.dataset.value;
                     if (input.id === 'filter-jenis') updateFilterArahVisibility();
                     applyFilters();
                 });
@@ -1020,8 +1017,7 @@
         const JENIS_ALLOWED_BY_TIPE = {
             mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
             dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
-                'pengabdian_internasional', 'research_internasional', 'lainnya'
-            ],
+                    'pengabdian_internasional', 'research_internasional', 'lainnya'],
         };
 
         function syncFilterJenisOptions() {
@@ -1295,12 +1291,10 @@
         }
 
         function buildRowHTML(item) {
-            const jb = {
-                ...(jenisBadge[item.jenis] || {
-                    label: item.jenis,
-                    cls: 'badge-neutral'
-                })
-            };
+            const jb = { ...(jenisBadge[item.jenis] || {
+                label: item.jenis,
+                cls: 'badge-neutral'
+            }) };
             if (item.jenis === 'lainnya' && item.jenis_lainnya) jb.label = item.jenis_lainnya;
             const arahHTML = item.arah ? `<span class="badge badge-primary">${esc(ucfirst(item.arah))}</span>` : '<span class="plain-text">-</span>';
             const periode = `${formatTanggal(item.tanggal_mulai)} - ${formatTanggal(item.tanggal_selesai)}`;

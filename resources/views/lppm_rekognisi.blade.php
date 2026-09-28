@@ -559,39 +559,53 @@
         </form>
     </div>
 
+    <script src="{{ asset('js/script.js') }}"></script>
     <script>
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        // ================================================================
+        // Bagian ini KHUSUS halaman LPPM Rekognisi:
+        // endpoint API, bentuk baris tabel, field form, field kondisional,
+        // datepicker, dan filter tambahan.
+        // Semua yang generik (dropdown, sidebar, dark mode, notifikasi,
+        // modal buka/tutup/drag, live search, profile dropdown) sudah
+        // ditangani public/js/script.js via SIDA.
+        //
+        // CATATAN: Datepicker TIDAK ada di SIDA.*, jadi tetap ditulis
+        // lengkap di sini (khusus halaman ini).
+        // ================================================================
+        const csrfToken = SIDA.util.csrfToken();
+        const {
+            esc,
+            initials,
+            avatarColor
+        } = SIDA.util;
 
-        // ---------------- Custom Dropdown ----------------
-        const dropdowns = document.querySelectorAll('[data-dropdown]');
-        dropdowns.forEach((dropdown) => {
-            const trigger = dropdown.querySelector('.dropdown-trigger');
-            const valueEl = dropdown.querySelector('.dropdown-value');
-            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            const options = dropdown.querySelectorAll('.dropdown-option');
+        // ---- Elemen tabel & modal ----
+        const tableBody = document.getElementById('rekognisiTableBody');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalCard = document.getElementById('rekognisiModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalForm = document.getElementById('rekognisiForm');
+        const modalError = document.getElementById('modalError');
+        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const btnTambah = document.getElementById('btnTambahRekognisi');
+        const dragHandle = document.getElementById('modalDragHandle');
 
-            trigger.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const wasOpen = dropdown.classList.contains('is-open');
-                dropdowns.forEach((d) => d.classList.remove('is-open'));
-                if (!wasOpen) dropdown.classList.add('is-open');
-            });
+        // ---- Field kondisional (khusus halaman ini) ----
+        const fieldJabatan = document.getElementById('field-jabatan');
 
-            options.forEach((option) => {
-                option.addEventListener('click', () => {
-                    options.forEach((o) => o.classList.remove('is-selected'));
-                    option.classList.add('is-selected');
-                    valueEl.textContent = option.textContent.trim();
-                    if (hiddenInput) hiddenInput.value = option.dataset.value;
-                    dropdown.classList.remove('is-open');
-                });
-            });
+        function updateConditionalFields(jenis) {
+            fieldJabatan.classList.toggle('hidden', jenis !== 'alumni');
+        }
+        document.querySelectorAll('#dd-jenis .dropdown-option').forEach((opt) => {
+            opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));
         });
-        document.addEventListener('click', () => dropdowns.forEach((d) => d.classList.remove('is-open')));
 
-        // ---------------- Custom Datepicker ----------------
+        // ================================================================
+        // CUSTOM DATEPICKER (khusus halaman ini — belum ada di script.js)
+        // ================================================================
         const MONTH_NAMES_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        const DAY_MS = 24 * 60 * 60 * 1000;
 
         function pad2(n) {
             return String(n).padStart(2, '0');
@@ -820,254 +834,18 @@
                 dpSelesai.clear();
             }
         });
-
-        function selectDropdownValue(dropdownEl, value, placeholder) {
-            if (!dropdownEl) return;
-            const options = dropdownEl.querySelectorAll('.dropdown-option');
-            const valueEl = dropdownEl.querySelector('.dropdown-value');
-            const hiddenInput = dropdownEl.querySelector('input[type="hidden"]');
-            let matched = false;
-            options.forEach((o) => {
-                const isMatch = o.dataset.value === String(value);
-                o.classList.toggle('is-selected', isMatch);
-                if (isMatch) {
-                    valueEl.textContent = o.textContent.trim();
-                    matched = true;
-                }
-            });
-            if (hiddenInput) hiddenInput.value = matched ? value : '';
-            if (!matched) valueEl.textContent = placeholder || (options[0] ? options[0].textContent.trim() : '');
-        }
-
-        function resetDropdown(dropdown) {
-            if (!dropdown) return;
-            const options = dropdown.querySelectorAll('.dropdown-option');
-            const valueEl = dropdown.querySelector('.dropdown-value');
-            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            options.forEach((o, i) => {
-                o.classList.toggle('is-selected', i === 0);
-                if (i === 0) {
-                    valueEl.textContent = o.textContent.trim();
-                    if (hiddenInput) hiddenInput.value = o.dataset.value;
-                }
-            });
-        }
-        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
-            const search = document.getElementById('filter-search');
-            if (search) search.value = '';
-            applyFilters();
-        });
-
-        // ---------------- Live Filter ----------------
-        function applyFilters() {
-            const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
-            const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
-            const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-            const rows = tableBody.querySelectorAll('tr[data-id]');
-            let visibleCount = 0;
-
-            rows.forEach((row) => {
-                const matchesTipeUser = tipeUserVal === 'semua' || row.dataset.tipe_user === tipeUserVal;
-                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
-                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                const visible = matchesTipeUser && matchesJenis && matchesSearch;
-                row.style.display = visible ? '' : 'none';
-                if (visible) visibleCount++;
-            });
-
-            let noResultRow = document.getElementById('noResultRow');
-            if (visibleCount === 0 && rows.length > 0) {
-                if (!noResultRow) {
-                    noResultRow = document.createElement('tr');
-                    noResultRow.id = 'noResultRow';
-                    const colCount = tableBody.closest('table')?.querySelectorAll('thead th').length || 9;
-                    noResultRow.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding: 32px; color: var(--ink-faint);">Tidak ada data yang cocok dengan filter.</td>`;
-                    tableBody.appendChild(noResultRow);
-                }
-                noResultRow.style.display = '';
-            } else if (noResultRow) {
-                noResultRow.style.display = 'none';
-            }
-        }
-
-        document.querySelectorAll('#filter-tipe-user, #filter-jenis').forEach((input) => {
-            const dropdownEl = input.closest('[data-dropdown]');
-            dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
-                opt.addEventListener('click', () => applyFilters());
-            });
-        });
-
-        let searchDebounce;
-        document.getElementById('filter-search')?.addEventListener('input', () => {
-            clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(applyFilters, 150);
-        });
-
-        // ---------------- Sidebar Drawer ----------------
-        const sidebar = document.querySelector('.app-sidebar');
-        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        function openSidebar() {
-            sidebar.classList.add('is-open');
-            sidebarOverlay.classList.add('is-active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeSidebar() {
-            sidebar.classList.remove('is-open');
-            sidebarOverlay.classList.remove('is-active');
-            document.body.style.overflow = '';
-        }
-        sidebarToggleBtn?.addEventListener('click', openSidebar);
-        sidebarCloseBtn?.addEventListener('click', closeSidebar);
-        sidebarOverlay?.addEventListener('click', closeSidebar);
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024) closeSidebar();
-        });
-
-        // ---------------- Dark Mode ----------------
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const themeIcon = document.getElementById('themeIcon');
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-            if (themeIcon) themeIcon.textContent = 'light_mode';
-        }
-        themeToggleBtn?.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            if (themeIcon) themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
-
         // ================================================================
-        // MODAL: buka/tutup, drag, field kondisional, dan CRUD via fetch
+        // /CUSTOM DATEPICKER
         // ================================================================
-        const modalBackdrop = document.getElementById('modalBackdrop');
-        const modalCard = document.getElementById('rekognisiModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalForm = document.getElementById('rekognisiForm');
-        const modalError = document.getElementById('modalError');
-        const modalSubmitBtn = document.getElementById('modalSubmitBtn');
-        const modalCloseBtn = document.getElementById('modalCloseBtn');
-        const modalCancelBtn = document.getElementById('modalCancelBtn');
-        const btnTambah = document.getElementById('btnTambahRekognisi');
-        const tableBody = document.getElementById('rekognisiTableBody');
-        const dragHandle = document.getElementById('modalDragHandle');
 
-        const fieldJabatan = document.getElementById('field-jabatan');
-
-        function updateConditionalFields(jenis) {
-            fieldJabatan.classList.toggle('hidden', jenis !== 'alumni');
-        }
-        document.querySelectorAll('#dd-jenis .dropdown-option').forEach((opt) => {
-            opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));
-        });
-
-        function openModal(mode, data = {}) {
-            modalForm.reset();
-            modalError.hidden = true;
-            modalCard.style.left = '';
-            modalCard.style.top = '';
-            modalCard.style.transform = '';
-
-            document.getElementById('form-id').value = data.id || '';
-            modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
-
-            selectDropdownValue(document.getElementById('dd-user'), data.user_id || '', 'Pilih nama...');
-            const jenis = data.jenis || 'nasional';
-            selectDropdownValue(document.getElementById('dd-jenis'), jenis);
-            updateConditionalFields(jenis);
-
-            document.getElementById('form-mitra').value = data.mitra ? decodeURIComponent(data.mitra) : '';
-            document.getElementById('form-jabatan').value = data.jabatan ? decodeURIComponent(data.jabatan) : '';
-            dpMulai.setValue(data.tanggal_mulai || '');
-            dpSelesai.setMinDate(data.tanggal_mulai || null);
-            dpSelesai.setValue(data.tanggal_selesai || '');
-            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
-            document.getElementById('form-bukti_tambahan').value = data.bukti_tambahan ? decodeURIComponent(data.bukti_tambahan) : '';
-
-            modalBackdrop.classList.add('is-active');
-            modalCard.classList.add('is-active');
-            modalCard.setAttribute('aria-hidden', 'false');
-        }
-
-        function closeModal() {
-            modalBackdrop.classList.remove('is-active');
-            modalCard.classList.remove('is-active');
-            modalCard.setAttribute('aria-hidden', 'true');
-        }
-        btnTambah?.addEventListener('click', () => openModal('create'));
-        modalCloseBtn.addEventListener('click', closeModal);
-        modalCancelBtn.addEventListener('click', closeModal);
-        modalBackdrop.addEventListener('click', closeModal);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modalCard.classList.contains('is-active')) closeModal();
-        });
-
-        // ---- Drag ----
-        let dragState = null;
-        dragHandle.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('.modal-close-btn')) return;
-            const rect = modalCard.getBoundingClientRect();
-            dragState = {
-                startX: e.clientX,
-                startY: e.clientY,
-                originX: rect.left,
-                originY: rect.top
-            };
-            modalCard.style.left = rect.left + 'px';
-            modalCard.style.top = rect.top + 'px';
-            modalCard.style.transform = 'none';
-            modalCard.classList.add('is-dragging');
-            dragHandle.setPointerCapture(e.pointerId);
-        });
-        dragHandle.addEventListener('pointermove', (e) => {
-            if (!dragState) return;
-            const dx = e.clientX - dragState.startX,
-                dy = e.clientY - dragState.startY;
-            const maxLeft = window.innerWidth - modalCard.offsetWidth - 8,
-                maxTop = window.innerHeight - modalCard.offsetHeight - 8;
-            modalCard.style.left = Math.min(Math.max(8, dragState.originX + dx), Math.max(8, maxLeft)) + 'px';
-            modalCard.style.top = Math.min(Math.max(8, dragState.originY + dy), Math.max(8, maxTop)) + 'px';
-        });
-
-        function endDrag(e) {
-            if (!dragState) return;
-            dragState = null;
-            modalCard.classList.remove('is-dragging');
-            try {
-                dragHandle.releasePointerCapture(e.pointerId);
-            } catch (_) {}
-        }
-        dragHandle.addEventListener('pointerup', endDrag);
-        dragHandle.addEventListener('pointercancel', endDrag);
-
-        // ---- Bangun/ganti/hapus baris tabel ----
+        // ---- Label jenis (khusus halaman ini) ----
         const jenisLabel = {
             nasional: 'Nasional',
             internasional: 'Internasional',
             alumni: 'Alumni'
         };
 
-        function initials(name) {
-            return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '-';
-        }
-
-        function avatarColor(id) {
-            const c = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
-            return c[Number(id) % c.length];
-        }
-
-        function esc(str) {
-            const div = document.createElement('div');
-            div.textContent = str ?? '';
-            return div.innerHTML;
-        }
-
+        // ---- Bangun HTML baris tabel dari data JSON (khusus halaman ini) ----
         function fmtDate(d) {
             if (!d) return '-';
             const dt = new Date(d + 'T00:00:00');
@@ -1118,33 +896,68 @@
                 </td>
             </tr>`.trim();
         }
+        const {
+            insertRow,
+            updateRow,
+            removeRow
+        } = SIDA.table.create(tableBody, buildRowHTML);
 
-        function insertRow(item) {
-            document.getElementById('emptyRow')?.remove();
-            const wrap = document.createElement('tbody');
-            wrap.innerHTML = buildRowHTML(item);
-            const row = wrap.firstElementChild;
-            row.classList.add('is-new');
-            tableBody.prepend(row);
+        // ---- Live filter (khusus halaman ini: 2 dropdown + search) ----
+        const applyFilters = SIDA.filter.setup({
+            tableBody,
+            dropdownFilterIds: ['filter-tipe-user', 'filter-jenis'],
+            searchInputId: 'filter-search',
+            matches: (row) => {
+                const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
+                const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
+                const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+                const matchesTipeUser = tipeUserVal === 'semua' || row.dataset.tipe_user === tipeUserVal;
+                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
+                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
+                return matchesTipeUser && matchesJenis && matchesSearch;
+            },
+            emptyMessage: 'Tidak ada data yang cocok dengan filter.',
+        });
+
+        // ---- Modal: mekanisme buka/tutup/drag dari script.js ----
+        const {
+            open: openModalBase,
+            close: closeModal
+        } = SIDA.modal.attach({
+            backdrop: modalBackdrop,
+            card: modalCard,
+            closeBtn: modalCloseBtn,
+            cancelBtn: modalCancelBtn,
+            dragHandle: dragHandle,
+        });
+
+        // ---- Isi form modal (khusus halaman ini) ----
+        function openModal(mode, data = {}) {
+            modalForm.reset();
+            modalError.hidden = true;
+
+            document.getElementById('form-id').value = data.id || '';
+            modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
+
+            SIDA.dropdown.select(document.getElementById('dd-user'), data.user_id || '', 'Pilih nama...');
+            const jenis = data.jenis || 'nasional';
+            SIDA.dropdown.select(document.getElementById('dd-jenis'), jenis);
+            updateConditionalFields(jenis);
+
+            document.getElementById('form-mitra').value = data.mitra ? decodeURIComponent(data.mitra) : '';
+            document.getElementById('form-jabatan').value = data.jabatan ? decodeURIComponent(data.jabatan) : '';
+            dpMulai.setValue(data.tanggal_mulai || '');
+            dpSelesai.setMinDate(data.tanggal_mulai || null);
+            dpSelesai.setValue(data.tanggal_selesai || '');
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+            document.getElementById('form-bukti_tambahan').value = data.bukti_tambahan ? decodeURIComponent(data.bukti_tambahan) : '';
+
+            openModalBase();
         }
 
-        function updateRow(item) {
-            const existing = tableBody.querySelector(`tr[data-id="${item.id}"]`);
-            if (!existing) return insertRow(item);
-            const wrap = document.createElement('tbody');
-            wrap.innerHTML = buildRowHTML(item);
-            existing.replaceWith(wrap.firstElementChild);
-        }
+        btnTambah?.addEventListener('click', () => openModal('create'));
 
-        function removeRow(id) {
-            const row = tableBody.querySelector(`tr[data-id="${id}"]`);
-            if (!row) return;
-            row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => row.remove(), {
-                once: true
-            });
-        }
-
+        // ---- Submit form (create / update) — endpoint khusus halaman ini ----
         modalForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             modalError.hidden = true;
@@ -1216,6 +1029,7 @@
             }
         });
 
+        // ---- Delete — endpoint khusus halaman ini ----
         async function handleDelete(id) {
             if (!confirm('Hapus data ini? Tindakan tidak bisa dibatalkan.')) return;
             try {
@@ -1249,6 +1063,7 @@
             }
         }
 
+        // ---- Event delegation: tombol Edit & Hapus di tiap baris (termasuk baris baru) ----
         tableBody.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.btn-edit-row');
             if (editBtn) return openModal('edit', editBtn.dataset);

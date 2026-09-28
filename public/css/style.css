@@ -6,7 +6,7 @@
     --card: #ffffff;
     --border: #dde1f1;
     --border-strong: #ced3e4;
-    --modal: #eff0f8;
+    --modal: #eaebf2;
 
     --ink: #2f3349;
     --ink-muted: #6b7280;
@@ -756,7 +756,7 @@ button {
     width: 100%;
     height: 40px;
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     background: var(--card);
     color: var(--ink);
     font-size: 13px;
@@ -799,7 +799,7 @@ button {
     width: 100%;
     height: 40px;
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     background: var(--card);
     color: var(--ink);
     font-size: 13px;

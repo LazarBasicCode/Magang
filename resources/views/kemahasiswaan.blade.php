@@ -11,8 +11,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <title>Kemahasiswaan &middot; SIDA</title>
 </head>
 
@@ -591,6 +591,67 @@
         // ================================================================
         const csrfToken = SIDA.util.csrfToken();
         const { esc, initials, avatarColor } = SIDA.util;
+
+        // ---- Profile dropdown (avatar + info akses) ----
+        // Ditulis mandiri (bukan lewat SIDA.dropdown/SIDA.modal) karena
+        // perilakunya beda dari dropdown pilihan biasa: ada 2 "view" yang
+        // bisa berpindah (menu utama <-> rincian akses) di dalam 1 panel.
+        (function () {
+            const wrap = document.getElementById('profileDropdown');
+            const toggleBtn = document.getElementById('profileToggleBtn');
+            const panel = document.getElementById('profilePanel');
+            const viewMain = document.getElementById('profileViewMain');
+            const viewAccess = document.getElementById('profileViewAccess');
+            const btnShowAccess = document.getElementById('btnShowAccessInfo');
+            const btnBack = document.getElementById('btnBackToMain');
+            if (!wrap || !toggleBtn || !panel) return;
+
+            function showView(view) {
+                [viewMain, viewAccess].forEach((v) => v?.classList.remove('is-active'));
+                view?.classList.add('is-active');
+            }
+
+            function openPanel() {
+                wrap.classList.add('is-open');
+                toggleBtn.setAttribute('aria-expanded', 'true');
+                panel.setAttribute('aria-hidden', 'false');
+            }
+
+            function closePanel() {
+                wrap.classList.remove('is-open');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                panel.setAttribute('aria-hidden', 'true');
+                // Selalu kembali ke menu utama saat panel ditutup, supaya
+                // saat dibuka lagi tidak "nyangkut" di rincian akses.
+                showView(viewMain);
+            }
+
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                wrap.classList.contains('is-open') ? closePanel() : openPanel();
+            });
+
+            btnShowAccess?.addEventListener('click', () => showView(viewAccess));
+            btnBack?.addEventListener('click', () => showView(viewMain));
+
+            // Klik di luar panel -> tutup.
+            document.addEventListener('click', (e) => {
+                if (!wrap.contains(e.target)) closePanel();
+            });
+
+            // Esc -> tutup.
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closePanel();
+            });
+
+            // Placeholder UI-only: belum ada endpoint di baliknya.
+            document.getElementById('btnGantiPassword')?.addEventListener('click', () => {
+                alert('Fitur Ganti Password segera hadir.');
+            });
+            document.getElementById('btnEmailPemulihan')?.addEventListener('click', () => {
+                alert('Fitur Email Pemulihan segera hadir.');
+            });
+        })();
 
         // ---- Elemen tabel & modal ----
         const tableBody = document.getElementById('kegiatanTableBody');

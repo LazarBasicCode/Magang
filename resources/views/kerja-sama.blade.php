@@ -7,8 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <title>Kerja Sama &middot; SIDA</title>
 </head>
 
@@ -308,6 +308,7 @@ $__accessRows = $__user->accessBreakdown();
                                     <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
                                     <button type="button" class="dropdown-option" data-value="pengabdian_internasional">Pengabdian Internasional</button>
                                     <button type="button" class="dropdown-option" data-value="research_internasional">Research Internasional</button>
+                                    <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
                                 </div>
                             </div>
                         </div>
@@ -391,6 +392,7 @@ $__accessRows = $__user->accessBreakdown();
                                 'guest_lecture' => ['label' => 'Guest Lecture', 'class' => 'badge-info'],
                                 'pengabdian_internasional' => ['label' => 'Pengabdian Int.', 'class' => 'badge-danger'],
                                 'research_internasional' => ['label' => 'Research Int.', 'class' => 'badge-neutral'],
+                                'lainnya' => ['label' => 'Lainnya', 'class' => 'badge-neutral'],
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
@@ -400,6 +402,9 @@ $__accessRows = $__user->accessBreakdown();
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
                                 $avatarColor = $colors[$item->user_id % count($colors)];
                                 $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
+                                if ($item->jenis === 'lainnya' && $item->jenis_lainnya) {
+                                    $jb['label'] = $item->jenis_lainnya;
+                                }
                                 $periode = optional($item->tanggal_mulai)->translatedFormat('d M Y') . ' - ' . optional($item->tanggal_selesai)->translatedFormat('d M Y');
                                 @endphp
                                 <tr data-id="{{ $item->id }}" data-tipe_user="{{ $item->tipe_user }}" data-jenis="{{ $item->jenis }}" data-arah="{{ $item->arah }}">
@@ -437,6 +442,7 @@ $__accessRows = $__user->accessBreakdown();
                                                 data-user_id="{{ $item->user_id }}"
                                                 data-tipe_user="{{ $item->tipe_user }}"
                                                 data-jenis="{{ $item->jenis }}"
+                                                data-jenis_lainnya="{{ urlencode($item->jenis_lainnya ?? '') }}"
                                                 data-arah="{{ $item->arah }}"
                                                 data-mitra="{{ urlencode($item->mitra) }}"
                                                 data-judul_kegiatan="{{ urlencode($item->judul_kegiatan) }}"
@@ -527,7 +533,14 @@ $__accessRows = $__user->accessBreakdown();
                             <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
                             <button type="button" class="dropdown-option" data-value="pengabdian_internasional">Pengabdian Internasional</button>
                             <button type="button" class="dropdown-option" data-value="research_internasional">Research Internasional</button>
+                            <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
                         </div>
+                    </div>
+                </div>
+                <div class="field" id="field-lainnya" style="display:none;">
+                    <label class="field-label" for="form-jenis_lainnya">Jenis Kerja Sama Lainnya</label>
+                    <div class="field-control">
+                        <input id="form-jenis_lainnya" type="text" maxlength="255" placeholder="Tulis jenis kerja sama...">
                     </div>
                 </div>
                 <div class="field" id="field-arah">
@@ -997,6 +1010,43 @@ $__accessRows = $__user->accessBreakdown();
         // Set kondisi awal (default jenis = semua -> field arah disembunyikan)
         updateFilterArahVisibility();
 
+        // ---- Batasi pilihan "Jenis" sesuai "Tipe User" yang dipilih di filter ----
+        // Mahasiswa: hanya Conference, PKL, Sharing Session.
+        // Dosen    : semua jenis kecuali PKL.
+        // Semua    : semua jenis.
+        const JENIS_ALLOWED_BY_TIPE = {
+            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
+            dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
+                    'pengabdian_internasional', 'research_internasional', 'lainnya'],
+        };
+
+        function syncFilterJenisOptions() {
+            const tipe = document.getElementById('filter-tipe-user')?.value || 'semua';
+            const allowed = JENIS_ALLOWED_BY_TIPE[tipe]; // undefined = semua boleh
+            const jenisDropdown = document.getElementById('filter-jenis')?.closest('[data-dropdown]');
+            if (!jenisDropdown) return;
+
+            jenisDropdown.querySelectorAll('.dropdown-option').forEach((opt) => {
+                const v = opt.dataset.value;
+                const show = v === 'semua' || !allowed || allowed.includes(v);
+                opt.style.display = show ? '' : 'none';
+            });
+
+            // Kalau jenis yang sedang dipilih tidak valid untuk tipe ini, kembalikan ke "Semua Jenis".
+            const current = document.getElementById('filter-jenis').value;
+            if (current !== 'semua' && allowed && !allowed.includes(current)) {
+                resetDropdown(jenisDropdown);
+                updateFilterArahVisibility();
+                applyFilters();
+            }
+        }
+
+        document.getElementById('filter-tipe-user')?.closest('[data-dropdown]')
+            ?.querySelectorAll('.dropdown-option')
+            .forEach((opt) => opt.addEventListener('click', () => setTimeout(syncFilterJenisOptions, 0)));
+
+        syncFilterJenisOptions();
+
         let searchDebounce;
         document.getElementById('filter-search')?.addEventListener('input', () => {
             clearTimeout(searchDebounce);
@@ -1064,9 +1114,14 @@ $__accessRows = $__user->accessBreakdown();
         const tableBody = document.getElementById('kerjaSamaTableBody');
         const dragHandle = document.getElementById('modalDragHandle');
         const fieldArah = document.getElementById('field-arah');
+        const fieldLainnya = document.getElementById('field-lainnya');
         const ddUser = document.getElementById('dd-user');
 
         function updateConditionalFields(jenis) {
+            const isLainnya = jenis === 'lainnya';
+            fieldLainnya.style.display = isLainnya ? '' : 'none';
+            if (!isLainnya) document.getElementById('form-jenis_lainnya').value = '';
+
             const isGuestLecture = jenis === 'guest_lecture';
             fieldArah.classList.toggle('hidden', !isGuestLecture);
             // Jaring pengaman: paksa display walau class .hidden belum/tidak ada di CSS
@@ -1104,6 +1159,7 @@ $__accessRows = $__user->accessBreakdown();
             const jenis = data.jenis || 'conference_internasional';
             selectDropdownValue(document.getElementById('dd-jenis'), jenis);
             updateConditionalFields(jenis);
+            document.getElementById('form-jenis_lainnya').value = data.jenis_lainnya ? decodeURIComponent(data.jenis_lainnya) : '';
 
             selectDropdownValue(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');
 
@@ -1171,6 +1227,10 @@ $__accessRows = $__user->accessBreakdown();
 
         // ---- Bangun/ganti/hapus baris tabel ----
         const jenisBadge = {
+            lainnya: {
+                label: 'Lainnya',
+                cls: 'badge-neutral'
+            },
             conference_internasional: {
                 label: 'Conference Int.',
                 cls: 'badge-info'
@@ -1231,10 +1291,11 @@ $__accessRows = $__user->accessBreakdown();
         }
 
         function buildRowHTML(item) {
-            const jb = jenisBadge[item.jenis] || {
+            const jb = { ...(jenisBadge[item.jenis] || {
                 label: item.jenis,
                 cls: 'badge-neutral'
-            };
+            }) };
+            if (item.jenis === 'lainnya' && item.jenis_lainnya) jb.label = item.jenis_lainnya;
             const arahHTML = item.arah ? `<span class="badge badge-primary">${esc(ucfirst(item.arah))}</span>` : '<span class="plain-text">-</span>';
             const periode = `${formatTanggal(item.tanggal_mulai)} - ${formatTanggal(item.tanggal_selesai)}`;
             return `
@@ -1261,7 +1322,7 @@ $__accessRows = $__user->accessBreakdown();
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
-                            data-jenis="${item.jenis}" data-arah="${item.arah || ''}"
+                            data-jenis="${item.jenis}" data-jenis_lainnya="${encodeURIComponent(item.jenis_lainnya || '')}" data-arah="${item.arah || ''}"
                             data-mitra="${encodeURIComponent(item.mitra)}"
                             data-judul_kegiatan="${encodeURIComponent(item.judul_kegiatan)}"
                             data-tanggal_mulai="${item.tanggal_mulai}" data-tanggal_selesai="${item.tanggal_selesai}"
@@ -1313,6 +1374,7 @@ $__accessRows = $__user->accessBreakdown();
                 user_id: document.getElementById('form-user_id').value,
                 tipe_user: document.getElementById('form-tipe_user').value,
                 jenis: jenis,
+                jenis_lainnya: jenis === 'lainnya' ? document.getElementById('form-jenis_lainnya').value.trim() : null,
                 arah: jenis === 'guest_lecture' ? document.getElementById('form-arah').value : null,
                 judul_kegiatan: document.getElementById('form-judul_kegiatan').value,
                 mitra: document.getElementById('form-mitra').value,
@@ -1320,6 +1382,13 @@ $__accessRows = $__user->accessBreakdown();
                 tanggal_selesai: document.getElementById('form-tanggal_selesai').value,
                 bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
             };
+
+            if (jenis === 'lainnya' && !payload.jenis_lainnya) {
+                modalError.textContent = 'Isi jenis kerja sama lainnya terlebih dahulu.';
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
+            }
 
             if (!payload.user_id) {
                 modalError.textContent = 'Pilih mahasiswa/dosen terlebih dahulu.';

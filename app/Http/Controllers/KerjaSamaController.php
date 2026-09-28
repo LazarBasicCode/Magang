@@ -120,10 +120,11 @@ class KerjaSamaController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'user_id'          => ['required', 'exists:users,id'],
             'tipe_user'        => ['required', 'in:mahasiswa,dosen'],
-            'jenis'            => ['required', 'in:conference_internasional,pkl,sharing_session,keynote_session,guest_lecture,pengabdian_internasional,research_internasional'],
+            'jenis'            => ['required', 'in:conference_internasional,pkl,sharing_session,keynote_session,guest_lecture,pengabdian_internasional,research_internasional,lainnya'],
+            'jenis_lainnya'    => ['nullable', 'required_if:jenis,lainnya', 'string', 'max:255'],
             'arah'             => ['nullable', 'required_if:jenis,guest_lecture', 'in:inbound,outbound'],
             'mitra'            => ['required', 'string', 'max:255'],
             'judul_kegiatan'   => ['required', 'string', 'max:255'],
@@ -131,6 +132,13 @@ class KerjaSamaController extends Controller
             'tanggal_selesai'  => ['required', 'date', 'after_or_equal:tanggal_mulai'],
             'bukti_kegiatan'   => ['required', 'url', 'max:2048'],
         ]);
+
+        // Teks "lainnya" hanya disimpan kalau jenisnya memang "lainnya"
+        $data['jenis_lainnya'] = $data['jenis'] === 'lainnya'
+            ? trim((string) ($data['jenis_lainnya'] ?? ''))
+            : null;
+
+        return $data;
     }
 
     /**
@@ -145,6 +153,7 @@ class KerjaSamaController extends Controller
             'nama'             => $item->user->name ?? 'Tanpa Nama',
             'tipe_user'        => $item->tipe_user,
             'jenis'            => $item->jenis,
+            'jenis_lainnya'    => $item->jenis_lainnya,
             'arah'             => $item->arah,
             'mitra'            => $item->mitra,
             'judul_kegiatan'   => $item->judul_kegiatan,

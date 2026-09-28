@@ -145,7 +145,7 @@
         modalOverlay.className = 'notifm-overlay';
         modalOverlay.innerHTML = `
             <div class="notifm-box" role="dialog" aria-modal="true">
-                <button type="button" class="notifm-close" aria-label="Tutup">
+                <button type="button" class="modal-close-btn" aria-label="Tutup">
                     <span class="material-symbols-outlined">close</span>
                 </button>
                 <div class="notifm-icon" id="notifmIcon"><span class="material-symbols-outlined" id="notifmIconGlyph"></span></div>

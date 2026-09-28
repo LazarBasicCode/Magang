@@ -231,11 +231,6 @@
                 <!-- PAGE TITLE + ACTION -->
                 <div class="title-bar">
                     <div>
-                        <div class="breadcrumb">
-                            <span>Kemahasiswaan</span>
-                            <span class="material-symbols-outlined">chevron_right</span>
-                            <span class="current">Data Prestasi &amp; Kegiatan</span>
-                        </div>
                         <h1 class="page-title">Prestasi &amp; Kegiatan Mahasiswa</h1>
                         <p class="page-subtitle">Pendataan kegiatan akademik, non-akademik, inbis, dan kompetisi
                             &middot; Tahun Akademik 2025/2026 (Genap)</p>
@@ -596,67 +591,6 @@
         // ================================================================
         const csrfToken = SIDA.util.csrfToken();
         const { esc, initials, avatarColor } = SIDA.util;
-
-        // ---- Profile dropdown (avatar + info akses) ----
-        // Ditulis mandiri (bukan lewat SIDA.dropdown/SIDA.modal) karena
-        // perilakunya beda dari dropdown pilihan biasa: ada 2 "view" yang
-        // bisa berpindah (menu utama <-> rincian akses) di dalam 1 panel.
-        (function () {
-            const wrap = document.getElementById('profileDropdown');
-            const toggleBtn = document.getElementById('profileToggleBtn');
-            const panel = document.getElementById('profilePanel');
-            const viewMain = document.getElementById('profileViewMain');
-            const viewAccess = document.getElementById('profileViewAccess');
-            const btnShowAccess = document.getElementById('btnShowAccessInfo');
-            const btnBack = document.getElementById('btnBackToMain');
-            if (!wrap || !toggleBtn || !panel) return;
-
-            function showView(view) {
-                [viewMain, viewAccess].forEach((v) => v?.classList.remove('is-active'));
-                view?.classList.add('is-active');
-            }
-
-            function openPanel() {
-                wrap.classList.add('is-open');
-                toggleBtn.setAttribute('aria-expanded', 'true');
-                panel.setAttribute('aria-hidden', 'false');
-            }
-
-            function closePanel() {
-                wrap.classList.remove('is-open');
-                toggleBtn.setAttribute('aria-expanded', 'false');
-                panel.setAttribute('aria-hidden', 'true');
-                // Selalu kembali ke menu utama saat panel ditutup, supaya
-                // saat dibuka lagi tidak "nyangkut" di rincian akses.
-                showView(viewMain);
-            }
-
-            toggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                wrap.classList.contains('is-open') ? closePanel() : openPanel();
-            });
-
-            btnShowAccess?.addEventListener('click', () => showView(viewAccess));
-            btnBack?.addEventListener('click', () => showView(viewMain));
-
-            // Klik di luar panel -> tutup.
-            document.addEventListener('click', (e) => {
-                if (!wrap.contains(e.target)) closePanel();
-            });
-
-            // Esc -> tutup.
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closePanel();
-            });
-
-            // Placeholder UI-only: belum ada endpoint di baliknya.
-            document.getElementById('btnGantiPassword')?.addEventListener('click', () => {
-                alert('Fitur Ganti Password segera hadir.');
-            });
-            document.getElementById('btnEmailPemulihan')?.addEventListener('click', () => {
-                alert('Fitur Email Pemulihan segera hadir.');
-            });
-        })();
 
         // ---- Elemen tabel & modal ----
         const tableBody = document.getElementById('kegiatanTableBody');

@@ -572,14 +572,51 @@
         // ----------------------------------------------------------------
         const ROLES_WITHOUT_FULL_ACCESS = ['mahasiswa', 'dosen'];
 
+        // Selaras dengan HakAkses::ADMIN_SINGLE_RESPONSIBILITY_MENUS &
+        // ADMIN_READONLY_CEILING_MENUS di backend — dipakai untuk memberi
+        // panduan visual di modal SEBELUM submit (validasi sebenarnya tetap
+        // di server, ini cuma supaya UX-nya tidak perlu nunggu ditolak dulu).
+        const ADMIN_SINGLE_RESPONSIBILITY_MENUS = ['kemahasiswaan', 'lppm_mahasiswa', 'lppm_dosen', 'rekognisi', 'kerja_sama'];
+        const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses'];
+
         function applyRoleAccessRules(role) {
-            const restricted = ROLES_WITHOUT_FULL_ACCESS.includes((role || '').toLowerCase());
+            const roleLower = (role || '').toLowerCase();
+            const restricted = ROLES_WITHOUT_FULL_ACCESS.includes(roleLower);
             document.querySelectorAll('#accessModal .dropdown-option[data-value="penuh"]').forEach((opt) => {
                 opt.hidden = restricted;
             });
             const fullLevelItem = document.querySelector('#accessModal .access-level-item[data-value="penuh"]');
             if (fullLevelItem) fullLevelItem.hidden = restricted;
+
+            // Kebijakan khusus admin: Data Master & Hak Akses murni wewenang
+            // superadmin — admin maksimal cuma boleh "Read Only", opsi
+            // "Akses Biasa"/"Akses Penuh" disembunyikan total di 2 baris ini.
+            const isAdmin = roleLower === 'admin';
+            ADMIN_READONLY_CEILING_MENUS.forEach((menu) => {
+                const row = document.querySelector(`.permission-row[data-menu="${menu}"]`);
+                row?.querySelectorAll('.dropdown-option[data-value="biasa"], .dropdown-option[data-value="penuh"]').forEach((opt) => {
+                    opt.hidden = isAdmin;
+                });
+            });
+
             return restricted;
+        }
+
+        // Kebijakan "1 admin = 1 peran": kalau target modal ini seorang admin
+        // dan salah satu menu operasional baru saja diaktifkan (biasa/penuh),
+        // otomatis nonaktifkan menu operasional LAINNYA supaya tidak lolos
+        // punya lebih dari satu peran sekaligus (validasi keras tetap di server).
+        function enforceSingleResponsibility(changedMenu) {
+            const targetRole = (document.getElementById('accessModal')?.dataset.targetRole || '').toLowerCase();
+            if (targetRole !== 'admin') return;
+            if (!ADMIN_SINGLE_RESPONSIBILITY_MENUS.includes(changedMenu)) return;
+
+            ADMIN_SINGLE_RESPONSIBILITY_MENUS
+                .filter((menu) => menu !== changedMenu)
+                .forEach((menu) => {
+                    const otherDropdown = document.querySelector(`[data-permission-dropdown][data-menu="${menu}"]`);
+                    if (otherDropdown) selectDropdownValue(otherDropdown, 'none');
+                });
         }
 
         // ----------------------------------------------------------------
@@ -651,6 +688,9 @@
                     const row = dropdown.closest('.permission-row');
                     if (row) row.dataset.state = option.dataset.value;
                     if (dropdown.closest('.filter-grid')) applyFilters();
+                    if (row && ['biasa', 'penuh'].includes(option.dataset.value)) {
+                        enforceSingleResponsibility(row.dataset.menu);
+                    }
                 }, true);
             });
         });
@@ -745,6 +785,7 @@
             modalError.hidden = true;
 
             document.getElementById('form-user_id').value = data.id || '';
+            document.getElementById('accessModal').dataset.targetRole = (data.role || '').toLowerCase();
             modalTitle.textContent = data.readonly ? 'Lihat Hak Akses' : 'Atur Hak Akses';
 
             if (data.readonlyReason) {
@@ -791,13 +832,38 @@
         // ---- "Level Akses" gabungan = legenda + terapkan cepat ----
         function applyLevelToAll(value) {
             if (!canManage) return;
+            const targetRole = (document.getElementById('accessModal')?.dataset.targetRole || '').toLowerCase();
+            const isAdminActivating = targetRole === 'admin' && ['biasa', 'penuh'].includes(value);
+            let pickedOneResponsibility = false;
+
             document.querySelectorAll('.permission-value').forEach((input) => {
                 const menu = input.dataset.menu;
+                let effectiveValue = value;
+
+                if (isAdminActivating && ADMIN_READONLY_CEILING_MENUS.includes(menu)) {
+                    // Data Master & Hak Akses tidak ikut "Akses Biasa/Penuh" massal
+                    // — mentok di Read Only sesuai kebijakan admin.
+                    effectiveValue = 'readonly';
+                } else if (isAdminActivating && ADMIN_SINGLE_RESPONSIBILITY_MENUS.includes(menu)) {
+                    // "1 admin = 1 peran": cuma menu operasional PERTAMA yang ikut
+                    // nilai massal ini, sisanya dikembalikan ke "none".
+                    if (pickedOneResponsibility) {
+                        effectiveValue = 'none';
+                    } else {
+                        pickedOneResponsibility = true;
+                    }
+                }
+
                 selectDropdownValue(
                     document.querySelector(`[data-permission-dropdown][data-menu="${menu}"]`),
-                    value
+                    effectiveValue
                 );
             });
+
+            if (isAdminActivating) {
+                modalError.textContent = 'Catatan: untuk akun admin, "Terapkan ke semua" otomatis membatasi Data Master/Hak Akses ke Read Only dan hanya mengaktifkan satu menu peran.';
+                modalError.hidden = false;
+            }
         }
         document.getElementById('accessLevelList')?.addEventListener('click', (e) => {
             const btn = e.target.closest('.access-level-item');

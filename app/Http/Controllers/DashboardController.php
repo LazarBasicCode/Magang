@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
+use App\Models\LppmDosen;
 use App\Models\LppmMahasiswa;
 use App\Models\Rekognisi;
 use Illuminate\Http\Request;
+use App\Support\DashboardCharts;
 use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
@@ -15,7 +17,11 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        // Dashboard versi lengkap saat ini baru dibuat untuk role mahasiswa.
+        // Dashboard versi lengkap dibuat untuk role mahasiswa dan dosen.
+        if ($user->role === 'dosen') {
+            return $this->dosen($user);
+        }
+
         if ($user->role !== 'mahasiswa') {
             return view('dashboard-generic', [
                 'user' => $user,
@@ -297,6 +303,108 @@ class DashboardController extends Controller
 
         return view('dashboard-mahasiswa', compact(
             'stats', 'kategoriDonut', 'tingkatDonut', 'trendDatasets', 'barDatasets', 'recent'
+        ));
+    }
+
+    /**
+     * Dashboard khusus dosen. Sumber datanya 3 menu yang relevan untuk dosen:
+     * LPPM Dosen (jurnal Q/Sinta, HKI, buku), Rekognisi, dan Kerja Sama.
+     * (Kemahasiswaan tidak dipakai karena itu data kegiatan mahasiswa.)
+     */
+    private function dosen($user)
+    {
+        $dosen = $user->dosen;
+
+        $lppm = $dosen
+            ? LppmDosen::where('dosen_id', $dosen->id)->get()
+            : collect();
+        $rekognisi = Rekognisi::where('user_id', $user->id)
+            ->where('tipe_user', 'dosen')->get();
+        $kerjaSama = KerjaSama::where('user_id', $user->id)
+            ->where('tipe_user', 'dosen')->get();
+
+        $total = $lppm->count() + $rekognisi->count() + $kerjaSama->count();
+
+        // Capaian internasional: jurnal Q internasional + rekognisi internasional
+        // + kerja sama yang jenisnya berlabel internasional, dari seluruh kegiatan.
+        $jenisKerjaSamaIntl = ['conference_internasional', 'pengabdian_internasional', 'research_internasional'];
+        $internasionalCount = $lppm->where('jenis', 'q_internasional')->count()
+            + $rekognisi->where('jenis', 'internasional')->count()
+            + $kerjaSama->whereIn('jenis', $jenisKerjaSamaIntl)->count();
+        $internasionalPct = $total > 0 ? round($internasionalCount / $total * 100) : 0;
+
+        $earliestDate = collect([$lppm, $rekognisi, $kerjaSama])
+            ->flatMap(fn ($c) => $c->pluck('created_at'))
+            ->filter()
+            ->min();
+        $monthsActive = $earliestDate
+            ? max(1, Carbon::parse($earliestDate)->diffInMonths(now()) + 1)
+            : 1;
+
+        $stats = [
+            'total'             => $total,
+            'lppm_dosen'        => $lppm->count(),
+            'publikasi_q'       => $lppm->where('jenis', 'q_internasional')->count(),
+            'rekognisi'         => $rekognisi->count(),
+            'kerja_sama'        => $kerjaSama->count(),
+            'internasional_pct' => $internasionalPct,
+            'avg_per_month'     => round($total / $monthsActive, 1),
+        ];
+
+        $kategoriDonut = [
+            ['label' => 'LPPM Dosen', 'value' => $lppm->count(), 'color' => 'var(--chart-2)'],
+            ['label' => 'Rekognisi', 'value' => $rekognisi->count(), 'color' => 'var(--chart-3)'],
+            ['label' => 'Kerja Sama', 'value' => $kerjaSama->count(), 'color' => 'var(--chart-4)'],
+        ];
+
+        // Donut 2: luaran LPPM per jenis
+        $jenisLppm = [
+            'q_internasional' => ['Jurnal Q Internasional', 'var(--chart-5)'],
+            'sinta_nasional'  => ['Jurnal Sinta Nasional', 'var(--chart-3)'],
+            'hki'             => ['HKI', 'var(--chart-2)'],
+            'book'            => ['Buku', 'var(--chart-4)'],
+        ];
+        $jenisCounts = $lppm->countBy('jenis');
+        $luaranDonut = [];
+        foreach ($jenisLppm as $key => [$label, $color]) {
+            $luaranDonut[] = ['label' => $label, 'value' => $jenisCounts->get($key, 0), 'color' => $color];
+        }
+
+        $charts = DashboardCharts::build(
+            $lppm,
+            $rekognisi->concat($kerjaSama),
+            'Riset & Publikasi (LPPM)',
+            'Eksternal (Rekognisi + Kerja Sama)'
+        );
+        $trendDatasets = $charts['trend'];
+        $barDatasets = $charts['bar'];
+
+        $recent = collect()
+            ->concat($lppm->map(fn ($i) => [
+                'title' => $i->judul,
+                'menu'  => 'LPPM Dosen',
+                'icon'  => 'co_present',
+                'date'  => $i->created_at,
+            ]))
+            ->concat($rekognisi->map(fn ($i) => [
+                'title' => $i->jabatan ?? $i->mitra,
+                'menu'  => 'Rekognisi',
+                'icon'  => 'workspace_premium',
+                'date'  => $i->created_at,
+            ]))
+            ->concat($kerjaSama->map(fn ($i) => [
+                'title' => $i->judul_kegiatan,
+                'menu'  => 'Kerja Sama',
+                'icon'  => 'handshake',
+                'date'  => $i->created_at,
+            ]))
+            ->filter(fn ($i) => !is_null($i['date']))
+            ->sortByDesc('date')
+            ->take(10)
+            ->values();
+
+        return view('dashboard-dosen', compact(
+            'stats', 'kategoriDonut', 'luaranDonut', 'trendDatasets', 'barDatasets', 'recent'
         ));
     }
 }

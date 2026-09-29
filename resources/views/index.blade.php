@@ -72,11 +72,11 @@
         /* 2 DARK MODE */
         :root[data-theme="dark"] {
             --page-bg:
-                linear-gradient(135deg, #11266b 0%, #0e1b42 55%, #0d1327 100%);
+                linear-gradient(135deg, #213e9e 0%, #1f2e5e 55%, #1b1847 100%);
             --orb: rgba(59, 100, 200, .16);
             --solid-shadow: #124114;
             --ring: rgba(255, 255, 255, .14);
-            --badge-bg: #22273a;
+            --badge-bg: #242c4d;
             --badge-ink: #1d3fbf;
             --tile: #223151;
             --panel: #111827;
@@ -102,11 +102,11 @@
         @media (prefers-color-scheme: dark) {
             :root:not([data-theme="light"]) {
                 --page-bg:
-                    linear-gradient(135deg, #11266b 0%, #0e1b42 55%, #0d1327 100%);
+                    linear-gradient(135deg, #213e9e 0%, #1f2e5e 55%, #1b1847 100%);
                 --orb: rgba(59, 100, 200, .16);
                 --solid-shadow: #1a3c84;
-                --ring: rgba(255, 255, 255, .14);
-                --panel: #111827;
+                --ring: rgba(255, 255, 255, 0.14);
+                --panel: #1c2340;
                 --ink: #eaf0ff;
                 --ink-soft: #93a3c6;
                 --field: #182238;
@@ -121,8 +121,8 @@
                 --ok-bg: rgba(34, 197, 94, .14);
                 --ok-line: rgba(34, 197, 94, .4);
                 --ok-ink: #86efac;
-                --card-bg: #1b2333; --card-ink: #eaf0ff; --card-soft: #93a3c6; --card-line: #27345a;
-                --chip-bg: #243050; --chip-ink: #9dbcff; --row-active: #222c42; --track: #2b3856;
+                --card-bg: #1e2642; --card-ink: #eaf0ff; --card-soft: #93a3c6; --card-line: #27345a;
+                --chip-bg: #243050; --chip-ink: #9dbcff; --row-active: #222c4b; --track: #2b3856;
             }
         }
 

@@ -126,28 +126,6 @@
                                     <button type="button" class="notif-mark-all" id="notifMarkAllBtn">Tandai semua dibaca</button>
                                 </div>
 
-                                <div class="notif-panel-body" id="notifListWrap" hidden>
-                                    {{--
-                                        STRUKTUR ITEM NOTIFIKASI (referensi utk nanti, saat sudah connect ke controller):
-
-                                        <div class="notif-group-label">Hari Ini</div>
-                                        <a href="#" class="notif-item is-unread" data-id="1">
-                                            <span class="notif-item-icon c-primary"><span class="material-symbols-outlined">workspace_premium</span></span>
-                                            <span class="notif-item-body">
-                                                <span class="notif-item-title">Judul notifikasi</span>
-                                                <span class="notif-item-desc">Deskripsi singkat notifikasi.</span>
-                                                <span class="notif-item-time">10 menit lalu</span>
-                                            </span>
-                                            <span class="notif-item-dot" aria-hidden="true"></span>
-                                        </a>
-
-                                        Ganti @forelse($notifications as $n) ... @endforelse di sini,
-                                        lalu hapus atribut "hidden" pada div ini dan pada #notifEmpty di bawah
-                                        (di-toggle sesuai $notifications->isEmpty()).
-                                    --}}
-                                </div>
-
-                                {{-- Tampilan saat tidak ada notifikasi --}}
                                 <div class="notif-panel-body" id="notifListWrap" hidden></div>
 
                                 <div class="notif-empty" id="notifEmpty">
@@ -155,10 +133,9 @@
                                     <p class="notif-empty-title">Belum ada notifikasi</p>
                                     <p class="notif-empty-desc">Pemberitahuan baru akan muncul di sini.</p>
                                 </div>
-
-                                <div class="notif-panel-footer">
+                                <!-- <div class="notif-panel-footer">
                                     <a href="#" class="notif-view-all">Lihat semua notifikasi</a>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                         <!-- ============ /NOTIFIKASI ============ -->

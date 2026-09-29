@@ -117,6 +117,35 @@ class HakAksesController extends Controller
         }
 
         $before = $user->allMenuLevels();
+        // Kebijakan 1: Data Master & Hak Akses murni wewenang superadmin.
+        // Admin maksimal boleh diberi "readonly" (sekadar melihat), tidak
+        // pernah "biasa"/"penuh" — berapa pun levelnya, siapa pun aktornya.
+        if ($user->role === 'admin') {
+            foreach (HakAkses::ADMIN_READONLY_CEILING_MENUS as $menu) {
+                if (isset($levels[$menu]) && !in_array($levels[$menu], ['none', 'readonly'], true)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Admin maksimal hanya bisa diberi akses "Lihat saja" untuk menu ' . (HakAkses::MENUS[$menu]['label'] ?? $menu) . '. Akses penuh untuk menu ini khusus superadmin.',
+                    ], 422);
+                }
+            }
+
+            // Kebijakan 2: "1 admin = 1 peran". Di antara menu operasional
+            // (Kemahasiswaan, LPPM Mahasiswa, LPPM Dosen, Rekognisi, Kerja
+            // Sama), admin ini cuma boleh aktif (biasa/penuh) di SATU menu
+            // secara bersamaan.
+            $activeResponsibilities = collect(HakAkses::ADMIN_SINGLE_RESPONSIBILITY_MENUS)
+                ->filter(fn ($menu) => isset($levels[$menu]) && in_array($levels[$menu], ['biasa', 'penuh'], true));
+
+            if ($activeResponsibilities->count() > 1) {
+                $namaMenu = $activeResponsibilities->map(fn ($menu) => HakAkses::MENUS[$menu]['label'] ?? $menu)->implode(', ');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => "Seorang admin hanya boleh aktif di satu menu peran (dipilih: {$namaMenu}). Nonaktifkan menu lain terlebih dahulu (set ke \"Tidak Ada\"/\"Lihat Saja\") sebelum mengaktifkan menu yang baru.",
+                ], 422);
+            }
+        }
 
         DB::transaction(function () use ($user, $levels) {
             foreach ($levels as $menu => $level) {

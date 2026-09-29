@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
-    <link rel="stylesheet" href="{{ asset('css/dash-stars.css') }}">
     <title>Dashboard &middot; SIDA</title>
 </head>
 
@@ -111,20 +110,11 @@
                     }
                 @endphp
                 <div class="dash-panel reveal">
-                    <!-- Efek bintang (kanan-atas -> kiri-bawah), styling di css/dash-stars.css -->
-                    <div class="dash-stars" aria-hidden="true">
-                        <div class="dash-stars-rot">
-                            <div class="ds ds1"></div>
-                            <div class="ds ds2"></div>
-                            <div class="ds ds3"></div>
-                        </div>
-                    </div>
-
                     <div class="dash-welcome">
                         <div class="dash-welcome-main">
                             <p class="dash-welcome-brand">SIDA</p>
                             <p class="dash-welcome-title">{{ $sapaan }}, {{ auth()->user()->name }} 👋</p>
-                            <p class="dash-welcome-sub">Ringkasan kegiatanmu di Sistem Informasi Data Akademik &middot; 2026</p>
+                            <p class="dash-welcome-sub">Ringkasan riset, publikasi &amp; kerja samamu di Sistem Informasi Data Akademik &middot; {{ now()->year }}</p>
                         </div>
                         <div class="dash-welcome-clock">
                             <div class="dash-welcome-clock-time" id="dashWelcomeClock">{{ now()->format('H:i') }}</div>
@@ -174,20 +164,20 @@
                 <div class="stat-grid">
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">Kemahasiswaan</span>
-                            <span class="stat-value">{{ $stats['kemahasiswaan'] }}</span>
+                            <span class="stat-label">LPPM Dosen</span>
+                            <span class="stat-value">{{ $stats['lppm_dosen'] }}</span>
                         </div>
                         <div class="stat-icon info">
-                            <span class="material-symbols-outlined">school</span>
+                            <span class="material-symbols-outlined">co_present</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">LPPM Mahasiswa</span>
-                            <span class="stat-value">{{ $stats['lppm_mahasiswa'] }}</span>
+                            <span class="stat-label">Jurnal Q Internasional</span>
+                            <span class="stat-value">{{ $stats['publikasi_q'] }}</span>
                         </div>
                         <div class="stat-icon success">
-                            <span class="material-symbols-outlined">person</span>
+                            <span class="material-symbols-outlined">menu_book</span>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -216,7 +206,7 @@
                     <!-- DONUT: kategori -->
                     <div class="dash-card donut-card reveal">
                         <h2 class="dash-card-title">Distribusi Kegiatan per Kategori</h2>
-                        <p class="dash-card-sub">Sebaran kegiatanmu di 4 menu</p>
+                        <p class="dash-card-sub">Sebaran kegiatanmu di 3 menu</p>
                         <div class="donut-widget" data-donut data-caption="Kegiatan" data-chart='@json($kategoriDonut)'>
                             <div class="donut-svg-holder">
                                 <svg viewBox="0 0 200 200"></svg>
@@ -231,14 +221,14 @@
 
                     <!-- DONUT: tingkat -->
                     <div class="dash-card donut-card reveal" style="transition-delay:80ms">
-                        <h2 class="dash-card-title">Distribusi Tingkat Capaian</h2>
-                        <p class="dash-card-sub">Berdasarkan data Kemahasiswaan</p>
-                        <div class="donut-widget" data-donut data-caption="Capaian" data-chart='@json($tingkatDonut)'>
+                        <h2 class="dash-card-title">Distribusi Luaran LPPM</h2>
+                        <p class="dash-card-sub">Jurnal, HKI, dan buku di LPPM Dosen</p>
+                        <div class="donut-widget" data-donut data-caption="Luaran" data-chart='@json($luaranDonut)'>
                             <div class="donut-svg-holder">
                                 <svg viewBox="0 0 200 200"></svg>
                                 <div class="donut-center-label">
                                     <span class="donut-center-value">0</span>
-                                    <span class="donut-center-caption">Capaian</span>
+                                    <span class="donut-center-caption">Luaran</span>
                                 </div>
                             </div>
                             <div class="donut-legend"></div>
@@ -250,7 +240,7 @@
                         <div class="trend-card-top">
                             <div>
                                 <h2 class="dash-card-title">Kurva Tren Kegiatan</h2>
-                                <p class="dash-card-sub">Akademik vs Eksternal &middot; bandingkan keseimbangan portofoliomu dari waktu ke waktu</p>
+                                <p class="dash-card-sub">Riset &amp; Publikasi vs Eksternal &middot; bandingkan keseimbangan portofoliomu dari waktu ke waktu</p>
                             </div>
                             <span class="trend-hint">
                                 <span class="material-symbols-outlined">info</span>
@@ -274,7 +264,7 @@
                                 <div class="trend-card-top">
                                     <div>
                                         <h2 class="dash-card-title">Kegiatan per Periode</h2>
-                                        <p class="dash-card-sub">Gabungan 4 kategori</p>
+                                        <p class="dash-card-sub">Gabungan 3 kategori</p>
                                     </div>
                                     <span class="trend-hint">
                                         <span class="material-symbols-outlined">info</span>

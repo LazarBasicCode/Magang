@@ -40,12 +40,37 @@ class HakAkses extends Model
     ];
 
     /**
-     * Menu yang memang hanya diperuntukkan admin/superadmin. Dipakai untuk
+     * Menu khusus admin/superadmin. Dipakai untuk
      * menyembunyikannya total dari daftar menu saat mengatur hak akses milik
      * mahasiswa/dosen (bukan cuma dikunci ke "none", tapi tidak ditampilkan
      * sama sekali karena memang tidak relevan buat role tsb).
      */
     public const ADMIN_ONLY_MENUS = ['log', 'hak_akses', 'data_master'];
+
+    /**
+     * Menu "operasional" (area kerja) — mencerminkan kebijakan "1 admin =
+     * 1 peran/departemen": seorang admin (bukan superadmin) hanya boleh
+     * aktif (level "biasa"/"penuh") di SATU menu dari daftar ini secara
+     * bersamaan. Kalau superadmin mencoba mengaktifkan lebih dari satu
+     * sekaligus untuk akun admin yang sama, permintaan akan ditolak
+     * (lihat HakAksesController::update()).
+     */
+    public const ADMIN_SINGLE_RESPONSIBILITY_MENUS = [
+        'kemahasiswaan',
+        'lppm_mahasiswa',
+        'lppm_dosen',
+        'rekognisi',
+        'kerja_sama',
+    ];
+
+    /**
+     * Menu yang cuma boleh diakses PENUH oleh superadmin. Seorang admin
+     * maksimal bisa diberi "readonly" di sini (opsional, atas keputusan
+     * superadmin) — tidak pernah "biasa" apalagi "penuh". Ini memastikan
+     * pengelolaan akun (Data Master) dan pengaturan hak akses itu sendiri
+     * (Hak Akses) tetap murni wewenang superadmin.
+     */
+    public const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses'];
 
     public const LEVELS = ['none', 'readonly', 'biasa', 'penuh'];
 
@@ -71,14 +96,23 @@ class HakAkses extends Model
         return match ($role) {
             'superadmin' => array_fill_keys(array_keys(self::MENUS), 'penuh'),
             'admin' => [
+                // Sengaja "none" untuk semua menu operasional: superadmin
+                // WAJIB memilih & mengaktifkan SATU menu sebagai peran admin
+                // ini (lihat ADMIN_SINGLE_RESPONSIBILITY_MENUS). Tidak ada
+                // default yang otomatis aktif supaya tidak ada akun admin
+                // baru yang "kebetulan" punya akses ke banyak area sekaligus.
                 'dashboard'      => 'penuh',
-                'kemahasiswaan'  => 'penuh',
-                'lppm_mahasiswa' => 'penuh',
-                'lppm_dosen'     => 'penuh',
-                'rekognisi'      => 'penuh',
-                'kerja_sama'     => 'penuh',
-                'data_master'    => 'penuh',
-                'hak_akses'      => 'none', // tergantung diatur superadmin
+                'kemahasiswaan'  => 'none',
+                'lppm_mahasiswa' => 'none',
+                'lppm_dosen'     => 'none',
+                'rekognisi'      => 'none',
+                'kerja_sama'     => 'none',
+                // Data Master & Hak Akses: murni wewenang superadmin.
+                // Admin maksimal bisa diberi "readonly", tidak pernah lebih
+                // (lihat ADMIN_READONLY_CEILING_MENUS), dan default tetap
+                // "none" sampai superadmin memutuskan memberi akses lihat.
+                'data_master'    => 'none',
+                'hak_akses'      => 'none',
                 'log'            => 'none', // tergantung diatur superadmin
             ],
             'dosen' => [

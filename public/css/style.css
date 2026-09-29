@@ -2669,15 +2669,15 @@ body:not(.dark-mode) .dash-panel {
 
 .stat-hero-card.grad-2 {
     background: linear-gradient(45deg, rgba(255, 130, 58, 0.6) 0%, rgba(128, 8, 88, 0.2) 50%, rgba(51, 3, 90, 0.3) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, .18);
 }
 
 .stat-hero-card.grad-3 {
     background: linear-gradient(45deg, rgba(160, 151, 255, 0.6) 0%, rgba(77, 11, 131, 0.2) 50%, rgba(38, 3, 83, 0.3) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, .18);
 }
 

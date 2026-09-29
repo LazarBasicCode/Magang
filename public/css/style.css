@@ -4414,3 +4414,25 @@ body.dark-mode {
     .page-wrap.is-loaded .filter-card,
     .page-wrap.is-loaded .table-card { animation: none; }
 }
+/* ==========================================================
+   Dashboard Dosen — Kualitas publikasi, kelengkapan, status
+   ========================================================== */
+.quality-list { display: flex; flex-direction: column; gap: 10px; }
+.quality-row { display: flex; align-items: center; gap: 12px; }
+.quality-label { width: 58px; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.quality-value { width: 24px; text-align: right; font-size: 13px; font-weight: 800; color: var(--ink); }
+.quality-track { flex: 1; height: 10px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.quality-fill { height: 100%; border-radius: 999px; transition: width .6s cubic-bezier(.22,.68,0,1); }
+.quality-fill.is-q { background: linear-gradient(90deg, var(--chart-5), var(--chart-1)); }
+.quality-fill.is-s { background: linear-gradient(90deg, var(--chart-3), var(--chart-2)); }
+.quality-fill.is-ok { background: linear-gradient(90deg, var(--chart-3), var(--chart-2)); }
+
+.complete-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.complete-pct { font-size: 28px; font-weight: 800; color: var(--ink); line-height: 1; }
+.complete-note { font-size: 12px; color: var(--ink-muted); }
+.complete-track { flex: none; width: 100%; margin-bottom: 14px; }
+.complete-sub { font-size: 12px; font-weight: 700; color: var(--ink-muted); margin: 4px 0 6px; }
+
+.status-chip { margin-left: auto; flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; }
+.status-chip.is-live { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
+.status-chip.is-soon { color: var(--info); background: var(--info-bg); border-color: var(--info-border); }

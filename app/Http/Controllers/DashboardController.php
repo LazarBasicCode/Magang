@@ -349,6 +349,15 @@ class DashboardController extends Controller
             'kerja_sama'        => $kerjaSama->count(),
             'internasional_pct' => $internasionalPct,
             'avg_per_month'     => round($total / $monthsActive, 1),
+            'sinta_nasional'    => $lppm->where('jenis', 'sinta_nasional')->count(),
+            'hki'               => $lppm->where('jenis', 'hki')->count(),
+            'buku'              => $lppm->where('jenis', 'book')->count(),
+            'mitra_unik'        => $rekognisi->concat($kerjaSama)
+                ->pluck('mitra')
+                ->map(fn ($m) => mb_strtolower(trim((string) $m)))
+                ->filter()
+                ->unique()
+                ->count(),
         ];
 
         $kategoriDonut = [
@@ -369,6 +378,80 @@ class DashboardController extends Controller
         foreach ($jenisLppm as $key => [$label, $color]) {
             $luaranDonut[] = ['label' => $label, 'value' => $jenisCounts->get($key, 0), 'color' => $color];
         }
+
+        // Kualitas publikasi: sebaran peringkat jurnal (Q1-Q4 untuk jurnal
+        // internasional, S1-S6 untuk Sinta). Peringkat kosong/di luar pola
+        // dikelompokkan ke "Lainnya" supaya tidak ada data yang hilang.
+        $jurnal = $lppm->whereIn('jenis', ['q_internasional', 'sinta_nasional']);
+        $kualitasCounts = $jurnal
+            ->map(function ($i) {
+                $r = strtoupper(trim((string) $i->peringkat));
+                return preg_match('/^(Q[1-4]|S[1-6])$/', $r) ? $r : 'Lainnya';
+            })
+            ->countBy();
+        $kualitasPublikasi = [];
+        foreach (['Q1', 'Q2', 'Q3', 'Q4', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'Lainnya'] as $key) {
+            $val = $kualitasCounts->get($key, 0);
+            if ($val > 0) {
+                $kualitasPublikasi[] = ['label' => $key, 'value' => $val];
+            }
+        }
+        $kualitasMax = max(1, collect($kualitasPublikasi)->max('value') ?? 1);
+
+        // Kelengkapan data: jurnal yang sudah punya link DOI
+        $jurnalDenganDoi = $jurnal->filter(fn ($i) => filled($i->link_doi))->count();
+        $jurnalTotal = $jurnal->count();
+        $kelengkapan = [
+            'total'      => $jurnalTotal,
+            'lengkap'    => $jurnalDenganDoi,
+            'pct'        => $jurnalTotal > 0 ? round($jurnalDenganDoi / $jurnalTotal * 100) : 0,
+            'perlu'      => $jurnal->filter(fn ($i) => blank($i->link_doi))
+                ->sortByDesc('created_at')
+                ->take(3)
+                ->map(fn ($i) => ['title' => $i->judul, 'jenis' => $i->jenis === 'q_internasional' ? 'Jurnal Q' : 'Sinta'])
+                ->values(),
+        ];
+
+        // Ragam kerja sama per jenis (jenis "lainnya" ikut dihitung sendiri)
+        $jenisKs = [
+            'keynote_session'          => ['Keynote Session', 'var(--chart-1)'],
+            'guest_lecture'            => ['Guest Lecture', 'var(--chart-2)'],
+            'pengabdian_internasional' => ['Pengabdian Intl.', 'var(--chart-3)'],
+            'research_internasional'   => ['Research Intl.', 'var(--chart-4)'],
+            'conference_internasional' => ['Conference Intl.', 'var(--chart-5)'],
+            'lainnya'                  => ['Lainnya', 'var(--border)'],
+        ];
+        $ksCounts = $kerjaSama->countBy('jenis');
+        $ragamKerjaSama = [];
+        foreach ($jenisKs as $key => [$label, $color]) {
+            $ragamKerjaSama[] = ['label' => $label, 'value' => $ksCounts->get($key, 0), 'color' => $color];
+        }
+
+        // Kegiatan berlangsung / akan datang (kerja sama + rekognisi yang belum selesai)
+        $today = now()->startOfDay();
+        $berjalan = $kerjaSama->map(fn ($i) => [
+                'title' => $i->judul_kegiatan,
+                'menu'  => 'Kerja Sama',
+                'icon'  => 'handshake',
+                'start' => $i->tanggal_mulai,
+                'end'   => $i->tanggal_selesai,
+            ])
+            ->concat($rekognisi->map(fn ($i) => [
+                'title' => $i->jabatan ?? $i->mitra,
+                'menu'  => 'Rekognisi',
+                'icon'  => 'workspace_premium',
+                'start' => $i->tanggal_mulai,
+                'end'   => $i->tanggal_selesai,
+            ]))
+            ->filter(fn ($i) => $i['start'] && $i['end'] && $i['end']->greaterThanOrEqualTo($today))
+            ->map(function ($i) use ($today) {
+                $i['status'] = $i['start']->greaterThan($today) ? 'Akan Datang' : 'Berlangsung';
+                return $i;
+            })
+            ->sortBy('start')
+            ->values();
+        $stats['kegiatan_aktif'] = $berjalan->count();
+        $berjalan = $berjalan->take(4)->values();
 
         $charts = DashboardCharts::build(
             $lppm,
@@ -404,7 +487,8 @@ class DashboardController extends Controller
             ->values();
 
         return view('dashboard-dosen', compact(
-            'stats', 'kategoriDonut', 'luaranDonut', 'trendDatasets', 'barDatasets', 'recent'
+            'stats', 'kategoriDonut', 'luaranDonut', 'trendDatasets', 'barDatasets', 'recent',
+            'kualitasPublikasi', 'kualitasMax', 'kelengkapan', 'ragamKerjaSama', 'berjalan'
         ));
     }
 }

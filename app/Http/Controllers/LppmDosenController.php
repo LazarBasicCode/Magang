@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Dosen;
 use App\Models\LppmDosen;
+use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 
 class LppmDosenController extends Controller
 {
+    use NotifiesOwner;
+
     /**
      * Akses "biasa" (default dosen) hanya bisa melihat & mengisi
      * publikasinya sendiri. Akses "penuh"/"readonly" melihat & mengelola
@@ -50,6 +53,8 @@ class LppmDosenController extends Controller
 
         $item = LppmDosen::create($data)->load('dosen.user');
 
+        $this->notifyPublikasi($request, $item, 'ditambahkan');
+
         return response()->json(['success' => true, 'data' => $this->format($item)]);
     }
 
@@ -63,6 +68,8 @@ class LppmDosenController extends Controller
         $lppmDosen->update($data);
         $lppmDosen->load('dosen.user');
 
+        $this->notifyPublikasi($request, $lppmDosen, 'diperbarui');
+
         return response()->json(['success' => true, 'data' => $this->format($lppmDosen)]);
     }
 
@@ -70,10 +77,18 @@ class LppmDosenController extends Controller
     {
         $this->authorizeOwnership($request, $lppmDosen);
 
+        $lppmDosen->loadMissing('dosen.user');
+        $this->notifyPublikasi($request, $lppmDosen, 'dihapus');
+
         $id = $lppmDosen->id;
         $lppmDosen->delete();
 
         return response()->json(['success' => true, 'id' => $id]);
+    }
+
+    private function notifyPublikasi(Request $request, LppmDosen $item, string $aksi): void
+    {
+        $this->notifyOwner($request, $item->dosen->user_id ?? null, 'publikasi', $item->judul, $aksi, str_replace('_', ' ', $item->jenis), ['lppm_dosen_id' => $item->id]);
     }
 
     private function enforceOwnDosen(Request $request, array &$data): void

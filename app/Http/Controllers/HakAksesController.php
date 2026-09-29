@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\HakAkses;
 use App\Models\User;
+use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class HakAksesController extends Controller
 {
+    use NotifiesOwner;
+
     /**
      * Halaman utama Hak Akses (server-rendered untuk load pertama).
      * Simpan perubahan selanjutnya lewat fetch() tanpa reload (lihat update()).
@@ -113,6 +116,8 @@ class HakAksesController extends Controller
             }
         }
 
+        $before = $user->allMenuLevels();
+
         DB::transaction(function () use ($user, $levels) {
             foreach ($levels as $menu => $level) {
                 HakAkses::updateOrCreate(
@@ -125,6 +130,16 @@ class HakAksesController extends Controller
         $user->load('hakAkses');
         $freshLevels = $user->allMenuLevels();
         $status = HakAkses::summarizeStatus($freshLevels);
+
+        if ($before !== $freshLevels) {
+            $this->notifyUser(
+                $request,
+                $user->id,
+                'Hak akses Anda diperbarui',
+                "Hak akses menu Anda diubah oleh {$actor->name} ({$actor->role}).",
+                ['target_user_id' => $user->id]
+            );
+        }
 
         return response()->json([
             'success' => true,

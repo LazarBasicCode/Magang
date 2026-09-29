@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Kemahasiswaan;
 use App\Models\Mahasiswa;
-use App\Models\UserNotification;
+use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class KemahasiswaanController extends Controller
 {
+    use NotifiesOwner;
+
     /**
      * Halaman utama Kemahasiswaan (server-rendered untuk load pertama & SEO).
      * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
@@ -55,6 +57,8 @@ class KemahasiswaanController extends Controller
 
         $item = Kemahasiswaan::create($data)->load('mahasiswa.user');
 
+        $this->notifyKegiatan($request, $item, 'ditambahkan');
+
         return response()->json([
             'success' => true,
             'data'    => $this->format($item),
@@ -71,7 +75,7 @@ class KemahasiswaanController extends Controller
         $kemahasiswaan->update($data);
         $kemahasiswaan->load('mahasiswa.user');
 
-        $this->notifyOwnerIfEditedByOthers($request, $kemahasiswaan, 'diperbarui');
+        $this->notifyKegiatan($request, $kemahasiswaan, 'diperbarui');
 
         return response()->json([
             'success' => true,
@@ -84,7 +88,7 @@ class KemahasiswaanController extends Controller
         $this->authorizeOwnership($request, $kemahasiswaan);
 
         $kemahasiswaan->load('mahasiswa.user');
-        $this->notifyOwnerIfEditedByOthers($request, $kemahasiswaan, 'dihapus');
+        $this->notifyKegiatan($request, $kemahasiswaan, 'dihapus');
 
         $id = $kemahasiswaan->id;
         $kemahasiswaan->delete();
@@ -95,25 +99,9 @@ class KemahasiswaanController extends Controller
         ]);
     }
 
-    /**
-     * Kalau yang mengedit/menghapus BUKAN pemilik data itu sendiri (berarti
-     * admin/superadmin/staf yang mengelola data mahasiswa lain), beri tahu
-     * pemilik aslinya lewat notifikasi.
-     */
-    private function notifyOwnerIfEditedByOthers(Request $request, Kemahasiswaan $kemahasiswaan, string $aksi): void
+    private function notifyKegiatan(Request $request, Kemahasiswaan $item, string $aksi): void
     {
-        $actor = $request->user();
-        $ownerUserId = $kemahasiswaan->mahasiswa->user_id ?? null;
-
-        if (!$actor || !$ownerUserId || $actor->id === $ownerUserId) {
-            return;
-        }
-
-        UserNotification::send($ownerUserId, 'data_updated', [
-            'title'       => "Data kegiatan Anda {$aksi}",
-            'description' => "\"{$kemahasiswaan->nama_kegiatan}\" {$aksi} oleh {$actor->name} ({$actor->role}).",
-            'data'        => ['actor_id' => $actor->id, 'actor_name' => $actor->name, 'kemahasiswaan_id' => $kemahasiswaan->id],
-        ]);
+        $this->notifyOwner($request, $item->mahasiswa->user_id ?? null, 'kegiatan', $item->nama_kegiatan, $aksi, '', ['kemahasiswaan_id' => $item->id]);
     }
 
     /**

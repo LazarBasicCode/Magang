@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\KerjaSama;
 use App\Models\User;
+use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 
 class KerjaSamaController extends Controller
 {
+    use NotifiesOwner;
+
     /**
      * Halaman utama Kerja Sama (server-rendered untuk load pertama & SEO).
      * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
@@ -58,6 +61,8 @@ class KerjaSamaController extends Controller
 
         $item = KerjaSama::create($data)->load('user');
 
+        $this->notifyKerjaSama($request, $item, 'ditambahkan');
+
         return response()->json([
             'success' => true,
             'data'    => $this->format($item),
@@ -74,6 +79,8 @@ class KerjaSamaController extends Controller
         $kerjaSama->update($data);
         $kerjaSama->load('user');
 
+        $this->notifyKerjaSama($request, $kerjaSama, 'diperbarui');
+
         return response()->json([
             'success' => true,
             'data'    => $this->format($kerjaSama),
@@ -84,6 +91,9 @@ class KerjaSamaController extends Controller
     {
         $this->authorizeOwnership($request, $kerjaSama);
 
+        $kerjaSama->loadMissing('user');
+        $this->notifyKerjaSama($request, $kerjaSama, 'dihapus');
+
         $id = $kerjaSama->id;
         $kerjaSama->delete();
 
@@ -91,6 +101,11 @@ class KerjaSamaController extends Controller
             'success' => true,
             'id'      => $id,
         ]);
+    }
+
+    private function notifyKerjaSama(Request $request, KerjaSama $item, string $aksi): void
+    {
+        $this->notifyOwner($request, $item->user_id, 'kerja sama', $item->judul_kegiatan, $aksi, $item->mitra, ['kerja_sama_id' => $item->id]);
     }
 
     private function enforceOwnUser(Request $request, array &$data): void

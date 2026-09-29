@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
+use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 
 class LppmMahasiswaController extends Controller
 {
+    use NotifiesOwner;
+
     /**
      * Akses "biasa" (default mahasiswa) hanya bisa melihat & mengisi
      * publikasinya sendiri. Akses "penuh"/"readonly" melihat & mengelola
@@ -50,6 +53,8 @@ class LppmMahasiswaController extends Controller
 
         $item = LppmMahasiswa::create($data)->load('mahasiswa.user');
 
+        $this->notifyPublikasi($request, $item, 'ditambahkan');
+
         return response()->json(['success' => true, 'data' => $this->format($item)]);
     }
 
@@ -63,6 +68,8 @@ class LppmMahasiswaController extends Controller
         $lppmMahasiswa->update($data);
         $lppmMahasiswa->load('mahasiswa.user');
 
+        $this->notifyPublikasi($request, $lppmMahasiswa, 'diperbarui');
+
         return response()->json(['success' => true, 'data' => $this->format($lppmMahasiswa)]);
     }
 
@@ -70,10 +77,18 @@ class LppmMahasiswaController extends Controller
     {
         $this->authorizeOwnership($request, $lppmMahasiswa);
 
+        $lppmMahasiswa->loadMissing('mahasiswa.user');
+        $this->notifyPublikasi($request, $lppmMahasiswa, 'dihapus');
+
         $id = $lppmMahasiswa->id;
         $lppmMahasiswa->delete();
 
         return response()->json(['success' => true, 'id' => $id]);
+    }
+
+    private function notifyPublikasi(Request $request, LppmMahasiswa $item, string $aksi): void
+    {
+        $this->notifyOwner($request, $item->mahasiswa->user_id ?? null, 'publikasi', $item->judul, $aksi, str_replace('_', ' ', $item->jenis), ['lppm_mahasiswa_id' => $item->id]);
     }
 
     private function enforceOwnMahasiswa(Request $request, array &$data): void

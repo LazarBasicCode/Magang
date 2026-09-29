@@ -157,12 +157,11 @@
         `;
         document.body.appendChild(modalOverlay);
 
-        modalOverlay.querySelector('.notifm-close').addEventListener('click', closeModal);
+        modalOverlay.querySelector('.modal-close-btn').addEventListener('click', closeModal);
         modalOverlay.addEventListener('click', (e) => {
+            // Jangan sampai klik di modal ikut menutup panel lonceng (listener document)
+            e.stopPropagation();
             if (e.target === modalOverlay) closeModal();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modalOverlay.classList.contains('is-open')) closeModal();
         });
 
         return modalOverlay;
@@ -201,8 +200,6 @@
         overlay.classList.remove('is-closing');
         void overlay.offsetHeight;
         overlay.classList.add('is-open');
-
-        closePanel(); // tutup dropdown lonceng biar gak nabrak modal
     }
 
     // ---------------- Wiring umum ----------------
@@ -230,7 +227,15 @@
 
     panel.addEventListener('click', (e) => e.stopPropagation());
     document.addEventListener('click', closePanel);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        // Kalau modal detail terbuka, Escape hanya menutup modal; panel tetap.
+        if (modalOverlay && modalOverlay.classList.contains('is-open')) {
+            closeModal();
+            return;
+        }
+        closePanel();
+    });
 
     markAllBtn?.addEventListener('click', async () => {
         document.querySelectorAll('.notif-item.is-unread').forEach((item) => item.classList.remove('is-unread'));

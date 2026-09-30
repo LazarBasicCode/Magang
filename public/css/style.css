@@ -4380,7 +4380,7 @@ body.dark-mode {
 /* Stat card: satu panel polos tanpa warna & tanpa efek hover selama loading */
 .page-wrap.is-loading .stat-card:has(.stat-icon) {
     background: var(--card) !important;
-    box-shadow: var(--shadow-card) !important;
+    box-shadow: none !important;
     pointer-events: none;
     transform: none !important;
 }

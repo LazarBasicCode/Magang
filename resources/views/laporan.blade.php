@@ -234,7 +234,8 @@
         </header>
 
         <main class="app-main">
-            <div class="page-wrap rp-page">
+            <div class="page-wrap rp-page rp-loading" id="rpPage">
+                <noscript><style>.rp-loading>.rp-card{display:block!important}.rp-skel{display:none!important}</style></noscript>
                 @php
                     $k = $report['kpi'];
                     $periode = $report['tahun'] ? 'Tahun ' . $report['tahun'] : 'Semua Tahun';
@@ -258,6 +259,9 @@
                         <a href="#rpPrintPanel" class="rp-btn rp-btn-ghost">
                             <span class="material-symbols-outlined">print</span> Ke bagian cetak
                         </a>
+                        <button type="button" class="rp-btn rp-btn-ghost" id="rpToggleAll">
+                            <span class="material-symbols-outlined">unfold_less</span> <span id="rpToggleAllText">Tutup semua</span>
+                        </button>
                     </form>
                 </div>
 
@@ -268,28 +272,37 @@
                     <p>Periode: <strong>{{ $periode }}</strong> &nbsp;&middot;&nbsp; Dicetak: {{ $report['generated_at']->translatedFormat('d F Y, H:i') }} oleh {{ $__user->name }}</p>
                 </div>
 
+                <!-- ===== SKELETON (khusus laporan) ===== -->
+                <div class="rp-skel" aria-hidden="true">
+                    <section class="rp-card"><div class="rp-sk rp-sk-title"></div><div class="rp-sk rp-sk-line"></div>
+                        <div class="rp-kpi-grid">@for($i=0;$i<6;$i++)<div class="rp-sk rp-sk-kpi"></div>@endfor</div></section>
+                    <section class="rp-card"><div class="rp-sk rp-sk-title"></div><div class="rp-sk rp-sk-line"></div>
+                        @for($i=0;$i<6;$i++)<div class="rp-sk rp-sk-row"></div>@endfor</section>
+                    <section class="rp-card"><div class="rp-sk rp-sk-title"></div><div class="rp-sk rp-sk-line"></div>
+                        <div class="rp-mini-grid">@for($i=0;$i<3;$i++)<div class="rp-sk rp-sk-mini"></div>@endfor</div></section>
+                </div>
+
                 <!-- ===== 1. RINGKASAN ===== -->
                 <section class="rp-card" data-section="ringkasan">
-                    <div class="rp-card-head">
-                        <h2>Ringkasan Utama</h2>
-                        <p>Angka kunci untuk periode: {{ $periode }}</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Ringkasan Utama</h2>
+                        <p>Angka kunci untuk periode: {{ $periode }}</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     <div class="rp-kpi-grid">
-                        <div class="rp-kpi"><span class="rp-kpi-label">Total Data</span><span class="rp-kpi-value">{{ $k['total'] }}</span><span class="rp-kpi-note">di 5 menu operasional</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">Capaian Internasional</span><span class="rp-kpi-value">{{ $k['intl_pct'] }}%</span><span class="rp-kpi-note">{{ $k['intl'] }} dari {{ $k['total'] }} data</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">Total Akun</span><span class="rp-kpi-value">{{ $k['accounts'] }}</span><span class="rp-kpi-note">Mhs {{ $k['roles']['mahasiswa'] ?? 0 }} &middot; Dosen {{ $k['roles']['dosen'] ?? 0 }} &middot; Admin {{ ($k['roles']['admin'] ?? 0) + ($k['roles']['superadmin'] ?? 0) }}</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">Mahasiswa Berkontribusi</span><span class="rp-kpi-value">{{ $k['mhs_pct'] }}%</span><span class="rp-kpi-note">{{ $k['mhs_active'] }} dari {{ $k['mhs_total'] }} mahasiswa</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">Dosen Berkontribusi</span><span class="rp-kpi-value">{{ $k['dsn_pct'] }}%</span><span class="rp-kpi-note">{{ $k['dsn_active'] }} dari {{ $k['dsn_total'] }} dosen</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">Login Gagal (30 hari)</span><span class="rp-kpi-value">{{ $report['security']['failed'] }}</span><span class="rp-kpi-note">{{ $report['security']['success'] }} berhasil &middot; {{ $report['security']['locked'] }} diblokir</span></div>
+                        <div class="rp-kpi rp-c-blue"><span class="rp-kpi-ico"><span class="material-symbols-outlined">database</span></span><span class="rp-kpi-label">Total Data</span><span class="rp-kpi-value">{{ $k['total'] }}</span><span class="rp-kpi-note">di 5 menu operasional</span></div>
+                        <div class="rp-kpi rp-c-teal"><span class="rp-kpi-ico"><span class="material-symbols-outlined">public</span></span><span class="rp-kpi-label">Capaian Internasional</span><span class="rp-kpi-value">{{ $k['intl_pct'] }}%</span><span class="rp-kpi-note">{{ $k['intl'] }} dari {{ $k['total'] }} data</span></div>
+                        <div class="rp-kpi rp-c-violet"><span class="rp-kpi-ico"><span class="material-symbols-outlined">group</span></span><span class="rp-kpi-label">Total Akun</span><span class="rp-kpi-value">{{ $k['accounts'] }}</span><span class="rp-kpi-note">Mhs {{ $k['roles']['mahasiswa'] ?? 0 }} &middot; Dosen {{ $k['roles']['dosen'] ?? 0 }} &middot; Admin {{ ($k['roles']['admin'] ?? 0) + ($k['roles']['superadmin'] ?? 0) }}</span></div>
+                        <div class="rp-kpi rp-c-orange"><span class="rp-kpi-ico"><span class="material-symbols-outlined">school</span></span><span class="rp-kpi-label">Mahasiswa Berkontribusi</span><span class="rp-kpi-value">{{ $k['mhs_pct'] }}%</span><span class="rp-kpi-note">{{ $k['mhs_active'] }} dari {{ $k['mhs_total'] }} mahasiswa</span></div>
+                        <div class="rp-kpi rp-c-pink"><span class="rp-kpi-ico"><span class="material-symbols-outlined">co_present</span></span><span class="rp-kpi-label">Dosen Berkontribusi</span><span class="rp-kpi-value">{{ $k['dsn_pct'] }}%</span><span class="rp-kpi-note">{{ $k['dsn_active'] }} dari {{ $k['dsn_total'] }} dosen</span></div>
+                        <div class="rp-kpi rp-c-red"><span class="rp-kpi-ico"><span class="material-symbols-outlined">gpp_bad</span></span><span class="rp-kpi-label">Login Gagal (30 hari)</span><span class="rp-kpi-value">{{ $report['security']['failed'] }}</span><span class="rp-kpi-note">{{ $report['security']['success'] }} berhasil &middot; {{ $report['security']['locked'] }} diblokir</span></div>
                     </div>
-                </section>
+                </div></div>
+</section>
 
                 <!-- ===== 2. REKAP PER MODUL ===== -->
                 <section class="rp-card" data-section="modul">
-                    <div class="rp-card-head">
-                        <h2>Rekap per Menu</h2>
-                        <p>Jumlah data tiap menu, dan berapa yang berlabel internasional</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Rekap per Menu</h2>
+                        <p>Jumlah data tiap menu, dan berapa yang berlabel internasional</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     <div class="rp-table-wrap">
                         <table class="rp-table">
                             <thead>
@@ -302,7 +315,7 @@
                                         <td class="num">{{ $m['all'] }}</td>
                                         <td class="num"><strong>{{ $m['periode'] }}</strong></td>
                                         <td class="num">{{ $m['intl'] }}</td>
-                                        <td><div class="rp-bar"><span style="width: {{ $m['share'] }}%"></span></div><small>{{ $m['share'] }}%</small></td>
+                                        <td><div class="rp-bar"><span style="--w: {{ $m['share'] }}%"></span></div><small>{{ $m['share'] }}%</small></td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -311,23 +324,27 @@
                             </tfoot>
                         </table>
                     </div>
-                </section>
+                </div></div>
+</section>
 
                 <!-- ===== 3. RINCIAN ===== -->
                 <section class="rp-card" data-section="rincian">
-                    <div class="rp-card-head">
-                        <h2>Rincian per Jenis &amp; Tingkat</h2>
-                        <p>Sebaran data di dalam tiap menu (periode: {{ $periode }})</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Rincian per Jenis &amp; Tingkat</h2>
+                        <p>Sebaran data di dalam tiap menu (periode: {{ $periode }})</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     @if(count($report['breakdowns']))
                         <div class="rp-mini-grid">
                             @foreach($report['breakdowns'] as $g)
-                                <div class="rp-mini">
-                                    <h3>{{ $g['title'] }}</h3>
+                                @php
+                                    $mm = ['Kemahasiswaan'=>['blue','school'],'LPPM Mahasiswa'=>['teal','person'],'LPPM Dosen'=>['violet','co_present'],'Rekognisi'=>['amber','workspace_premium'],'Kerja Sama'=>['green','handshake']];
+                                    [$mc, $mi] = $mm[\Illuminate\Support\Str::before($g['title'], ' ·')] ?? ['blue','bar_chart'];
+                                @endphp
+                                <div class="rp-mini rp-c-{{ $mc }}">
+                                    <h3><span class="rp-mini-ico"><span class="material-symbols-outlined">{{ $mi }}</span></span>{{ $g['title'] }}</h3>
                                     @foreach($g['rows'] as $r)
                                         <div class="rp-mini-row">
                                             <div class="rp-mini-line"><span>{{ $r['label'] }}</span><strong>{{ $r['value'] }}</strong></div>
-                                            <div class="rp-bar"><span style="width: {{ $r['pct'] }}%"></span></div>
+                                            <div class="rp-bar"><span style="--w: {{ $r['pct'] }}%"></span></div>
                                         </div>
                                     @endforeach
                                 </div>
@@ -336,14 +353,14 @@
                     @else
                         <p class="rp-empty">Belum ada data pada periode ini.</p>
                     @endif
-                </section>
+                </div></div>
+</section>
 
                 <!-- ===== 4. TREN PER TAHUN ===== -->
                 <section class="rp-card" data-section="tren">
-                    <div class="rp-card-head">
-                        <h2>Tren per Tahun</h2>
-                        <p>Perbandingan jumlah data tiap tahun (maksimal 6 tahun terakhir, tidak terpengaruh filter periode)</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Tren per Tahun</h2>
+                        <p>Perbandingan jumlah data tiap tahun (maksimal 6 tahun terakhir, tidak terpengaruh filter periode)</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     @php $maxTrend = max(1, collect($report['trend'])->max('total')); @endphp
                     <div class="rp-table-wrap">
                         <table class="rp-table">
@@ -356,20 +373,20 @@
                                         <td><strong>{{ $t['tahun'] }}</strong></td>
                                         <td class="num">{{ $t['kem'] }}</td><td class="num">{{ $t['lm'] }}</td><td class="num">{{ $t['ld'] }}</td><td class="num">{{ $t['rek'] }}</td><td class="num">{{ $t['ks'] }}</td>
                                         <td class="num"><strong>{{ $t['total'] }}</strong></td>
-                                        <td><div class="rp-bar"><span style="width: {{ round($t['total'] / $maxTrend * 100) }}%"></span></div></td>
+                                        <td><div class="rp-bar"><span style="--w: {{ round($t['total'] / $maxTrend * 100) }}%"></span></div></td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
-                </section>
+                </div></div>
+</section>
 
                 <!-- ===== 5. KONTRIBUTOR ===== -->
                 <section class="rp-card" data-section="kontributor">
-                    <div class="rp-card-head">
-                        <h2>Kontributor Teraktif</h2>
-                        <p>10 pengguna dengan data terbanyak lintas menu (periode: {{ $periode }})</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Kontributor Teraktif</h2>
+                        <p>10 pengguna dengan data terbanyak lintas menu (periode: {{ $periode }})</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     @if(count($report['contributors']))
                         <div class="rp-table-wrap">
                             <table class="rp-table">
@@ -384,14 +401,14 @@
                     @else
                         <p class="rp-empty">Belum ada kontributor pada periode ini.</p>
                     @endif
-                </section>
+                </div></div>
+</section>
 
                 <!-- ===== 6. KUALITAS DATA ===== -->
                 <section class="rp-card" data-section="kualitas">
-                    <div class="rp-card-head">
-                        <h2>Kualitas Data</h2>
-                        <p>Hal yang masih perlu dilengkapi</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Kualitas Data</h2>
+                        <p>Hal yang masih perlu dilengkapi</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     <div class="rp-quality">
                         @foreach($report['quality'] as $q)
                             <div class="rp-quality-row {{ $q['value'] > 0 ? 'is-warn' : 'is-ok' }}">
@@ -402,32 +419,32 @@
                             </div>
                         @endforeach
                     </div>
-                </section>
+                </div></div>
+</section>
 
                 <!-- ===== 7. KEAMANAN LOGIN ===== -->
                 <section class="rp-card" data-section="keamanan">
-                    <div class="rp-card-head">
-                        <h2>Keamanan Login</h2>
-                        <p>Aktivitas 30 hari terakhir (tidak terpengaruh filter periode)</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Keamanan Login</h2>
+                        <p>Aktivitas 30 hari terakhir (tidak terpengaruh filter periode)</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     @php $sec = $report['security']; @endphp
                     <div class="rp-kpi-grid rp-kpi-grid-4">
-                        <div class="rp-kpi"><span class="rp-kpi-label">Berhasil</span><span class="rp-kpi-value">{{ $sec['success'] }}</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">Gagal</span><span class="rp-kpi-value">{{ $sec['failed'] }}</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">Diblokir</span><span class="rp-kpi-value">{{ $sec['locked'] }}</span></div>
-                        <div class="rp-kpi"><span class="rp-kpi-label">IP Unik</span><span class="rp-kpi-value">{{ $sec['unique_ip'] }}</span></div>
+                        <div class="rp-kpi rp-c-green"><span class="rp-kpi-ico"><span class="material-symbols-outlined">check_circle</span></span><span class="rp-kpi-label">Berhasil</span><span class="rp-kpi-value">{{ $sec['success'] }}</span></div>
+                        <div class="rp-kpi rp-c-red"><span class="rp-kpi-ico"><span class="material-symbols-outlined">cancel</span></span><span class="rp-kpi-label">Gagal</span><span class="rp-kpi-value">{{ $sec['failed'] }}</span></div>
+                        <div class="rp-kpi rp-c-amber"><span class="rp-kpi-ico"><span class="material-symbols-outlined">lock</span></span><span class="rp-kpi-label">Diblokir</span><span class="rp-kpi-value">{{ $sec['locked'] }}</span></div>
+                        <div class="rp-kpi rp-c-cyan"><span class="rp-kpi-ico"><span class="material-symbols-outlined">lan</span></span><span class="rp-kpi-label">IP Unik</span><span class="rp-kpi-value">{{ $sec['unique_ip'] }}</span></div>
                     </div>
                     <div class="rp-mini-grid">
-                        <div class="rp-mini">
-                            <h3>IP dengan percobaan gagal/diblokir terbanyak</h3>
+                        <div class="rp-mini rp-c-red">
+                            <h3><span class="rp-mini-ico"><span class="material-symbols-outlined">gpp_maybe</span></span>IP dengan percobaan gagal/diblokir terbanyak</h3>
                             @forelse($sec['top_ip'] as $r)
                                 <div class="rp-mini-line"><span>{{ $r['label'] }}</span><strong>{{ $r['value'] }}</strong></div>
                             @empty
                                 <p class="rp-empty">Tidak ada.</p>
                             @endforelse
                         </div>
-                        <div class="rp-mini">
-                            <h3>Username paling sering gagal login</h3>
+                        <div class="rp-mini rp-c-amber">
+                            <h3><span class="rp-mini-ico"><span class="material-symbols-outlined">person_off</span></span>Username paling sering gagal login</h3>
                             @forelse($sec['top_user'] as $r)
                                 <div class="rp-mini-line"><span>{{ $r['label'] }}</span><strong>{{ $r['value'] }}</strong></div>
                             @empty
@@ -435,7 +452,8 @@
                             @endforelse
                         </div>
                     </div>
-                </section>
+                </div></div>
+</section>
 
                 <!-- ===== TANDA TANGAN (hanya tercetak) ===== -->
                 <div class="rp-signature">
@@ -448,10 +466,9 @@
 
                 <!-- ===== PANEL CETAK (paling bawah) ===== -->
                 <section class="rp-card rp-print-panel no-print" id="rpPrintPanel">
-                    <div class="rp-card-head">
-                        <h2>Cetak Laporan</h2>
-                        <p>Pilih bagian yang ingin dicetak, lalu tekan Cetak. Untuk PDF, pilih "Simpan sebagai PDF" di dialog cetak.</p>
-                    </div>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Cetak Laporan</h2>
+                        <p>Pilih bagian yang ingin dicetak, lalu tekan Cetak. Untuk PDF, pilih "Simpan sebagai PDF" di dialog cetak.</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
+<div class="rp-card-body"><div class="rp-card-inner">
                     <div class="rp-print-options">
                         @foreach(['ringkasan' => 'Ringkasan Utama', 'modul' => 'Rekap per Menu', 'rincian' => 'Rincian per Jenis & Tingkat', 'tren' => 'Tren per Tahun', 'kontributor' => 'Kontributor Teraktif', 'kualitas' => 'Kualitas Data', 'keamanan' => 'Keamanan Login'] as $key => $label)
                             <label class="rp-check"><input type="checkbox" class="rp-print-toggle" data-target="{{ $key }}" checked><span>{{ $label }}</span></label>
@@ -464,7 +481,8 @@
                     <button type="button" class="rp-btn rp-btn-primary" id="rpPrintBtn">
                         <span class="material-symbols-outlined">print</span> Cetak Laporan
                     </button>
-                </section>
+                </div></div>
+</section>
 
             </div>
         </main>
@@ -498,6 +516,69 @@
                 window.print();
             });
             applyPrintState();
+        })();
+    </script>
+
+    <script>
+        // Skeleton -> konten, lalu animasi angka 0 -> nilai asli (grafik bar dianimasikan lewat CSS)
+        (function () {
+            var page = document.getElementById('rpPage');
+            var t0 = Date.now();
+            var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var els = [].slice.call(document.querySelectorAll(
+                '.rp-kpi-value, .rp-table td.num, .rp-table td.num strong, .rp-mini-line strong, .rp-quality-value'
+            )).filter(function (el) { return !el.children.length && /^\d+%?$/.test(el.textContent.trim()); });
+            els.forEach(function (el) { el._to = parseInt(el.textContent, 10); el._sfx = /%$/.test(el.textContent) ? '%' : ''; });
+
+            function setAll(f) { els.forEach(function (el) { el.textContent = Math.round(el._to * f) + el._sfx; }); }
+            function count() {
+                if (reduce) return;
+                var d = 1200, s = null;
+                setAll(0);
+                requestAnimationFrame(function step(ts) {
+                    if (s === null) s = ts;
+                    var p = Math.min((ts - s) / d, 1);
+                    setAll(1 - Math.pow(1 - p, 3)); // easeOutCubic
+                    if (p < 1) requestAnimationFrame(step); else setAll(1);
+                });
+            }
+            function reveal() { page.classList.remove('rp-loading'); count(); }
+            function ready() { setTimeout(reveal, Math.max(0, 500 - (Date.now() - t0))); }
+
+            if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready);
+            window.addEventListener('beforeprint', function () { setAll(1); });
+            var f = document.querySelector('.rp-filter');
+            if (f) f.addEventListener('submit', function () { page.classList.add('rp-loading'); window.scrollTo(0, 0); });
+        })();
+    </script>
+
+    <script>
+        // Accordion card: awalnya terbuka semua
+        (function () {
+            var cards = [].slice.call(document.querySelectorAll('.rp-page > .rp-card'));
+            var allBtn = document.getElementById('rpToggleAll');
+            function set(card, open) {
+                card.classList.toggle('is-collapsed', !open);
+                card.querySelector('.rp-card-head').setAttribute('aria-expanded', open);
+            }
+            function syncAll() {
+                var anyOpen = cards.some(function (c) { return !c.classList.contains('is-collapsed'); });
+                document.getElementById('rpToggleAllText').textContent = anyOpen ? 'Tutup semua' : 'Buka semua';
+                allBtn.querySelector('.material-symbols-outlined').textContent = anyOpen ? 'unfold_less' : 'unfold_more';
+            }
+            cards.forEach(function (card) {
+                var head = card.querySelector('.rp-card-head');
+                function toggle() { set(card, card.classList.contains('is-collapsed')); syncAll(); }
+                head.addEventListener('click', toggle);
+                head.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                });
+            });
+            allBtn.addEventListener('click', function () {
+                var open = cards.every(function (c) { return c.classList.contains('is-collapsed'); });
+                cards.forEach(function (c) { set(c, open); });
+                syncAll();
+            });
         })();
     </script>
     <script src="{{ asset('js/toast.js') }}"></script>

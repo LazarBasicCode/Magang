@@ -315,12 +315,12 @@
             background: var(--panel);
             border-radius: 44px 0 0 44px;
             box-shadow: -.7rem 0 0 var(--solid-shadow);   /* lapisan di belakang panel (mengikuti lengkungan) */
-            display: flex; flex-direction: column; justify-content: center;
+            display: flex; flex-direction: column; justify-content: flex-start;
             padding: clamp(1rem, 3vh, 2.5rem) clamp(1.5rem, 3.4vw, 3.25rem);
             overflow: hidden;
             min-height: 0;
         }
-        .auth-inner { width: 100%; max-width: 380px; margin: 0 auto; }
+        .auth-inner { width: 100%; max-width: 380px; margin: 0 auto; flex: 1 1 auto; align-content: center; }
         .auth h2 { margin: 0; font-size: clamp(1.6rem, 2.2vw, 1.75rem); font-weight: 800; letter-spacing: -.02em; }
         .auth .sub-title { margin: .35rem 0 1.5rem; color: var(--ink-soft); font-size: .88rem; line-height: 1.5; }
 
@@ -417,6 +417,16 @@
         .back-link i { transition: transform .2s; }
         .back-link:hover i { transform: translateX(-3px); }
 
+        .about { display: none; position: relative; z-index: 2; margin: .75rem 0 0; max-width: 34rem;
+            font-size: .86rem; line-height: 1.65; color: var(--hero-ink-soft); }
+        .about strong { color: var(--hero-ink); font-weight: 700; }
+
+        .auth-foot {
+            width: 100%; max-width: 380px; margin: clamp(1rem, 3vh, 1.75rem) auto 0; padding-top: 1rem;
+            border-top: 1px solid var(--field-line); text-align: center;
+            font-size: .74rem; color: var(--ink-soft);
+        }
+
         /* ==========================================================
            RESPONSIVE
         ========================================================== */
@@ -424,6 +434,7 @@
             .headline p { display: none; }
         }
         @media (max-height: 600px) {
+            .auth-foot { margin-top: .75rem; padding-top: .6rem; }
             .headline { display: none; }
             .hero-foot { display: none; }
         }
@@ -433,14 +444,30 @@
         }
         @media (max-width: 900px) {
             html, body { height: auto; }
-            .page { display: block; height: auto; min-height: 100vh; overflow: visible; }
+            .page { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; display: flow-root; }
             .hero { padding: 1.25rem 1.5rem 3.25rem; }
             .stage, .headline p, .hero-foot { display: none; }
+            .about { display: block; }
             .headline { margin-top: 1rem; }
+            /* form mengambang: terpisah dari tepi kiri/kanan/bawah layar */
             .auth {
-                margin: -28px 0 0; border-radius: 28px 28px 0 0; box-shadow: 0 -12px 0 var(--solid-shadow);
-                padding: 2rem 1.5rem 2rem; overflow: visible;
+                width: calc(100% - 2rem); max-width: 520px;
+                margin: -24px auto 1.5rem; border-radius: 26px;
+                box-shadow: 0 24px 48px -18px rgba(6, 14, 60, .55), 0 6px 16px -6px rgba(6, 14, 60, .3);
+                padding: 2.25rem 1.75rem 1.5rem; overflow: visible;
             }
+            .auth-foot { max-width: none; }
+        }
+        @media (max-width: 480px) {
+            .hero { padding: 1.1rem 1.25rem 3rem; }
+            .brand svg { width: 40px; height: 40px; }
+            .brand span { font-size: 1.35rem; }
+            .headline h1 { font-size: 1.5rem; }
+            .about { font-size: .8rem; line-height: 1.6; }
+            .auth { width: calc(100% - 1.5rem); margin-bottom: 1rem; padding: 2rem 1.25rem 1.25rem; border-radius: 22px; }
+            .auth h2 { font-size: 1.5rem; }
+            .field-wrap input { font-size: 1rem; }   /* cegah auto-zoom iOS */
+            .ring.r1 { width: 220px; height: 220px; top: -120px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -490,6 +517,12 @@
             <h1>Capaian kampus, dalam satu pandangan.</h1>
             <p>Prestasi mahasiswa, riset dosen, dan kerja sama, tertata rapi dan mudah dicari.</p>
         </div>
+
+        <p class="about rise" style="--i:2">
+            <strong>Sistem Informasi Data Akademik &amp; Akreditasi</strong> yang dikelola oleh Program Studi Teknik Informatika,
+            Institut Teknologi dan Bisnis ASIA Malang — menghimpun data prestasi kemahasiswaan, penelitian &amp; pengabdian (LPPM),
+            rekognisi, dan kerja sama secara terintegrasi untuk kebutuhan akreditasi.
+        </p>
 
         <div class="stage">
             <span class="orb"></span>
@@ -556,7 +589,6 @@
 
         <div class="hero-foot rise" style="--i:4">
             <span><i class="fa-solid fa-location-dot"></i>Jl. Soekarno Hatta - Rembuksari No. 1A, Malang</span>
-            <span>&copy; {{ date('Y') }} Institut Asia Malang</span>
         </div>
     </section>
 
@@ -644,6 +676,8 @@
                 </form>
             </div>
         </div>
+
+        <footer class="auth-foot">&copy; {{ date('Y') }} Program Studi Teknik Informatika — Institut Asia Malang</footer>
     </section>
 </main>
 

@@ -26,7 +26,8 @@
     background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card); padding: 20px;
 }
-.rp-card-head { margin-bottom: 16px; }
+.rp-card-head { padding-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none; transition: padding .3s ease; }
+.rp-card-head:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 8px; }
 .rp-card-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: var(--ink); }
 .rp-card-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-muted); }
 
@@ -51,7 +52,8 @@
 
 /* Bar */
 .rp-bar { height: 8px; border-radius: 999px; background: var(--canvas); overflow: hidden; }
-.rp-bar span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+.rp-bar span { display: block; height: 100%; width: var(--w, 0%); border-radius: 999px; background: var(--primary); animation: rp-grow 1.2s cubic-bezier(.22,.8,.3,1) both; }
+@keyframes rp-grow { from { width: 0; } }
 
 /* Rincian */
 .rp-mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
@@ -86,6 +88,81 @@
 .rp-print-sign label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-muted); margin-bottom: 6px; }
 .rp-print-sign input { width: 100%; }
 
+/* ===== Ikon polos: hanya warna glyph (token tema), tanpa kotak/latar berwarna ===== */
+.rp-c-blue, .rp-c-violet { --c1: var(--primary); }
+.rp-c-teal, .rp-c-cyan   { --c1: var(--info); }
+.rp-c-green              { --c1: var(--success); }
+.rp-c-orange, .rp-c-amber { --c1: var(--warning); }
+.rp-c-red, .rp-c-pink    { --c1: var(--danger); }
+
+.rp-kpi { position: relative; }
+.rp-kpi-ico { position: absolute; top: 12px; right: 14px; color: var(--c1); display: inline-flex; }
+.rp-kpi-ico .material-symbols-outlined { font-size: 24px; }
+.rp-kpi-label { padding-right: 34px; }
+
+.rp-mini h3 { display: flex; align-items: center; gap: 8px; }
+.rp-mini-ico { display: inline-flex; color: var(--c1); }
+.rp-mini-ico .material-symbols-outlined { font-size: 20px; }
+
+.rp-card-head h2 { padding-left: 10px; border-left: 3px solid var(--primary); }
+.rp-table tbody tr:hover td { background: var(--canvas); }
+
+/* ===== Warna khas rp-mini (gradien c1 -> c2) ===== */
+.rp-mini.rp-c-blue   { --c1: #3b82f6; --c2: #06b6d4; }
+.rp-mini.rp-c-teal   { --c1: #14b8a6; --c2: #22c55e; }
+.rp-mini.rp-c-violet { --c1: #8b5cf6; --c2: #d946ef; }
+.rp-mini.rp-c-orange { --c1: #f97316; --c2: #facc15; }
+.rp-mini.rp-c-pink   { --c1: #ec4899; --c2: #f43f5e; }
+.rp-mini.rp-c-red    { --c1: #ef4444; --c2: #f97316; }
+.rp-mini.rp-c-green  { --c1: #22c55e; --c2: #84cc16; }
+.rp-mini.rp-c-amber  { --c1: #f59e0b; --c2: #ef4444; }
+.rp-mini.rp-c-cyan   { --c1: #06b6d4; --c2: #3b82f6; }
+.rp-mini .rp-bar span { background: linear-gradient(90deg, var(--c1), var(--c2)); }
+
+/* Light: latar pastel cerah, flat (basis --card supaya tidak kusam) */
+.rp-mini { background: color-mix(in srgb, var(--c1) 13%, var(--card)); border: 1px solid color-mix(in srgb, var(--c1) 28%, var(--card)); }
+.rp-kpi  { background: color-mix(in srgb, var(--c1) 13%, var(--card)); border: 1px solid color-mix(in srgb, var(--c1) 26%, var(--card)); }
+.rp-quality-row.is-ok   { background: color-mix(in srgb, #22c55e 15%, var(--card)); }
+.rp-quality-row.is-warn { background: color-mix(in srgb, #f59e0b 17%, var(--card)); }
+
+/* Dark: gradien diagonal tipis, pastel glow lembut */
+body.dark-mode .rp-card { background-image: linear-gradient(135deg, rgba(77, 106, 235, 0.12) 0%, rgba(255, 255, 255, 0) 55%); }
+body.dark-mode .rp-mini,
+body.dark-mode .rp-kpi {
+    background-color: var(--card);
+    background-image: linear-gradient(135deg, color-mix(in srgb, var(--c1) 26%, transparent) 0%, color-mix(in srgb, var(--c2, var(--c1)) 6%, transparent) 100%);
+    border-color: color-mix(in srgb, var(--c1) 32%, var(--card));
+}
+body.dark-mode .rp-quality-row.is-ok   { background-image: linear-gradient(135deg, rgba(74, 222, 128, 0.24), rgba(74, 222, 128, 0.04)); }
+body.dark-mode .rp-quality-row.is-warn { background-image: linear-gradient(135deg, rgba(251, 191, 36, 0.26), rgba(251, 191, 36, 0.04)); }
+body.dark-mode .rp-mini .rp-bar { background: rgba(255, 255, 255, 0.08); }
+
+/* ===== Accordion ===== */
+.rp-card-title { min-width: 0; }
+.rp-acc-chev { flex: none; color: var(--ink-muted); transition: transform .3s ease; }
+.rp-card.is-collapsed .rp-acc-chev { transform: rotate(-90deg); }
+.rp-card-head:hover .rp-acc-chev { color: var(--primary); }
+.rp-card-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .3s ease; }
+.rp-card-inner { min-height: 0; overflow: hidden; transition: visibility .3s; }
+.rp-card.is-collapsed .rp-card-body { grid-template-rows: 0fr; }
+.rp-card.is-collapsed .rp-card-inner { visibility: hidden; }
+.rp-card.is-collapsed .rp-card-head { padding-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .rp-card-body, .rp-acc-chev, .rp-card-head { transition: none; } }
+
+/* ===== Skeleton loading (khusus laporan) ===== */
+.rp-skel { display: none; }
+.rp-loading .rp-skel { display: flex; flex-direction: column; gap: 18px; }
+.rp-loading > .rp-card { display: none; }
+.rp-sk { border-radius: 10px; background: linear-gradient(90deg, var(--canvas) 25%, color-mix(in srgb, var(--border) 70%, var(--card)) 50%, var(--canvas) 75%);
+    background-size: 200% 100%; animation: rp-shimmer 1.3s linear infinite; }
+@keyframes rp-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.rp-sk-title { height: 18px; width: 220px; max-width: 60%; margin-bottom: 8px; }
+.rp-sk-line { height: 12px; width: 340px; max-width: 85%; margin-bottom: 18px; }
+.rp-sk-kpi { height: 92px; border-radius: 12px; }
+.rp-sk-row { height: 38px; margin-bottom: 8px; }
+.rp-sk-mini { height: 150px; border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) { .rp-sk, .rp-bar span { animation: none; } }
+
 /* Hanya untuk cetak: sembunyi di layar */
 .rp-print-header, .rp-signature { display: none; }
 
@@ -119,6 +196,13 @@
     .rp-table-wrap { overflow: visible; }
     .rp-table tr, .rp-mini, .rp-kpi, .rp-quality-row { break-inside: avoid; }
     .rp-kpi-value { font-size: 22px; }
+    .rp-skel { display: none !important; }
+    .rp-card.is-collapsed .rp-card-body { grid-template-rows: 1fr; }
+    .rp-card.is-collapsed .rp-card-inner { visibility: visible; }
+    .rp-card.is-collapsed .rp-card-head { padding-bottom: 16px; }
+    .rp-acc-chev, #rpToggleAll { display: none; }
+    .rp-loading > .rp-card { display: block !important; }
+    .rp-bar span { animation: none; }
 
     .rp-print-header { display: block; text-align: center; border-bottom: 2px solid #14172b; padding-bottom: 10px; margin-bottom: 6px; }
     .rp-print-brand { font-size: 10.5px; letter-spacing: .08em; font-weight: 700; color: #555b73; }

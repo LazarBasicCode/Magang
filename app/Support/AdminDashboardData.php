@@ -508,6 +508,17 @@ class AdminDashboardData
             ];
         }
 
+        // Superadmin: tautan ke halaman Laporan (versi lengkap dari ringkasan ini).
+        if ($viewer->role === 'superadmin') {
+            $widgets[] = [
+                'type'  => 'laporan',
+                'title' => 'Laporan Lengkap',
+                'sub'   => 'Rincian semua menu, tren tahunan, kontributor, dan bisa dicetak',
+                'items' => ['Rekap & rincian per menu', 'Tren per tahun', 'Kontributor & partisipasi', 'Kualitas data', 'Keamanan login'],
+                'url'   => url('/laporan'),
+            ];
+        }
+
         return [
             'meta' => [
                 'title'      => $viewer->role === 'superadmin' ? 'Super Admin' : 'Admin SIDA',

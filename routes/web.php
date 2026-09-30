@@ -10,6 +10,7 @@ use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HakAksesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
 
@@ -110,6 +111,9 @@ Route::middleware(['auth'])->group(function () {
     // Dibatasi ke role superadmin langsung di controller (lihat
     // LoginAuditController), bukan lewat menu.access, karena isinya data
     // keamanan yang belum perlu masuk sistem hak-akses per-menu.
+    // ---- Laporan (khusus superadmin, dicek di controller) ----
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+
     Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
     Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');
     Route::get('/login-audit/{attempt}', [LoginAuditController::class, 'show'])->name('login-audit.show');

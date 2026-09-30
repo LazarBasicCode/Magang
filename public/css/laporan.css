@@ -1,0 +1,136 @@
+/* Halaman Laporan (superadmin) — memakai variabel tema yang sudah ada di style.css */
+
+.rp-page { display: flex; flex-direction: column; gap: 18px; }
+
+.rp-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.rp-title { margin: 0; font-size: 24px; font-weight: 800; color: var(--ink); }
+.rp-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-muted); }
+.rp-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rp-filter label { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.rp-filter select, .rp-print-sign input {
+    height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--card); color: var(--ink); font: inherit; font-size: 13px;
+}
+
+.rp-btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--card); color: var(--ink);
+    font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none;
+}
+.rp-btn .material-symbols-outlined { font-size: 18px; }
+.rp-btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.rp-btn-primary:hover { filter: brightness(1.08); }
+.rp-btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+.rp-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card); padding: 20px;
+}
+.rp-card-head { margin-bottom: 16px; }
+.rp-card-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: var(--ink); }
+.rp-card-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+
+/* KPI */
+.rp-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rp-kpi-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; }
+.rp-kpi { background: var(--canvas); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.rp-kpi-label { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); }
+.rp-kpi-value { font-size: 28px; font-weight: 800; color: var(--ink); line-height: 1.15; }
+.rp-kpi-note { font-size: 12px; color: var(--ink-muted); }
+
+/* Tabel */
+.rp-table-wrap { overflow-x: auto; }
+.rp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rp-table th { text-align: left; padding: 11px 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); background: var(--canvas); }
+.rp-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); color: var(--ink); vertical-align: middle; }
+.rp-table tfoot td { font-weight: 800; border-bottom: 0; background: var(--canvas); }
+.rp-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.rp-cell-icon { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.rp-cell-icon .material-symbols-outlined { font-size: 18px; color: var(--primary); }
+.rp-table small { color: var(--ink-muted); font-size: 11px; }
+
+/* Bar */
+.rp-bar { height: 8px; border-radius: 999px; background: var(--canvas); overflow: hidden; }
+.rp-bar span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+
+/* Rincian */
+.rp-mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.rp-mini { background: var(--canvas); border-radius: 12px; padding: 14px 16px; }
+.rp-mini h3 { margin: 0 0 10px; font-size: 12.5px; font-weight: 800; color: var(--ink); }
+.rp-mini-row { margin-bottom: 9px; }
+.rp-mini-row:last-child { margin-bottom: 0; }
+.rp-mini-line { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--ink); margin-bottom: 4px; }
+.rp-mini > .rp-mini-line { padding: 5px 0; border-bottom: 1px dashed var(--border); margin-bottom: 0; }
+.rp-mini > .rp-mini-line:last-child { border-bottom: 0; }
+.rp-mini .rp-bar { background: var(--card); }
+.rp-empty { margin: 0; font-size: 13px; color: var(--ink-muted); }
+
+/* Kualitas */
+.rp-quality { display: flex; flex-direction: column; gap: 10px; }
+.rp-quality-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--canvas); }
+.rp-quality-row .material-symbols-outlined { font-size: 22px; }
+.rp-quality-row.is-ok .material-symbols-outlined { color: #16a34a; }
+.rp-quality-row.is-warn .material-symbols-outlined { color: #d97706; }
+.rp-quality-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.rp-quality-text strong { font-size: 13px; color: var(--ink); }
+.rp-quality-text small { font-size: 12px; color: var(--ink-muted); }
+.rp-quality-value { font-size: 20px; font-weight: 800; color: var(--ink); }
+.rp-link { font-size: 12.5px; font-weight: 700; color: var(--primary); text-decoration: none; }
+.rp-link:hover { text-decoration: underline; }
+
+/* Panel cetak */
+.rp-print-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.rp-check { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--canvas); font-size: 13px; color: var(--ink); cursor: pointer; }
+.rp-check input { width: 16px; height: 16px; accent-color: var(--primary); }
+.rp-print-sign { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.rp-print-sign label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-muted); margin-bottom: 6px; }
+.rp-print-sign input { width: 100%; }
+
+/* Hanya untuk cetak: sembunyi di layar */
+.rp-print-header, .rp-signature { display: none; }
+
+@media (max-width: 900px) {
+    .rp-kpi-grid, .rp-kpi-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+    .rp-kpi-grid, .rp-kpi-grid-4 { grid-template-columns: 1fr; }
+}
+
+/* ===================== CETAK ===================== */
+@media print {
+    @page { size: A4; margin: 14mm; }
+
+    /* paksa tema terang walau sedang dark mode */
+    body, body.dark-mode {
+        --canvas: #f3f4f8; --card: #ffffff; --border: #d6d9e4;
+        --ink: #14172b; --ink-muted: #555b73; --ink-faint: #8a90a5;
+        --shadow-card: none;
+        background: #fff !important; color: #14172b;
+    }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .app-sidebar, .app-header, .sidebar-overlay, .toast-container, .notifm-overlay,
+    .no-print, [data-print-off] { display: none !important; }
+
+    .app-content, .app-main, .page-wrap { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: none !important; }
+
+    .rp-page { gap: 12px; }
+    .rp-card { box-shadow: none; border: 1px solid #cfd3e0; break-inside: avoid; padding: 14px; }
+    .rp-table-wrap { overflow: visible; }
+    .rp-table tr, .rp-mini, .rp-kpi, .rp-quality-row { break-inside: avoid; }
+    .rp-kpi-value { font-size: 22px; }
+
+    .rp-print-header { display: block; text-align: center; border-bottom: 2px solid #14172b; padding-bottom: 10px; margin-bottom: 6px; }
+    .rp-print-brand { font-size: 10.5px; letter-spacing: .08em; font-weight: 700; color: #555b73; }
+    .rp-print-header h1 { margin: 6px 0 4px; font-size: 20px; }
+    .rp-print-header p { margin: 0; font-size: 11.5px; color: #555b73; }
+
+    .rp-signature { display: block; margin-top: 18px; margin-left: auto; width: 240px; text-align: center; font-size: 12px; break-inside: avoid; }
+    .rp-signature p { margin: 2px 0; }
+    .rp-signature-space { height: 64px; }
+}
+
+/* Widget "Laporan Lengkap" di dashboard superadmin */
+.laporan-mini-list { list-style: none; margin: 12px 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.laporan-mini-list li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
+.laporan-mini-list .material-symbols-outlined { font-size: 18px; color: var(--primary); }

@@ -70,7 +70,7 @@ class HakAkses extends Model
      * pengelolaan akun (Data Master) dan pengaturan hak akses itu sendiri
      * (Hak Akses) tetap murni wewenang superadmin.
      */
-    public const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses'];
+    public const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses', 'log'];
 
     public const LEVELS = ['none', 'readonly', 'biasa', 'penuh'];
 

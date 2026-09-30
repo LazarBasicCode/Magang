@@ -1589,6 +1589,12 @@ body.dark-mode .modal-card {
     display: none !important;
 }
 
+/* Atribut [hidden] harus selalu menang. Tanpa ini, elemen yang punya
+   display eksplisit (mis. .field { display:flex }) tetap tampil walau hidden. */
+[hidden] {
+    display: none !important;
+}
+
 /* ==========================================================
    13. BADGE (dipakai di LPPM Mahasiswa & Rekognisi)
    ========================================================== */
@@ -2764,4 +2770,3 @@ body.dark-mode {
     .page-wrap.is-loaded .filter-card,
     .page-wrap.is-loaded .table-card { animation: none; }
 }
-

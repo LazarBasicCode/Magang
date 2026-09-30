@@ -280,6 +280,24 @@ button {
     border-radius: 6px;
 }
 
+/* Logo lingkaran dari sprite SVG (#sida-mark) */
+.sidebar-brand-mark {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    display: block;
+    border: 1px solid var(--border-strong);
+    border-radius: 50%;
+}
+
+/* Wadah definisi ikon SVG (sprite): tak terlihat & tidak memakan ruang */
+.svg-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
 .sidebar-brand-text {
     display: flex;
     flex-direction: column;

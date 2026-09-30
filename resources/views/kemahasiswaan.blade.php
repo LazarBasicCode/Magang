@@ -450,35 +450,11 @@
                                 </tr>
                                 @endforelse
                             </tbody>
-                            
-                            {{-- Skeleton loading: tampil selama .page-wrap.is-loading, lalu disembunyikan --}}
+
+                            {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
                             <tbody class="sk-body" aria-hidden="true">
-                                @php
-                                $skNama = [130, 160, 110, 145, 125, 170, 120, 150];
-                                $skKegiatan = [220, 180, 260, 200, 240, 190, 210, 170];
-                                @endphp
-                                @for($i = 0; $i < 8; $i++)
-                                <tr>
-                                    <td><span class="sk-bar" style="width:72px"></span></td>
-                                    <td>
-                                        <div class="student-cell">
-                                            <span class="sk-circle"></span>
-                                            <span class="sk-bar" style="width:{{ $skNama[$i] }}px"></span>
-                                        </div>
-                                    </td>
-                                    <td><span class="sk-bar" style="width:{{ $skKegiatan[$i] }}px"></span></td>
-                                    <td class="center"><span class="sk-bar sk-center" style="width:64px"></span></td>
-                                    <td class="center"><span class="sk-bar sk-center" style="width:64px"></span></td>
-                                    <td class="center"><span class="sk-bar sk-center" style="width:64px"></span></td>
-                                    <td class="center"><span class="sk-bar sk-center sk-pill" style="width:46px"></span></td>
-                                    <td class="center"><span class="sk-bar sk-center" style="width:96px"></span></td>
-                                    <td class="center">
-                                        <div class="row-actions">
-                                            <span class="sk-box"></span>
-                                            <span class="sk-box"></span>
-                                        </div>
-                                    </td>
-                                </tr>
+                                @for($i = 0; $i < 7; $i++)
+                                <tr><td colspan="9"><span class="sk-bar"></span></td></tr>
                                 @endfor
                             </tbody>
                         </table>
@@ -830,7 +806,7 @@
         (function() {
             const wrap = document.getElementById('pageWrap');
             if (!wrap) return;
-            const MIN_MS = 350;
+            const MIN_MS = 2000;
             const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
             Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
                 setTimeout(() => {

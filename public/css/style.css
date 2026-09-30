@@ -4270,25 +4270,25 @@ body.dark-mode .header-profile-panel {
 
 /* ==========================================================
    20. SKELETON LOADING
-   Dipakai dengan menambahkan class "is-loading" pada .page-wrap.
-   Stat card, filter, judul, dan footer memakai elemen ASLI
-   (isinya disembunyikan, diganti blok shimmer) sehingga ukuran &
-   layout-nya sama persis dengan UI final. Khusus tabel, dipakai
-   <tbody class="sk-body"> berisi baris placeholder.
+   Aktif selama <div class="page-wrap is-loading">.
+   Stat card, filter, judul, tombol & footer memakai elemen ASLI
+   (isi disembunyikan, diganti blok shimmer) sehingga ukurannya
+   sama dengan UI final. Tabel memakai <tbody class="sk-body">.
    ========================================================== */
 
 :root {
-    --sk-base: var(--border, #dde1f1);
-    --sk-hi: rgba(255, 255, 255, .65);
+    --sk-base:  #dde2f1;
+    --sk-shine: #f4f6fc;
 }
 body.dark-mode {
-    --sk-base: var(--border, #35425f);
-    --sk-hi: rgba(255, 255, 255, .08);
+    --sk-base:  #313a55;
+    --sk-shine: #444f70;
 }
 
+/* Shimmer klasik: pita terang menyapu dari kiri ke kanan */
 @keyframes skShimmer {
-    from { background-position: 100% 50%, 0 50%; }
-    to   { background-position: 0 50%, 0 50%; }
+    0%   { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
 }
 @keyframes skFadeIn {
     from { opacity: 0; transform: translateY(4px); }
@@ -4310,25 +4310,30 @@ body.dark-mode {
 .page-wrap.is-loading .table-card-title,
 .page-wrap.is-loading .table-card-subtitle,
 .page-wrap.is-loading .footer-summary,
-.sk-bar, .sk-circle, .sk-box {
+.sk-bar {
     --sk-h: 100%;
     color: transparent !important;
     text-shadow: none !important;
     border-color: transparent !important;
     box-shadow: none !important;
-    background-color: transparent !important;
-    background-image:
-        linear-gradient(90deg, transparent 0%, var(--sk-hi) 50%, transparent 100%),
-        linear-gradient(var(--sk-base), var(--sk-base)) !important;
-    background-repeat: no-repeat !important;
-    background-size: 200% var(--sk-h), 100% var(--sk-h) !important;
-    background-position: 100% 50%, 0 50% !important;
-    animation: skShimmer 1.4s ease-in-out infinite;
+    /* Jangan pakai !important di properti background: !important
+       mengalahkan animasi CSS dan membuat shimmer diam. */
+    background-color: transparent;
+    background-image: linear-gradient(
+        90deg,
+        var(--sk-base) 25%,
+        var(--sk-shine) 37%,
+        var(--sk-base) 63%
+    );
+    background-repeat: no-repeat;
+    background-size: 400% var(--sk-h);
+    background-position: 100% 50%;
+    animation: skShimmer 1.5s ease-in-out infinite;
     pointer-events: none;
     user-select: none;
 }
 
-/* Isi asli (ikon, teks di dalam anak elemen) disembunyikan */
+/* Isi asli (ikon, anak elemen) disembunyikan */
 .page-wrap.is-loading .title-bar .btn-primary > *,
 .page-wrap.is-loading .stat-icon > *,
 .page-wrap.is-loading .dropdown-trigger > *,
@@ -4339,7 +4344,7 @@ body.dark-mode {
     visibility: hidden;
 }
 
-/* ---------- Teks: bar setinggi ~70% baris (tinggi layout tetap) ---------- */
+/* ---------- Teks: bar ~70% tinggi baris (tinggi layout tetap) ---------- */
 .page-wrap.is-loading .page-title,
 .page-wrap.is-loading .page-subtitle,
 .page-wrap.is-loading .stat-label,
@@ -4375,33 +4380,26 @@ body.dark-mode {
 /* Stat card: satu panel polos tanpa warna & tanpa efek hover selama loading */
 .page-wrap.is-loading .stat-card:has(.stat-icon) {
     background: var(--card) !important;
-    /* panel polos: buang tepi bawah berwarna (--chart-*) milik style.css */
     box-shadow: var(--shadow-card) !important;
     pointer-events: none;
     transform: none !important;
 }
 .page-wrap.is-loading .filter-card .dropdown { pointer-events: none; }
 
-/* ---------- Baris tabel skeleton ---------- */
+/* ---------- Tabel skeleton: baris bar sederhana ---------- */
 .data-table .sk-body { display: none; }
 .page-wrap.is-loading .data-table tbody:not(.sk-body) { display: none; }
 .page-wrap.is-loading .data-table .sk-body { display: table-row-group; }
 .sk-body tr:hover { background: transparent !important; }
+.sk-body td { padding: 10px 16px; border-bottom: 0; }
 
-.sk-bar, .sk-circle, .sk-box { display: block; flex: 0 0 auto; }
-.sk-bar    { --sk-h: 100%; height: 12px; border-radius: 6px; max-width: 100%; }
-.sk-bar.sk-center { margin-inline: auto; }
-.sk-bar.sk-pill   { height: 22px; border-radius: 999px; }
-.sk-circle { width: 36px; height: 36px; border-radius: 50%; }
-.sk-box    { width: 32px; height: 32px; border-radius: 8px; }
-.sk-body .student-cell { display: flex; align-items: center; gap: 12px; }
-.sk-body .row-actions  { display: flex; justify-content: center; gap: 8px; }
+.sk-bar { display: block; height: 18px; border-radius: 8px; width: 100%; }
 
 /* ---------- Transisi masuk saat konten asli muncul ---------- */
 .page-wrap.is-loaded .stat-card,
 .page-wrap.is-loaded .filter-card,
 .page-wrap.is-loaded .table-card {
-    /* backwards (bukan both): setelah selesai, transform hover .stat-card tidak ditimpa */
+    /* backwards (bukan both): setelah selesai, transform hover tidak ditimpa */
     animation: skFadeIn .3s ease backwards;
 }
 .page-wrap.is-loaded .filter-card { animation-delay: .04s; }
@@ -4409,7 +4407,7 @@ body.dark-mode {
 
 @media (prefers-reduced-motion: reduce) {
     .page-wrap.is-loading *,
-    .sk-bar, .sk-circle, .sk-box { animation: none !important; }
+    .sk-bar { animation: none !important; }
     .page-wrap.is-loaded .stat-card,
     .page-wrap.is-loaded .filter-card,
     .page-wrap.is-loaded .table-card { animation: none; }

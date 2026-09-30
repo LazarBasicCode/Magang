@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/skeleton.css') }}?v={{ @filemtime(public_path('css/skeleton.css')) }}">
     <title>LPPM Rekognisi &middot; SIDA</title>
 </head>
 
@@ -220,7 +221,7 @@
         </header>
 
         <main class="app-main">
-            <div class="page-wrap">
+            <div class="page-wrap is-loading" id="pageWrap" aria-busy="true">
 
                 <div class="title-bar">
                     <div>
@@ -404,6 +405,13 @@
                                     </td>
                                 </tr>
                                 @endforelse
+                            </tbody>
+
+                            {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
+                            <tbody class="sk-body" aria-hidden="true">
+                                @for($i = 0; $i < 7; $i++)
+                                <tr><td colspan="10"><span class="sk-bar"></span></td></tr>
+                                @endfor
                             </tbody>
                         </table>
                     </div>
@@ -1074,6 +1082,23 @@
     </script>
     <script src="{{ asset('js/toast.js') }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
+    <script>
+        // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
+        // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.
+        (function() {
+            const wrap = document.getElementById('pageWrap');
+            if (!wrap) return;
+            const MIN_MS = 350;
+            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
+            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
+                setTimeout(() => {
+                    wrap.classList.remove('is-loading');
+                    wrap.classList.add('is-loaded');
+                    wrap.removeAttribute('aria-busy');
+                }, Math.max(0, MIN_MS - performance.now()));
+            });
+        })();
+    </script>
 </body>
 
 </html>

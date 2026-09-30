@@ -95,6 +95,12 @@
                     <span>Hak Akses</span>
                 </a>
                 @endif
+                @if($__user->canAccessMenu('log'))
+                <a href="{{ url('/login-audit') }}" class="nav-link">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>Log Aktivitas</span>
+                </a>
+                @endif
                 @if($__user->role === 'superadmin')
                 <a href="{{ url('/laporan') }}" class="nav-link">
                     <span class="material-symbols-outlined">assignment</span>

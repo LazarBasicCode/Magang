@@ -8,6 +8,7 @@ use App\Models\LppmDosen;
 use App\Models\LppmMahasiswa;
 use App\Models\Rekognisi;
 use Illuminate\Http\Request;
+use App\Support\AdminDashboardData;
 use App\Support\DashboardCharts;
 use Illuminate\Support\Carbon;
 
@@ -17,9 +18,15 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        // Dashboard versi lengkap dibuat untuk role mahasiswa dan dosen.
+        // Dashboard versi lengkap dibuat untuk role mahasiswa, dosen, dan admin.
         if ($user->role === 'dosen') {
             return $this->dosen($user);
+        }
+
+        // Admin & superadmin: satu view (dashboard-admin) dengan isi menyesuaikan
+        // menu yang dipegang admin itu (lihat AdminDashboardData::modeFor()).
+        if (in_array($user->role, ['admin', 'superadmin'], true)) {
+            return view('dashboard-admin', AdminDashboardData::build($user));
         }
 
         if ($user->role !== 'mahasiswa') {

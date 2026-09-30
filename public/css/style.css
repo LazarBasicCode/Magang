@@ -4436,3 +4436,59 @@ body.dark-mode {
 .status-chip { margin-left: auto; flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; }
 .status-chip.is-live { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
 .status-chip.is-soon { color: var(--info); background: var(--info-bg); border-color: var(--info-border); }
+
+/* ==========================================================
+   DASHBOARD ADMIN (resources/views/dashboard-admin.blade.php)
+   ========================================================== */
+.quality-label.is-wide {
+    width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-quick-link {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.admin-extra-note { margin-top: 10px; }
+
+.log-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 6px 0 16px;
+}
+
+.log-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--canvas);
+}
+
+.log-mini-value { font-size: 26px; font-weight: 800; line-height: 1; color: var(--ink); }
+.log-mini-label { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.log-mini.is-ok .log-mini-value { color: var(--success); }
+.log-mini.is-warn .log-mini-value { color: var(--warning); }
+.log-mini.is-bad .log-mini-value { color: var(--danger); }
+
+.admin-log-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.admin-log-link .material-symbols-outlined { font-size: 18px; }
+.admin-log-link:hover { text-decoration: underline; }

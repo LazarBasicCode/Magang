@@ -253,7 +253,7 @@
             <button type="button" class="icon-btn" id="themeToggle" title="Ganti tema">
                 <i class="fa-solid fa-moon"></i>
             </button>
-            <a href="{{ url('/kemahasiswaan') }}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+            <a href="{{ url('/dashboard') }}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
         </div>
     </div>
 

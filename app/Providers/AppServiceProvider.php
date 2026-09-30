@@ -48,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
             'kerja-sama',
             'data-master-users',
             'hak-akses',
+            'laporan',
         ], function ($view) {
             $view->with('__user', auth()->user());
         });

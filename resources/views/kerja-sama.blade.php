@@ -91,6 +91,12 @@
                     <span>Hak Akses</span>
                 </a>
                 @endif
+                @if($__user->role === 'superadmin')
+                <a href="{{ url('/laporan') }}" class="nav-link">
+                    <span class="material-symbols-outlined">assignment</span>
+                    <span>Laporan</span>
+                </a>
+                @endif
             </div>
         </nav>
 

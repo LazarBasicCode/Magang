@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/laporan.css') }}?v={{ @filemtime(public_path('css/laporan.css')) }}">
     <title>Dashboard {{ $meta['title'] }} &middot; SIDA</title>
 </head>
 
@@ -99,6 +100,12 @@
                 <a href="{{ url('/login-audit') }}" class="nav-link">
                     <span class="material-symbols-outlined">history</span>
                     <span>Log Aktivitas</span>
+                </a>
+                @endif
+                @if($__user->role === 'superadmin')
+                <a href="{{ url('/laporan') }}" class="nav-link">
+                    <span class="material-symbols-outlined">assignment</span>
+                    <span>Laporan</span>
                 </a>
                 @endif
             </div>
@@ -493,6 +500,20 @@
                                 </div>
                             </div>
 
+                        @elseif($w['type'] === 'laporan')
+                            <div class="dash-card reveal {{ $wide }}">
+                                <h2 class="dash-card-title">{{ $w['title'] }}</h2>
+                                <p class="dash-card-sub">{{ $w['sub'] }}</p>
+                                <ul class="laporan-mini-list">
+                                    @foreach($w['items'] as $item)
+                                        <li><span class="material-symbols-outlined">check_circle</span>{{ $item }}</li>
+                                    @endforeach
+                                </ul>
+                                <a href="{{ $w['url'] }}" class="admin-log-link">
+                                    <span class="material-symbols-outlined">assignment</span>
+                                    <span>Buka Laporan</span>
+                                </a>
+                            </div>
                         @elseif($w['type'] === 'log')
                             <div class="dash-card reveal {{ $wide }}">
                                 <h2 class="dash-card-title">{{ $w['title'] }}</h2>

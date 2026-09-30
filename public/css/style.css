@@ -2669,15 +2669,15 @@ body:not(.dark-mode) .dash-panel {
 
 .stat-hero-card.grad-2 {
     background: linear-gradient(45deg, rgba(255, 130, 58, 0.6) 0%, rgba(128, 8, 88, 0.2) 50%, rgba(51, 3, 90, 0.3) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, .18);
 }
 
 .stat-hero-card.grad-3 {
     background: linear-gradient(45deg, rgba(160, 151, 255, 0.6) 0%, rgba(77, 11, 131, 0.2) 50%, rgba(38, 3, 83, 0.3) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, .18);
 }
 
@@ -4412,3 +4412,81 @@ body.dark-mode {
     .page-wrap.is-loaded .filter-card,
     .page-wrap.is-loaded .table-card { animation: none; }
 }
+/* ==========================================================
+   Dashboard Dosen — Kualitas publikasi, kelengkapan, status
+   ========================================================== */
+.quality-list { display: flex; flex-direction: column; gap: 10px; }
+.quality-row { display: flex; align-items: center; gap: 12px; }
+.quality-label { width: 58px; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.quality-value { width: 24px; text-align: right; font-size: 13px; font-weight: 800; color: var(--ink); }
+.quality-track { flex: 1; height: 10px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.quality-fill { height: 100%; border-radius: 999px; transition: width .6s cubic-bezier(.22,.68,0,1); }
+.quality-fill.is-q { background: linear-gradient(90deg, var(--chart-5), var(--chart-1)); }
+.quality-fill.is-s { background: linear-gradient(90deg, var(--chart-3), var(--chart-2)); }
+.quality-fill.is-ok { background: linear-gradient(90deg, var(--chart-3), var(--chart-2)); }
+
+.complete-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.complete-pct { font-size: 28px; font-weight: 800; color: var(--ink); line-height: 1; }
+.complete-note { font-size: 12px; color: var(--ink-muted); }
+.complete-track { flex: none; width: 100%; margin-bottom: 14px; }
+.complete-sub { font-size: 12px; font-weight: 700; color: var(--ink-muted); margin: 4px 0 6px; }
+
+.status-chip { margin-left: auto; flex-shrink: 0; font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; }
+.status-chip.is-live { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
+.status-chip.is-soon { color: var(--info); background: var(--info-bg); border-color: var(--info-border); }
+
+/* ==========================================================
+   DASHBOARD ADMIN (resources/views/dashboard-admin.blade.php)
+   ========================================================== */
+.quality-label.is-wide {
+    width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-quick-link {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.admin-extra-note { margin-top: 10px; }
+
+.log-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 6px 0 16px;
+}
+
+.log-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--canvas);
+}
+
+.log-mini-value { font-size: 26px; font-weight: 800; line-height: 1; color: var(--ink); }
+.log-mini-label { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.log-mini.is-ok .log-mini-value { color: var(--success); }
+.log-mini.is-warn .log-mini-value { color: var(--warning); }
+.log-mini.is-bad .log-mini-value { color: var(--danger); }
+
+.admin-log-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.admin-log-link .material-symbols-outlined { font-size: 18px; }
+.admin-log-link:hover { text-decoration: underline; }

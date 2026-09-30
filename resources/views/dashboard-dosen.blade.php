@@ -200,6 +200,46 @@
                     </div>
                 </div>
 
+                <!-- STAT TAMBAHAN KHUSUS DOSEN -->
+                <div class="stat-grid" style="margin-top:18px;">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Jurnal Sinta Nasional</span>
+                            <span class="stat-value">{{ $stats['sinta_nasional'] }}</span>
+                        </div>
+                        <div class="stat-icon info">
+                            <span class="material-symbols-outlined">article</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">HKI</span>
+                            <span class="stat-value">{{ $stats['hki'] }}</span>
+                        </div>
+                        <div class="stat-icon warning">
+                            <span class="material-symbols-outlined">verified</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Buku</span>
+                            <span class="stat-value">{{ $stats['buku'] }}</span>
+                        </div>
+                        <div class="stat-icon success">
+                            <span class="material-symbols-outlined">auto_stories</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Mitra Unik</span>
+                            <span class="stat-value">{{ $stats['mitra_unik'] }}</span>
+                        </div>
+                        <div class="stat-icon primary">
+                            <span class="material-symbols-outlined">apartment</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- DASHBOARD GRID -->
                 <div class="dash-grid">
 
@@ -301,6 +341,90 @@
                                     @endforelse
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- KUALITAS PUBLIKASI -->
+                    <div class="dash-card reveal">
+                        <h2 class="dash-card-title">Kualitas Publikasi</h2>
+                        <p class="dash-card-sub">Sebaran peringkat jurnal (Q1&ndash;Q4 &amp; Sinta S1&ndash;S6)</p>
+                        <div class="quality-list">
+                            @forelse($kualitasPublikasi as $q)
+                                <div class="quality-row">
+                                    <span class="quality-label">{{ $q['label'] }}</span>
+                                    <div class="quality-track">
+                                        <div class="quality-fill {{ str_starts_with($q['label'], 'Q') ? 'is-q' : 'is-s' }}" style="width: {{ max(6, round($q['value'] / $kualitasMax * 100)) }}%"></div>
+                                    </div>
+                                    <span class="quality-value">{{ $q['value'] }}</span>
+                                </div>
+                            @empty
+                                <div class="recent-empty">Belum ada jurnal dengan peringkat tercatat.</div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <!-- KELENGKAPAN DATA -->
+                    <div class="dash-card reveal" style="transition-delay:80ms">
+                        <h2 class="dash-card-title">Kelengkapan Data Jurnal</h2>
+                        <p class="dash-card-sub">Jurnal yang sudah dilengkapi link DOI</p>
+                        <div class="complete-head">
+                            <span class="complete-pct">{{ $kelengkapan['pct'] }}%</span>
+                            <span class="complete-note">{{ $kelengkapan['lengkap'] }} dari {{ $kelengkapan['total'] }} jurnal punya DOI</span>
+                        </div>
+                        <div class="quality-track complete-track">
+                            <div class="quality-fill is-ok" style="width: {{ $kelengkapan['pct'] }}%"></div>
+                        </div>
+                        @if($kelengkapan['perlu']->isNotEmpty())
+                            <p class="complete-sub">Perlu dilengkapi</p>
+                            <div class="recent-list">
+                                @foreach($kelengkapan['perlu'] as $p)
+                                    <div class="recent-item">
+                                        <div class="recent-item-icon"><span class="material-symbols-outlined">link_off</span></div>
+                                        <div class="recent-item-text">
+                                            <span class="recent-item-title">{{ $p['title'] }}</span>
+                                            <span class="recent-item-meta">{{ $p['jenis'] }} &middot; belum ada link DOI</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif($kelengkapan['total'] > 0)
+                            <p class="complete-sub">Semua jurnal sudah punya DOI. Mantap!</p>
+                        @endif
+                    </div>
+
+                    <!-- RAGAM KERJA SAMA -->
+                    <div class="dash-card donut-card reveal">
+                        <h2 class="dash-card-title">Ragam Kerja Sama</h2>
+                        <p class="dash-card-sub">Keynote, guest lecture, pengabdian, riset, dan lainnya</p>
+                        <div class="donut-widget" data-donut data-caption="Kerja Sama" data-chart='@json($ragamKerjaSama)'>
+                            <div class="donut-svg-holder">
+                                <svg viewBox="0 0 200 200"></svg>
+                                <div class="donut-center-label">
+                                    <span class="donut-center-value">0</span>
+                                    <span class="donut-center-caption">Kerja Sama</span>
+                                </div>
+                            </div>
+                            <div class="donut-legend"></div>
+                        </div>
+                    </div>
+
+                    <!-- KEGIATAN BERLANGSUNG & AKAN DATANG -->
+                    <div class="dash-card reveal" style="transition-delay:80ms">
+                        <h2 class="dash-card-title">Berlangsung &amp; Akan Datang</h2>
+                        <p class="dash-card-sub">{{ $stats['kegiatan_aktif'] }} kerja sama/rekognisi yang belum selesai</p>
+                        <div class="recent-list">
+                            @forelse($berjalan as $b)
+                                <div class="recent-item">
+                                    <div class="recent-item-icon"><span class="material-symbols-outlined">{{ $b['icon'] }}</span></div>
+                                    <div class="recent-item-text">
+                                        <span class="recent-item-title">{{ $b['title'] }}</span>
+                                        <span class="recent-item-meta">{{ $b['menu'] }} &middot; {{ $b['start']->translatedFormat('d M Y') }} &ndash; {{ $b['end']->translatedFormat('d M Y') }}</span>
+                                    </div>
+                                    <span class="status-chip {{ $b['status'] === 'Berlangsung' ? 'is-live' : 'is-soon' }}">{{ $b['status'] }}</span>
+                                </div>
+                            @empty
+                                <div class="recent-empty">Tidak ada kegiatan yang sedang berjalan.</div>
+                            @endforelse
                         </div>
                     </div>
                 </div>

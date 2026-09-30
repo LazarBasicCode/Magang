@@ -81,8 +81,8 @@ class DashboardCharts
         $all = $akademik->concat($eksternal);
 
         // Tahunan memakai tahun kegiatan (tahun / tanggal_mulai), bukan waktu input
-        $years = $akademik->pluck('tahun')
-            ->concat($eksternal->pluck('tanggal_mulai')->filter()->map(fn ($d) => $d->year))
+        $years = $akademik->concat($eksternal)
+            ->map(fn ($i) => self::yearOf($i))
             ->filter()->unique()->sort()->values();
         if ($years->isEmpty()) {
             $years = collect([$now->year]);
@@ -91,8 +91,7 @@ class DashboardCharts
 
         $yearlyBar = $years->map(fn ($year) => [
             'label' => (string) $year,
-            'value' => $akademik->where('tahun', $year)->count()
-                + $eksternal->filter(fn ($i) => $i->tanggal_mulai && $i->tanggal_mulai->year === $year)->count(),
+            'value' => $akademik->concat($eksternal)->filter(fn ($i) => self::yearOf($i) === $year)->count(),
         ])->values();
 
         $bar = [
@@ -112,6 +111,23 @@ class DashboardCharts
         ];
 
         return ['trend' => $trend, 'bar' => $bar];
+    }
+
+    /**
+     * Tahun kegiatan sebuah item: kolom "tahun" (Kemahasiswaan/LPPM) kalau ada,
+     * kalau tidak tahun dari "tanggal_mulai" (Rekognisi/Kerja Sama). Dengan begitu
+     * kelompok mana pun boleh berisi jenis data apa pun.
+     */
+    private static function yearOf($item): ?int
+    {
+        $tahun = $item->getAttribute('tahun');
+        if ($tahun) {
+            return (int) $tahun;
+        }
+
+        $mulai = $item->getAttribute('tanggal_mulai');
+
+        return $mulai ? (int) $mulai->year : null;
     }
 
     private static function countBetween(Collection $items, $start, $end): int

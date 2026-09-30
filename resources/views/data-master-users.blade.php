@@ -354,10 +354,15 @@ $__accessRows = $__user->accessBreakdown();
                                     <th class="center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="userTableBody">
+                            @php
+                            $isPaginator = method_exists($users, 'total');
+                            $serverTotal = $isPaginator ? $users->total() : $users->count();
+                            $nextUrl = $isPaginator ? ($users->nextPageUrl() ?? '') : '';
+                            @endphp
+                            <tbody id="userTableBody" data-total="{{ $serverTotal }}" data-next-url="{{ $nextUrl }}">
                                 @forelse($users as $item)
                                 @php
-                                $initials = collect(explode(' ', $item->name))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
+                                $initials = collect(explode(' ', $item->name))->filter()->take(2)->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 $avatarColor = $colors[$item->id % count($colors)];
                                 $roleBadge = [
@@ -422,7 +427,7 @@ $__accessRows = $__user->accessBreakdown();
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
                             <tbody class="sk-body" aria-hidden="true">
                                 @for($i = 0; $i < 7; $i++)
-                                <tr><td colspan="7"><span class="sk-bar"></span></td></tr>
+                                <tr><td colspan="6"><span class="sk-bar"></span></td></tr>
                                 @endfor
                             </tbody>
                         </table>
@@ -430,12 +435,16 @@ $__accessRows = $__user->accessBreakdown();
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong id="footerVisibleCount">{{ $users->firstItem() ?? 0 }}-{{ $users->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $users->total() }}</strong> data pengguna
+                            Menampilkan <strong id="footerVisibleCount">{{ $users->count() }}</strong>
+                            dari <strong id="footerTotalCount">{{ $serverTotal }}</strong> data pengguna
+                            <span id="footerLoading" hidden style="margin-left:8px; color: var(--ink-faint);">· memuat sisa data…</span>
                         </div>
-                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $users->links() }}
-                        setelah view paginator kamu disesuaikan dengan desain ini. --}}
-                    </div>
+                        {{-- Fallback tanpa JS: pagination bawaan Laravel. Dengan JS, semua halaman
+                             dimuat otomatis ke tabel sehingga filter & pencarian mencakup semua data. --}}
+                        @if($isPaginator && $users->hasPages())
+                        <noscript>{{ $users->links() }}</noscript>
+                        @endif
+                        </div>
                 </div>
             </div>
         </main>
@@ -476,6 +485,7 @@ $__accessRows = $__user->accessBreakdown();
                             <span class="material-symbols-outlined caret">expand_more</span>
                         </button>
                         <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option" data-value="superadmin" hidden>Superadmin</button>
                             <button type="button" class="dropdown-option" data-value="admin">Admin</button>
                             <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
                             <button type="button" class="dropdown-option is-selected" data-value="mahasiswa">Mahasiswa</button>
@@ -613,6 +623,9 @@ $__accessRows = $__user->accessBreakdown();
 
         // Listener dropdown (khusus halaman ini karena ada portal + callback filter)
         dropdowns.forEach((dropdown) => {
+            // Tandai supaya SIDA.dropdown.init() (script.js) tidak memasang
+            // listener kedua di trigger yang sama (penyebab dropdown buka-lalu-tutup).
+            dropdown.dataset.bound = '1';
             const trigger = dropdown.querySelector('.dropdown-trigger');
             const valueEl = dropdown.querySelector('.dropdown-value');
             const hiddenInput = dropdown.querySelector('input[type="hidden"]');
@@ -646,6 +659,10 @@ $__accessRows = $__user->accessBreakdown();
         document.addEventListener('click', () => {
             closeAllDropdowns();
         });
+        // Esc: tutup dropdown (termasuk panel portal) sebelum modal ditutup SIDA.modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeAllDropdowns();
+        }, true);
         // Tutup dropdown yang lagi terbuka kalau halaman di-scroll, supaya
         // panel yang di-portal tidak "nyangkut" di posisi lama.
         window.addEventListener('scroll', () => {
@@ -668,6 +685,12 @@ $__accessRows = $__user->accessBreakdown();
         const filterRoleInput = document.getElementById('filter-role');
         const noResultsRow = document.getElementById('noResultsRow');
         const footerVisibleCount = document.getElementById('footerVisibleCount');
+        const footerTotalCount = document.getElementById('footerTotalCount');
+        const footerLoading = document.getElementById('footerLoading');
+
+        // Total data menurut server; disesuaikan saat tambah/hapus, dan
+        // disamakan dengan jumlah baris nyata setelah semua halaman termuat.
+        let totalCount = Number(tableBody?.dataset.total) || 0;
 
         function applyFilters() {
             if (!tableBody) return;
@@ -682,14 +705,14 @@ $__accessRows = $__user->accessBreakdown();
                 const nameText = (row.querySelector('.student-name .name')?.textContent || '').toLowerCase();
                 const identifierText = (row.querySelector('td:nth-child(4) .plain-text')?.textContent || '').toLowerCase();
                 const emailText = (row.querySelector('td:nth-child(5) .plain-text')?.textContent || '').toLowerCase();
-                const roleText = (row.querySelector('td:nth-child(3) .badge')?.textContent || '').trim().toLowerCase();
+                const roleValue = (row.dataset.role || '').toLowerCase();
 
                 const matchesSearch = !term ||
                     idText.includes(term) ||
                     nameText.includes(term) ||
                     identifierText.includes(term) ||
                     emailText.includes(term);
-                const matchesRole = role === 'semua' || roleText === role;
+                const matchesRole = role === 'semua' || roleValue === role;
                 const visible = matchesSearch && matchesRole;
 
                 row.hidden = !visible;
@@ -701,11 +724,54 @@ $__accessRows = $__user->accessBreakdown();
             if (noResultsRow) {
                 noResultsRow.hidden = !(hasData && visibleCount === 0);
             }
-            if (footerVisibleCount) {
-                footerVisibleCount.textContent = visibleCount;
-            }
+            if (footerVisibleCount) footerVisibleCount.textContent = visibleCount;
+            if (footerTotalCount) footerTotalCount.textContent = Math.max(totalCount, rows.length);
             if (emptyRow) {
                 emptyRow.hidden = hasData;
+            }
+        }
+
+        // ---- Muat SEMUA halaman paginasi ke tabel ----
+        // Server mengirim data per halaman (paginate). Supaya filter & pencarian
+        // mencakup semua pengguna, halaman berikutnya diambil di belakang layar
+        // lalu barisnya ditambahkan ke tabel. (Alternatif lebih ringan: ubah
+        // controller dari ->paginate(n) menjadi ->get(); blok ini otomatis
+        // tidak jalan karena data-next-url kosong.)
+        async function loadRemainingPages() {
+            let nextUrl = tableBody?.dataset.nextUrl || '';
+            if (!nextUrl) return;
+            if (footerLoading) footerLoading.hidden = false;
+            const seen = new Set(Array.from(tableBody.querySelectorAll('tr[data-id]')).map((r) => r.dataset.id));
+
+            try {
+                while (nextUrl) {
+                    // Pakai path relatif supaya aman walau APP_URL beda dengan host yang dipakai
+                    const u = new URL(nextUrl, window.location.href);
+                    const res = await fetch(u.pathname + u.search, {
+                        headers: { 'Accept': 'text/html' },
+                        credentials: 'same-origin',
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+                    const body = doc.getElementById('userTableBody');
+                    if (!body) break;
+
+                    body.querySelectorAll('tr[data-id]').forEach((row) => {
+                        if (seen.has(row.dataset.id)) return;
+                        seen.add(row.dataset.id);
+                        tableBody.insertBefore(document.importNode(row, true), noResultsRow);
+                    });
+                    nextUrl = body.dataset.nextUrl || '';
+                    applyFilters();
+                }
+                // Semua halaman sudah termuat: total = jumlah baris nyata
+                totalCount = tableBody.querySelectorAll('tr[data-id]').length;
+            } catch (err) {
+                console.error('[Data Master] Gagal memuat sisa halaman:', err);
+                window.Toast?.show?.({ type: 'error', title: 'Data belum lengkap', message: 'Sebagian data pengguna gagal dimuat. Muat ulang halaman.' });
+            } finally {
+                if (footerLoading) footerLoading.hidden = true;
+                applyFilters();
             }
         }
 
@@ -769,7 +835,17 @@ $__accessRows = $__user->accessBreakdown();
             document.getElementById('form-name').value = data.name ? decodeURIComponent(data.name) : '';
 
             const role = data.role || 'mahasiswa';
-            SIDA.dropdown.select(document.getElementById('dd-role'), role);
+            // Superadmin: opsi role ditampilkan & dikunci supaya role-nya tidak
+            // terkirim kosong / tidak sengaja turun jadi Admin saat disimpan.
+            const ddRole = document.getElementById('dd-role');
+            const isSuper = role === 'superadmin';
+            const superOpt = ddRole.querySelector('.dropdown-option[data-value="superadmin"]');
+            if (superOpt) superOpt.hidden = !isSuper;
+            const roleTrigger = ddRole.querySelector('.dropdown-trigger');
+            roleTrigger.disabled = isSuper;
+            roleTrigger.style.opacity = isSuper ? '.6' : '';
+            roleTrigger.style.cursor = isSuper ? 'not-allowed' : '';
+            SIDA.dropdown.select(ddRole, role);
             syncIdentifierField(role);
             inputIdentifier.value = data.identifier ? decodeURIComponent(data.identifier) : '';
             document.getElementById('form-email').value = data.email ? decodeURIComponent(data.email) : '';
@@ -837,12 +913,19 @@ $__accessRows = $__user->accessBreakdown();
         // count & noResultsRow ter-update. Jadi kita tulis sendiri.
         function removeRow(id) {
             const row = tableBody.querySelector(`tr[data-id="${id}"]`);
-            if (!row) return;
+            if (!row || row.dataset.removing) return;
+            row.dataset.removing = '1';
             row.classList.add('is-removing');
-            row.addEventListener('transitionend', () => {
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
                 row.remove();
+                totalCount = Math.max(0, totalCount - 1);
                 applyFilters();
-            }, { once: true });
+            };
+            row.addEventListener('transitionend', finish, { once: true });
+            setTimeout(finish, 400); // fallback kalau transitionend tidak terpicu
         }
 
         // ---- Submit form (create / update) — endpoint khusus halaman ini ----
@@ -897,7 +980,10 @@ $__accessRows = $__user->accessBreakdown();
                 }
 
                 if (id) updateRow(result.data);
-                else insertRow(result.data);
+                else {
+                    insertRow(result.data);
+                    totalCount++;
+                }
                 applyFilters();
                 closeModal();
                 Toast.show({
@@ -944,8 +1030,10 @@ $__accessRows = $__user->accessBreakdown();
             if (delBtn) handleDelete(delBtn.dataset.id);
         });
 
-        // Inisialisasi tampilan filter saat halaman pertama kali dimuat
+        // Inisialisasi tampilan filter saat halaman pertama kali dimuat,
+        // lalu muat sisa halaman paginasi di belakang layar.
         applyFilters();
+        loadRemainingPages();
     </script>
     <script src="{{ asset('js/toast.js') }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>

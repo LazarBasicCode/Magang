@@ -83,6 +83,11 @@
             );
 
             this.allNodes.forEach((dropdown) => {
+                // Dropdown yang sudah dikelola halaman (mis. dropdown portal
+                // di modal) ditandai data-bound="1" -> jangan dipasang listener
+                // ganda, kalau tidak klik akan buka lalu langsung tutup.
+                if (dropdown.dataset.bound === "1") return;
+
                 const trigger = dropdown.querySelector(".dropdown-trigger");
                 const valueEl = dropdown.querySelector(".dropdown-value");
                 const hiddenInput = dropdown.querySelector(

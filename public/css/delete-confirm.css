@@ -1,0 +1,123 @@
+/* ==========================================================
+   DELETE CONFIRM — modal 2 langkah (peringatan -> tunggu 3 dtk)
+   Animasi: kecil -> besar -> normal + blur -> jelas (mantul)
+   ========================================================== */
+.dc-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, .4);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s ease, visibility .3s ease,
+                backdrop-filter .35s ease, -webkit-backdrop-filter .35s ease;
+}
+.dc-backdrop.is-active {
+    opacity: 1;
+    visibility: visible;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+body.dark-mode .dc-backdrop { background: rgba(12, 14, 19, .55); }
+
+.dc-card {
+    position: relative;
+    overflow: hidden;
+    width: min(400px, 100%);
+    padding: 26px 24px 28px;
+    border-radius: 18px;
+    text-align: center;
+    color: var(--ink);
+    background-color: var(--modal);
+    border: none;
+    box-shadow: 0 30px 60px -20px rgba(15, 23, 42, .25);
+}
+.dc-card.is-pop { animation: dcPop 520ms cubic-bezier(.34, 1.56, .64, 1) both; }
+
+@keyframes dcPop {
+    0%   { opacity: 0; filter: blur(14px); transform: scale(.6); }
+    55%  { opacity: 1; filter: blur(3px);  transform: scale(1.07); }
+    100% { opacity: 1; filter: blur(0);    transform: scale(1); }
+}
+
+.dc-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 12px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--warning);
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+}
+.dc-icon .material-symbols-outlined { font-size: 28px; }
+.dc-card.is-final .dc-icon {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+}
+
+.dc-title { margin: 0 0 6px; font-size: 17px; font-weight: 800; }
+.dc-text  { margin: 0 0 20px; font-size: 13px; line-height: 1.55; color: var(--ink-muted); }
+.dc-text strong { color: var(--ink); }
+
+.dc-actions { display: flex; gap: 10px; justify-content: center; }
+.dc-btn {
+    height: 36px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: var(--card);
+    color: var(--ink-muted);
+    transition: background-color .3s ease, color .3s ease, border-color .3s ease, transform .15s ease;
+}
+.dc-btn .material-symbols-outlined { font-size: 18px; }
+.dc-btn:active:not(:disabled) { transform: scale(.96); }
+
+.dc-btn--next { color: #fff; background: var(--primary); border-color: var(--primary-dark); }
+.dc-btn--next:hover { background: var(--primary-dark); }
+
+/* terkunci: abu-abu + gembok */
+.dc-btn--next.is-locked,
+.dc-btn--next.is-locked:hover {
+    color: #fff;
+    background: #9ca3af;
+    border-color: #8b929e;
+    cursor: not-allowed;
+}
+/* siap diklik: merah */
+.dc-btn--next.is-danger { background: var(--danger); border-color: var(--danger); }
+.dc-btn--next.is-danger:hover { filter: brightness(.92); }
+.dc-btn--next.is-ready .material-symbols-outlined { animation: dcBtnPop 360ms cubic-bezier(.34, 1.56, .64, 1) both; }
+@keyframes dcBtnPop { from { transform: scale(.4) rotate(-25deg); } to { transform: scale(1) rotate(0); } }
+
+/* garis bawah seperti progress notifikasi */
+.dc-progress {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: var(--danger);
+    opacity: .8;
+    transform-origin: left center;
+    transform: scaleX(0);
+    visibility: hidden;
+}
+.dc-progress.is-run { visibility: visible; animation: dcProgress 3000ms linear forwards; }
+@keyframes dcProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .dc-card.is-pop, .dc-btn--next.is-ready .material-symbols-outlined { animation: none; }
+}

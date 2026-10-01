@@ -15,10 +15,21 @@
 </head>
 
 <body>
+    <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
+    <svg class="svg-defs" aria-hidden="true" focusable="false">
+        <defs>
+            <symbol id="sida-mark" viewBox="0 0 48 48">
+                <clipPath id="sidaClip"><circle cx="24" cy="24" r="22.5"/></clipPath>
+                <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)"/>
+                <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/>
+            </symbol>
+        </defs>
+    </svg>
+
     <!-- ============ SIDEBAR ============ -->
     <aside class="app-sidebar">
         <div class="sidebar-brand">
-            <img alt="Logo Institut Asia Malang" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1NafrqE7zgk-MH1bALr-Reu0A8mdjdxELfqfal7zRbOhhfEIbOmwIbrIyTQ764kiX0m5p2hWwUHXmKm2zaoFulJno38GSAJ5DhTUwy5_WMdCi720dka9D3yD_wuZ4wopDiMy_BjOoGK54bVjLP0NiywfI7nL86YI3HsKPXmFlj6hlF4BI5Q8DjXt2aNUOYoU8edBrCcGb0bvA9InhKCQe5cw8H4DHhon4G7_Ydrd9AwmAQnrtYnFjTg" />
+            <svg class="sidebar-brand-mark" aria-hidden="true"><use href="#sida-mark"/></svg>
             <div class="sidebar-brand-text">
                 <span class="sidebar-brand-title">SIDA</span>
                 <span class="sidebar-brand-sub">Institut Asia Malang</span>

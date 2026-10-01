@@ -11,7 +11,7 @@
 .pa-modal {
     position: absolute; left: 50%; top: 50%;
     width: 420px; max-width: calc(100vw - 32px);
-    background: var(--card, #fff); color: var(--text, #12204a);
+    background: var(--card, #fff); color: #06032b;
     border: 1px solid var(--border, #dde1f1); border-radius: 16px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, .28);
     transform: translate(-50%, -46%) scale(.96); transition: transform .22s cubic-bezier(.22, 1, .36, 1);
@@ -65,5 +65,5 @@
 .pa-btn[disabled] { opacity: .6; cursor: progress; }
 
 @keyframes paShake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-body.dark-mode .pa-modal { box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
+body.dark-mode .pa-modal { box-shadow: 0 24px 60px rgba(0, 0, 0, .6); color: #ffffff; }
 @media (max-width: 480px) { .pa-modal { top: 40%; } }

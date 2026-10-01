@@ -42,9 +42,12 @@
         },
 
         esc(str) {
-            const div = document.createElement("div");
-            div.textContent = str ?? "";
-            return div.innerHTML;
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
         },
 
         initials(name) {
@@ -110,8 +113,12 @@
                         option.classList.add("is-selected");
                         if (valueEl)
                             valueEl.textContent = option.textContent.trim();
-                        if (hiddenInput)
+                        if (hiddenInput) {
                             hiddenInput.value = option.dataset.value;
+                            hiddenInput.dispatchEvent(
+                                new Event("change", { bubbles: true }),
+                            );
+                        }
                         dropdown.classList.remove("is-open");
                     });
                 });
@@ -407,13 +414,12 @@
             }
 
             dropdownFilterIds.forEach((id) => {
-                const input = document.getElementById(id);
-                const dropdownEl = input?.closest("[data-dropdown]");
-                dropdownEl
-                    ?.querySelectorAll(".dropdown-option")
-                    .forEach((opt) => {
-                        opt.addEventListener("click", () => applyFilters());
-                    });
+                // Dengarkan 'change' dari hidden input (dipicu SIDA.dropdown
+                // SETELAH nilainya diperbarui), bukan klik opsi: urutan
+                // listener klik tidak terjamin dan bikin filter telat 1 langkah.
+                document
+                    .getElementById(id)
+                    ?.addEventListener("change", () => applyFilters());
             });
 
             let searchDebounce;

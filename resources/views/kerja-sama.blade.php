@@ -469,13 +469,13 @@
                                                 data-user_id="{{ $item->user_id }}"
                                                 data-tipe_user="{{ $item->tipe_user }}"
                                                 data-jenis="{{ $item->jenis }}"
-                                                data-jenis_lainnya="{{ urlencode($item->jenis_lainnya ?? '') }}"
+                                                data-jenis_lainnya="{{ $item->jenis_lainnya ?? '' }}"
                                                 data-arah="{{ $item->arah }}"
-                                                data-mitra="{{ urlencode($item->mitra) }}"
-                                                data-judul_kegiatan="{{ urlencode($item->judul_kegiatan) }}"
+                                                data-mitra="{{ $item->mitra }}"
+                                                data-judul_kegiatan="{{ $item->judul_kegiatan }}"
                                                 data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
                                                 data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
-                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}">
+                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
@@ -1188,16 +1188,16 @@
             selectDropdownValue(document.getElementById('dd-jenis'), jenis);
             updateConditionalFields(jenis);
             syncFormJenisOptions();
-            document.getElementById('form-jenis_lainnya').value = data.jenis_lainnya ? decodeURIComponent(data.jenis_lainnya) : '';
+            document.getElementById('form-jenis_lainnya').value = data.jenis_lainnya || '';
 
             selectDropdownValue(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');
 
-            document.getElementById('form-judul_kegiatan').value = data.judul_kegiatan ? decodeURIComponent(data.judul_kegiatan) : '';
-            document.getElementById('form-mitra').value = data.mitra ? decodeURIComponent(data.mitra) : '';
+            document.getElementById('form-judul_kegiatan').value = data.judul_kegiatan || '';
+            document.getElementById('form-mitra').value = data.mitra || '';
             dpMulai.setValue(data.tanggal_mulai || '');
             dpSelesai.setMinDate(data.tanggal_mulai || null);
             dpSelesai.setValue(data.tanggal_selesai || '');
-            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
 
             openModalBase();
         }
@@ -1290,11 +1290,11 @@
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
-                            data-jenis="${item.jenis}" data-jenis_lainnya="${encodeURIComponent(item.jenis_lainnya || '')}" data-arah="${item.arah || ''}"
-                            data-mitra="${encodeURIComponent(item.mitra)}"
-                            data-judul_kegiatan="${encodeURIComponent(item.judul_kegiatan)}"
+                            data-jenis="${item.jenis}" data-jenis_lainnya="${esc(item.jenis_lainnya || '')}" data-arah="${item.arah || ''}"
+                            data-mitra="${esc(item.mitra)}"
+                            data-judul_kegiatan="${esc(item.judul_kegiatan)}"
                             data-tanggal_mulai="${item.tanggal_mulai}" data-tanggal_selesai="${item.tanggal_selesai}"
-                            data-bukti_kegiatan="${encodeURIComponent(item.bukti_kegiatan)}">
+                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">

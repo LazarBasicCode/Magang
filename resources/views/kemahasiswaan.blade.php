@@ -366,11 +366,19 @@
                             </div>
                         </div>
                         <div class="field">
+                            @php $tsYear = now()->year; @endphp
                             <label class="field-label">Tahun Akademik</label>
-                            <div class="field-locked">
-                                <div class="field-locked-inner">
-                                    <span class="material-symbols-outlined">lock</span>
-                                    <span class="field-locked-value">2026</span>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-tahun" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Tahun</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Tahun</button>
+                                    <button type="button" class="dropdown-option" data-value="{{ $tsYear }}">TS ({{ $tsYear }})</button>
+                                    <button type="button" class="dropdown-option" data-value="{{ $tsYear - 1 }}">TS-1 ({{ $tsYear - 1 }})</button>
+                                    <button type="button" class="dropdown-option" data-value="{{ $tsYear - 2 }}">TS-2 ({{ $tsYear - 2 }})</button>
                                 </div>
                             </div>
                         </div>
@@ -422,7 +430,7 @@
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 $avatarColor = $colors[$item->mahasiswa_id % count($colors)];
                                 @endphp
-                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tab="{{ $item->tab }}" data-tingkat="{{ $item->tingkat }}">
+                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tab="{{ $item->tab }}" data-tingkat="{{ $item->tingkat }}" data-tahun="{{ $item->tahun }}">
                                     <td><span class="nim-code">{{ $item->mahasiswa->nim ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
@@ -455,8 +463,8 @@
                                                 data-tab="{{ $item->tab }}"
                                                 data-tingkat="{{ $item->tingkat }}"
                                                 data-tahun="{{ $item->tahun }}"
-                                                data-nama_kegiatan="{{ urlencode($item->nama_kegiatan) }}"
-                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}">
+                                                data-nama_kegiatan="{{ $item->nama_kegiatan }}"
+                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
@@ -644,7 +652,7 @@
         // ---- Bangun HTML baris tabel dari data JSON (khusus halaman ini) ----
         function buildRowHTML(item) {
             return `
-            <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tab="${item.tab}" data-tingkat="${item.tingkat}">
+            <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tab="${item.tab}" data-tingkat="${item.tingkat}" data-tahun="${item.tahun}">
                 <td><span class="nim-code">${esc(item.nim)}</span></td>
                 <td>
                     <div class="student-cell">
@@ -667,8 +675,8 @@
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-mahasiswa_id="${item.mahasiswa_id}" data-jenis="${item.jenis}"
                             data-tab="${item.tab}" data-tingkat="${item.tingkat}" data-tahun="${item.tahun}"
-                            data-nama_kegiatan="${encodeURIComponent(item.nama_kegiatan)}"
-                            data-bukti_kegiatan="${encodeURIComponent(item.bukti_kegiatan)}">
+                            data-nama_kegiatan="${esc(item.nama_kegiatan)}"
+                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -687,18 +695,20 @@
         // ---- Live filter (khusus halaman ini: 3 dropdown + search) ----
         const applyFilters = SIDA.filter.setup({
             tableBody,
-            dropdownFilterIds: ['filter-jenis', 'filter-tab', 'filter-tingkat'],
+            dropdownFilterIds: ['filter-jenis', 'filter-tab', 'filter-tingkat', 'filter-tahun'],
             searchInputId: 'filter-search',
             matches: (row) => {
                 const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
                 const tabVal = document.getElementById('filter-tab')?.value || 'semua';
                 const tingkatVal = document.getElementById('filter-tingkat')?.value || 'semua';
+                const tahunVal = document.getElementById('filter-tahun')?.value || 'semua';
                 const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
                 const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
                 const matchesTab = tabVal === 'semua' || row.dataset.tab === tabVal;
                 const matchesTingkat = tingkatVal === 'semua' || row.dataset.tingkat === tingkatVal;
+                const matchesTahun = tahunVal === 'semua' || row.dataset.tahun === tahunVal;
                 const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                return matchesJenis && matchesTab && matchesTingkat && matchesSearch;
+                return matchesJenis && matchesTab && matchesTingkat && matchesTahun && matchesSearch;
             },
             emptyMessage: 'Tidak ada data yang cocok dengan filter.',
         });
@@ -729,8 +739,8 @@
             SIDA.dropdown.select(document.getElementById('dd-tingkat'), data.tingkat || 'lokal');
 
             document.getElementById('form-tahun').value = data.tahun || 2026;
-            document.getElementById('form-nama_kegiatan').value = data.nama_kegiatan ? decodeURIComponent(data.nama_kegiatan) : '';
-            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+            document.getElementById('form-nama_kegiatan').value = data.nama_kegiatan || '';
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
 
             openModalBase();
         }

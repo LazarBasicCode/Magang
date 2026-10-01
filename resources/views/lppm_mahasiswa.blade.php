@@ -393,12 +393,12 @@
                                                 data-id="{{ $item->id }}"
                                                 data-mahasiswa_id="{{ $item->mahasiswa_id }}"
                                                 data-jenis="{{ $item->jenis }}"
-                                                data-judul="{{ urlencode($item->judul) }}"
-                                                data-penulis="{{ urlencode($item->penulis) }}"
-                                                data-nama_jurnal="{{ urlencode($item->nama_jurnal ?? '') }}"
-                                                data-peringkat="{{ urlencode($item->peringkat ?? '') }}"
-                                                data-link_doi="{{ urlencode($item->link_doi ?? '') }}"
-                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}"
+                                                data-judul="{{ $item->judul }}"
+                                                data-penulis="{{ $item->penulis }}"
+                                                data-nama_jurnal="{{ $item->nama_jurnal ?? '' }}"
+                                                data-peringkat="{{ $item->peringkat ?? '' }}"
+                                                data-link_doi="{{ $item->link_doi ?? '' }}"
+                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}"
                                                 data-tahun="{{ $item->tahun }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
@@ -624,11 +624,11 @@
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-mahasiswa_id="${item.mahasiswa_id}" data-jenis="${item.jenis}"
-                            data-judul="${encodeURIComponent(item.judul)}" data-penulis="${encodeURIComponent(item.penulis)}"
-                            data-nama_jurnal="${encodeURIComponent(item.nama_jurnal || '')}"
-                            data-peringkat="${encodeURIComponent(item.peringkat || '')}"
-                            data-link_doi="${encodeURIComponent(item.link_doi || '')}"
-                            data-bukti_kegiatan="${encodeURIComponent(item.bukti_kegiatan)}" data-tahun="${item.tahun}">
+                            data-judul="${esc(item.judul)}" data-penulis="${esc(item.penulis)}"
+                            data-nama_jurnal="${esc(item.nama_jurnal || '')}"
+                            data-peringkat="${esc(item.peringkat || '')}"
+                            data-link_doi="${esc(item.link_doi || '')}"
+                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}" data-tahun="${item.tahun}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -678,12 +678,12 @@
             updateConditionalFields(jenis);
 
             document.getElementById('form-tahun').value = data.tahun || 2026;
-            document.getElementById('form-judul').value = data.judul ? decodeURIComponent(data.judul) : '';
-            document.getElementById('form-penulis').value = data.penulis ? decodeURIComponent(data.penulis) : '';
-            document.getElementById('form-nama_jurnal').value = data.nama_jurnal ? decodeURIComponent(data.nama_jurnal) : '';
-            document.getElementById('form-peringkat').value = data.peringkat ? decodeURIComponent(data.peringkat) : '';
-            document.getElementById('form-link_doi').value = data.link_doi ? decodeURIComponent(data.link_doi) : '';
-            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
+            document.getElementById('form-judul').value = data.judul || '';
+            document.getElementById('form-penulis').value = data.penulis || '';
+            document.getElementById('form-nama_jurnal').value = data.nama_jurnal || '';
+            document.getElementById('form-peringkat').value = data.peringkat || '';
+            document.getElementById('form-link_doi').value = data.link_doi || '';
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
 
             openModalBase();
         }

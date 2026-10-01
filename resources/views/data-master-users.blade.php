@@ -407,10 +407,10 @@ $__accessRows = $__user->accessBreakdown();
                                         <div class="row-actions">
                                             <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                                                 data-id="{{ $item->id }}"
-                                                data-name="{{ urlencode($item->name) }}"
+                                                data-name="{{ $item->name }}"
                                                 data-role="{{ $item->role }}"
-                                                data-identifier="{{ urlencode($identifier ?? '') }}"
-                                                data-email="{{ urlencode($item->email ?? '') }}">
+                                                data-identifier="{{ $identifier ?? '' }}"
+                                                data-email="{{ $item->email ?? '' }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
@@ -842,7 +842,7 @@ $__accessRows = $__user->accessBreakdown();
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Pengguna' : 'Tambah Pengguna';
 
-            document.getElementById('form-name').value = data.name ? decodeURIComponent(data.name) : '';
+            document.getElementById('form-name').value = data.name || '';
 
             const role = data.role || 'mahasiswa';
             // Superadmin: opsi role ditampilkan & dikunci supaya role-nya tidak
@@ -857,8 +857,8 @@ $__accessRows = $__user->accessBreakdown();
             roleTrigger.style.cursor = isSuper ? 'not-allowed' : '';
             SIDA.dropdown.select(ddRole, role);
             syncIdentifierField(role);
-            inputIdentifier.value = data.identifier ? decodeURIComponent(data.identifier) : '';
-            document.getElementById('form-email').value = data.email ? decodeURIComponent(data.email) : '';
+            inputIdentifier.value = data.identifier || '';
+            document.getElementById('form-email').value = data.email || '';
 
             document.getElementById('form-password').value = '';
             document.getElementById('form-password').required = mode !== 'edit';
@@ -904,9 +904,9 @@ $__accessRows = $__user->accessBreakdown();
                 <td class="center">
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                            data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" data-role="${item.role}"
-                            data-identifier="${encodeURIComponent(item.identifier || '')}"
-                            data-email="${encodeURIComponent(item.email || '')}">
+                            data-id="${item.id}" data-name="${esc(item.name)}" data-role="${item.role}"
+                            data-identifier="${esc(item.identifier || '')}"
+                            data-email="${esc(item.email || '')}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -1039,11 +1039,7 @@ $__accessRows = $__user->accessBreakdown();
             if (editBtn) return openModal('edit', editBtn.dataset);
             const delBtn = e.target.closest('.btn-delete-row');
             if (delBtn) {
-                let name = '';
-                try {
-                    const raw = delBtn.closest('tr')?.querySelector('.btn-edit-row')?.dataset.name || '';
-                    name = decodeURIComponent(raw.replace(/\+/g, ' '));
-                } catch (_) {}
+                const name = delBtn.closest('tr')?.querySelector('.btn-edit-row')?.dataset.name || '';
                 handleDelete(delBtn.dataset.id, name);
             }
         });

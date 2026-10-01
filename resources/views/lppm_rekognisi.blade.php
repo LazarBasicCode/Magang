@@ -409,12 +409,12 @@
                                                 data-id="{{ $item->id }}"
                                                 data-user_id="{{ $item->user_id }}"
                                                 data-jenis="{{ $item->jenis }}"
-                                                data-mitra="{{ urlencode($item->mitra) }}"
-                                                data-jabatan="{{ urlencode($item->jabatan ?? '') }}"
+                                                data-mitra="{{ $item->mitra }}"
+                                                data-jabatan="{{ $item->jabatan ?? '' }}"
                                                 data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
                                                 data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
-                                                data-bukti_kegiatan="{{ urlencode($item->bukti_kegiatan) }}"
-                                                data-bukti_tambahan="{{ urlencode($item->bukti_tambahan ?? '') }}">
+                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}"
+                                                data-bukti_tambahan="{{ $item->bukti_tambahan ?? '' }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
@@ -915,12 +915,12 @@
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-user_id="${item.user_id}" data-jenis="${item.jenis}"
-                            data-mitra="${encodeURIComponent(item.mitra)}"
-                            data-jabatan="${encodeURIComponent(item.jabatan || '')}"
+                            data-mitra="${esc(item.mitra)}"
+                            data-jabatan="${esc(item.jabatan || '')}"
                             data-tanggal_mulai="${item.tanggal_mulai || ''}"
                             data-tanggal_selesai="${item.tanggal_selesai || ''}"
-                            data-bukti_kegiatan="${encodeURIComponent(item.bukti_kegiatan)}"
-                            data-bukti_tambahan="${encodeURIComponent(item.bukti_tambahan || '')}">
+                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}"
+                            data-bukti_tambahan="${esc(item.bukti_tambahan || '')}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -978,13 +978,13 @@
             SIDA.dropdown.select(document.getElementById('dd-jenis'), jenis);
             updateConditionalFields(jenis);
 
-            document.getElementById('form-mitra').value = data.mitra ? decodeURIComponent(data.mitra) : '';
-            document.getElementById('form-jabatan').value = data.jabatan ? decodeURIComponent(data.jabatan) : '';
+            document.getElementById('form-mitra').value = data.mitra || '';
+            document.getElementById('form-jabatan').value = data.jabatan || '';
             dpMulai.setValue(data.tanggal_mulai || '');
             dpSelesai.setMinDate(data.tanggal_mulai || null);
             dpSelesai.setValue(data.tanggal_selesai || '');
-            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan ? decodeURIComponent(data.bukti_kegiatan) : '';
-            document.getElementById('form-bukti_tambahan').value = data.bukti_tambahan ? decodeURIComponent(data.bukti_tambahan) : '';
+            document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
+            document.getElementById('form-bukti_tambahan').value = data.bukti_tambahan || '';
 
             openModalBase();
         }

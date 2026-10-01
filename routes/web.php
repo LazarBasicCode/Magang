@@ -37,9 +37,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/account/recovery-email', [AccountController::class, 'updateRecoveryEmail'])->name('account.recovery-email');
 
     // ---- Dashboard ----
-    Route::middleware('menu.access:dashboard,readonly')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-    });
+    // Terbuka untuk semua user yang login (tidak diatur lewat Hak Akses).
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
     // ---- Kemahasiswaan ----
     Route::middleware('menu.access:kemahasiswaan,readonly')->group(function () {

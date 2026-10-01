@@ -64,7 +64,6 @@ class DataSeeder extends Seeder
             // Hak Akses default untuk mahasiswa
             // ---------------------------------
             // Mengikuti HakAkses::defaultsForRole('mahasiswa'):
-            //   dashboard       => biasa
             //   kemahasiswaan   => biasa
             //   lppm_mahasiswa  => biasa
             //   lppm_dosen      => none

@@ -13,10 +13,9 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
-    <link rel="stylesheet" href="{{ asset('css/profile-account.css') }}?v={{ @filemtime(public_path('css/profile-account.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/laporan.css') }}?v={{ @filemtime(public_path('css/laporan.css')) }}">
-    <link rel="stylesheet" href="{{ asset('css/dash-stars.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ @filemtime(public_path('css/dashboard.css')) }}">
     <title>Dashboard {{ $meta['title'] }} &middot; SIDA</title>
 </head>
 
@@ -47,12 +46,10 @@
 
         <nav class="sidebar-nav">
             <div class="nav-group">
-                @if($__user->canAccessMenu('dashboard'))
                 <a href="{{ url('/dashboard') }}" aria-current="page" class="nav-link is-active">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
-                @endif
 
                 @if($__user->canAccessMenu('kemahasiswaan'))
                 <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
@@ -184,7 +181,7 @@
                                 <div class="header-profile-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
                                 <div class="header-profile-text">
                                     <span class="header-profile-name">{{ $__user->name }}</span>
-                                    <span class="header-profile-role">{{ $__user->accessLabelFor('dashboard') }}</span>
+                                    <span class="header-profile-role">{{ $__user->accessLabelFor() }}</span>
                                 </div>
                                 <span class="material-symbols-outlined header-profile-caret">expand_more</span>
                             </button>
@@ -196,7 +193,7 @@
                                         <div class="header-profile-panel-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
                                         <div>
                                             <span class="header-profile-panel-name">{{ $__user->name }}</span>
-                                            <span class="header-profile-panel-role">{{ $__user->accessLabelFor('dashboard') }}</span>
+                                            <span class="header-profile-panel-role">{{ $__user->accessLabelFor() }}</span>
                                         </div>
                                     </div>
                                     <div class="header-profile-menu">

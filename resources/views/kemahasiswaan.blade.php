@@ -46,12 +46,10 @@
 
         <nav class="sidebar-nav">
             <div class="nav-group">
-                @if($__user->canAccessMenu('dashboard'))
                 <a href="{{ url('/dashboard') }}" class="nav-link">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span>Dashboard</span>
                 </a>
-                @endif
 
                 @if($__user->canAccessMenu('kemahasiswaan'))
                 <a href="{{ url('/kemahasiswaan') }}" aria-current="page" class="nav-link is-active">

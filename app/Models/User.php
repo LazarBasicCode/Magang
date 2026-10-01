@@ -168,9 +168,10 @@ class User extends Authenticatable
      *   berikan, bukan cuma teks statis "Admin".
      * - role lain (superadmin/dosen/mahasiswa) -> label peran biasa.
      */
-    public function accessLabelFor(string $menu): string
+    public function accessLabelFor(?string $menu = null): string
     {
-        if ($this->menuLevel($menu) === 'readonly') {
+        // $menu null = halaman tanpa menu hak akses (mis. dashboard).
+        if ($menu !== null && $this->menuLevel($menu) === 'readonly') {
             return 'Pratinjau · Hanya Lihat';
         }
 

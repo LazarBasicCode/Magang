@@ -62,6 +62,11 @@ class LppmDosenController extends Controller
     {
         $this->authorizeOwnership($request, $lppmDosen);
 
+        // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
+
+        $request->merge(['dosen_id' => $lppmDosen->dosen_id]);
+
+
         $data = $this->validated($request);
         $this->enforceOwnDosen($request, $data);
 

@@ -563,6 +563,36 @@
         autoInit();
     }
 
+    // Kunci field "nama pemilik data" (dropdown mahasiswa/dosen/user) saat modal mode Edit.
+    // Pemakaian (SETELAH SIDA.dropdown.select): SIDA.ownerLock(dropdownEl, mode === 'edit')
+    SIDA.ownerLock = function (dropdownEl, locked) {
+        if (!dropdownEl || !dropdownEl.parentElement) return;
+        const parent = dropdownEl.parentElement;
+        let box = parent.querySelector(".field-locked[data-owner-lock]");
+
+        if (!locked) {
+            if (box) box.remove();
+            dropdownEl.style.display = "";
+            return;
+        }
+
+        if (!box) {
+            box = document.createElement("div");
+            box.className = "field-locked";
+            box.setAttribute("data-owner-lock", "");
+            box.innerHTML =
+                '<div class="field-locked-inner">' +
+                '<span class="material-symbols-outlined">lock</span>' +
+                '<span class="field-locked-value"></span></div>';
+            parent.appendChild(box);
+        }
+        const label = dropdownEl.querySelector(".dropdown-value");
+        box.querySelector(".field-locked-value").textContent = label
+            ? label.textContent.trim()
+            : "";
+        dropdownEl.style.display = "none";
+    };
+
     window.SIDA = SIDA;
 })(window, document);
 

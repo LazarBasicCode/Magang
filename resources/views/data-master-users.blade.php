@@ -13,9 +13,8 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
-    <link rel="stylesheet" href="{{ asset('css/profile-account.css') }}?v={{ @filemtime(public_path('css/profile-account.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
-    <link rel="stylesheet" href="{{ asset('css/skeleton.css') }}?v={{ @filemtime(public_path('css/skeleton.css')) }}">
     <title>Data Master Pengguna &middot; SIDA</title>
 </head>
 
@@ -1011,8 +1010,9 @@ $__accessRows = $__user->accessBreakdown();
         });
 
         // ---- Delete — endpoint khusus halaman ini ----
-        async function handleDelete(id) {
-            if (!confirm('Hapus data pengguna ini? Tindakan tidak bisa dibatalkan.')) return;
+        async function handleDelete(id, name) {
+            const ok = await DeleteConfirm.ask({ name, entity: 'user' });
+            if (!ok) return;
             try {
                 const res = await fetch(`/data-master/users/${id}`, {
                     method: 'DELETE',
@@ -1038,7 +1038,14 @@ $__accessRows = $__user->accessBreakdown();
             const editBtn = e.target.closest('.btn-edit-row');
             if (editBtn) return openModal('edit', editBtn.dataset);
             const delBtn = e.target.closest('.btn-delete-row');
-            if (delBtn) handleDelete(delBtn.dataset.id);
+            if (delBtn) {
+                let name = '';
+                try {
+                    const raw = delBtn.closest('tr')?.querySelector('.btn-edit-row')?.dataset.name || '';
+                    name = decodeURIComponent(raw.replace(/\+/g, ' '));
+                } catch (_) {}
+                handleDelete(delBtn.dataset.id, name);
+            }
         });
 
         // Inisialisasi tampilan filter saat halaman pertama kali dimuat,
@@ -1046,7 +1053,8 @@ $__accessRows = $__user->accessBreakdown();
         applyFilters();
         loadRemainingPages();
     </script>
-    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/delete-confirm.js') }}?v={{ @filemtime(public_path('js/delete-confirm.js')) }}"></script>
+    <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
     <script>

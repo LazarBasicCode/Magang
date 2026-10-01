@@ -1,5 +1,6 @@
 /* ==========================================================
-   DeleteConfirm.ask({ name }) -> Promise<boolean>
+   DeleteConfirm.ask({ name, entity }) -> Promise<boolean>
+   entity: 'user' (default untuk akun pengguna) | 'data' (data biasa)
    Langkah 1: peringatan + [Lanjutkan]
    Langkah 2: peringatan lagi, tombol terkunci 3 dtk (garis progress)
    ========================================================== */
@@ -54,13 +55,18 @@
         els.next.innerHTML = `<span class="material-symbols-outlined">${icon}</span>${label}`;
     }
 
+    function subject(name) {
+        const who = currentEntity === 'user' ? 'akun' : 'data';
+        return name ? `${who} <strong>${esc(name)}</strong>` : `${who} ini`;
+    }
+
     function showStep1(name) {
         step = 1;
         clearTimeout(timer);
         els.card.classList.remove('is-final');
         els.icon.textContent = 'warning';
-        els.title.textContent = 'Penghapusan pengguna dilarang';
-        els.text.innerHTML = `Menghapus akun <strong>${esc(name)}</strong> tidak diperbolehkan kecuali benar-benar diperlukan dan sudah disetujui. Lanjutkan hanya jika Anda yakin.`;
+        els.title.textContent = currentEntity === 'user' ? 'Penghapusan pengguna dilarang' : 'Penghapusan data dilarang';
+        els.text.innerHTML = `Menghapus ${subject(name)} tidak diperbolehkan kecuali benar-benar diperlukan dan sudah disetujui. Lanjutkan hanya jika Anda yakin.`;
         els.next.disabled = false;
         els.next.className = 'dc-btn dc-btn--next';
         setNext('arrow_forward', 'Lanjutkan');
@@ -73,7 +79,7 @@
         els.card.classList.add('is-final');
         els.icon.textContent = 'block';
         els.title.textContent = 'Tindakan ini permanen';
-        els.text.innerHTML = `Akun <strong>${esc(name)}</strong> beserta datanya akan dihapus dan <strong>tidak bisa dikembalikan</strong>. Tombol hapus aktif setelah 3 detik.`;
+        els.text.innerHTML = `${currentEntity === 'user' ? 'Akun' : 'Data'} ${name ? '<strong>' + esc(name) + '</strong> ' : 'ini '}akan dihapus permanen dan <strong>tidak bisa dikembalikan</strong>. Tombol hapus aktif setelah 3 detik.`;
         els.next.disabled = true;
         els.next.className = 'dc-btn dc-btn--next is-locked';
         setNext('lock', 'Hapus');
@@ -89,7 +95,7 @@
         }, WAIT_MS);
     }
 
-    let currentName = '';
+    let currentName = '', currentEntity = 'user';
     function onNext() {
         if (els.next.disabled) return;
         if (step === 1) showStep2(currentName);
@@ -106,10 +112,11 @@
     }
 
     window.DeleteConfirm = {
-        ask({ name } = {}) {
+        ask({ name, entity = 'user' } = {}) {
             build();
             if (resolver) finish(false);
-            currentName = name || 'ini';
+            currentName = name || '';
+            currentEntity = entity;
             lastFocus = document.activeElement;
             els.backdrop.classList.add('is-active');
             showStep1(currentName);

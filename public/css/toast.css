@@ -13,7 +13,8 @@
     z-index: 9999;
     display: flex;
     flex-direction: column-reverse; /* item terbaru ditambahkan di akhir DOM = muncul paling atas visual */
-    gap: 0.6em;
+    --toast-gap: 10px;
+    gap: var(--toast-gap);
     max-width: min(92vw, 360px);
     pointer-events: none; /* biar area kosong di sekitar toast tidak menghalangi klik ke halaman */
 }
@@ -25,6 +26,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 0.85em;
+    box-sizing: border-box;
     overflow: hidden;
     padding: 12px 14px;
     border-radius: 12px;
@@ -35,6 +37,7 @@
     font-size: 0.85em;
     will-change: transform, opacity, filter;
     transform-origin: bottom right;
+    transition: transform 180ms ease;
 }
 
 /* ---------- Animasi masuk: kanan -> kiri, kecil -> besar, blur -> normal, atas -> bawah, digabung jadi satu ---------- */
@@ -58,32 +61,41 @@
     animation: toastEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* ---------- Animasi keluar (auto-dismiss / ditutup manual) ---------- */
+/* ---------- Animasi keluar (auto-dismiss / ditutup manual) ----------
+   Fase 1 (0-50%)  : toast memudar, geser ke kanan, blur.
+   Fase 2 (50-100%): tinggi toast menutup (pakai tinggi ASLI lewat --toast-h
+                     yang diisi JS), sehingga toast lain turun mulus tanpa loncat. */
 @keyframes toastExit {
     0% {
         opacity: 1;
         transform: translateX(0) scale(1);
         filter: blur(0);
-        max-height: 120px;
+        max-height: var(--toast-h, 120px);
+        padding-top: 12px;
+        padding-bottom: 12px;
         margin-top: 0;
     }
-    60% {
+    50% {
         opacity: 0;
-        transform: translateX(30px) scale(0.92);
+        transform: translateX(34px) scale(0.92);
         filter: blur(4px);
+        max-height: var(--toast-h, 120px);
+        padding-top: 12px;
+        padding-bottom: 12px;
+        margin-top: 0;
     }
     100% {
         opacity: 0;
-        transform: translateX(30px) scale(0.92);
+        transform: translateX(34px) scale(0.92);
         filter: blur(4px);
         max-height: 0;
         padding-top: 0;
         padding-bottom: 0;
-        margin-top: -0.6em; /* menutup gap flex supaya toast di bawahnya rapat naik */
+        margin-top: calc(var(--toast-gap) * -1); /* menutup gap flex supaya toast di bawahnya rapat naik */
     }
 }
 .toast-item.is-leaving {
-    animation: toastExit 320ms cubic-bezier(0.4, 0, 1, 1) both;
+    animation: toastExit 380ms cubic-bezier(0.4, 0, 0.2, 1) both;
     pointer-events: none;
 }
 
@@ -95,7 +107,8 @@
     filter: blur(2px);
 }
 
-.toast-item:hover { transform: scale(1.015); }
+/* Hover hanya aktif saat toast diam, supaya tidak bentrok dengan animasi masuk/keluar/geser */
+.toast-item:not(.is-entering):not(.is-leaving):not(.is-shifting):hover { transform: scale(1.015); }
 
 .toast-icon {
     display: flex;
@@ -144,7 +157,7 @@
     height: 2px;
     width: 100%;
     transform: translateX(-100%);
-    animation: toastProgress 5000ms linear forwards;
+    animation: toastProgress var(--toast-duration, 5000ms) linear forwards;
 }
 @keyframes toastProgress {
     0% { transform: translateX(-100%); }
@@ -176,6 +189,17 @@ body.dark-mode .toast-item.t-info, [data-theme="dark"] .toast-item.t-info { back
 body.dark-mode .toast-item.t-warning, [data-theme="dark"] .toast-item.t-warning { background-color: rgba(245, 159, 11, .16); color: #fcd34d; }
 body.dark-mode .toast-item.t-error, [data-theme="dark"] .toast-item.t-error { background-color: rgba(239, 68, 68, .16); color: #fca5a5; }
 body.dark-mode .toast-close:hover, [data-theme="dark"] .toast-close:hover { background-color: rgba(255, 255, 255, .1); }
+
+@media (prefers-reduced-motion: reduce) {
+    .toast-item.is-entering { animation: toastEnterReduced 150ms ease both; }
+    .toast-item.is-leaving  { animation: toastExitReduced 150ms ease both; }
+    .toast-item.is-shifting { transition: none; }
+}
+@keyframes toastEnterReduced { from { opacity: 0; } to { opacity: 1; } }
+@keyframes toastExitReduced {
+    from { opacity: 1; max-height: var(--toast-h, 120px); }
+    to   { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: calc(var(--toast-gap) * -1); }
+}
 
 @media (max-width: 480px) {
     .toast-container { right: 10px; bottom: 10px; left: 10px; max-width: none; }

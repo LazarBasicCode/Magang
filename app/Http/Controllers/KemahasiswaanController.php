@@ -69,6 +69,11 @@ class KemahasiswaanController extends Controller
     {
         $this->authorizeOwnership($request, $kemahasiswaan);
 
+        // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
+
+        $request->merge(['mahasiswa_id' => $kemahasiswaan->mahasiswa_id]);
+
+
         $data = $this->validated($request);
         $this->enforceOwnMahasiswa($request, $data);
 

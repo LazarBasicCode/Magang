@@ -62,6 +62,11 @@ class LppmMahasiswaController extends Controller
     {
         $this->authorizeOwnership($request, $lppmMahasiswa);
 
+        // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
+
+        $request->merge(['mahasiswa_id' => $lppmMahasiswa->mahasiswa_id]);
+
+
         $data = $this->validated($request);
         $this->enforceOwnMahasiswa($request, $data);
 

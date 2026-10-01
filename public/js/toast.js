@@ -134,7 +134,7 @@
         // Auto-dismiss dimatikan sementara (buat keperluan inspect elemen
         // di DevTools). Toast sekarang cuma hilang kalau tombol close (x)
         // diklik manual. Buat aktifin lagi, un-comment baris di bawah ini:
-        // el._toastTimer = setTimeout(() => dismiss(el), duration);
+        el._toastTimer = setTimeout(() => dismiss(el), duration);
 
         return el;
     }

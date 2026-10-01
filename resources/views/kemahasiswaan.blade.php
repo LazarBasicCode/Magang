@@ -13,6 +13,7 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/profile-account.css') }}?v={{ @filemtime(public_path('css/profile-account.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
     <title>Kemahasiswaan &middot; SIDA</title>
 </head>
@@ -811,6 +812,7 @@
         });
     </script>
     <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms

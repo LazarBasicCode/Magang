@@ -536,17 +536,7 @@
                 if (e.key === "Escape") closePanel();
             });
 
-            // Placeholder UI-only: belum ada endpoint di baliknya.
-            document
-                .getElementById("btnGantiPassword")
-                ?.addEventListener("click", () => {
-                    alert("Fitur Ganti Password segera hadir.");
-                });
-            document
-                .getElementById("btnEmailPemulihan")
-                ?.addEventListener("click", () => {
-                    alert("Fitur Email Pemulihan segera hadir.");
-                });
+            // Ganti Password & Email Pemulihan ditangani public/js/profile-account.js
         },
     };
 

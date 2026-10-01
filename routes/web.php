@@ -13,6 +13,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AccountController;
 
 // Halaman Login (index.blade.php)
 Route::get('/', function () {
@@ -31,6 +32,10 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 
 // Rute yang dilindungi (Hanya bisa diakses jika sudah login)
 Route::middleware(['auth'])->group(function () {
+    // ---- Pengaturan akun sendiri (menu profil kanan atas) ----
+    Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
+    Route::post('/account/recovery-email', [AccountController::class, 'updateRecoveryEmail'])->name('account.recovery-email');
+
     // ---- Dashboard ----
     Route::middleware('menu.access:dashboard,readonly')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');

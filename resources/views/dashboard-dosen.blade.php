@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/dash-stars.css') }}">
     <title>Dashboard &middot; SIDA</title>
 </head>
 
@@ -110,6 +111,13 @@
                     }
                 @endphp
                 <div class="dash-panel reveal">
+                    <div class="dash-stars" aria-hidden="true">
+                        <div class="dash-stars-rot">
+                            <div class="ds ds1"></div>
+                            <div class="ds ds2"></div>
+                            <div class="ds ds3"></div>
+                        </div>
+                    </div>
                     <div class="dash-welcome">
                         <div class="dash-welcome-main">
                             <p class="dash-welcome-brand">SIDA</p>

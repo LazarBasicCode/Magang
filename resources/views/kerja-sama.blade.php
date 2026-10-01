@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/profile-account.css') }}?v={{ @filemtime(public_path('css/profile-account.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/skeleton.css') }}?v={{ @filemtime(public_path('css/skeleton.css')) }}">
     <title>Kerja Sama &middot; SIDA</title>
@@ -1407,6 +1408,7 @@
         updateConditionalFields(document.getElementById('form-jenis').value);
     </script>
     <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms

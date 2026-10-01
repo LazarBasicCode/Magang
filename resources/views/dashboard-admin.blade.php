@@ -13,8 +13,10 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/profile-account.css') }}?v={{ @filemtime(public_path('css/profile-account.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/laporan.css') }}?v={{ @filemtime(public_path('css/laporan.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/dash-stars.css') }}">
     <title>Dashboard {{ $meta['title'] }} &middot; SIDA</title>
 </head>
 
@@ -262,6 +264,13 @@
 
                 <!-- WELCOME + HERO STAT -->
                 <div class="dash-panel reveal">
+                    <div class="dash-stars" aria-hidden="true">
+                        <div class="dash-stars-rot">
+                            <div class="ds ds1"></div>
+                            <div class="ds ds2"></div>
+                            <div class="ds ds3"></div>
+                        </div>
+                    </div>
                     <div class="dash-welcome">
                         <div class="dash-welcome-main">
                             <p class="dash-welcome-brand">SIDA &middot; {{ $meta['title'] }}</p>
@@ -554,6 +563,7 @@
     </script>
     <script src="{{ asset('js/dashboard-charts.js') }}?v={{ @filemtime(public_path('js/dashboard-charts.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
 </body>
 

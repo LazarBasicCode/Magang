@@ -153,9 +153,9 @@ class KerjaSamaController extends Controller
             'bukti_kegiatan'   => ['required', 'url', 'max:2048'],
         ]);
 
-        // Batasan jenis per tipe: mahasiswa hanya conference/pkl/sharing_session, dosen tidak boleh pkl.
+        // Batasan jenis per tipe: mahasiswa hanya conference/pkl/sharing_session/lainnya, dosen tidak boleh pkl.
         if ($data['tipe_user'] === 'mahasiswa'
-            && !in_array($data['jenis'], ['conference_internasional', 'pkl', 'sharing_session'], true)) {
+            && !in_array($data['jenis'], ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'], true)) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'jenis' => 'Jenis ini tidak tersedia untuk mahasiswa.',
             ]);

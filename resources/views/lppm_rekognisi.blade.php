@@ -323,17 +323,20 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="field">
-                            <label class="field-label" for="filter-search">Pencarian Cepat</label>
-                            <div class="field-control">
-                                <span class="material-symbols-outlined icon-search">search</span>
-                                <input id="filter-search" type="text" placeholder="Cari nama, mitra, atau jabatan..." />
+                        <div class="filter-search-row">
+                            <div class="field field-search-wide">
+                                <label class="field-label" for="filter-search">Pencarian Cepat</label>
+                                <div class="field-control">
+                                    <span class="material-symbols-outlined icon-search">search</span>
+                                    <input id="filter-search" type="text" placeholder="Cari nama, mitra, atau jabatan..." />
+                                </div>
                             </div>
-                        </div>
-                        <div class="field field-reset" style="grid-column: -1; justify-self: end; align-self: center;">
-                            <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
-                                <span class="material-symbols-outlined">restart_alt</span>
-                            </button>
+                            <div class="field field-reset">
+                                <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
+                                    <span class="material-symbols-outlined">restart_alt</span>
+                                    <span class="btn-rst-text">Reset Filter</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

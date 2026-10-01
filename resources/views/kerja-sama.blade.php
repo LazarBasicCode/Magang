@@ -367,17 +367,20 @@
                         </div>
 
                         <!-- Search -->
-                        <div class="field field-search-wide">
-                            <label class="field-label" for="filter-search">Pencarian Cepat</label>
-                            <div class="field-control">
-                                <span class="material-symbols-outlined icon-search">search</span>
-                                <input id="filter-search" type="text" placeholder="Cari judul kegiatan atau mitra..." />
+                        <div class="filter-search-row">
+                            <div class="field field-search-wide">
+                                <label class="field-label" for="filter-search">Pencarian Cepat</label>
+                                <div class="field-control">
+                                    <span class="material-symbols-outlined icon-search">search</span>
+                                    <input id="filter-search" type="text" placeholder="Cari judul kegiatan atau mitra..." />
+                                </div>
                             </div>
-                        </div>
-                        <div class="field field-reset" style="grid-column: -1; justify-self: end; align-self: center;">
-                            <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
-                                <span class="material-symbols-outlined">restart_alt</span>
-                            </button>
+                            <div class="field field-reset">
+                                <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
+                                    <span class="material-symbols-outlined">restart_alt</span>
+                                    <span class="btn-rst-text">Reset Filter</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1056,7 +1059,7 @@
         // BATASI "JENIS" SESUAI "TIPE USER" DI FILTER (business rule)
         // ----------------------------------------------------------------
         const JENIS_ALLOWED_BY_TIPE = {
-            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
+            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'],
             dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
                 'pengabdian_internasional', 'research_internasional', 'lainnya'
             ],
@@ -1140,7 +1143,7 @@
         // BATASI "JENIS" DI MODAL SESUAI ROLE USER (business rule)
         // ----------------------------------------------------------------
         const FORM_JENIS_ALLOWED = {
-            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session'],
+            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'],
             dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
                 'pengabdian_internasional', 'research_internasional', 'lainnya'
             ],

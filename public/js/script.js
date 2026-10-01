@@ -201,7 +201,7 @@
             closeBtn?.addEventListener("click", close);
             overlay?.addEventListener("click", close);
             window.addEventListener("resize", () => {
-                if (window.innerWidth >= 1024) close();
+                if (window.innerWidth >= 800) close();
             });
         },
     };

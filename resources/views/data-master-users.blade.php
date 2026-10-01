@@ -382,7 +382,7 @@ $__accessRows = $__user->accessBreakdown();
                                 $roleLabel = ucfirst($item->role);
                                 $identifier = $item->role === 'mahasiswa'
                                 ? optional($item->mahasiswa)->nim
-                                : ($item->role === 'dosen' ? optional($item->dosen)->nidn : null);
+                                : ($item->role === 'dosen' ? optional($item->dosen)->nidn : $item->nim_nidn);
                                 @endphp
                                 <tr data-id="{{ $item->id }}" data-role="{{ $item->role }}">
                                     <td><span class="nim-code">USR-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</span></td>
@@ -824,8 +824,11 @@ $__accessRows = $__user->accessBreakdown();
                 inputIdentifier.placeholder = 'Contoh: 0712048901';
                 inputIdentifier.closest('.field').hidden = false;
             } else {
-                inputIdentifier.value = '';
-                inputIdentifier.closest('.field').hidden = true;
+                // Admin/superadmin juga WAJIB punya username untuk login
+                // (form login mencocokkan kolom nim_nidn).
+                labelIdentifier.textContent = 'Username';
+                inputIdentifier.placeholder = 'Contoh: admin.kemahasiswaan';
+                inputIdentifier.closest('.field').hidden = false;
             }
         }
 
@@ -957,6 +960,13 @@ $__accessRows = $__user->accessBreakdown();
                 modalSubmitBtn.disabled = false;
                 return;
             }
+            if (!payload.identifier.trim()) {
+                modalError.textContent = 'NIM / NIDN / Username wajib diisi karena dipakai untuk login.';
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
+            }
+            payload.identifier = payload.identifier.trim();
             if (!id && !payload.password) {
                 modalError.textContent = 'Password wajib diisi untuk pengguna baru.';
                 modalError.hidden = false;

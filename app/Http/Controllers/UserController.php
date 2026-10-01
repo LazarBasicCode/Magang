@@ -210,9 +210,12 @@ class UserController extends Controller
             'name'       => ['required', 'string', 'max:255'],
             'role'       => ['required', 'in:superadmin,admin,dosen,mahasiswa'],
             'password'   => [$isUpdate ? 'nullable' : 'required', 'string', 'min:6'],
+            // Wajib untuk SEMUA role: kolom ini (users.nim_nidn) dipakai sebagai
+            // kredensial login. Admin/superadmin tanpa nilai ini tidak akan
+            // pernah bisa login. Harus unik supaya login tidak ambigu.
             'identifier' => [
-                Rule::requiredIf(fn () => in_array($request->role, ['mahasiswa', 'dosen'])),
-                'nullable', 'string', 'max:50',
+                'required', 'string', 'max:50',
+                Rule::unique('users', 'nim_nidn')->ignore($user?->id),
             ],
             // Email opsional — dipakai untuk fitur lupa password. Kalau diisi,
             // harus unik supaya tautan reset tidak salah sasaran ke akun lain.

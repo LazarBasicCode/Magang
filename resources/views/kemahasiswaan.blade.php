@@ -841,7 +841,7 @@
         (function() {
             const wrap = document.getElementById('pageWrap');
             if (!wrap) return;
-            const MIN_MS = 2000;
+            const MIN_MS = 500;
             const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
             Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
                 setTimeout(() => {

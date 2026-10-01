@@ -25,8 +25,9 @@ class HakAkses extends Model
      * jadi levelnya mengikuti aturan yang sama seperti "kemahasiswaan" per role
      * (lihat defaultsForRole()).
      */
+    // Dashboard SENGAJA tidak ada di sini: dashboard terbuka untuk semua user
+    // yang login (isinya menyesuaikan role), jadi tidak perlu diatur hak akses.
     public const MENUS = [
-        'dashboard'       => ['label' => 'Dashboard', 'icon' => 'dashboard'],
         'kemahasiswaan'   => ['label' => 'Kemahasiswaan', 'icon' => 'school'],
         'lppm_mahasiswa'  => ['label' => 'LPPM Mahasiswa', 'icon' => 'person'],
         'lppm_dosen'      => ['label' => 'LPPM Dosen', 'icon' => 'co_present'],
@@ -101,7 +102,6 @@ class HakAkses extends Model
                 // ini (lihat ADMIN_SINGLE_RESPONSIBILITY_MENUS). Tidak ada
                 // default yang otomatis aktif supaya tidak ada akun admin
                 // baru yang "kebetulan" punya akses ke banyak area sekaligus.
-                'dashboard'      => 'penuh',
                 'kemahasiswaan'  => 'none',
                 'lppm_mahasiswa' => 'none',
                 'lppm_dosen'     => 'none',
@@ -116,7 +116,6 @@ class HakAkses extends Model
                 'log'            => 'none', // tergantung diatur superadmin
             ],
             'dosen' => [
-                'dashboard'      => 'biasa',
                 'kemahasiswaan'  => 'biasa',
                 'lppm_mahasiswa' => 'biasa',
                 'lppm_dosen'     => 'biasa',
@@ -127,7 +126,6 @@ class HakAkses extends Model
                 'log'            => 'none', // dosen tidak pernah punya akses log
             ],
             'mahasiswa' => [
-                'dashboard'      => 'biasa',
                 'kemahasiswaan'  => 'biasa',
                 'lppm_mahasiswa' => 'biasa',
                 'lppm_dosen'     => 'none',

@@ -62,6 +62,11 @@ class LppmRekognisiController extends Controller
     {
         $this->authorizeOwnership($request, $rekognisi);
 
+        // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
+
+        $request->merge(['user_id' => $rekognisi->user_id, 'tipe_user' => $rekognisi->tipe_user]);
+
+
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 

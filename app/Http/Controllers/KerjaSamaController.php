@@ -73,6 +73,11 @@ class KerjaSamaController extends Controller
     {
         $this->authorizeOwnership($request, $kerjaSama);
 
+        // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
+
+        $request->merge(['user_id' => $kerjaSama->user_id, 'tipe_user' => $kerjaSama->tipe_user]);
+
+
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 

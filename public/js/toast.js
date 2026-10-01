@@ -89,6 +89,7 @@
                 setTimeout(() => {
                     el.classList.remove('is-shifting', 'is-blur-pulse');
                     el.style.transition = '';
+                    el.style.transform = '';
                 }, 340);
             });
         });
@@ -97,11 +98,24 @@
     function dismiss(el) {
         if (!el || el.classList.contains('is-leaving')) return;
         clearTimeout(el._toastTimer);
-        el.classList.remove('is-entering');
+
+        // Ukur tinggi asli SEBELUM animasi keluar, supaya fase "menutup tinggi"
+        // mulai dari ukuran sebenarnya (toast panjang tidak terpotong / loncat).
+        el.style.setProperty('--toast-h', el.offsetHeight + 'px');
+        el.style.transition = '';
+        el.style.transform = '';
+
+        el.classList.remove('is-entering', 'is-shifting', 'is-blur-pulse');
         el.classList.add('is-leaving');
-        el.addEventListener('animationend', () => el.remove(), { once: true });
+
+        // PENTING: animationend dari elemen anak (mis. garis progress yang
+        // selesai tepat di 5000ms) ikut "naik" ke sini. Tanpa filter, toast
+        // bisa langsung terhapus dan animasi keluar terpotong.
+        el.addEventListener('animationend', (e) => {
+            if (e.target === el && e.animationName.startsWith('toastExit')) el.remove();
+        });
         // fallback kalau animationend tidak terpicu (mis. tab tidak aktif)
-        setTimeout(() => el.remove(), 500);
+        setTimeout(() => el.remove(), 600);
     }
 
     function show({ type = 'info', title = '', message = '', duration = DURATION, sound: withSound = true } = {}) {
@@ -113,6 +127,7 @@
         const el = document.createElement('div');
         el.className = `toast-item t-${type} is-entering`;
         el.setAttribute('role', 'status');
+        el.style.setProperty('--toast-duration', duration + 'ms'); // garis progress ikut durasi asli
         el.innerHTML = `
             <div class="toast-content">
                 <div class="toast-icon">${ICONS[type] || ICONS.info}</div>
@@ -125,15 +140,15 @@
         el.querySelector('.toast-close').addEventListener('click', () => dismiss(el));
 
         cont.appendChild(el); // column-reverse => otomatis muncul di atas tumpukan (dekat layar), tanpa dobel/tumpang tindih
-        el.addEventListener('animationend', () => el.classList.remove('is-entering'), { once: true });
+        el.addEventListener('animationend', (e) => {
+            if (e.target === el && e.animationName.startsWith('toastEnter')) el.classList.remove('is-entering');
+        });
 
         playShiftAnimation(oldRects);
 
         if (withSound) playSound();
 
-        // Auto-dismiss dimatikan sementara (buat keperluan inspect elemen
-        // di DevTools). Toast sekarang cuma hilang kalau tombol close (x)
-        // diklik manual. Buat aktifin lagi, un-comment baris di bawah ini:
+        // Auto-dismiss: toast hilang sendiri setelah `duration` ms.
         el._toastTimer = setTimeout(() => dismiss(el), duration);
 
         return el;

@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/profile-account.css') }}?v={{ @filemtime(public_path('css/profile-account.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dash-stars.css') }}">
     <title>Dashboard &middot; SIDA</title>
 </head>
@@ -93,13 +95,80 @@
                             <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
                         </button>
                         <div class="header-divider"></div>
-                        <div class="header-profile">
-                            <img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLig7aONgBDjPPsYrnmTXQraRAlwmODcgdKdw1M52sNCLp0M5ScX4sxlYBkPEuFS3htaKkomlSL-y2DvptVFXLJ-ZvyAdi8SRnje9CKQzhf0DpEz4qDCj5aU0CT-Y7uSAfBfp7qVTOwZhDnnis_7VzlM3IN_ZaQ7bR0H4APRvjJ8XgOrCoKNGAwLA1e71Fbc7cZjbozw0HpzkwnEBqr2RnT2nSKlcrlanlK1Tay9cHe62Ct3yQHxk80Q" />
-                            <div class="header-profile-text">
-                                <span class="header-profile-name">{{ auth()->user()->name }}</span>
-                                <span class="header-profile-role">{{ auth()->user()->accessLabelFor('dashboard') }}</span>
+                        {{-- ============ PROFILE DROPDOWN ============ --}}
+                        @php
+                        $__initials = $__user->initials();
+                        $__avatarColor = $__user->avatarColorClass();
+                        $__accessRows = $__user->accessBreakdown();
+                        @endphp
+                        <div class="header-profile-dropdown" id="profileDropdown">
+                            <button type="button" class="header-profile-trigger" id="profileToggleBtn"
+                                aria-haspopup="true" aria-expanded="false">
+                                <div class="header-profile-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                <div class="header-profile-text">
+                                    <span class="header-profile-name">{{ $__user->name }}</span>
+                                    <span class="header-profile-role">{{ $__user->accessLabelFor('dashboard') }}</span>
+                                </div>
+                                <span class="material-symbols-outlined header-profile-caret">expand_more</span>
+                            </button>
+
+                            <div class="header-profile-panel" id="profilePanel" role="menu" aria-hidden="true">
+                                {{-- ---- View 1: menu utama ---- --}}
+                                <div class="header-profile-view is-active" id="profileViewMain">
+                                    <div class="header-profile-panel-header">
+                                        <div class="header-profile-panel-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                        <div>
+                                            <span class="header-profile-panel-name">{{ $__user->name }}</span>
+                                            <span class="header-profile-panel-role">{{ $__user->accessLabelFor('dashboard') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="header-profile-menu">
+                                        <button type="button" class="header-profile-menu-item" id="btnShowAccessInfo">
+                                            <span class="material-symbols-outlined">shield_person</span>
+                                            <span>Informasi Akses</span>
+                                        </button>
+                                        {{-- UI saja untuk saat ini, belum ada endpoint di baliknya --}}
+                                        <button type="button" class="header-profile-menu-item" id="btnGantiPassword">
+                                            <span class="material-symbols-outlined">key</span>
+                                            <span>Ganti Password</span>
+                                        </button>
+                                        <button type="button" class="header-profile-menu-item" id="btnEmailPemulihan">
+                                            <span class="material-symbols-outlined">mark_email_unread</span>
+                                            <span>Email Pemulihan</span>
+                                        </button>
+                                        <div class="header-profile-menu-divider"></div>
+                                        <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
+                                            @csrf
+                                            <button type="submit" class="header-profile-menu-item is-danger">
+                                                <span class="material-symbols-outlined">logout</span>
+                                                <span>Keluar</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {{-- ---- View 2: rincian hak akses per menu ---- --}}
+                                <div class="header-profile-view" id="profileViewAccess">
+                                    <button type="button" class="header-profile-panel-back" id="btnBackToMain">
+                                        <span class="material-symbols-outlined">arrow_back</span>
+                                        <span>Informasi Akses</span>
+                                    </button>
+                                    <div class="access-info-list">
+                                        @foreach($__accessRows as $row)
+                                        <div class="access-info-row {{ $row['level'] === 'none' ? 'is-zero' : '' }}">
+                                            <span class="material-symbols-outlined">{{ $row['icon'] }}</span>
+                                            <span class="access-info-row-label">{{ $row['label'] }}</span>
+                                            <span class="access-chip {{ $row['level'] }}">
+                                                <span class="access-dot {{ $row['level'] }}"></span>
+                                                {{ $row['level_label'] }}
+                                            </span>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        {{-- ============ /PROFILE DROPDOWN ============ --}}
                     </div>
                 </div>
             </div>
@@ -455,44 +524,7 @@
     <div class="chart-tooltip" id="chartTooltip"></div>
 
     <script>
-        // ---------------- Sidebar Drawer ----------------
-        const sidebar = document.querySelector('.app-sidebar');
-        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        function openSidebar() {
-            sidebar.classList.add('is-open');
-            sidebarOverlay.classList.add('is-active');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeSidebar() {
-            sidebar.classList.remove('is-open');
-            sidebarOverlay.classList.remove('is-active');
-            document.body.style.overflow = '';
-        }
-        sidebarToggleBtn?.addEventListener('click', openSidebar);
-        sidebarCloseBtn?.addEventListener('click', closeSidebar);
-        sidebarOverlay?.addEventListener('click', closeSidebar);
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024) closeSidebar();
-        });
-
-        // ---------------- Dark Mode ----------------
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const themeIcon = document.getElementById('themeIcon');
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-            if (themeIcon) themeIcon.textContent = 'light_mode';
-        }
-        themeToggleBtn?.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            if (themeIcon) themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
-
+        
         // ================================================================
         // SCROLL REVEAL: fade + blur + scale saat elemen masuk viewport,
         // dan diulang lagi setiap kali elemen keluar lalu masuk ulang.
@@ -920,6 +952,9 @@
             }, 150);
         });
     </script>
+    <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
 </body>
 
 </html>

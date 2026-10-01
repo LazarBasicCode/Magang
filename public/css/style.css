@@ -40,6 +40,12 @@
     --shadow-card: 0 1px 3px rgba(88, 105, 146, 0.2), 0 1px 2px rgba(57, 72, 110, 0.06);
     --shadow-btn: 0 3px 8px rgba(91, 95, 239, 0.4);
 
+    --chart-1: #5b5fef;
+    --chart-2: #1da8ce;
+    --chart-3: #1abb4d;
+    --chart-4: #dc7a17;
+    --chart-5: #d21515;
+
     --sidebar-w: 260px;
     --header-h: 64px;
     --radius: 10px;
@@ -76,6 +82,12 @@ body.dark-mode {
     --danger-border: #4a2226;
     --neutral-bg: #303745;
     --neutral-border: #2e333c;
+
+    --chart-1: #4c8dff;
+    --chart-2: #2aecf3;
+    --chart-3: #3ddc84;
+    --chart-4: #f2b642;
+    --chart-5: #ff6868;
 
     --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
@@ -3074,4 +3086,6 @@ body.dark-mode {
 @keyframes paShake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 body.dark-mode .pa-modal { box-shadow: 0 24px 60px rgba(0, 0, 0, .6); color: #ffffff; }
 @media (max-width: 480px) { .pa-modal { top: 40%; } }
+
+
 

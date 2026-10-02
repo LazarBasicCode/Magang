@@ -488,6 +488,41 @@
     };
 
     // ---------------------------------------------------------------
+    // LABEL KOLOM UNTUK TABEL MODE KARTU (layar sempit)
+    // Menyalin teks <th> ke atribut data-label di tiap <td>, termasuk baris
+    // yang ditambah/diganti lewat fetch() (SIDA.table.insertRow/updateRow).
+    // CSS memakai td::before { content: attr(data-label) }.
+    // ---------------------------------------------------------------
+    SIDA.tableLabels = {
+        init() {
+            document.querySelectorAll("table.data-table").forEach((table) => {
+                const heads = Array.from(
+                    table.querySelectorAll("thead th"),
+                ).map((th) => th.textContent.trim());
+
+                const label = (tr) => {
+                    Array.from(tr.children).forEach((td, i) => {
+                        if (td.tagName === "TD" && !td.hasAttribute("colspan") && heads[i]) {
+                            td.setAttribute("data-label", heads[i]);
+                        }
+                    });
+                };
+
+                table.querySelectorAll("tbody:not(.sk-body)").forEach((tbody) => {
+                    tbody.querySelectorAll("tr").forEach(label);
+                    new MutationObserver((mutations) => {
+                        mutations.forEach((m) =>
+                            m.addedNodes.forEach((n) => {
+                                if (n.nodeType === 1 && n.tagName === "TR") label(n);
+                            }),
+                        );
+                    }).observe(tbody, { childList: true });
+                });
+            });
+        },
+    };
+
+    // ---------------------------------------------------------------
     // PROFILE DROPDOWN (header) — dipakai di semua halaman
     // Dipindah apa adanya dari kemahasiswaan.blade.php
     // ---------------------------------------------------------------
@@ -556,6 +591,7 @@
             ['theme',    SIDA.theme],
             // ['notif',    SIDA.notif],
             ['profile',  SIDA.profile],
+            ['tableLabels', SIDA.tableLabels],
         ];
         steps.forEach(([name, mod]) => {
             try { mod?.init?.(); }

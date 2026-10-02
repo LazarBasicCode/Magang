@@ -1340,6 +1340,74 @@ table.data-table {
     text-align: center;
 }
 
+/* Layar sempit: 1 baris tabel = 1 kartu (label kolom diisi otomatis oleh
+   SIDA.tableLabels di script.js dari teks <th>, jadi blade tidak perlu diubah) */
+@media (max-width: 640px) {
+    .table-scroll { overflow-x: visible; }
+
+    table.data-table,
+    .data-table tbody {
+        display: block;
+        white-space: normal;
+    }
+
+    .data-table tbody { padding: 12px 12px 4px; }
+
+    /* Header tabel disembunyikan secara visual, tetap terbaca screen reader */
+    .data-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .data-table tbody tr {
+        display: block;
+        margin-bottom: 12px;
+        padding: 4px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+    }
+
+    .data-table tbody tr:last-child { border-bottom: 1px solid var(--border); }
+
+    .data-table td,
+    .data-table td:first-child,
+    .data-table td:last-child {
+        display: grid;
+        grid-template-columns: 104px minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        text-align: left;
+        border-bottom: 1px dashed var(--border);
+    }
+
+    .data-table td:last-child { border-bottom: 0; }
+
+    .data-table td::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--ink-muted);
+    }
+
+    .data-table td.center { text-align: left; }
+    .data-table td .row-actions { justify-content: flex-start; }
+    .data-table .activity-title { max-width: none; white-space: normal; }
+
+    /* Baris pesan (kosong / tidak ada hasil / skeleton): tanpa label */
+    .data-table td[colspan] {
+        display: block;
+        text-align: center;
+    }
+    .data-table td[colspan]::before { content: none; }
+}
+
 .nim-code {
     font-weight: 700;
     color: var(--primary);
@@ -3116,6 +3184,7 @@ body.dark-mode {
 .data-table .sk-body { display: none; }
 .page-wrap.is-loading .data-table tbody:not(.sk-body) { display: none; }
 .page-wrap.is-loading .data-table .sk-body { display: table-row-group; }
+@media (max-width: 640px) { .page-wrap.is-loading .data-table .sk-body { display: block; } }
 .sk-body tr:hover { background: transparent !important; }
 .sk-body td { padding: 10px 16px; border-bottom: 0; }
 

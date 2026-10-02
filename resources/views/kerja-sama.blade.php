@@ -108,6 +108,12 @@
                     <span>Log Aktivitas</span>
                 </a>
                 @endif
+                @if($__user->canAccessMenu('backup'))
+                <a href="{{ url('/backup') }}" class="nav-link">
+                    <span class="material-symbols-outlined">backup</span>
+                    <span>Backup &amp; Restore</span>
+                </a>
+                @endif
                 @if($__user->role === 'superadmin')
                 <a href="{{ url('/laporan') }}" class="nav-link">
                     <span class="material-symbols-outlined">assignment</span>

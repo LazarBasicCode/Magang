@@ -106,6 +106,12 @@
                     <span>Log Aktivitas</span>
                 </a>
                 @endif
+                @if($__user->canAccessMenu('backup'))
+                <a href="{{ url('/backup') }}" class="nav-link">
+                    <span class="material-symbols-outlined">backup</span>
+                    <span>Backup &amp; Restore</span>
+                </a>
+                @endif
                 @if($__user->role === 'superadmin')
                 <a href="{{ url('/laporan') }}" class="nav-link">
                     <span class="material-symbols-outlined">assignment</span>
@@ -610,7 +616,7 @@
         // panduan visual di modal SEBELUM submit (validasi sebenarnya tetap
         // di server, ini cuma supaya UX-nya tidak perlu nunggu ditolak dulu).
         const ADMIN_SINGLE_RESPONSIBILITY_MENUS = ['kemahasiswaan', 'lppm_mahasiswa', 'lppm_dosen', 'rekognisi', 'kerja_sama'];
-        const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses', 'log'];
+        const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses', 'log', 'backup'];
 
         function applyRoleAccessRules(role) {
             const roleLower = (role || '').toLowerCase();

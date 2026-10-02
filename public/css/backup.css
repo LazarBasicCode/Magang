@@ -1,0 +1,64 @@
+/* Halaman Backup & Restore. Memakai kelas rp-* dari laporan.css + variabel tema style.css */
+
+.bk-head { margin-bottom: 14px; }
+.bk-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: var(--ink); }
+.bk-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+.bk-head code, .bk-alert code { font-size: 12px; background: var(--canvas); padding: 1px 6px; border-radius: 6px; }
+.bk-kpi-small { font-size: 20px !important; padding-top: 6px; }
+
+.bk-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.bk-chip { font-size: 12.5px; padding: 6px 12px; border-radius: 999px; background: var(--canvas); color: var(--ink-muted); }
+.bk-chip strong { color: var(--ink); margin-right: 2px; }
+
+.bk-alert { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; margin-bottom: 14px; color: var(--ink); }
+.bk-alert .material-symbols-outlined { font-size: 20px; margin-top: 1px; }
+.bk-alert.is-warn { background: rgba(217, 119, 6, .12); }
+.bk-alert.is-warn .material-symbols-outlined { color: #d97706; }
+.bk-alert.is-danger { background: rgba(220, 38, 38, .10); }
+.bk-alert.is-danger .material-symbols-outlined { color: #dc2626; }
+
+.bk-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.bk-actions form { margin: 0; }
+.rp-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.bk-file { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.bk-tag { margin-left: 8px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; background: rgba(217, 119, 6, .14); color: #b45309; }
+.bk-row-actions { display: inline-flex; gap: 6px; align-items: center; }
+.bk-row-actions form { margin: 0; }
+.bk-icon-btn { width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 9px; border: 1px solid var(--border); background: var(--card); color: var(--ink-muted); cursor: pointer; text-decoration: none; }
+.bk-icon-btn .material-symbols-outlined { font-size: 19px; }
+.bk-icon-btn:hover { color: var(--primary); border-color: var(--primary); }
+.bk-icon-btn.is-danger:hover { color: #dc2626; border-color: #dc2626; }
+
+.bk-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 32px 16px; border: 2px dashed var(--border); border-radius: 14px; text-align: center; cursor: pointer; color: var(--ink); transition: border-color .2s, background .2s; }
+.bk-drop .material-symbols-outlined { font-size: 38px; color: var(--primary); }
+.bk-drop small { color: var(--ink-muted); font-size: 12px; }
+.bk-drop:hover, .bk-drop.is-over { border-color: var(--primary); background: var(--canvas); }
+
+/* Modal konfirmasi */
+.bk-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 14, 35, .55); backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity .22s ease; }
+.bk-overlay.is-open { opacity: 1; pointer-events: auto; }
+.bk-modal { width: 100%; max-width: 560px; max-height: 92vh; display: flex; flex-direction: column; background: var(--card); color: var(--ink); border-radius: 18px; box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .5); transform: translateY(24px) scale(.96); opacity: 0; transition: transform .32s cubic-bezier(.22, 1, .36, 1), opacity .22s ease; }
+.bk-overlay.is-open .bk-modal { transform: none; opacity: 1; }
+.bk-modal-head { display: flex; gap: 14px; align-items: center; padding: 20px 22px 14px; }
+.bk-modal-icon { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 13px; background: rgba(220, 38, 38, .12); color: #dc2626; }
+.bk-modal-head h3 { margin: 0; font-size: 17px; font-weight: 800; }
+.bk-modal-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+.bk-modal-body { padding: 0 22px 8px; overflow-y: auto; }
+.bk-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px 20px; }
+.bk-compare tr.is-changed td { background: rgba(217, 119, 6, .07); }
+.bk-warnings { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-muted); }
+.bk-warnings li { display: flex; gap: 8px; align-items: flex-start; }
+.bk-warnings .material-symbols-outlined { font-size: 17px; color: #d97706; }
+.bk-confirm-label { display: block; margin: 16px 0 6px; font-size: 13px; color: var(--ink); }
+.bk-confirm { width: 100%; height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--ink); font: inherit; font-weight: 700; letter-spacing: .08em; }
+.bk-confirm:focus { outline: 2px solid #dc2626; outline-offset: 1px; }
+.bk-btn-danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+.bk-btn-danger:hover:not(:disabled) { filter: brightness(1.08); }
+.bk-spin { animation: bkSpin 1s linear infinite; }
+@keyframes bkSpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .bk-modal, .bk-overlay { transition: none; }
+    .bk-spin { animation: none; }
+}

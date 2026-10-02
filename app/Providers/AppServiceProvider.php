@@ -52,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
             'data-master-users',
             'hak-akses',
             'laporan',
+            'backup',
         ], function ($view) {
             $view->with('__user', auth()->user());
         });

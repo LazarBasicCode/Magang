@@ -10,6 +10,7 @@ use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HakAksesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
@@ -115,6 +116,19 @@ Route::middleware(['auth'])->group(function () {
     // Dibatasi ke role superadmin langsung di controller (lihat
     // LoginAuditController), bukan lewat menu.access, karena isinya data
     // keamanan yang belum perlu masuk sistem hak-akses per-menu.
+    // ---- Backup & Restore ----
+    // readonly: lihat daftar, buat & unduh backup. penuh: upload, restore, hapus.
+    Route::middleware('menu.access:backup,readonly')->group(function () {
+        Route::get('/backup', [BackupController::class, 'index'])->name('backup.index');
+        Route::post('/backup/create', [BackupController::class, 'create'])->name('backup.create');
+        Route::get('/backup/download/{file}', [BackupController::class, 'download'])->name('backup.download');
+    });
+    Route::middleware('menu.access:backup,penuh')->group(function () {
+        Route::post('/backup/inspect', [BackupController::class, 'inspect'])->name('backup.inspect');
+        Route::post('/backup/restore', [BackupController::class, 'restore'])->name('backup.restore');
+        Route::delete('/backup/{file}', [BackupController::class, 'destroy'])->name('backup.destroy');
+    });
+
     // ---- Laporan (khusus superadmin, dicek di controller) ----
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
 

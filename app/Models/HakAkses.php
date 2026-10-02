@@ -38,6 +38,8 @@ class HakAkses extends Model
         // Khusus admin/superadmin: mahasiswa & dosen tidak pernah punya akses
         // ke menu ini (lihat defaultsForRole dan filter di halaman Hak Akses).
         'log'             => ['label' => 'Log Aktivitas', 'icon' => 'history'],
+        // Backup & Restore: readonly = lihat/buat/unduh backup, penuh = juga restore & hapus.
+        'backup'          => ['label' => 'Backup & Restore', 'icon' => 'backup'],
     ];
 
     /**
@@ -46,7 +48,7 @@ class HakAkses extends Model
      * mahasiswa/dosen (bukan cuma dikunci ke "none", tapi tidak ditampilkan
      * sama sekali karena memang tidak relevan buat role tsb).
      */
-    public const ADMIN_ONLY_MENUS = ['log', 'hak_akses', 'data_master'];
+    public const ADMIN_ONLY_MENUS = ['log', 'hak_akses', 'data_master', 'backup'];
 
     /**
      * Menu "operasional" (area kerja) — mencerminkan kebijakan "1 admin =
@@ -71,7 +73,7 @@ class HakAkses extends Model
      * pengelolaan akun (Data Master) dan pengaturan hak akses itu sendiri
      * (Hak Akses) tetap murni wewenang superadmin.
      */
-    public const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses', 'log'];
+    public const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses', 'log', 'backup'];
 
     public const LEVELS = ['none', 'readonly', 'biasa', 'penuh'];
 
@@ -114,6 +116,7 @@ class HakAkses extends Model
                 'data_master'    => 'none',
                 'hak_akses'      => 'none',
                 'log'            => 'none', // tergantung diatur superadmin
+                'backup'         => 'none', // admin maksimal "readonly" (buat & unduh)
             ],
             'dosen' => [
                 'kemahasiswaan'  => 'biasa',
@@ -124,6 +127,7 @@ class HakAkses extends Model
                 'data_master'    => 'none',
                 'hak_akses'      => 'none',
                 'log'            => 'none', // dosen tidak pernah punya akses log
+                'backup'         => 'none',
             ],
             'mahasiswa' => [
                 'kemahasiswaan'  => 'biasa',
@@ -134,6 +138,7 @@ class HakAkses extends Model
                 'data_master'    => 'none',
                 'hak_akses'      => 'none',
                 'log'            => 'none', // mahasiswa tidak pernah punya akses log
+                'backup'         => 'none',
             ],
             default => array_fill_keys(array_keys(self::MENUS), 'none'),
         };

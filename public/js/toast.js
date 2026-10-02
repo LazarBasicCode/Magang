@@ -41,18 +41,36 @@
         return sound;
     }
 
-    function playSound() {
-        const s = getSound();
-        if (!s) return;
+    const SOUNDS = {
+        success: '/sounds/success.wav',
+        error: '/sounds/error.wav',
+        info: '/sounds/notify.wav',
+        warning: '/sounds/notify.wav',
+    };
+    const cache = {};
+
+    function playSound(type) {
         try {
-            // Browser modern memblokir autoplay sebelum user berinteraksi
-            // dengan halaman sama sekali — kalau gagal, cukup diabaikan
-            // (toast visual tetap muncul, cuma tanpa suara).
-            s.currentTime = 0;
-            const p = s.play();
-            if (p && p.catch) p.catch(() => {});
-        } catch (e) { /* no-op */ }
+            const src = SOUNDS[type] || SOUNDS.info;
+            cache[src] = cache[src] || new Audio(src);
+            cache[src].volume = 0.35;
+            cache[src].currentTime = 0;
+            cache[src].play().catch(() => { });
+        } catch (e) { }
     }
+
+    // function playSound() {
+    //     const s = getSound();
+    //     if (!s) return;
+    //     try {
+    //         // Browser modern memblokir autoplay sebelum user berinteraksi
+    //         // dengan halaman sama sekali — kalau gagal, cukup diabaikan
+    //         // (toast visual tetap muncul, cuma tanpa suara).
+    //         s.currentTime = 0;
+    //         const p = s.play();
+    //         if (p && p.catch) p.catch(() => {});
+    //     } catch (e) { /* no-op */ }
+    // }
 
     /**
      * FLIP: catat posisi semua toast yang sedang tampil SEBELUM DOM berubah,
@@ -146,7 +164,7 @@
 
         playShiftAnimation(oldRects);
 
-        if (withSound) playSound();
+        if (withSound) playSound(type);
 
         // Auto-dismiss: toast hilang sendiri setelah `duration` ms.
         el._toastTimer = setTimeout(() => dismiss(el), duration);

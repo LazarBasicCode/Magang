@@ -1,5 +1,5 @@
 /**
- * Menu "+" Data Massal (Unduh Template / Upload / Download) + modal upload CSV.
+ * Menu "+" Data Massal (Unduh Template / Upload / Download) + modal upload Excel.
  * Markup: resources/views/partials/bulk-menu.blade.php & bulk-import-modal.blade.php
  * Butuh: script.js (SIDA.modal, SIDA.util.csrfToken) dan toast.js (opsional).
  */

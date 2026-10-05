@@ -4,9 +4,9 @@
 
     Parameter:
       $bulkLabel     string  nama menu, mis. "Kerja Sama"
-      $bulkTemplate  string  URL unduh template   (null = sembunyikan item)
-      $bulkImport    string  URL unggah CSV        (null = sembunyikan item)
-      $bulkExport    string  URL unduh data        (null = sembunyikan item)
+      $bulkTemplate  string  URL unduh template Excel   (null = sembunyikan item)
+      $bulkImport    string  URL unggah Excel/CSV    (null = sembunyikan item)
+      $bulkExport    string  URL unduh data Excel    (null = sembunyikan item)
     JS-nya: public/js/bulk-import.js (modal: partials/bulk-import-modal.blade.php)
 --}}
 <div class="bulk-menu" id="bulkMenu">
@@ -18,7 +18,7 @@
     <div class="bulk-menu-panel" role="menu" aria-labelledby="bulkMenuBtn">
         <div class="bulk-menu-head">
             <span class="bulk-menu-title">Data Massal</span>
-            <span class="bulk-menu-sub">Tambah &amp; edit banyak data {{ $bulkLabel }} sekaligus lewat file CSV</span>
+            <span class="bulk-menu-sub">Tambah &amp; edit banyak data {{ $bulkLabel }} sekaligus lewat file Excel</span>
         </div>
 
         @if($bulkTemplate)
@@ -26,7 +26,7 @@
                 <span class="bulk-menu-icon"><span class="material-symbols-outlined">description</span></span>
                 <span class="bulk-menu-text">
                     <span class="bulk-menu-label">Unduh Template</span>
-                    <span class="bulk-menu-hint">File CSV kosong + petunjuk pengisian</span>
+                    <span class="bulk-menu-hint">File Excel dengan kotak, pilihan, & petunjuk</span>
                 </span>
             </a>
         @endif
@@ -46,7 +46,7 @@
                 <span class="bulk-menu-icon"><span class="material-symbols-outlined">download</span></span>
                 <span class="bulk-menu-text">
                     <span class="bulk-menu-label">Download</span>
-                    <span class="bulk-menu-hint">Seluruh data, bisa diedit lalu di-upload lagi</span>
+                    <span class="bulk-menu-hint">Excel seluruh data, bisa diedit lalu di-upload lagi</span>
                 </span>
             </a>
         @endif

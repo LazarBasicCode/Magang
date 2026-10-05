@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Kemahasiswaan;
 use App\Models\Mahasiswa;
+use App\Http\Controllers\Concerns\HandlesBulkData;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
+use App\Support\Csv;
+use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 
 class KemahasiswaanController extends Controller
 {
     use NotifiesOwner;
+    use HandlesBulkData;
 
     /**
      * Halaman utama Kemahasiswaan (server-rendered untuk load pertama & SEO).
@@ -104,6 +109,158 @@ class KemahasiswaanController extends Controller
         ]);
     }
 
+    // =====================================================================
+    // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
+    // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;
+    // di sini hanya bagian yang khas menu ini.
+    // =====================================================================
+
+    protected function bulkMenu(): string
+    {
+        return 'kemahasiswaan';
+    }
+
+    // Pemilik data lewat tabel profil mahasiswa, bukan langsung user_id.
+    protected function bulkOwnerRelation(): string
+    {
+        return 'mahasiswa';
+    }
+
+    protected function bulkOwnerWith(): string
+    {
+        return 'mahasiswa.user';
+    }
+
+    protected function bulkOwnerKey(): string
+    {
+        return 'mahasiswa_id';
+    }
+
+    protected function bulkIdColumn(): string
+    {
+        return 'nim';
+    }
+
+    protected function bulkOwnerLabel(): string
+    {
+        return 'mahasiswa';
+    }
+
+    protected function bulkOwnerUserId(?object $owner): ?int
+    {
+        return $owner?->user_id;
+    }
+
+    protected function bulkOwnerFinder(): \Closure
+    {
+        return $this->bulkMakeFinder(Mahasiswa::all(), 'nim');
+    }
+
+    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
+    public function template(Request $request): StreamedResponse
+    {
+        $this->bulkEnsureAccess($request, true);
+
+        return $this->bulkTemplateResponse(
+            'template-kemahasiswaan.csv',
+            [
+                'id'             => ['required' => 'Tidak',          'example' => '',                             'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
+                'nim'            => ['required' => 'Ya (data baru)', 'example' => '2210001',                      'note' => 'NIM mahasiswa yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
+                'jenis'          => ['required' => 'Ya',             'example' => 'kemahasiswaan',                'note' => 'Pilih salah satu: inbis | kemahasiswaan'],
+                'tab'            => ['required' => 'Ya',             'example' => 'akademik',                     'note' => 'Pilih salah satu: akademik | non_akademik'],
+                'tingkat'        => ['required' => 'Ya',             'example' => 'nasional',                     'note' => 'Pilih salah satu: lokal | nasional | internasional'],
+                'tahun'          => ['required' => 'Ya',             'example' => '2026',                         'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
+                'nama_kegiatan'  => ['required' => 'Ya',             'example' => 'Juara 1 Lomba Karya Tulis',    'note' => 'Nama kegiatan / prestasi.'],
+                'bukti_kegiatan' => ['required' => 'Ya',             'example' => 'https://drive.google.com/...', 'note' => 'Link lengkap diawali https://'],
+            ],
+            [
+                'Kolom "nama" tidak ada di template: otomatis diambil dari NIM.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai CSV.',
+                'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
+            ]
+        );
+    }
+
+    /** Unduh seluruh data kegiatan (bisa diedit lalu diunggah ulang). */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->bulkEnsureAccess($request, false);
+
+        return $this->bulkExportResponse(
+            'kemahasiswaan-' . now()->format('Ymd-His') . '.csv',
+            ['id', 'nim', 'nama', 'jenis', 'tab', 'tingkat', 'tahun', 'nama_kegiatan', 'bukti_kegiatan'],
+            Kemahasiswaan::class,
+            fn (Kemahasiswaan $item) => [
+                $item->id,
+                optional($item->mahasiswa)->nim ?? '',
+                optional(optional($item->mahasiswa)->user)->name ?? '',
+                $item->jenis,
+                $item->tab,
+                $item->tingkat,
+                $item->tahun,
+                $item->nama_kegiatan,
+                $item->bukti_kegiatan,
+            ]
+        );
+    }
+
+    /**
+     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
+     * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
+     * yang disimpan dan daftar error per baris dikembalikan.
+     */
+    public function import(Request $request)
+    {
+        $this->bulkEnsureAccess($request, true);
+
+        $parsed = $this->bulkParseUpload($request, ['jenis', 'tab', 'tingkat', 'tahun', 'nama_kegiatan', 'bukti_kegiatan']);
+        if ($parsed instanceof JsonResponse) {
+            return $parsed;
+        }
+        [, $rows] = $parsed;
+
+        $existingById = $this->bulkExistingById(Kemahasiswaan::class, $rows);
+        $findOwner = $this->bulkOwnerFinder();
+
+        $plan = [];
+        $errors = [];
+        foreach ($rows as $row) {
+            $d = $row['data'];
+
+            [$existing, $owner, $rowErrors] = $this->bulkResolveTarget($d, $existingById, $findOwner);
+
+            $payload = [
+                'mahasiswa_id'   => $owner?->id,
+                'jenis'          => Csv::normalizeKey($d['jenis'] ?? ''),
+                'tab'            => Csv::normalizeKey($d['tab'] ?? ''),
+                'tingkat'        => Csv::normalizeKey($d['tingkat'] ?? ''),
+                'tahun'          => $this->bulkYear($d['tahun'] ?? ''),
+                'nama_kegiatan'  => trim((string) ($d['nama_kegiatan'] ?? '')),
+                'bukti_kegiatan' => trim((string) ($d['bukti_kegiatan'] ?? '')),
+            ];
+
+            // Pemilik sudah ditangani pesan di bulkResolveTarget; hindari pesan ganda.
+            [$messages] = $this->bulkValidate($payload, $this->rules(), $owner ? [] : [$this->bulkOwnerKey()]);
+            $rowErrors = array_merge($rowErrors, $messages);
+
+            if ($rowErrors) {
+                $errors[] = ['row' => $row['line'], 'messages' => array_values(array_unique($rowErrors))];
+                continue;
+            }
+
+            $plan[] = ['existing' => $existing, 'payload' => $payload, 'owner' => $owner];
+        }
+
+        if ($errors) {
+            return $this->bulkRejected($errors);
+        }
+
+        $result = $this->bulkSave(Kemahasiswaan::class, $plan);
+        $this->bulkNotifyOwners($request, $result['perOwner'], 'kegiatan');
+
+        return $this->bulkSuccess($result['created'], $result['updated'], $result['unchanged']);
+    }
+
     private function notifyKegiatan(Request $request, Kemahasiswaan $item, string $aksi): void
     {
         $this->notifyOwner($request, $item->mahasiswa->user_id ?? null, 'kegiatan', $item->nama_kegiatan, $aksi, '', ['kemahasiswaan_id' => $item->id]);
@@ -146,9 +303,10 @@ class KemahasiswaanController extends Controller
         );
     }
 
-    private function validated(Request $request): array
+    /** Aturan validasi yang sama dipakai form (store/update) dan unggah massal. */
+    private function rules(): array
     {
-        return $request->validate([
+        return [
             'mahasiswa_id'   => ['required', Rule::exists('mahasiswa', 'id')],
             'jenis'          => ['required', 'in:inbis,kemahasiswaan'],
             'tab'            => ['required', 'in:akademik,non_akademik'],
@@ -156,7 +314,12 @@ class KemahasiswaanController extends Controller
             'tahun'          => ['required', 'integer', 'min:2000', 'max:2100'],
             'nama_kegiatan'  => ['required', 'string', 'max:255'],
             'bukti_kegiatan' => ['required', 'url', 'max:2048'],
-        ]);
+        ];
+    }
+
+    private function validated(Request $request): array
+    {
+        return $request->validate($this->rules());
     }
 
     /**

@@ -259,10 +259,29 @@
                         <h1 class="page-title">Publikasi &amp; Conference Mahasiswa</h1>
                         <p class="page-subtitle">Pendataan luaran publikasi SINTA Nasional, Conference, dan Jurnal Internasional &middot; Tahun 2026</p>
                     </div>
-                    <button type="button" class="btn-primary" id="btnTambahLppmMahasiswa">
-                        <span class="material-symbols-outlined">add</span>
-                        <span>Tambah Data Publikasi</span>
-                    </button>
+                    @php
+                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
+                        $bulkUser = auth()->user();
+                        $bulkLevel = $bulkUser->menuLevel('lppm_mahasiswa');
+                        $bulkRole = in_array($bulkUser->role, ['admin', 'superadmin'], true);
+                        $showBulk = $bulkRole && in_array($bulkLevel, ['readonly', 'penuh'], true);
+                        $bulkWrite = $bulkRole && $bulkLevel === 'penuh';
+                    @endphp
+                    <div class="title-actions">
+                        <button type="button" class="btn-primary" id="btnTambahLppmMahasiswa">
+                            <span class="material-symbols-outlined">add</span>
+                            <span>Tambah Data Publikasi</span>
+                        </button>
+                        @if($showBulk)
+                            @include('partials.bulk-menu', [
+                                'bulkLabel'    => 'Publikasi Mahasiswa',
+                                'bulkTemplate' => $bulkWrite ? route('lppm.mahasiswa.template') : null,
+                                'bulkImport'   => $bulkWrite ? route('lppm.mahasiswa.import') : null,
+                                'bulkExport'   => route('lppm.mahasiswa.export'),
+                            ])
+                        @endif
+                    </div>
                 </div>
 
                 <div class="stat-grid">
@@ -557,6 +576,14 @@
         </form>
     </div>
 
+    @if($showBulk && $bulkWrite)
+        @include('partials.bulk-import-modal', [
+            'bulkLabel'    => 'Publikasi Mahasiswa',
+            'bulkImport'   => route('lppm.mahasiswa.import'),
+            'bulkTemplate' => route('lppm.mahasiswa.template'),
+        ])
+    @endif
+
     <script src="{{ asset('js/script.js') }}"></script>
     <script>
         // ================================================================
@@ -786,6 +813,9 @@
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
+    @if($showBulk)
+        <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+    @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
         // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.

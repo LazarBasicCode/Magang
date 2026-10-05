@@ -2,14 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesBulkData;
+use App\Http\Controllers\Concerns\NotifiesOwner;
 use App\Models\Rekognisi;
 use App\Models\User;
-use App\Http\Controllers\Concerns\NotifiesOwner;
+use App\Support\Csv;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LppmRekognisiController extends Controller
 {
     use NotifiesOwner;
+    use HandlesBulkData;
+
+    /** Aturan validasi yang sama dipakai form (store/update) dan unggah massal. */
+    private const RULES = [
+        'user_id'         => ['required', 'exists:users,id'],
+        'jenis'           => ['required', 'in:nasional,internasional,alumni'],
+        'mitra'           => ['required', 'string', 'max:255'],
+        'jabatan'         => ['nullable', 'required_if:jenis,alumni', 'string', 'max:255'],
+        'tanggal_mulai'   => ['required', 'date'],
+        'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
+        'bukti_kegiatan'  => ['required', 'url', 'max:2048'],
+        'bukti_tambahan'  => ['nullable', 'url', 'max:2048'],
+    ];
 
     /**
      * Akses "biasa" (default mahasiswa/dosen) hanya bisa melihat & mengisi
@@ -63,9 +80,7 @@ class LppmRekognisiController extends Controller
         $this->authorizeOwnership($request, $rekognisi);
 
         // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
-
         $request->merge(['user_id' => $rekognisi->user_id, 'tipe_user' => $rekognisi->tipe_user]);
-
 
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
@@ -90,6 +105,140 @@ class LppmRekognisiController extends Controller
 
         return response()->json(['success' => true, 'id' => $id]);
     }
+
+    // =====================================================================
+    // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
+    // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;
+    // di sini hanya bagian yang khas Rekognisi.
+    // =====================================================================
+
+    protected function bulkMenu(): string
+    {
+        return 'rekognisi';
+    }
+
+    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
+    public function template(Request $request): StreamedResponse
+    {
+        $this->bulkEnsureAccess($request, true);
+
+        return $this->bulkTemplateResponse(
+            'template-rekognisi.csv',
+            [
+                'id'              => ['required' => 'Tidak',                 'example' => '',                             'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
+                'nim_nidn'        => ['required' => 'Ya (data baru)',        'example' => '2210001',                      'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar di Data Master. Pemilik data tidak bisa diganti saat edit.'],
+                'jenis'           => ['required' => 'Ya',                    'example' => 'nasional',                     'note' => 'Pilih salah satu: nasional | internasional | alumni'],
+                'mitra'           => ['required' => 'Ya',                    'example' => 'PT Teknologi Nusantara',       'note' => 'Nama institusi / perusahaan pemberi rekognisi.'],
+                'jabatan'         => ['required' => 'Jika jenis = alumni',   'example' => '',                             'note' => 'Jabatan alumni di mitra. Untuk jenis lain dikosongkan (isian diabaikan).'],
+                'tanggal_mulai'   => ['required' => 'Ya',                    'example' => '2026-03-01',                   'note' => 'Format 2026-09-30 atau 30/09/2026.'],
+                'tanggal_selesai' => ['required' => 'Ya',                    'example' => '2026-03-03',                   'note' => 'Format sama. Tidak boleh sebelum tanggal_mulai.'],
+                'bukti_kegiatan'  => ['required' => 'Ya',                    'example' => 'https://drive.google.com/...', 'note' => 'Link lengkap diawali https://'],
+                'bukti_tambahan'  => ['required' => 'Tidak',                 'example' => '',                             'note' => 'Link bukti tambahan (opsional), diawali https://'],
+            ],
+            [
+                'Kolom "nama" tidak ada di template: otomatis diambil dari NIM/NIDN.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai CSV.',
+                'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
+            ]
+        );
+    }
+
+    /** Unduh seluruh data rekognisi (bisa diedit lalu diunggah ulang). */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->bulkEnsureAccess($request, false);
+
+        return $this->bulkExportResponse(
+            'rekognisi-' . now()->format('Ymd-His') . '.csv',
+            ['id', 'nim_nidn', 'nama', 'jenis', 'mitra', 'jabatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan', 'bukti_tambahan'],
+            Rekognisi::class,
+            fn (Rekognisi $item) => [
+                $item->id,
+                $item->user->nim_nidn ?? '',
+                $item->user->name ?? '',
+                $item->jenis,
+                $item->mitra,
+                $item->jabatan,
+                optional($item->tanggal_mulai)->format('Y-m-d'),
+                optional($item->tanggal_selesai)->format('Y-m-d'),
+                $item->bukti_kegiatan,
+                $item->bukti_tambahan,
+            ]
+        );
+    }
+
+    /**
+     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
+     * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
+     * yang disimpan dan daftar error per baris dikembalikan.
+     */
+    public function import(Request $request)
+    {
+        $this->bulkEnsureAccess($request, true);
+
+        $parsed = $this->bulkParseUpload($request, ['jenis', 'mitra', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan']);
+        if ($parsed instanceof JsonResponse) {
+            return $parsed;
+        }
+        [, $rows] = $parsed;
+
+        $existingById = $this->bulkExistingById(Rekognisi::class, $rows);
+        $findOwner = $this->bulkOwnerFinder();
+
+        $plan = [];
+        $errors = [];
+        foreach ($rows as $row) {
+            $d = $row['data'];
+
+            [$existing, $owner, $rowErrors] = $this->bulkResolveTarget($d, $existingById, $findOwner);
+
+            $jenis = Csv::normalizeKey($d['jenis'] ?? '');
+            [$dates, $badDates] = $this->bulkParseDates($d, ['tanggal_mulai', 'tanggal_selesai'], $rowErrors);
+
+            $payload = [
+                'user_id'        => $owner?->id,
+                'tipe_user'      => $owner?->role === 'dosen' ? 'dosen' : 'mahasiswa',
+                'jenis'          => $jenis,
+                'mitra'          => trim((string) ($d['mitra'] ?? '')),
+                'jabatan'        => trim((string) ($d['jabatan'] ?? '')) ?: null,
+                'bukti_kegiatan' => trim((string) ($d['bukti_kegiatan'] ?? '')),
+                'bukti_tambahan' => trim((string) ($d['bukti_tambahan'] ?? '')) ?: null,
+            ] + $dates;
+
+            // user_id sudah ditangani pesan di bulkResolveTarget; hindari pesan ganda.
+            [$messages] = $this->bulkValidate(
+                $payload,
+                self::RULES,
+                array_merge($owner ? [] : ['user_id'], $badDates)
+            );
+            $rowErrors = array_merge($rowErrors, $messages);
+
+            if ($rowErrors) {
+                $errors[] = ['row' => $row['line'], 'messages' => array_values(array_unique($rowErrors))];
+                continue;
+            }
+
+            // Jabatan hanya berlaku untuk alumni (sama seperti form).
+            if ($jenis !== 'alumni') {
+                $payload['jabatan'] = null;
+            }
+
+            $plan[] = ['existing' => $existing, 'payload' => $payload, 'owner' => $owner];
+        }
+
+        if ($errors) {
+            return $this->bulkRejected($errors);
+        }
+
+        $result = $this->bulkSave(Rekognisi::class, $plan);
+        $this->bulkNotifyOwners($request, $result['perOwner'], 'rekognisi');
+
+        return $this->bulkSuccess($result['created'], $result['updated'], $result['unchanged']);
+    }
+
+    // =====================================================================
+    // HELPER CRUD
+    // =====================================================================
 
     private function notifyRekognisi(Request $request, Rekognisi $item, string $aksi): void
     {
@@ -125,16 +274,7 @@ class LppmRekognisiController extends Controller
 
     private function validated(Request $request): array
     {
-        $data = $request->validate([
-            'user_id'         => ['required', 'exists:users,id'],
-            'jenis'           => ['required', 'in:nasional,internasional,alumni'],
-            'mitra'           => ['required', 'string', 'max:255'],
-            'jabatan'         => ['nullable', 'required_if:jenis,alumni', 'string', 'max:255'],
-            'tanggal_mulai'   => ['required', 'date'],
-            'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
-            'bukti_kegiatan'  => ['required', 'url', 'max:2048'],
-            'bukti_tambahan'  => ['nullable', 'url', 'max:2048'],
-        ]);
+        $data = $request->validate(self::RULES);
 
         // tipe_user diturunkan otomatis dari role user yang dipilih, bukan dari input klien
         $user = User::findOrFail($data['user_id']);

@@ -263,10 +263,29 @@
                         <p class="page-subtitle">Pendataan kegiatan akademik, non-akademik, inbis, dan kompetisi
                             &middot; Tahun Akademik 2025/2026 (Genap)</p>
                     </div>
-                    <button type="button" class="btn-primary" id="btnTambahKegiatan">
-                        <span class="material-symbols-outlined">add</span>
-                        <span>Tambah Kegiatan</span>
-                    </button>
+                    @php
+                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
+                        $bulkUser = auth()->user();
+                        $bulkLevel = $bulkUser->menuLevel('kemahasiswaan');
+                        $bulkRole = in_array($bulkUser->role, ['admin', 'superadmin'], true);
+                        $showBulk = $bulkRole && in_array($bulkLevel, ['readonly', 'penuh'], true);
+                        $bulkWrite = $bulkRole && $bulkLevel === 'penuh';
+                    @endphp
+                    <div class="title-actions">
+                        <button type="button" class="btn-primary" id="btnTambahKegiatan">
+                            <span class="material-symbols-outlined">add</span>
+                            <span>Tambah Kegiatan</span>
+                        </button>
+                        @if($showBulk)
+                            @include('partials.bulk-menu', [
+                                'bulkLabel'    => 'Kemahasiswaan',
+                                'bulkTemplate' => $bulkWrite ? route('kemahasiswaan.template') : null,
+                                'bulkImport'   => $bulkWrite ? route('kemahasiswaan.import') : null,
+                                'bulkExport'   => route('kemahasiswaan.export'),
+                            ])
+                        @endif
+                    </div>
                 </div>
 
                 <!-- SUMMARY STAT CARDS -->
@@ -626,6 +645,14 @@
         </form>
     </div>
 
+    @if($showBulk && $bulkWrite)
+        @include('partials.bulk-import-modal', [
+            'bulkLabel'    => 'Kemahasiswaan',
+            'bulkImport'   => route('kemahasiswaan.import'),
+            'bulkTemplate' => route('kemahasiswaan.template'),
+        ])
+    @endif
+
     <script src="{{ asset('js/script.js') }}"></script>
     <script>
         // ================================================================
@@ -843,6 +870,9 @@
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
+    @if($showBulk)
+        <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+    @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
         // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.

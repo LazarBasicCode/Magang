@@ -84,6 +84,13 @@ Route::middleware(['auth'])->group(function () {
     // ---- Kerja Sama ----
     Route::middleware('menu.access:kerja_sama,readonly')->group(function () {
         Route::get('/kerja-sama', [KerjaSamaController::class, 'index'])->name('kerja-sama.index');
+        // Unduh seluruh data (CSV) — pembatasan role admin/superadmin ada di controller.
+        Route::get('/kerja-sama/export', [KerjaSamaController::class, 'export'])->name('kerja-sama.export');
+    });
+    // Template & unggah massal CSV — hanya admin/superadmin dengan akses penuh.
+    Route::middleware('menu.access:kerja_sama,penuh')->group(function () {
+        Route::get('/kerja-sama/template', [KerjaSamaController::class, 'template'])->name('kerja-sama.template');
+        Route::post('/kerja-sama/import', [KerjaSamaController::class, 'import'])->name('kerja-sama.import');
     });
     Route::middleware('menu.access:kerja_sama,biasa')->group(function () {
         Route::post('/kerja-sama', [KerjaSamaController::class, 'store'])->name('kerja-sama.store');

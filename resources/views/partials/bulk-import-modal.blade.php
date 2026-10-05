@@ -9,7 +9,7 @@
     <div class="modal-drag-handle" id="bulkDragHandle">
         <div>
             <h3 class="modal-title">Upload Data {{ $bulkLabel }}</h3>
-            <p class="modal-subtitle">Tambah data baru atau edit data yang sudah ada lewat file CSV</p>
+            <p class="modal-subtitle">Tambah data baru atau edit data yang sudah ada lewat file Excel (.xlsx) atau CSV</p>
         </div>
         <button type="button" class="modal-close-btn" id="bulkCloseBtn" aria-label="Tutup">
             <span class="material-symbols-outlined">close</span>
@@ -28,9 +28,9 @@
 
         <label class="bulk-drop" id="bulkDrop" for="bulkFileInput">
             <span class="material-symbols-outlined bulk-drop-icon">upload_file</span>
-            <span class="bulk-drop-title" id="bulkFileName">Pilih file CSV atau seret ke sini</span>
+            <span class="bulk-drop-title" id="bulkFileName">Pilih file Excel (.xlsx) atau seret ke sini</span>
             <span class="bulk-drop-sub" id="bulkFileMeta">Maksimal 2 MB &middot; 1000 baris</span>
-            <input type="file" id="bulkFileInput" accept=".csv,.txt,text/csv" hidden>
+            <input type="file" id="bulkFileInput" accept=".xlsx,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
         </label>
 
         <div class="bulk-result" id="bulkResult" hidden></div>

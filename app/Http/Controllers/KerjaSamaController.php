@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use ZipArchive;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -28,7 +29,7 @@ class KerjaSamaController extends Controller
     ];
 
     /** Kolom file CSV (urutan template & ekspor). "nama" hanya informasi, diabaikan saat unggah. */
-    private const CSV_COLUMNS = ['id', 'nim_nidn', 'nama', 'jenis', 'jenis_lainnya', 'arah', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan'];
+    private const EXCEL_COLUMNS = ['id', 'nim_nidn', 'nama', 'jenis', 'jenis_lainnya', 'arah', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan'];
 
     private const MAX_IMPORT_ROWS = 1000;
 
@@ -132,82 +133,79 @@ class KerjaSamaController extends Controller
     }
 
     // =====================================================================
-    // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
+    // UNGGAH / UNDUH MASSAL (EXCEL) — khusus admin & superadmin
     // =====================================================================
 
-    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
-    public function template(Request $request): StreamedResponse
+    /** Template Excel: sheet Petunjuk + sheet Data Kerja Sama dengan kotak, lebar kolom, dan dropdown. */
+    public function template(Request $request)
     {
         $this->ensureBulkAccess($request, true);
 
-        $columns = array_values(array_diff(self::CSV_COLUMNS, ['nama']));
-        $notes = [
-            '# PETUNJUK — baris yang diawali tanda # otomatis diabaikan saat diunggah.',
-            '# id: KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.',
-            '# nim_nidn: NIM mahasiswa / NIDN dosen yang sudah terdaftar di Data Master. Pemilik data tidak bisa diganti saat edit.',
-            '# jenis: conference_internasional | pkl | sharing_session | keynote_session | guest_lecture | pengabdian_internasional | research_internasional | lainnya',
-            '# Mahasiswa hanya boleh: conference_internasional, pkl, sharing_session, lainnya. Dosen tidak boleh pkl.',
-            '# jenis_lainnya: wajib jika jenis = lainnya.  arah: wajib (inbound / outbound) jika jenis = guest_lecture.',
-            '# tanggal_mulai & tanggal_selesai: format 2026-09-30 atau 30/09/2026.  bukti_kegiatan: link lengkap (https://...).',
-            '# CONTOH (hapus tanda # dan sesuaikan): ;2210001;conference_internasional;;;Universitas Tokyo;Judul kegiatan;2026-03-01;2026-03-03;https://drive.google.com/...',
+        $rows = [
+            ['id','nim_nidn','nama','jenis','jenis_lainnya','arah','mitra','judul_kegiatan','tanggal_mulai','tanggal_selesai','bukti_kegiatan'],
+            ['','','','conference_internasional','','','Contoh Mitra','Contoh judul kegiatan','2026-03-01','2026-03-03','https://contoh.com/bukti'],
         ];
 
-        return $this->csvResponse('template-kerja-sama.csv', function ($out) use ($columns, $notes) {
-            foreach ($notes as $note) {
-                $this->csvLine($out, [$note]);
-            }
-            $this->csvLine($out, $columns);
-        });
+        return $this->xlsxResponse('template-kerja-sama.xlsx', [
+            $this->instructionSheet(),
+            $this->dataSheet($rows, true),
+        ]);
     }
 
-    /** Unduh seluruh data kerja sama (bisa diedit lalu diunggah ulang). */
-    public function export(Request $request): StreamedResponse
+    /** Download seluruh data sebagai Excel yang rapi dan siap diedit/upload ulang. */
+    public function export(Request $request)
     {
         $this->ensureBulkAccess($request, false);
 
-        return $this->csvResponse('kerja-sama-' . now()->format('Ymd-His') . '.csv', function ($out) {
-            $this->csvLine($out, self::CSV_COLUMNS);
-
-            KerjaSama::with('user')->chunkById(500, function ($rows) use ($out) {
-                foreach ($rows as $item) {
-                    $this->csvLine($out, array_map([$this, 'safeCell'], [
-                        $item->id,
-                        $item->user->nim_nidn ?? '',
-                        $item->user->name ?? '',
-                        $item->jenis,
-                        $item->jenis_lainnya,
-                        $item->arah,
-                        $item->mitra,
-                        $item->judul_kegiatan,
-                        optional($item->tanggal_mulai)->format('Y-m-d'),
-                        optional($item->tanggal_selesai)->format('Y-m-d'),
-                        $item->bukti_kegiatan,
-                    ]));
-                }
-            });
+        $rows = [self::EXCEL_COLUMNS];
+        KerjaSama::with('user')->chunkById(500, function ($items) use (&$rows) {
+            foreach ($items as $item) {
+                $rows[] = array_map([$this, 'safeCell'], [
+                    $item->id,
+                    $item->user->nim_nidn ?? '',
+                    $item->user->name ?? '',
+                    $item->jenis,
+                    $item->jenis_lainnya,
+                    $item->arah,
+                    $item->mitra,
+                    $item->judul_kegiatan,
+                    optional($item->tanggal_mulai)->format('Y-m-d'),
+                    optional($item->tanggal_selesai)->format('Y-m-d'),
+                    $item->bukti_kegiatan,
+                ]);
+            }
         });
+
+        return $this->xlsxResponse('kerja-sama-' . now()->format('Ymd-His') . '.xlsx', [
+            $this->instructionSheet(),
+            $this->dataSheet($rows, false),
+        ]);
     }
 
     /**
-     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
-     * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
-     * yang disimpan dan daftar error per baris dikembalikan.
+     * Upload Excel. File CSV lama tetap diterima agar tidak memutus workflow lama.
+     * Excel memakai sheet "Data Kerja Sama"; kolom nama hanya informasi dan tidak mengubah pemilik.
      */
     public function import(Request $request)
     {
         $this->ensureBulkAccess($request, true);
 
         $request->validate(
-            ['file' => ['required', 'file', 'extensions:csv,txt', 'max:2048']],
+            ['file' => ['required', 'file', 'extensions:xlsx,csv,txt', 'max:2048']],
             [
-                'file.required'   => 'Pilih file CSV terlebih dahulu.',
-                'file.extensions' => 'File harus berformat .csv (gunakan template dari menu Unduh Template).',
-                'file.max'        => 'Ukuran file maksimal 2 MB.',
+                'file.required' => 'Pilih file Excel terlebih dahulu.',
+                'file.extensions' => 'File harus .xlsx, .csv, atau .txt. Untuk struktur paling rapi gunakan template Excel.',
+                'file.max' => 'Ukuran file maksimal 2 MB.',
             ]
         );
 
         try {
-            [$header, $rows] = $this->readCsv($request->file('file')->getRealPath());
+            $extension = strtolower($request->file('file')->getClientOriginalExtension());
+            if ($extension === 'xlsx') {
+                [$header, $rows] = $this->readXlsx($request->file('file')->getRealPath());
+            } else {
+                [$header, $rows] = $this->readCsv($request->file('file')->getRealPath());
+            }
         } catch (\RuntimeException $e) {
             return $this->importFailed($e->getMessage());
         }
@@ -221,20 +219,17 @@ class KerjaSamaController extends Controller
 
         $missing = array_diff(['jenis', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan'], $header);
         if ($missing) {
-            return $this->importFailed('Kolom wajib tidak ditemukan: ' . implode(', ', $missing) . '. Gunakan template terbaru.');
+            return $this->importFailed('Kolom wajib tidak ditemukan: ' . implode(', ', $missing) . '. Gunakan template Excel terbaru.');
         }
 
-        // ---- Siapkan data pendukung (sekali query, bukan per baris) ----
         $existingById = KerjaSama::whereIn('id', collect($rows)->pluck('data.id')->filter(fn ($v) => ctype_digit((string) $v))->all())
             ->get()->keyBy('id');
 
         $people = User::whereIn('role', ['mahasiswa', 'dosen'])->whereNotNull('nim_nidn')->get();
         $byExact = $people->keyBy(fn ($u) => (string) $u->nim_nidn);
-        // Excel suka membuang angka 0 di depan (mis. NIDN 0712048901). Cocokkan juga tanpa nol di depan, selama tidak ambigu.
         $byStripped = $people->groupBy(fn ($u) => ltrim((string) $u->nim_nidn, '0'))
             ->filter(fn ($g) => $g->count() === 1)->map(fn ($g) => $g->first());
 
-        // ---- Validasi semua baris ----
         $plan = [];
         $errors = [];
         foreach ($rows as $row) {
@@ -246,20 +241,14 @@ class KerjaSamaController extends Controller
             $id = trim((string) ($d['id'] ?? ''));
             if ($id !== '') {
                 $existing = ctype_digit($id) ? $existingById->get((int) $id) : null;
-                if (!$existing) {
-                    $rowErrors[] = "id \"{$id}\" tidak ditemukan.";
-                }
+                if (!$existing) $rowErrors[] = "id \"{$id}\" tidak ditemukan.";
             }
 
             $nim = trim((string) ($d['nim_nidn'] ?? ''));
             $owner = $nim !== '' ? ($byExact->get($nim) ?? $byStripped->get(ltrim($nim, '0'))) : null;
-            if ($nim !== '' && !$owner) {
-                $rowErrors[] = "NIM/NIDN \"{$nim}\" tidak terdaftar sebagai mahasiswa/dosen.";
-            }
+            if ($nim !== '' && !$owner) $rowErrors[] = "NIM/NIDN \"{$nim}\" tidak terdaftar sebagai mahasiswa/dosen.";
             if ($existing) {
-                if ($owner && $owner->id !== $existing->user_id) {
-                    $rowErrors[] = 'Pemilik data tidak bisa diganti saat edit (NIM/NIDN berbeda dari data aslinya).';
-                }
+                if ($owner && $owner->id !== $existing->user_id) $rowErrors[] = 'Pemilik data tidak bisa diganti saat edit (NIM/NIDN berbeda dari data aslinya).';
                 $owner = $existing->user ?? User::find($existing->user_id);
             } elseif ($id === '' && $nim === '') {
                 $rowErrors[] = 'nim_nidn wajib diisi untuk data baru.';
@@ -267,61 +256,52 @@ class KerjaSamaController extends Controller
 
             $jenis = $this->normalizeKey($d['jenis'] ?? '');
             $payload = [
-                'user_id'         => $owner?->id,
-                'tipe_user'       => $owner?->role === 'dosen' ? 'dosen' : 'mahasiswa',
-                'jenis'           => $jenis,
-                'jenis_lainnya'   => trim((string) ($d['jenis_lainnya'] ?? '')) ?: null,
-                'arah'            => $this->normalizeKey($d['arah'] ?? '') ?: null,
-                'mitra'           => trim((string) ($d['mitra'] ?? '')),
-                'judul_kegiatan'  => trim((string) ($d['judul_kegiatan'] ?? '')),
-                'tanggal_mulai'   => $this->parseDate($d['tanggal_mulai'] ?? ''),
+                'user_id' => $owner?->id,
+                'tipe_user' => $owner?->role === 'dosen' ? 'dosen' : 'mahasiswa',
+                'jenis' => $jenis,
+                'jenis_lainnya' => trim((string) ($d['jenis_lainnya'] ?? '')) ?: null,
+                'arah' => $this->normalizeKey($d['arah'] ?? '') ?: null,
+                'mitra' => trim((string) ($d['mitra'] ?? '')),
+                'judul_kegiatan' => trim((string) ($d['judul_kegiatan'] ?? '')),
+                'tanggal_mulai' => $this->parseDate($d['tanggal_mulai'] ?? ''),
                 'tanggal_selesai' => $this->parseDate($d['tanggal_selesai'] ?? ''),
-                'bukti_kegiatan'  => trim((string) ($d['bukti_kegiatan'] ?? '')),
+                'bukti_kegiatan' => trim((string) ($d['bukti_kegiatan'] ?? '')),
             ];
 
-            // Tanggal yang tidak dikenali ditolak dengan pesan jelas (jangan sampai ditebak PHP).
             $badDates = [];
             foreach (['tanggal_mulai', 'tanggal_selesai'] as $field) {
                 if ($payload[$field] === false) {
                     $rowErrors[] = "{$field} \"" . ($d[$field] ?? '') . "\" tidak dikenali (pakai format 2026-09-30 atau 30/09/2026).";
                     $payload[$field] = null;
-                    $badDates = ['tanggal_mulai', 'tanggal_selesai'];
+                    $badDates[] = $field;
                 }
             }
 
             $validator = Validator::make($payload, self::RULES, [
-                'required'                  => ':attribute wajib diisi.',
-                'required_if'               => ':attribute wajib diisi untuk jenis ini.',
-                'in'                        => ':attribute tidak valid.',
-                'url'                       => ':attribute harus berupa link lengkap (https://...).',
-                'max'                       => ':attribute terlalu panjang.',
-                'date'                      => ':attribute tidak valid (pakai format 2026-09-30 atau 30/09/2026).',
+                'required' => ':attribute wajib diisi.',
+                'required_if' => ':attribute wajib diisi untuk jenis ini.',
+                'in' => ':attribute tidak valid.',
+                'url' => ':attribute harus berupa link lengkap (https://...).',
+                'max' => ':attribute terlalu panjang.',
+                'date' => ':attribute tidak valid (pakai format 2026-09-30 atau 30/09/2026).',
                 'tanggal_selesai.after_or_equal' => 'tanggal_selesai tidak boleh sebelum tanggal_mulai.',
             ], [
-                'jenis' => 'jenis', 'jenis_lainnya' => 'jenis_lainnya', 'arah' => 'arah', 'mitra' => 'mitra',
-                'judul_kegiatan' => 'judul_kegiatan', 'tanggal_mulai' => 'tanggal_mulai',
-                'tanggal_selesai' => 'tanggal_selesai', 'bukti_kegiatan' => 'bukti_kegiatan', 'user_id' => 'pemilik',
+                'jenis' => 'jenis','jenis_lainnya' => 'jenis_lainnya','arah' => 'arah','mitra' => 'mitra',
+                'judul_kegiatan' => 'judul_kegiatan','tanggal_mulai' => 'tanggal_mulai',
+                'tanggal_selesai' => 'tanggal_selesai','bukti_kegiatan' => 'bukti_kegiatan','user_id' => 'pemilik',
             ]);
-            // user_id sudah ditangani pesan di atas; hindari pesan ganda.
             $messages = collect($validator->errors()->getMessages())->except(array_merge($owner ? [] : ['user_id'], $badDates))->flatten()->all();
             $rowErrors = array_merge($rowErrors, $messages);
 
-            if (!$validator->errors()->has('jenis') && $jenis !== '' && ($msg = $this->jenisRestriction($payload['tipe_user'], $jenis))) {
-                $rowErrors[] = $msg;
-            }
+            if (!$validator->errors()->has('jenis') && $jenis !== '' && ($msg = $this->jenisRestriction($payload['tipe_user'], $jenis))) $rowErrors[] = $msg;
 
             if ($rowErrors) {
                 $errors[] = ['row' => $line, 'messages' => array_values(array_unique($rowErrors))];
                 continue;
             }
 
-            if ($jenis !== 'lainnya') {
-                $payload['jenis_lainnya'] = null;
-            }
-            if ($jenis !== 'guest_lecture') {
-                $payload['arah'] = null;
-            }
-
+            if ($jenis !== 'lainnya') $payload['jenis_lainnya'] = null;
+            if ($jenis !== 'guest_lecture') $payload['arah'] = null;
             $plan[] = ['existing' => $existing, 'payload' => $payload];
         }
 
@@ -333,25 +313,19 @@ class KerjaSamaController extends Controller
             );
         }
 
-        // ---- Simpan (semua atau tidak sama sekali) ----
         $created = $updated = $unchanged = 0;
         $perOwner = [];
-
         DB::transaction(function () use ($plan, &$created, &$updated, &$unchanged, &$perOwner) {
             foreach ($plan as $p) {
                 $payload = $p['payload'];
-
                 if ($p['existing']) {
-                    // Pemilik & tipe tidak diubah saat edit.
                     unset($payload['user_id'], $payload['tipe_user']);
                     $p['existing']->fill($payload);
                     if ($p['existing']->isDirty()) {
                         $p['existing']->save();
                         $updated++;
                         $perOwner[$p['existing']->user_id]['updated'] = ($perOwner[$p['existing']->user_id]['updated'] ?? 0) + 1;
-                    } else {
-                        $unchanged++;
-                    }
+                    } else $unchanged++;
                 } else {
                     KerjaSama::create($payload);
                     $created++;
@@ -360,29 +334,17 @@ class KerjaSamaController extends Controller
             }
         });
 
-        // Satu notifikasi ringkas per pemilik data (bukan satu per baris).
         foreach ($perOwner as $ownerId => $n) {
             $parts = [];
-            if (!empty($n['created'])) {
-                $parts[] = "menambahkan {$n['created']} data";
-            }
-            if (!empty($n['updated'])) {
-                $parts[] = "memperbarui {$n['updated']} data";
-            }
-            $this->notifyUser(
-                $request,
-                (int) $ownerId,
-                'Data kerja sama Anda diperbarui',
-                ucfirst($request->user()->name) . ' (' . $request->user()->role . ') ' . implode(' dan ', $parts) . ' kerja sama Anda lewat unggah massal.'
-            );
+            if (!empty($n['created'])) $parts[] = "menambahkan {$n['created']} data";
+            if (!empty($n['updated'])) $parts[] = "memperbarui {$n['updated']} data";
+            $this->notifyUser($request, (int) $ownerId, 'Data kerja sama Anda diperbarui',
+                ucfirst($request->user()->name) . ' (' . $request->user()->role . ') ' . implode(' dan ', $parts) . ' kerja sama Anda lewat unggah massal.');
         }
 
         return response()->json([
-            'success'   => true,
-            'created'   => $created,
-            'updated'   => $updated,
-            'unchanged' => $unchanged,
-            'message'   => "Berhasil: {$created} data ditambahkan, {$updated} diperbarui, {$unchanged} tidak berubah.",
+            'success' => true, 'created' => $created, 'updated' => $updated, 'unchanged' => $unchanged,
+            'message' => "Berhasil: {$created} data ditambahkan, {$updated} diperbarui, {$unchanged} tidak berubah.",
         ]);
     }
 
@@ -405,6 +367,332 @@ class KerjaSamaController extends Controller
             'errors'  => $errors,
             'more'    => $more,
         ], 422);
+    }
+
+    private function instructionSheet(): array
+    {
+        return [
+            'name' => 'Petunjuk',
+            'widths' => [22, 34, 24, 34, 34],
+            'rows' => [
+                [
+                    ['value' => 'PETUNJUK IMPORT / EXPORT KERJA SAMA', 'style' => 2],
+                    ['value' => ''],
+                    ['value' => ''],
+                    ['value' => ''],
+                    ['value' => ''],
+                ],
+                [
+                    ['value' => 'Cara menggunakan', 'style' => 2],
+                    ['value' => 'Isi data pada sheet "Data Kerja Sama". Jangan mengubah nama kolom.', 'style' => 1],
+                ],
+                [
+                    ['value' => 'ID', 'style' => 2],
+                    ['value' => 'Kosong = tambah data baru. Isi ID dari hasil Download = edit data tersebut.', 'style' => 1],
+                ],
+                [
+                    ['value' => 'NIM/NIDN', 'style' => 2],
+                    ['value' => 'Harus sudah terdaftar di Data Master. Saat edit, pemilik tidak boleh diganti.', 'style' => 1],
+                ],
+                [
+                    ['value' => 'Format tanggal', 'style' => 2],
+                    ['value' => 'Gunakan YYYY-MM-DD, contoh 2026-09-30.', 'style' => 1],
+                ],
+                [
+                    ['value' => 'Link bukti', 'style' => 2],
+                    ['value' => 'Harus berupa URL lengkap, misalnya https://drive.google.com/...', 'style' => 1],
+                ],
+                [
+                    ['value' => 'Jenis', 'style' => 2],
+                    ['value' => 'conference_internasional', 'style' => 1],
+                    ['value' => 'Mahasiswa & Dosen', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'pkl', 'style' => 1],
+                    ['value' => 'Mahasiswa saja', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'sharing_session', 'style' => 1],
+                    ['value' => 'Mahasiswa & Dosen', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'keynote_session', 'style' => 1],
+                    ['value' => 'Dosen saja', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'guest_lecture', 'style' => 1],
+                    ['value' => 'Dosen saja; wajib isi arah', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'pengabdian_internasional', 'style' => 1],
+                    ['value' => 'Dosen saja', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'research_internasional', 'style' => 1],
+                    ['value' => 'Dosen saja', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'lainnya', 'style' => 1],
+                    ['value' => 'Mahasiswa & Dosen; wajib isi jenis_lainnya', 'style' => 1],
+                ],
+                [
+                    ['value' => 'Arah guest lecture', 'style' => 2],
+                    ['value' => 'inbound', 'style' => 1],
+                    ['value' => 'Dosen', 'style' => 1],
+                ],
+                [
+                    ['value' => '', 'style' => 2],
+                    ['value' => 'outbound', 'style' => 1],
+                    ['value' => 'Dosen', 'style' => 1],
+                ],
+                [
+                    ['value' => 'Catatan', 'style' => 2],
+                    ['value' => 'Kolom nama hanya informasi. Sistem menentukan pemilik dari NIM/NIDN.', 'style' => 1],
+                ],
+            ],
+        ];
+    }
+
+    private function dataSheet(array $rows, bool $template): array
+    {
+        return [
+            'name' => 'Data Kerja Sama',
+            'widths' => [10, 18, 28, 30, 28, 16, 28, 34, 18, 18, 42],
+            'rows' => array_map(function ($row, $index) {
+                return array_map(function ($value) use ($index) {
+                    return ['value' => $this->safeCell($value), 'style' => $index === 0 ? 2 : 1];
+                }, $row);
+            }, $rows, array_keys($rows)),
+            'validations' => [
+                ['range' => 'D2:D1001', 'formula' => 'conference_internasional,pkl,sharing_session,keynote_session,guest_lecture,pengabdian_internasional,research_internasional,lainnya', 'error' => 'Pilih jenis yang tersedia di sheet Petunjuk.'],
+                ['range' => 'F2:F1001', 'formula' => 'inbound,outbound', 'error' => 'Pilih inbound atau outbound.'],
+            ],
+            'freeze' => true,
+            'autofilter' => true,
+        ];
+    }
+
+    private function xlsxResponse(string $filename, array $sheets)
+    {
+        if (!class_exists(ZipArchive::class)) {
+            abort(500, 'Ekstensi PHP ZIP (ZipArchive) belum aktif. Aktifkan extension=zip pada PHP.');
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'kerja_sama_xlsx_');
+        $zip = new ZipArchive();
+        if ($zip->open($tmp, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Gagal membuat file Excel.');
+        }
+
+        $zip->addFromString('[Content_Types].xml', $this->xlsxContentTypes(count($sheets)));
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+        $zip->addFromString('xl/workbook.xml', $this->xlsxWorkbook($sheets));
+        $zip->addFromString('xl/_rels/workbook.xml.rels', $this->xlsxWorkbookRels(count($sheets)));
+        $zip->addFromString('xl/styles.xml', $this->xlsxStyles());
+        foreach (array_values($sheets) as $i => $sheet) {
+            $zip->addFromString('xl/worksheets/sheet' . ($i + 1) . '.xml', $this->xlsxSheet($sheet));
+        }
+        $zip->close();
+
+        return response()->download($tmp, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    private function xlsxSheet(array $sheet): string
+    {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+        if (!empty($sheet['freeze'])) {
+            $xml .= '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>';
+        }
+        $xml .= '<sheetFormatPr defaultRowHeight="20"/><cols>';
+        foreach ($sheet['widths'] ?? [] as $i => $width) {
+            $n = $i + 1;
+            $xml .= '<col min="' . $n . '" max="' . $n . '" width="' . (float) $width . '" customWidth="1"/>';
+        }
+        $xml .= '</cols><sheetData>';
+        foreach ($sheet['rows'] ?? [] as $r => $cells) {
+            $rowNum = $r + 1;
+            $xml .= '<row r="' . $rowNum . '">';
+            foreach ($cells as $c => $cell) {
+                $value = is_array($cell) ? (string) ($cell['value'] ?? '') : (string) $cell;
+                $style = is_array($cell) ? (int) ($cell['style'] ?? 1) : 1;
+                $ref = $this->xlsxColumn($c + 1) . $rowNum;
+                $xml .= '<c r="' . $ref . '" s="' . $style . '" t="inlineStr"><is><t xml:space="preserve">' . htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8') . '</t></is></c>';
+            }
+            $xml .= '</row>';
+        }
+        $xml .= '</sheetData>';
+        if (!empty($sheet['autofilter']) && !empty($sheet['rows'])) {
+            $last = $this->xlsxColumn(count($sheet['rows'][0]));
+            $xml .= '<autoFilter ref="A1:' . $last . count($sheet['rows']) . '"/>';
+        }
+        foreach ($sheet['validations'] ?? [] as $v) {
+            $xml .= '<dataValidations count="1"><dataValidation type="list" allowBlank="1" showErrorMessage="1" errorStyle="stop" errorTitle="Pilihan tidak valid" error="' . htmlspecialchars($v['error'], ENT_XML1 | ENT_COMPAT, 'UTF-8') . '" sqref="' . $v['range'] . '"><formula1>"' . htmlspecialchars($v['formula'], ENT_XML1 | ENT_COMPAT, 'UTF-8') . '"</formula1></dataValidation></dataValidations>';
+        }
+        $xml .= '<pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/></worksheet>';
+        return $xml;
+    }
+
+    private function xlsxWorkbook(array $sheets): string
+    {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+        foreach (array_values($sheets) as $i => $sheet) {
+            $xml .= '<sheet name="' . htmlspecialchars($sheet['name'], ENT_XML1 | ENT_COMPAT, 'UTF-8') . '" sheetId="' . ($i + 1) . '" r:id="rId' . ($i + 1) . '"/>';
+        }
+        return $xml . '</sheets></workbook>';
+    }
+
+    private function xlsxWorkbookRels(int $count): string
+    {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+        for ($i = 1; $i <= $count; $i++) {
+            $xml .= '<Relationship Id="rId' . $i . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' . $i . '.xml"/>';
+        }
+        return $xml . '</Relationships>';
+    }
+
+    private function xlsxContentTypes(int $count): string
+    {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>';
+        for ($i = 1; $i <= $count; $i++) {
+            $xml .= '<Override PartName="/xl/worksheets/sheet' . $i . '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+        }
+        return $xml . '</Types>';
+    }
+
+    private function xlsxStyles(): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="0"/><fonts count="2"><font><sz val="11"/><name val="Aptos"/></font><font><b/><sz val="11"/><name val="Aptos"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="solid"><fgColor rgb="E8F0FE"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="1" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    }
+
+    private function xlsxColumn(int $n): string
+    {
+        $s = '';
+        while ($n > 0) {
+            $n--;
+            $s = chr(65 + ($n % 26)) . $s;
+            $n = intdiv($n, 26);
+        }
+        return $s;
+    }
+
+    /**
+     * Baca sheet xlsx dengan inline strings maupun shared strings (Excel/LibreOffice).
+     * @return array{0: array<int,string>, 1: array<int,array{line:int,data:array<string,string>}>}
+     */
+    private function readXlsx(string $path): array
+    {
+        if (!class_exists(ZipArchive::class)) throw new \RuntimeException('Ekstensi PHP ZIP (ZipArchive) belum aktif.');
+        $zip = new ZipArchive();
+        if ($zip->open($path) !== true) throw new \RuntimeException('File Excel tidak dapat dibuka. Pastikan file .xlsx valid.');
+
+        $wb = simplexml_load_string((string) $zip->getFromName('xl/workbook.xml'));
+        $rels = simplexml_load_string((string) $zip->getFromName('xl/_rels/workbook.xml.rels'));
+        if (!$wb || !$rels) { $zip->close(); throw new \RuntimeException('Struktur file Excel tidak valid.'); }
+
+        $wbn = $wb->getNamespaces(true);
+        $main = $wbn[''] ?? 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+        $rns = $wbn['r'] ?? 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+        $wb->registerXPathNamespace('m', $main);
+        $rels->registerXPathNamespace('p', 'http://schemas.openxmlformats.org/package/2006/relationships');
+
+        $target = null;
+        foreach ($wb->xpath('//m:sheets/m:sheet') ?: [] as $sh) {
+            if ((string) $sh['name'] === 'Data Kerja Sama') { $target = $sh; break; }
+        }
+        $target ??= ($wb->xpath('//m:sheets/m:sheet')[0] ?? null);
+        if (!$target) { $zip->close(); throw new \RuntimeException('Sheet data tidak ditemukan.'); }
+
+        $rid = (string) $target->attributes($rns)->id;
+        $sheetPath = null;
+        foreach ($rels->xpath('//p:Relationship') ?: [] as $rel) {
+            if ((string) $rel['Id'] === $rid) {
+                $sheetPath = 'xl/' . ltrim((string) $rel['Target'], '/');
+                break;
+            }
+        }
+        if (!$sheetPath || $zip->locateName($sheetPath) === false) { $zip->close(); throw new \RuntimeException('Sheet data Excel tidak dapat dibaca.'); }
+
+        $shared = [];
+        if ($zip->locateName('xl/sharedStrings.xml') !== false) {
+            $ss = simplexml_load_string((string) $zip->getFromName('xl/sharedStrings.xml'));
+            if ($ss) {
+                $sns = $ss->getNamespaces(true);
+                $ss->registerXPathNamespace('m', $sns[''] ?? $main);
+                foreach ($ss->xpath('//m:si') ?: [] as $si) {
+                    $texts = $si->xpath('.//m:t') ?: [];
+                    $shared[] = implode('', array_map(fn ($t) => (string) $t, $texts));
+                }
+            }
+        }
+
+        $sx = simplexml_load_string((string) $zip->getFromName($sheetPath));
+        $zip->close();
+        if (!$sx) throw new \RuntimeException('Isi sheet Excel tidak valid.');
+        $sns = $sx->getNamespaces(true);
+        $sx->registerXPathNamespace('m', $sns[''] ?? $main);
+
+        $rows = [];
+        foreach ($sx->xpath('//m:sheetData/m:row') ?: [] as $rowNode) {
+            $cells = [];
+            foreach ($rowNode->xpath('./m:c') ?: [] as $cell) {
+                $ref = (string) $cell['r'];
+                preg_match('/([A-Z]+)\d+$/', $ref, $m);
+                $col = $this->xlsxColumnIndex($m[1] ?? 'A');
+                $type = (string) $cell['t'];
+                if ($type === 'inlineStr') {
+                    $texts = $cell->xpath('.//m:t') ?: [];
+                    $value = implode('', array_map(fn ($t) => (string) $t, $texts));
+                } elseif ($type === 's') {
+                    $value = $shared[(int) ($cell->v ?? -1)] ?? '';
+                } else {
+                    $value = (string) ($cell->v ?? '');
+                }
+                $cells[$col] = $this->unsafeCell(trim($value));
+            }
+            if ($cells) {
+                $max = max(array_keys($cells));
+                $data = array_fill(0, $max + 1, '');
+                foreach ($cells as $i => $v) $data[$i] = $v;
+                $rows[] = ['line' => (int) $rowNode['r'], 'data' => $data];
+            }
+        }
+
+        if (!$rows) throw new \RuntimeException('Sheet Data Kerja Sama kosong.');
+        $aliases = [
+            'nim' => 'nim_nidn','nidn' => 'nim_nidn','nim_nidn' => 'nim_nidn','nim/nidn' => 'nim_nidn',
+            'judul' => 'judul_kegiatan','bukti' => 'bukti_kegiatan','link_bukti' => 'bukti_kegiatan',
+            'tgl_mulai' => 'tanggal_mulai','tgl_selesai' => 'tanggal_selesai',
+        ];
+        $header = array_map(function ($h) use ($aliases) {
+            $h = $this->normalizeKey($h);
+            return $aliases[$h] ?? $h;
+        }, $rows[0]['data']);
+        $out = [];
+        foreach (array_slice($rows, 1) as $row) {
+            $cells = $row['data'];
+            if (!array_filter($cells, fn ($v) => trim((string) $v) !== '')) continue;
+            $d = [];
+            foreach ($header as $i => $name) if ($name !== '' && !isset($d[$name])) $d[$name] = (string) ($cells[$i] ?? '');
+            $out[] = ['line' => $row['line'], 'data' => $d];
+        }
+        return [array_values(array_filter($header)), $out];
+    }
+
+    private function xlsxColumnIndex(string $letters): int
+    {
+        $n = 0;
+        foreach (str_split($letters) as $char) $n = $n * 26 + ord($char) - 64;
+        return max(0, $n - 1);
     }
 
     private function csvResponse(string $filename, callable $writer): StreamedResponse

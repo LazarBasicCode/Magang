@@ -28,11 +28,16 @@
     gap: 0.85em;
     box-sizing: border-box;
     overflow: hidden;
-    padding: 12px 14px;
-    border-radius: 12px;
+    padding: 11px 40px 11px 14px; /* kanan dilebihkan: tempat tombol X saat hover */
+    border-radius: 10px;
+    border-left: 4px solid var(--toast-accent, #9ca3af); /* pembatas warna di kiri */
     box-shadow: 0 12px 32px -10px rgba(20, 30, 80, .35);
-    background-color: #f3f3f3;
-    color: #12204a;
+    background-color: var(--toast-bg, #f3f3f3); /* fallback browser lama */
+    /* Badan toast agak transparan + blur tipis; garis kiri tetap solid (border opaque) jadi tidak ikut blur */
+    background-color: color-mix(in srgb, var(--toast-bg, #f3f3f3) 50%, transparent);
+    -webkit-backdrop-filter: blur(4px) saturate(1.2);
+    backdrop-filter: blur(4px) saturate(1.2);
+    color: var(--toast-fg, #12204a);
     font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 0.85em;
     will-change: transform, opacity, filter;
@@ -42,20 +47,17 @@
 
 /* ---------- Animasi masuk: kanan -> kiri, kecil -> besar, blur -> normal, atas -> bawah, digabung jadi satu ---------- */
 @keyframes toastEnter {
-    0% {
-        opacity: 0;
-        transform: translateX(46px) translateY(-18px) scale(0.82);
-        filter: blur(6px);
-    }
-    60% {
-        opacity: 1;
-        filter: blur(0.4px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0) translateY(0) scale(1);
-        filter: blur(0);
-    }
+    0%   { opacity: 0;    transform: translate(46px, -60px)   scale(0.82);  filter: blur(3px);    animation-timing-function: linear; }
+    10%  { opacity: 0.33; transform: translate(44.3px, -39.4px) scale(0.854); filter: blur(2.43px); animation-timing-function: linear; }
+    20%  { opacity: 0.67; transform: translate(40px, -24.6px)   scale(0.885); filter: blur(1.92px); animation-timing-function: linear; }
+    30%  { opacity: 1;    transform: translate(34px, -14.4px)   scale(0.912); filter: blur(1.47px); animation-timing-function: linear; }
+    40%  { opacity: 1;    transform: translate(27.2px, -7.8px)  scale(0.935); filter: blur(1.08px); animation-timing-function: linear; }
+    50%  { opacity: 1;    transform: translate(20.1px, -3.8px)  scale(0.955); filter: blur(0.75px); animation-timing-function: linear; }
+    60%  { opacity: 1;    transform: translate(13.5px, -1.5px)  scale(0.971); filter: blur(0.48px); animation-timing-function: linear; }
+    70%  { opacity: 1;    transform: translate(7.9px, -0.5px)   scale(0.984); filter: blur(0.27px); animation-timing-function: linear; }
+    80%  { opacity: 1;    transform: translate(3.6px, -0.1px)   scale(0.993); filter: blur(0.12px); animation-timing-function: linear; }
+    90%  { opacity: 1;    transform: translate(0.9px, 0)        scale(0.998); filter: blur(0.03px); animation-timing-function: linear; }
+    100% { opacity: 1;    transform: translate(0, 0)            scale(1);     filter: blur(0);      animation-timing-function: linear; }
 }
 .toast-item.is-entering {
     animation: toastEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -71,8 +73,8 @@
         transform: translateX(0) scale(1);
         filter: blur(0);
         max-height: var(--toast-h, 120px);
-        padding-top: 12px;
-        padding-bottom: 12px;
+        padding-top: 11px;
+        padding-bottom: 11px;
         margin-top: 0;
     }
     50% {
@@ -80,8 +82,8 @@
         transform: translateX(34px) scale(0.92);
         filter: blur(4px);
         max-height: var(--toast-h, 120px);
-        padding-top: 12px;
-        padding-bottom: 12px;
+        padding-top: 11px;
+        padding-bottom: 11px;
         margin-top: 0;
     }
     100% {
@@ -116,8 +118,9 @@
     flex-shrink: 0;
 }
 .toast-icon svg {
-    width: 1.15em;
-    height: 1.15em;
+    width: 1.35em;
+    height: 1.35em;
+    color: var(--toast-accent);
 }
 
 .toast-content {
@@ -128,8 +131,9 @@
     min-width: 0;
 }
 .toast-text {
-    font-size: 1.20em;
-    line-height: 1.50;
+    font-size: 1.05em;
+    font-weight: 600;
+    line-height: 1.45;
     user-select: none;
     word-break: break-word;
 }
@@ -140,15 +144,35 @@
 }
 
 .toast-close {
-    cursor: pointer;
-    padding: 2px;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
     border-radius: 6px;
-    transition: background-color 150ms ease;
-    flex-shrink: 0;
-    display: flex;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.7);
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease, background-color 150ms ease;
 }
-.toast-close:hover { background-color: rgba(0, 0, 0, .08); }
-.toast-close svg { width: 1em; height: 1em; }
+.toast-close svg { width: 14px; height: 14px; }
+.toast-close:hover { background-color: rgba(128, 128, 128, .22); }
+/* Muncul hanya saat toast di-hover / ditekan-tahan / difokus keyboard */
+.toast-item:hover .toast-close,
+.toast-item:active .toast-close,
+.toast-item:focus-within .toast-close {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    pointer-events: auto;
+}
+/* Layar sentuh tidak punya hover: tombol X selalu terlihat */
+@media (hover: none) {
+    .toast-close { opacity: .85; transform: translateY(-50%) scale(1); pointer-events: auto; }
+}
 
 .toast-progress {
     position: absolute;
@@ -156,6 +180,8 @@
     left: 0;
     height: 2px;
     width: 100%;
+    background-color: var(--toast-accent, #9ca3af);
+    opacity: .55;
     transform: translateX(-100%);
     animation: toastProgress var(--toast-duration, 5000ms) linear forwards;
 }
@@ -164,31 +190,19 @@
     100% { transform: translateX(0%); }
 }
 
-/* ---------- Varian warna ---------- */
-.toast-item.t-success { background-color: #d9fce7; color: #047857; }
-.toast-item.t-success .toast-progress { background-color: #047857; }
+/* ---------- Varian warna (mode terang) ---------- */
+.toast-item.t-success { --toast-bg: #dcfce7; --toast-fg: #14532d; --toast-accent: #22c55e; }
+.toast-item.t-info    { --toast-bg: #dbeafe; --toast-fg: #1e3a8a; --toast-accent: #3b82f6; }
+.toast-item.t-warning { --toast-bg: #fef3c7; --toast-fg: #78350f; --toast-accent: #f59e0b; }
+.toast-item.t-error   { --toast-bg: #fee2e2; --toast-fg: #7f1d1d; --toast-accent: #ef4444; }
 
-.toast-item.t-info { background-color: #dcebff; color: #1e3a8a; }
-.toast-item.t-info .toast-progress { background-color: #1e3a8a; }
-
-.toast-item.t-warning { background-color: #fff2cf; color: #78350f; }
-.toast-item.t-warning .toast-progress { background-color: #78350f; }
-
-.toast-item.t-error { background-color: #ffdcdc; color: #7f1d1d; }
-.toast-item.t-error .toast-progress { background-color: #7f1d1d; }
-
-/* ---------- Dark mode: ngikut konvensi yang sudah dipakai di seluruh app ---------- */
+/* ---------- Dark mode: kartu gelap berwarna, pembatas kiri terang ---------- */
 body.dark-mode .toast-item,
-[data-theme="dark"] .toast-item {
-    background-color: #1b2333;
-    color: #eaf0ff;
-    box-shadow: 0 12px 32px -10px rgba(0, 0, 0, .55);
-}
-body.dark-mode .toast-item.t-success, [data-theme="dark"] .toast-item.t-success { background-color: rgba(16, 185, 129, .16); color: #6ee7b7; }
-body.dark-mode .toast-item.t-info, [data-theme="dark"] .toast-item.t-info { background-color: rgba(59, 131, 246, .16); color: #93c5fd; }
-body.dark-mode .toast-item.t-warning, [data-theme="dark"] .toast-item.t-warning { background-color: rgba(245, 159, 11, .16); color: #fcd34d; }
-body.dark-mode .toast-item.t-error, [data-theme="dark"] .toast-item.t-error { background-color: rgba(239, 68, 68, .16); color: #fca5a5; }
-body.dark-mode .toast-close:hover, [data-theme="dark"] .toast-close:hover { background-color: rgba(255, 255, 255, .1); }
+[data-theme="dark"] .toast-item { box-shadow: 0 12px 32px -10px rgba(0, 0, 0, .55); }
+body.dark-mode .toast-item.t-success, [data-theme="dark"] .toast-item.t-success { --toast-bg: #17472b; --toast-fg: #ffffff; --toast-accent: #34d17b; }
+body.dark-mode .toast-item.t-info,    [data-theme="dark"] .toast-item.t-info    { --toast-bg: #17335c; --toast-fg: #ffffff; --toast-accent: #60a5fa; }
+body.dark-mode .toast-item.t-warning, [data-theme="dark"] .toast-item.t-warning { --toast-bg: #5a3d0a; --toast-fg: #ffffff; --toast-accent: #fbbf24; }
+body.dark-mode .toast-item.t-error,   [data-theme="dark"] .toast-item.t-error   { --toast-bg: #5c1f1f; --toast-fg: #ffffff; --toast-accent: #f87171; }
 
 @media (prefers-reduced-motion: reduce) {
     .toast-item.is-entering { animation: toastEnterReduced 150ms ease both; }

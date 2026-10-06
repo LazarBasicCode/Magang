@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LppmRekognisiController extends Controller
 {
@@ -117,40 +116,53 @@ class LppmRekognisiController extends Controller
         return 'rekognisi';
     }
 
-    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
-    public function template(Request $request): StreamedResponse
+    private const SHEET = 'Data Rekognisi';
+
+    protected function bulkSheetName(): ?string
+    {
+        return self::SHEET;
+    }
+
+    /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown pilihan. */
+    public function template(Request $request)
     {
         $this->bulkEnsureAccess($request, true);
 
-        return $this->bulkTemplateResponse(
-            'template-rekognisi.csv',
+        return $this->bulkXlsxTemplateResponse(
+            'template-rekognisi.xlsx',
+            'PETUNJUK IMPORT / EXPORT REKOGNISI',
+            self::SHEET,
             [
-                'id'              => ['required' => 'Tidak',                 'example' => '',                             'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
-                'nim_nidn'        => ['required' => 'Ya (data baru)',        'example' => '2210001',                      'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar di Data Master. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'           => ['required' => 'Ya',                    'example' => 'nasional',                     'note' => 'Pilih salah satu: nasional | internasional | alumni'],
-                'mitra'           => ['required' => 'Ya',                    'example' => 'PT Teknologi Nusantara',       'note' => 'Nama institusi / perusahaan pemberi rekognisi.'],
-                'jabatan'         => ['required' => 'Jika jenis = alumni',   'example' => '',                             'note' => 'Jabatan alumni di mitra. Untuk jenis lain dikosongkan (isian diabaikan).'],
-                'tanggal_mulai'   => ['required' => 'Ya',                    'example' => '2026-03-01',                   'note' => 'Format 2026-09-30 atau 30/09/2026.'],
-                'tanggal_selesai' => ['required' => 'Ya',                    'example' => '2026-03-03',                   'note' => 'Format sama. Tidak boleh sebelum tanggal_mulai.'],
-                'bukti_kegiatan'  => ['required' => 'Ya',                    'example' => 'https://drive.google.com/...', 'note' => 'Link lengkap diawali https://'],
-                'bukti_tambahan'  => ['required' => 'Tidak',                 'example' => '',                             'note' => 'Link bukti tambahan (opsional), diawali https://'],
+                'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
+                'nim_nidn'        => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
+                'jenis'           => ['required' => 'Ya', 'example' => 'nasional', 'width' => 16, 'options' => ['nasional', 'internasional', 'alumni'], 'note' => 'Jenis rekognisi. Pilih dari dropdown.'],
+                'mitra'           => ['required' => 'Ya', 'example' => 'PT Teknologi Nusantara', 'width' => 34, 'note' => 'Nama institusi / perusahaan pemberi rekognisi.'],
+                'jabatan'         => ['required' => 'Jika jenis = alumni', 'example' => '', 'width' => 26, 'note' => 'Jabatan alumni di mitra. Untuk jenis lain kosongkan (isian diabaikan).'],
+                'tanggal_mulai'   => ['required' => 'Ya', 'example' => '2026-03-01', 'width' => 18, 'note' => 'Tanggal mulai kegiatan / rekognisi.'],
+                'tanggal_selesai' => ['required' => 'Ya', 'example' => '2026-03-03', 'width' => 18, 'note' => 'Tanggal selesai. Tidak boleh sebelum tanggal_mulai.'],
+                'bukti_kegiatan'  => ['required' => 'Ya', 'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
+                'bukti_tambahan'  => ['required' => 'Tidak', 'example' => '', 'width' => 46, 'note' => 'Link bukti tambahan (opsional).'],
             ],
             [
-                'Kolom "nama" tidak ada di template: otomatis diambil dari NIM/NIDN.',
-                'Jangan mengubah judul kolom. Simpan tetap sebagai CSV.',
+                'Isi data di sheet "Data Rekognisi", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
+                'Kolom id: kosongkan untuk data baru, isi id (dari hasil Download) untuk mengedit data.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
+                'Format tanggal: 2026-09-30 atau 30/09/2026. Kolom "nama" otomatis diambil dari NIM/NIDN.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
     }
 
     /** Unduh seluruh data rekognisi (bisa diedit lalu diunggah ulang). */
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request)
     {
         $this->bulkEnsureAccess($request, false);
 
-        return $this->bulkExportResponse(
-            'rekognisi-' . now()->format('Ymd-His') . '.csv',
+        return $this->bulkXlsxExportResponse(
+            'rekognisi-' . now()->format('Ymd-His') . '.xlsx',
+            self::SHEET,
             ['id', 'nim_nidn', 'nama', 'jenis', 'mitra', 'jabatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan', 'bukti_tambahan'],
+            [10, 18, 28, 16, 34, 26, 18, 18, 46, 46],
             Rekognisi::class,
             fn (Rekognisi $item) => [
                 $item->id,
@@ -168,7 +180,7 @@ class LppmRekognisiController extends Controller
     }
 
     /**
-     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
+     * Unggah Excel (.xlsx) atau CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
      * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
      * yang disimpan dan daftar error per baris dikembalikan.
      */

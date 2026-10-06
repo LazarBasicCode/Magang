@@ -9,7 +9,6 @@ use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 
 class KemahasiswaanController extends Controller
@@ -110,7 +109,7 @@ class KemahasiswaanController extends Controller
     }
 
     // =====================================================================
-    // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
+    // UNGGAH / UNDUH MASSAL (EXCEL .xlsx; CSV lama tetap diterima saat unggah) — khusus admin & superadmin
     // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;
     // di sini hanya bagian yang khas menu ini.
     // =====================================================================
@@ -156,39 +155,52 @@ class KemahasiswaanController extends Controller
         return $this->bulkMakeFinder(Mahasiswa::all(), 'nim');
     }
 
-    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
-    public function template(Request $request): StreamedResponse
+    private const SHEET = 'Data Kemahasiswaan';
+
+    protected function bulkSheetName(): ?string
+    {
+        return self::SHEET;
+    }
+
+    /** Unduh template Excel (.xlsx): sheet data + sheet petunjuk, dengan dropdown pilihan. */
+    public function template(Request $request)
     {
         $this->bulkEnsureAccess($request, true);
 
-        return $this->bulkTemplateResponse(
-            'template-kemahasiswaan.csv',
+        return $this->bulkXlsxTemplateResponse(
+            'template-kemahasiswaan.xlsx',
+            'PETUNJUK IMPORT / EXPORT KEMAHASISWAAN',
+            self::SHEET,
             [
-                'id'             => ['required' => 'Tidak',          'example' => '',                             'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
-                'nim'            => ['required' => 'Ya (data baru)', 'example' => '2210001',                      'note' => 'NIM mahasiswa yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'          => ['required' => 'Ya',             'example' => 'kemahasiswaan',                'note' => 'Pilih salah satu: inbis | kemahasiswaan'],
-                'tab'            => ['required' => 'Ya',             'example' => 'akademik',                     'note' => 'Pilih salah satu: akademik | non_akademik'],
-                'tingkat'        => ['required' => 'Ya',             'example' => 'nasional',                     'note' => 'Pilih salah satu: lokal | nasional | internasional'],
-                'tahun'          => ['required' => 'Ya',             'example' => '2026',                         'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
-                'nama_kegiatan'  => ['required' => 'Ya',             'example' => 'Juara 1 Lomba Karya Tulis',    'note' => 'Nama kegiatan / prestasi.'],
-                'bukti_kegiatan' => ['required' => 'Ya',             'example' => 'https://drive.google.com/...', 'note' => 'Link lengkap diawali https://'],
+                'id'             => ['required' => 'Tidak',          'example' => '',                             'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
+                'nim'            => ['required' => 'Ya (data baru)', 'example' => '2210001',                      'width' => 18, 'note' => 'NIM mahasiswa yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
+                'jenis'          => ['required' => 'Ya',             'example' => 'kemahasiswaan',                'width' => 18, 'options' => ['inbis', 'kemahasiswaan'], 'note' => 'Kategori kegiatan. Pilih dari dropdown.'],
+                'tab'            => ['required' => 'Ya',             'example' => 'akademik',                     'width' => 16, 'options' => ['akademik', 'non_akademik'], 'note' => 'Bidang kegiatan. Perhatikan non_akademik pakai garis bawah (_). Pilih dari dropdown.'],
+                'tingkat'        => ['required' => 'Ya',             'example' => 'nasional',                     'width' => 16, 'options' => ['lokal', 'nasional', 'internasional'], 'note' => 'Skala/tingkat kegiatan atau prestasi. Pilih dari dropdown.'],
+                'tahun'          => ['required' => 'Ya',             'example' => '2026',                         'width' => 10, 'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
+                'nama_kegiatan'  => ['required' => 'Ya',             'example' => 'Juara 1 Lomba Karya Tulis',    'width' => 38, 'note' => 'Nama kegiatan atau prestasi, mis. "Juara 1 Lomba Karya Tulis".'],
+                'bukti_kegiatan' => ['required' => 'Ya',             'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
             ],
             [
+                'Isi data di sheet "Data Kemahasiswaan", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
+                'Kolom id: kosongkan untuk data baru, isi id (dari hasil Download) untuk mengedit data.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
                 'Kolom "nama" tidak ada di template: otomatis diambil dari NIM.',
-                'Jangan mengubah judul kolom. Simpan tetap sebagai CSV.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
     }
 
-    /** Unduh seluruh data kegiatan (bisa diedit lalu diunggah ulang). */
-    public function export(Request $request): StreamedResponse
+    /** Unduh seluruh data kegiatan sebagai Excel (bisa diedit lalu diunggah ulang). */
+    public function export(Request $request)
     {
         $this->bulkEnsureAccess($request, false);
 
-        return $this->bulkExportResponse(
-            'kemahasiswaan-' . now()->format('Ymd-His') . '.csv',
+        return $this->bulkXlsxExportResponse(
+            'kemahasiswaan-' . now()->format('Ymd-His') . '.xlsx',
+            self::SHEET,
             ['id', 'nim', 'nama', 'jenis', 'tab', 'tingkat', 'tahun', 'nama_kegiatan', 'bukti_kegiatan'],
+            [10, 18, 28, 18, 16, 16, 10, 38, 46],
             Kemahasiswaan::class,
             fn (Kemahasiswaan $item) => [
                 $item->id,
@@ -205,7 +217,7 @@ class KemahasiswaanController extends Controller
     }
 
     /**
-     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
+     * Unggah Excel (.xlsx) atau CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
      * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
      * yang disimpan dan daftar error per baris dikembalikan.
      */

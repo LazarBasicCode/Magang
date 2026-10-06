@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class KerjaSamaController extends Controller
 {
@@ -141,42 +140,54 @@ class KerjaSamaController extends Controller
         return ['judul' => 'judul_kegiatan'];
     }
 
-    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
-    public function template(Request $request): StreamedResponse
+    private const SHEET = 'Data Kerja Sama';
+
+    protected function bulkSheetName(): ?string
+    {
+        return self::SHEET;
+    }
+
+    /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown pilihan. */
+    public function template(Request $request)
     {
         $this->bulkEnsureAccess($request, true);
 
-        return $this->bulkTemplateResponse(
-            'template-kerja-sama.csv',
+        return $this->bulkXlsxTemplateResponse(
+            'template-kerja-sama.xlsx',
+            'PETUNJUK IMPORT / EXPORT KERJA SAMA',
+            self::SHEET,
             [
-                'id'              => ['required' => 'Tidak',                   'example' => '',                         'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
-                'nim_nidn'        => ['required' => 'Ya (data baru)',          'example' => '2210001',                  'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar di Data Master. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'           => ['required' => 'Ya',                      'example' => 'conference_internasional', 'note' => 'Pilih salah satu: conference_internasional | pkl | sharing_session | keynote_session | guest_lecture | pengabdian_internasional | research_internasional | lainnya'],
-                'jenis_lainnya'   => ['required' => 'Jika jenis = lainnya',    'example' => '',                         'note' => 'Tulis nama jenis kerja sama lainnya.'],
-                'arah'            => ['required' => 'Jika jenis = guest_lecture', 'example' => '',                      'note' => 'inbound atau outbound.'],
-                'mitra'           => ['required' => 'Ya',                      'example' => 'Universitas Tokyo',        'note' => 'Nama institusi / perusahaan / negara mitra.'],
-                'judul_kegiatan'  => ['required' => 'Ya',                      'example' => 'Judul kegiatan',           'note' => 'Judul kegiatan kerja sama.'],
-                'tanggal_mulai'   => ['required' => 'Ya',                      'example' => '2026-03-01',               'note' => 'Format 2026-09-30 atau 30/09/2026.'],
-                'tanggal_selesai' => ['required' => 'Ya',                      'example' => '2026-03-03',               'note' => 'Format sama. Tidak boleh sebelum tanggal_mulai.'],
-                'bukti_kegiatan'  => ['required' => 'Ya',                      'example' => 'https://drive.google.com/...', 'note' => 'Link lengkap diawali https://'],
+                'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
+                'nim_nidn'        => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
+                'jenis'           => ['required' => 'Ya', 'example' => 'conference_internasional', 'width' => 28, 'options' => ['conference_internasional', 'pkl', 'sharing_session', 'keynote_session', 'guest_lecture', 'pengabdian_internasional', 'research_internasional', 'lainnya'], 'note' => 'Jenis kerja sama. Pilih dari dropdown. Mahasiswa hanya boleh: conference_internasional, pkl, sharing_session, lainnya. Dosen tidak boleh pkl.'],
+                'jenis_lainnya'   => ['required' => 'Jika jenis = lainnya', 'example' => '', 'width' => 26, 'note' => 'Tulis nama jenis kerja sama lainnya. Selain jenis "lainnya" kosongkan.'],
+                'arah'            => ['required' => 'Jika jenis = guest_lecture', 'example' => '', 'width' => 14, 'options' => ['inbound', 'outbound'], 'note' => 'Arah guest lecture. Selain guest_lecture kosongkan.'],
+                'mitra'           => ['required' => 'Ya', 'example' => 'Universitas Tokyo', 'width' => 30, 'note' => 'Nama institusi / perusahaan / negara mitra.'],
+                'judul_kegiatan'  => ['required' => 'Ya', 'example' => 'Judul kegiatan', 'width' => 36, 'note' => 'Judul kegiatan kerja sama.'],
+                'tanggal_mulai'   => ['required' => 'Ya', 'example' => '2026-03-01', 'width' => 18, 'note' => 'Tanggal mulai kegiatan.'],
+                'tanggal_selesai' => ['required' => 'Ya', 'example' => '2026-03-03', 'width' => 18, 'note' => 'Tanggal selesai. Tidak boleh sebelum tanggal_mulai.'],
+                'bukti_kegiatan'  => ['required' => 'Ya', 'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
             ],
             [
+                'Isi data di sheet "Data Kerja Sama", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
+                'Kolom id: kosongkan untuk data baru, isi id (dari hasil Download) untuk mengedit data.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
                 'Mahasiswa hanya boleh jenis: conference_internasional, pkl, sharing_session, lainnya. Dosen tidak boleh pkl.',
-                'Kolom "nama" tidak ada di template: otomatis diambil dari NIM/NIDN.',
-                'Jangan mengubah judul kolom. Simpan tetap sebagai CSV.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
     }
 
     /** Unduh seluruh data kerja sama (bisa diedit lalu diunggah ulang). */
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request)
     {
         $this->bulkEnsureAccess($request, false);
 
-        return $this->bulkExportResponse(
-            'kerja-sama-' . now()->format('Ymd-His') . '.csv',
+        return $this->bulkXlsxExportResponse(
+            'kerja-sama-' . now()->format('Ymd-His') . '.xlsx',
+            self::SHEET,
             ['id', 'nim_nidn', 'nama', 'jenis', 'jenis_lainnya', 'arah', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan'],
+            [10, 18, 28, 28, 26, 14, 30, 36, 18, 18, 46],
             KerjaSama::class,
             fn (KerjaSama $item) => [
                 $item->id,
@@ -195,7 +206,7 @@ class KerjaSamaController extends Controller
     }
 
     /**
-     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
+     * Unggah Excel (.xlsx) atau CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
      * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
      * yang disimpan dan daftar error per baris dikembalikan.
      */

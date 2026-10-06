@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\User;
 use App\Support\Csv;
+use App\Support\Xlsx;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -147,6 +148,86 @@ trait HandlesBulkData
         });
     }
 
+    /** Nama sheet data pada file Excel (menu yang memakai template XLSX meng-override ini). */
+    protected function bulkSheetName(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Template Excel (.xlsx): sheet "Petunjuk" (catatan singkat + tabel panduan kolom) + sheet data berisi judul kolom,
+     * satu baris contoh (diawali "# CONTOH", diabaikan saat unggah), dan dropdown pilihan.
+     * Setiap nilai berada di selnya sendiri, jadi tidak bergantung pada pemisah CSV.
+     *
+     * @param  array<string,array{required:string,example:string,note:string,width?:int,options?:string[]}>  $columns
+     * @param  string[]  $notes
+     */
+    protected function bulkXlsxTemplateResponse(string $filename, string $title, string $sheetName, array $columns, array $notes = [])
+    {
+        $cell = fn ($v, $style = Xlsx::STYLE_CELL) => ['value' => (string) $v, 'style' => $style];
+        $head = fn (array $labels) => array_map(fn ($l) => $cell($l, Xlsx::STYLE_HEADER), $labels);
+        $keys = array_keys($columns);
+
+        // Petunjuk singkat + tabel panduan kolom (satu kolom data = satu baris).
+        $guide = [[$cell('PETUNJUK PENGISIAN', Xlsx::STYLE_TITLE)]];
+        foreach ($notes as $note) {
+            $guide[] = [$cell('• ' . $note, Xlsx::STYLE_PLAIN)];
+        }
+        $guide[] = [];
+        $guide[] = $head(['KOLOM', 'WAJIB DIISI', 'CONTOH', 'KETERANGAN']);
+        foreach ($columns as $key => $col) {
+            $guide[] = [$cell($key), $cell($col['required']), $cell($col['example']), $cell($col['note'])];
+        }
+
+        $example = [];
+        foreach ($columns as $col) {
+            $example[] = $cell($col['example'], Xlsx::STYLE_PLAIN);
+        }
+        $example[0] = $cell('# CONTOH', Xlsx::STYLE_PLAIN);
+
+        $validations = [];
+        foreach (array_values($keys) as $i => $key) {
+            if (!empty($columns[$key]['options'])) {
+                $col = Xlsx::columnName($i + 1);
+                $validations[] = [
+                    'range' => "{$col}2:{$col}" . ($this->bulkMaxRows() + 1),
+                    'list'  => $columns[$key]['options'],
+                    'error' => 'Pilih salah satu: ' . implode(' | ', $columns[$key]['options']),
+                ];
+            }
+        }
+
+        return Xlsx::download($filename, [
+            [
+                'name'   => $sheetName,
+                'widths' => array_map(fn ($c) => $c['width'] ?? 22, array_values($columns)),
+                'rows'   => [$head($keys), $example],
+                'validations' => $validations,
+                'freeze' => true,
+                'autoborder' => ['cols' => count($keys), 'from' => 2, 'to' => $this->bulkMaxRows() + 1],
+            ],
+            ['name' => 'Petunjuk', 'widths' => [22, 32, 30, 70], 'rows' => $guide],
+        ]);
+    }
+
+    /** Ekspor seluruh data model ke Excel (.xlsx), sheet pertama = data, siap diedit & diunggah ulang. */
+    protected function bulkXlsxExportResponse(string $filename, string $sheetName, array $header, array $widths, string $modelClass, callable $mapRow)
+    {
+        $cell = fn ($v, $style = Xlsx::STYLE_CELL) => ['value' => (string) $v, 'style' => $style];
+
+        $rows = [array_map(fn ($h) => $cell($h, Xlsx::STYLE_HEADER), $header)];
+        $modelClass::with($this->bulkOwnerWith())->chunkById(500, function ($items) use (&$rows, $mapRow, $cell) {
+            foreach ($items as $item) {
+                $rows[] = array_map(fn ($v) => $cell(Csv::safeCell($v)), $mapRow($item));
+            }
+        });
+
+        return Xlsx::download($filename, [[
+            'name' => $sheetName, 'widths' => $widths, 'rows' => $rows, 'freeze' => true, 'autofilter' => true,
+            'autoborder' => ['cols' => count($header), 'from' => 2, 'to' => max(count($rows) + 1000, 2000)],
+        ]]);
+    }
+
     /**
      * Ekspor seluruh data model ke CSV.
      *
@@ -185,16 +266,19 @@ trait HandlesBulkData
     protected function bulkParseUpload(Request $request, array $requiredColumns): array|JsonResponse
     {
         $request->validate(
-            ['file' => ['required', 'file', 'extensions:csv,txt', 'max:2048']],
+            ['file' => ['required', 'file', 'extensions:xlsx,csv,txt', 'max:2048']],
             [
-                'file.required'   => 'Pilih file CSV terlebih dahulu.',
-                'file.extensions' => 'File harus berformat .csv (gunakan template dari menu Unduh Template).',
+                'file.required'   => 'Pilih file Excel terlebih dahulu.',
+                'file.extensions' => 'File harus berformat .xlsx atau .csv (gunakan template dari menu Unduh Template).',
                 'file.max'        => 'Ukuran file maksimal 2 MB.',
             ]
         );
 
         try {
-            [$header, $rows] = Csv::read($request->file('file')->getRealPath(), $this->bulkAliases());
+            $path = $request->file('file')->getRealPath();
+            [$header, $rows] = strtolower($request->file('file')->getClientOriginalExtension()) === 'xlsx'
+                ? Xlsx::read($path, $this->bulkAliases(), $this->bulkSheetName())
+                : Csv::read($path, $this->bulkAliases());
         } catch (\RuntimeException $e) {
             return $this->bulkFail($e->getMessage());
         }

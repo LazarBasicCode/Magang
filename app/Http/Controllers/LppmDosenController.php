@@ -9,7 +9,6 @@ use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LppmDosenController extends Controller
 {
@@ -143,44 +142,56 @@ class LppmDosenController extends Controller
         return $this->bulkMakeFinder(Dosen::all(), 'nidn');
     }
 
-    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
-    public function template(Request $request): StreamedResponse
+    private const SHEET = 'Data LPPM Dosen';
+
+    protected function bulkSheetName(): ?string
+    {
+        return self::SHEET;
+    }
+
+    /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown pilihan. */
+    public function template(Request $request)
     {
         $this->bulkEnsureAccess($request, true);
 
-        return $this->bulkTemplateResponse(
-            'template-lppm-dosen.csv',
+        return $this->bulkXlsxTemplateResponse(
+            'template-lppm-dosen.xlsx',
+            'PETUNJUK IMPORT / EXPORT LPPM DOSEN',
+            self::SHEET,
             [
-                'id'             => ['required' => 'Tidak',                            'example' => '',                             'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
-                'nidn'           => ['required' => 'Ya (data baru)',                   'example' => '0712048901',                   'note' => 'NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'          => ['required' => 'Ya',                               'example' => 'q_internasional',              'note' => 'Pilih salah satu: q_internasional | sinta_nasional | hki | book'],
-                'judul'          => ['required' => 'Ya',                               'example' => 'Judul karya',                  'note' => 'Judul publikasi / HKI / buku.'],
-                'penulis'        => ['required' => 'Ya',                               'example' => 'Nama Penulis, Nama Penulis 2', 'note' => 'Daftar penulis.'],
-                'nama_jurnal'    => ['required' => 'Jika jenis = q_internasional / sinta_nasional', 'example' => 'Journal of Computing', 'note' => 'Nama jurnal. Untuk jenis lain dikosongkan (isian diabaikan).'],
-                'peringkat'      => ['required' => 'Jika jenis = q_internasional / sinta_nasional', 'example' => 'Q1',              'note' => 'Peringkat jurnal, mis. Q1 atau S2.'],
-                'jenis_hki'      => ['required' => 'Jika jenis = hki',                 'example' => '',                             'note' => 'Pilih salah satu: hak_cipta | paten | merek'],
-                'kategori_buku'  => ['required' => 'Jika jenis = book',                'example' => '',                             'note' => 'Pilih salah satu: ajar | referensi | chapter'],
-                'link_doi'       => ['required' => 'Tidak',                            'example' => '',                             'note' => 'Link DOI (opsional), diawali https://'],
-                'bukti_kegiatan' => ['required' => 'Ya',                               'example' => 'https://drive.google.com/...', 'note' => 'Link lengkap diawali https://'],
-                'tahun'          => ['required' => 'Ya',                               'example' => '2026',                         'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
+                'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
+                'nidn'            => ['required' => 'Ya (data baru)', 'example' => '0712048901', 'width' => 18, 'note' => 'NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
+                'jenis'           => ['required' => 'Ya', 'example' => 'q_internasional', 'width' => 20, 'options' => ['q_internasional', 'sinta_nasional', 'hki', 'book'], 'note' => 'Jenis karya. Pilih dari dropdown. Jenis ini menentukan kolom mana yang wajib diisi (lihat kolom lain).'],
+                'judul'           => ['required' => 'Ya', 'example' => 'Judul karya', 'width' => 40, 'note' => 'Judul publikasi / HKI / buku.'],
+                'penulis'         => ['required' => 'Ya', 'example' => 'Nama Penulis, Nama Penulis 2', 'width' => 36, 'note' => 'Daftar penulis.'],
+                'nama_jurnal'     => ['required' => 'Jika jenis = q_internasional / sinta_nasional', 'example' => 'Journal of Computing', 'width' => 30, 'note' => 'Nama jurnal. Untuk jenis hki / book kosongkan (isian diabaikan).'],
+                'peringkat'       => ['required' => 'Jika jenis = q_internasional / sinta_nasional', 'example' => 'Q1', 'width' => 12, 'note' => 'Peringkat jurnal. Untuk jenis hki / book kosongkan.'],
+                'jenis_hki'       => ['required' => 'Jika jenis = hki', 'example' => '', 'width' => 16, 'options' => ['hak_cipta', 'paten', 'merek'], 'note' => 'Jenis HKI. Hanya diisi kalau jenis = hki; selain itu kosongkan.'],
+                'kategori_buku'   => ['required' => 'Jika jenis = book', 'example' => '', 'width' => 16, 'options' => ['ajar', 'referensi', 'chapter'], 'note' => 'Kategori buku. Hanya diisi kalau jenis = book; selain itu kosongkan.'],
+                'link_doi'        => ['required' => 'Tidak', 'example' => '', 'width' => 40, 'note' => 'Link DOI (opsional), diawali https://'],
+                'bukti_kegiatan'  => ['required' => 'Ya', 'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
+                'tahun'           => ['required' => 'Ya', 'example' => '2026', 'width' => 10, 'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
             ],
             [
-                'Kolom "nama" tidak ada di template: otomatis diambil dari NIDN.',
+                'Isi data di sheet "Data LPPM Dosen", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
+                'Kolom id: kosongkan untuk data baru, isi id (dari hasil Download) untuk mengedit data.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
                 'Kolom yang tidak berlaku untuk jenisnya (mis. jenis_hki untuk jurnal) cukup dikosongkan.',
-                'Jangan mengubah judul kolom. Simpan tetap sebagai CSV.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
     }
 
     /** Unduh seluruh data publikasi dosen (bisa diedit lalu diunggah ulang). */
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request)
     {
         $this->bulkEnsureAccess($request, false);
 
-        return $this->bulkExportResponse(
-            'lppm-dosen-' . now()->format('Ymd-His') . '.csv',
+        return $this->bulkXlsxExportResponse(
+            'lppm-dosen-' . now()->format('Ymd-His') . '.xlsx',
+            self::SHEET,
             ['id', 'nidn', 'nama', 'jenis', 'judul', 'penulis', 'nama_jurnal', 'peringkat', 'jenis_hki', 'kategori_buku', 'link_doi', 'bukti_kegiatan', 'tahun'],
+            [10, 18, 28, 18, 40, 36, 30, 12, 16, 16, 36, 46, 10],
             LppmDosen::class,
             fn (LppmDosen $item) => [
                 $item->id,
@@ -201,7 +212,7 @@ class LppmDosenController extends Controller
     }
 
     /**
-     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
+     * Unggah Excel (.xlsx) atau CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
      * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
      * yang disimpan dan daftar error per baris dikembalikan.
      */

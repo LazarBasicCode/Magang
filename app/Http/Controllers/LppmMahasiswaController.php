@@ -9,7 +9,6 @@ use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LppmMahasiswaController extends Controller
 {
@@ -143,41 +142,54 @@ class LppmMahasiswaController extends Controller
         return $this->bulkMakeFinder(Mahasiswa::all(), 'nim');
     }
 
-    /** Unduh template CSV kosong lengkap dengan petunjuk pengisian. */
-    public function template(Request $request): StreamedResponse
+    private const SHEET = 'Data LPPM Mahasiswa';
+
+    protected function bulkSheetName(): ?string
+    {
+        return self::SHEET;
+    }
+
+    /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown pilihan. */
+    public function template(Request $request)
     {
         $this->bulkEnsureAccess($request, true);
 
-        return $this->bulkTemplateResponse(
-            'template-lppm-mahasiswa.csv',
+        return $this->bulkXlsxTemplateResponse(
+            'template-lppm-mahasiswa.xlsx',
+            'PETUNJUK IMPORT / EXPORT LPPM MAHASISWA',
+            self::SHEET,
             [
-                'id'             => ['required' => 'Tidak',          'example' => '',                             'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
-                'nim'            => ['required' => 'Ya (data baru)', 'example' => '2210001',                      'note' => 'NIM mahasiswa yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'          => ['required' => 'Ya',             'example' => 'sinta_nasional',               'note' => 'Pilih salah satu: sinta_nasional | conference_internasional | jurnal_internasional'],
-                'judul'          => ['required' => 'Ya',             'example' => 'Judul karya',                  'note' => 'Judul publikasi.'],
-                'penulis'        => ['required' => 'Ya',             'example' => 'Nama Penulis, Nama Penulis 2', 'note' => 'Daftar penulis.'],
-                'nama_jurnal'    => ['required' => 'Jika jenis = sinta_nasional / jurnal_internasional', 'example' => 'Jurnal Informatika', 'note' => 'Nama jurnal. Untuk conference dikosongkan (isian diabaikan).'],
-                'peringkat'      => ['required' => 'Jika jenis = sinta_nasional / jurnal_internasional', 'example' => 'S2',                 'note' => 'Peringkat jurnal, mis. S2 atau Q1.'],
-                'link_doi'       => ['required' => 'Tidak',          'example' => '',                             'note' => 'Link DOI (opsional), diawali https://'],
-                'bukti_kegiatan' => ['required' => 'Ya',             'example' => 'https://drive.google.com/...', 'note' => 'Link lengkap diawali https://'],
-                'tahun'          => ['required' => 'Ya',             'example' => '2026',                         'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
+                'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
+                'nim'             => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
+                'jenis'           => ['required' => 'Ya', 'example' => 'sinta_nasional', 'width' => 24, 'options' => ['sinta_nasional', 'conference_internasional', 'jurnal_internasional'], 'note' => 'Jenis publikasi. Pilih dari dropdown.'],
+                'judul'           => ['required' => 'Ya', 'example' => 'Judul karya', 'width' => 40, 'note' => 'Judul publikasi.'],
+                'penulis'         => ['required' => 'Ya', 'example' => 'Nama Penulis, Nama Penulis 2', 'width' => 36, 'note' => 'Daftar penulis.'],
+                'nama_jurnal'     => ['required' => 'Jika jenis = sinta_nasional / jurnal_internasional', 'example' => 'Jurnal Informatika', 'width' => 30, 'note' => 'Nama jurnal. Untuk conference kosongkan (isian diabaikan).'],
+                'peringkat'       => ['required' => 'Jika jenis = sinta_nasional / jurnal_internasional', 'example' => 'S2', 'width' => 12, 'note' => 'Peringkat jurnal. Untuk conference kosongkan.'],
+                'link_doi'        => ['required' => 'Tidak', 'example' => '', 'width' => 40, 'note' => 'Link DOI (opsional), diawali https://'],
+                'bukti_kegiatan'  => ['required' => 'Ya', 'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
+                'tahun'           => ['required' => 'Ya', 'example' => '2026', 'width' => 10, 'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
             ],
             [
+                'Isi data di sheet "Data LPPM Mahasiswa", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
+                'Kolom id: kosongkan untuk data baru, isi id (dari hasil Download) untuk mengedit data.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
                 'Kolom "nama" tidak ada di template: otomatis diambil dari NIM.',
-                'Jangan mengubah judul kolom. Simpan tetap sebagai CSV.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
     }
 
     /** Unduh seluruh data publikasi mahasiswa (bisa diedit lalu diunggah ulang). */
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request)
     {
         $this->bulkEnsureAccess($request, false);
 
-        return $this->bulkExportResponse(
-            'lppm-mahasiswa-' . now()->format('Ymd-His') . '.csv',
+        return $this->bulkXlsxExportResponse(
+            'lppm-mahasiswa-' . now()->format('Ymd-His') . '.xlsx',
+            self::SHEET,
             ['id', 'nim', 'nama', 'jenis', 'judul', 'penulis', 'nama_jurnal', 'peringkat', 'link_doi', 'bukti_kegiatan', 'tahun'],
+            [10, 18, 28, 24, 40, 36, 30, 12, 36, 46, 10],
             LppmMahasiswa::class,
             fn (LppmMahasiswa $item) => [
                 $item->id,
@@ -196,7 +208,7 @@ class LppmMahasiswaController extends Controller
     }
 
     /**
-     * Unggah CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
+     * Unggah Excel (.xlsx) atau CSV: baris dengan id => edit data itu, tanpa id => tambah baru.
      * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data
      * yang disimpan dan daftar error per baris dikembalikan.
      */

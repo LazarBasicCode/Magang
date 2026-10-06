@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 class CetakLaporanController extends Controller
 {
     /**
-     * Halaman cetak laporan satu menu (semua data, bukan hanya halaman paginasi).
+     * Isi modal "Cetak Laporan" satu menu (semua data, bukan hanya halaman paginasi).
+     * Dipanggil lewat fetch dari public/js/bulk-import.js dan mengembalikan potongan HTML
+     * (resources/views/cetak-laporan.blade.php), bukan halaman penuh.
      * Daftar menu & kolomnya ada di App\Support\PrintReports.
      *
      * Akses sama dengan fitur Download: admin/superadmin dengan akses readonly ke atas pada menu terkait.
@@ -16,6 +18,11 @@ class CetakLaporanController extends Controller
      */
     public function show(Request $request, string $menu)
     {
+        // Bukan permintaan dari modal (mis. URL diketik langsung) -> arahkan ke dashboard.
+        if (!$request->ajax()) {
+            return redirect()->route('dashboard.index');
+        }
+
         $cfg = PrintReports::find($menu);
         abort_unless($cfg, 404);
 

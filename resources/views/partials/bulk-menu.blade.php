@@ -7,8 +7,9 @@
       $bulkTemplate  string  URL unduh template Excel
       $bulkImport    string  URL unggah Excel/CSV
       $bulkExport    string  URL unduh data Excel
-      $bulkPrint     string  URL halaman cetak laporan (dibuka di tab baru)
-    JS-nya: public/js/bulk-import.js (modal: partials/bulk-import-modal.blade.php)
+      $bulkPrint     string  URL isi laporan (route cetak.show) — dimuat ke MODAL "Cetak Laporan", bukan tab baru
+    JS-nya: public/js/bulk-import.js (modal upload: partials/bulk-import-modal.blade.php)
+    Modal cetak ada di bawah ini (dipindah ke <body> oleh JS). Isinya: resources/views/cetak-laporan.blade.php
 --}}
 <div class="bulk-menu" id="bulkMenu">
     <button type="button" class="bulk-menu-btn" id="bulkMenuBtn" aria-haspopup="menu" aria-expanded="false"
@@ -49,13 +50,40 @@
 
         @if(!empty($bulkPrint))
             <div class="bulk-menu-sep" role="separator"></div>
-            <a role="menuitem" class="bulk-menu-item" href="{{ $bulkPrint }}" target="_blank" rel="noopener">
+            <button type="button" role="menuitem" class="bulk-menu-item" id="bulkOpenPrint" data-print-url="{{ $bulkPrint }}">
                 <span class="bulk-menu-icon"><span class="material-symbols-outlined">print</span></span>
                 <span class="bulk-menu-text">
                     <span class="bulk-menu-label">Cetak Laporan</span>
                     <span class="bulk-menu-hint">Rekap siap cetak atau simpan sebagai PDF</span>
                 </span>
-            </a>
+            </button>
         @endif
     </div>
 </div>
+
+@if(!empty($bulkPrint))
+    {{-- Modal Cetak Laporan (gaya .modal-backdrop / .modal-card yang sama dengan modal lain, tapi lebih lebar) --}}
+    <link rel="stylesheet" href="{{ asset('css/laporan.css') }}?v={{ @filemtime(public_path('css/laporan.css')) }}">
+    <div class="modal-backdrop" id="printBackdrop"></div>
+    <div class="modal-card" id="printModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="printTitle">
+        <div class="modal-drag-handle" id="printDragHandle">
+            <div>
+                <h3 class="modal-title" id="printTitle">Cetak Laporan &middot; {{ $bulkLabel }}</h3>
+                <p class="modal-subtitle">Semua data menu ini siap cetak. Untuk PDF, pilih "Simpan sebagai PDF" di dialog cetak.</p>
+            </div>
+            <button type="button" class="modal-close-btn" id="printCloseBtn" aria-label="Tutup">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="modal-body" id="printBody"></div>
+
+        <div class="pm-footer">
+            <button type="button" class="btn-ghost" id="printCancelBtn">Tutup</button>
+            <button type="button" class="btn-apply" id="printNowBtn" disabled>
+                <span class="material-symbols-outlined">print</span>
+                <span>Cetak Laporan</span>
+            </button>
+        </div>
+    </div>
+@endif

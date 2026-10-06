@@ -1,6 +1,7 @@
 /**
- * Menu "+" Data Massal (Unduh Template / Upload / Download) + modal upload Excel.
- * Markup: resources/views/partials/bulk-menu.blade.php & bulk-import-modal.blade.php
+ * Menu ⋮ Data Massal (Unduh Template / Upload / Download / Cetak Laporan) + modal upload Excel + modal cetak laporan.
+ * Markup: resources/views/partials/bulk-menu.blade.php (termasuk modal cetak) & bulk-import-modal.blade.php
+ * Isi modal cetak: resources/views/cetak-laporan.blade.php (dimuat lewat fetch ke route cetak.show)
  * Butuh: script.js (SIDA.modal, SIDA.util.csrfToken) dan toast.js (opsional).
  */
 (function () {
@@ -8,6 +9,7 @@
     if (!menu) return;
 
     const menuBtn = document.getElementById('bulkMenuBtn');
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     // ---------------- Dropdown ----------------
     function setMenu(open) {
@@ -26,6 +28,105 @@
     });
     // Klik item (termasuk link unduhan) menutup dropdown.
     menu.querySelectorAll('.bulk-menu-item').forEach((item) => item.addEventListener('click', () => setMenu(false)));
+
+    // ---------------- Modal cetak laporan ----------------
+    const printBtn = document.getElementById('bulkOpenPrint');
+    const printCard = document.getElementById('printModal');
+    if (printBtn && printCard) {
+        const printBackdrop = document.getElementById('printBackdrop');
+        const printBody = document.getElementById('printBody');
+        const printNow = document.getElementById('printNowBtn');
+        const printUrl = printBtn.dataset.printUrl;
+
+        // Pindah ke <body>: lepas dari .title-bar (stacking context) & jadi satu-satunya elemen yang dicetak.
+        document.body.append(printBackdrop, printCard);
+
+        const printModal = SIDA.modal.attach({
+            backdrop: printBackdrop,
+            card: printCard,
+            closeBtn: document.getElementById('printCloseBtn'),
+            cancelBtn: document.getElementById('printCancelBtn'),
+            dragHandle: document.getElementById('printDragHandle'),
+        });
+
+        const val = (id) => printBody.querySelector('#' + id)?.value ?? null;
+        let loadSeq = 0;
+
+        async function loadReport(tahun) {
+            const seq = ++loadSeq;
+            const keep = { name: val('pmName'), role: val('pmRole') }; // nama/jabatan yang sudah diketik tetap dipakai
+            printNow.disabled = true;
+            printBody.innerHTML = '<p class="pm-state">Memuat laporan…</p>';
+
+            try {
+                const res = await fetch(printUrl + (tahun ? '?tahun=' + encodeURIComponent(tahun) : ''), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                    credentials: 'same-origin',
+                });
+                if (res.redirected || res.status === 419 || res.status === 401) throw new Error('Sesi habis. Muat ulang halaman lalu coba lagi.');
+                if (res.status === 403) throw new Error('Kamu tidak punya akses untuk fitur ini.');
+                if (!res.ok) throw new Error('Gagal memuat laporan (' + res.status + ').');
+                const html = await res.text();
+                if (seq !== loadSeq) return; // ada permintaan yang lebih baru
+
+                printBody.innerHTML = html;
+                if (keep.name !== null) { printBody.querySelector('#pmName').value = keep.name; printBody.querySelector('#pmRole').value = keep.role; }
+                syncSign();
+                printNow.disabled = false;
+            } catch (err) {
+                if (seq !== loadSeq) return;
+                printBody.innerHTML = '<p class="pm-state is-error">' + esc(err.message || 'Tidak bisa terhubung ke server.') + '</p>';
+            }
+        }
+
+        // Nama & jabatan penandatangan -> bagian tanda tangan di laporan
+        function syncSign() {
+            const n = printBody.querySelector('#pmSignName');
+            const r = printBody.querySelector('#pmSignRole');
+            if (n) n.textContent = val('pmName') || '________';
+            if (r) r.textContent = val('pmRole') || '';
+        }
+
+        printBtn.addEventListener('click', () => {
+            printModal.open();
+            loadReport('');
+        });
+        printBody.addEventListener('input', (e) => { if (e.target.closest('#pmName, #pmRole')) syncSign(); });
+
+        // Dropdown Periode (komponen custom .dropdown). Isi modal dimuat belakangan lewat fetch, jadi
+        // SIDA.dropdown.init() tidak ikut memasangnya — cukup satu listener di modal ini.
+        printCard.addEventListener('click', (e) => {
+            const dd = e.target.closest('[data-dropdown]');
+            printCard.querySelectorAll('[data-dropdown].is-open').forEach((d) => { if (d !== dd) d.classList.remove('is-open'); });
+            if (!dd) return;
+
+            const opt = e.target.closest('.dropdown-option');
+            if (opt) {
+                dd.classList.remove('is-open');
+                if (opt.dataset.value !== dd.querySelector('input[type="hidden"]').value) loadReport(opt.dataset.value);
+            } else if (e.target.closest('.dropdown-trigger')) {
+                dd.classList.toggle('is-open');
+            }
+        });
+        printNow.addEventListener('click', () => window.print());
+
+        // Saat mencetak (tombol Cetak maupun Ctrl+P): hanya modal yang tercetak, orientasi kertas mengikuti menu.
+        let pageStyle = null;
+        window.addEventListener('beforeprint', () => {
+            if (!printCard.classList.contains('is-active')) return;
+            syncSign();
+            const orient = printBody.querySelector('[data-orient]')?.dataset.orient || 'portrait';
+            pageStyle = document.createElement('style');
+            pageStyle.textContent = '@page { size: A4 ' + orient + '; margin: 14mm; }';
+            document.head.append(pageStyle);
+            document.body.classList.add('is-printing-report');
+        });
+        window.addEventListener('afterprint', () => {
+            document.body.classList.remove('is-printing-report');
+            pageStyle?.remove();
+            pageStyle = null;
+        });
+    }
 
     // ---------------- Modal upload ----------------
     const card = document.getElementById('bulkModal');
@@ -50,8 +151,6 @@
         cancelBtn: document.getElementById('bulkCancelBtn'),
         dragHandle: document.getElementById('bulkDragHandle'),
     });
-
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     function reset() {
         form.reset();

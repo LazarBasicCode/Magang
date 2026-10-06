@@ -3362,8 +3362,9 @@ body.dark-mode .bulk-menu-panel {
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 11px 16px;
+    padding: 9px 10px;
     border: none;
+    border-radius: 10px;
     background: transparent;
     color: var(--ink);
     text-align: left;
@@ -3411,15 +3412,19 @@ body.dark-mode .bulk-menu-panel {
     color: var(--ink-muted);
 }
 
-/* Panel tanpa header: beri napas atas-bawah + pemisah sebelum Cetak */
+/* Panel tanpa header: padding 6px + jarak antar item 2px, sama seperti .dropdown-panel,
+   supaya hover item berupa kotak membulat dengan margin (tidak memenuhi lebar panel). */
 .bulk-menu-panel {
     width: 300px;
-    padding: 6px 0;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .bulk-menu-sep {
     height: 1px;
-    margin: 6px 0;
+    margin: 4px 6px;
     background: var(--border);
 }
 
@@ -3558,4 +3563,92 @@ body.dark-mode .bulk-menu-panel {
 .btn-apply.is-loading {
     opacity: .7;
     pointer-events: none;
+}
+
+
+/* ==========================================================
+   CETAK LAPORAN (modal) — dibuka dari menu ⋮ → "Cetak Laporan"
+   resources/views/partials/bulk-menu.blade.php (kerangka modal)
+   resources/views/cetak-laporan.blade.php (isi) · JS: public/js/bulk-import.js
+   Memakai .modal-backdrop / .modal-card yang sama, hanya lebih lebar.
+   ========================================================== */
+#printModal {
+    width: min(1100px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+}
+
+#printModal .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.pm-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.pm-footer .btn-apply:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.pm-state {
+    margin: 0;
+    padding: 56px 0;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-muted);
+}
+
+.pm-state.is-error {
+    color: var(--danger);
+}
+
+.pm-filter .dropdown { width: 200px; max-width: 100%; }
+
+.pm-table td.wrap { white-space: normal; min-width: 220px; }
+.pm-table td, .pm-table th { vertical-align: top; }
+.pm-table td.no, .pm-table th.no { width: 44px; }
+
+@media (max-width: 640px) {
+    #printModal .modal-body { padding: 14px; }
+    .pm-footer { padding: 10px 14px; }
+    .pm-footer .btn-ghost, .pm-footer .btn-apply { flex: 1 1 0; justify-content: center; }
+}
+
+/* Saat dicetak: hanya isi modal yang keluar (class dipasang JS di beforeprint). */
+@media print {
+    body.is-printing-report > *:not(#printModal) { display: none !important; }
+
+    body.is-printing-report #printModal {
+        position: static;
+        display: block;
+        width: auto;
+        max-height: none;
+        transform: none;
+        opacity: 1;
+        visibility: visible;
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        background: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    body.is-printing-report #printModal .modal-drag-handle,
+    body.is-printing-report #printModal .pm-footer { display: none !important; }
+
+    body.is-printing-report #printModal .modal-body { display: block; padding: 0; overflow: visible; }
+
+    body.is-printing-report .pm-card { break-inside: auto; }
+    body.is-printing-report .pm-table { font-size: 11.5px; }
+    body.is-printing-report .pm-table td.wrap { min-width: 0; }
+    body.is-printing-report .pm-table thead { display: table-header-group; }
 }

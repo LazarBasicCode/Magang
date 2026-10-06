@@ -129,6 +129,13 @@ Route::middleware(['auth'])->group(function () {
     // ---- Data Master Users ----
     Route::middleware('menu.access:data_master,readonly')->group(function () {
         Route::get('/data-master/users', [UserController::class, 'index'])->name('data-master.users.index');
+        // Unduh data akun (Excel) — pembatasan role admin/superadmin ada di controller.
+        Route::get('/data-master/users/export', [UserController::class, 'export'])->name('data-master.users.export');
+    });
+    // Template & unggah massal Excel — hanya admin/superadmin dengan akses penuh.
+    Route::middleware('menu.access:data_master,penuh')->group(function () {
+        Route::get('/data-master/users/template', [UserController::class, 'template'])->name('data-master.users.template');
+        Route::post('/data-master/users/import', [UserController::class, 'import'])->name('data-master.users.import');
     });
     Route::middleware('menu.access:data_master,biasa')->group(function () {
         Route::post('/data-master/users', [UserController::class, 'store'])->name('data-master.users.store');

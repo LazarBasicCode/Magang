@@ -224,12 +224,11 @@ class Xlsx
         try {
             $wb = simplexml_load_string((string) $zip->getFromName('xl/workbook.xml'));
             $rels = simplexml_load_string((string) $zip->getFromName('xl/_rels/workbook.xml.rels'));
-            if (!$wb || !$rels) {
+            if ($wb === false || $rels === false) {
                 throw new \RuntimeException('Struktur file Excel tidak valid.');
             }
 
-            $wb->registerXPathNamespace('m', self::NS_MAIN);
-            $sheets = $wb->xpath('//m:sheets/m:sheet') ?: [];
+            $sheets = $wb->xpath("//*[local-name()='sheets']/*[local-name()='sheet']") ?: [];
             if (!$sheets) {
                 throw new \RuntimeException('Sheet data tidak ditemukan.');
             }
@@ -253,7 +252,7 @@ class Xlsx
 
             $rid = (string) $target->attributes(self::NS_REL)->id;
             $sheetPath = null;
-            foreach ($rels->Relationship as $rel) {
+            foreach ($rels->xpath("//*[local-name()='Relationship']") ?: [] as $rel) {
                 if ((string) $rel['Id'] === $rid) {
                     $t = (string) $rel['Target'];
                     $sheetPath = str_starts_with($t, '/') ? ltrim($t, '/') : 'xl/' . $t;
@@ -267,10 +266,9 @@ class Xlsx
             $shared = [];
             if ($zip->locateName('xl/sharedStrings.xml') !== false) {
                 $ss = simplexml_load_string((string) $zip->getFromName('xl/sharedStrings.xml'));
-                if ($ss) {
-                    $ss->registerXPathNamespace('m', self::NS_MAIN);
-                    foreach ($ss->xpath('//m:si') ?: [] as $si) {
-                        $texts = $si->xpath('.//m:t') ?: [];
+                if ($ss !== false) {
+                    foreach ($ss->xpath("//*[local-name()='si']") ?: [] as $si) {
+                        $texts = self::textNodes($si);
                         $shared[] = implode('', array_map(fn ($t) => (string) $t, $texts));
                     }
                 }
@@ -279,21 +277,19 @@ class Xlsx
             $dateStyles = self::dateStyles((string) $zip->getFromName('xl/styles.xml'));
 
             $sx = simplexml_load_string((string) $zip->getFromName($sheetPath));
-            if (!$sx) {
+            if ($sx === false) {
                 throw new \RuntimeException('Isi sheet Excel tidak valid.');
             }
         } finally {
             $zip->close();
         }
 
-        $sx->registerXPathNamespace('m', self::NS_MAIN);
-
         $header = null;
         $rows = [];
-        foreach ($sx->xpath('//m:sheetData/m:row') ?: [] as $rowEl) {
+        foreach ($sx->xpath("//*[local-name()='sheetData']/*[local-name()='row']") ?: [] as $rowEl) {
             $line = (int) $rowEl['r'];
             $cells = [];
-            foreach ($rowEl->c as $c) {
+            foreach ($rowEl->xpath("*[local-name()='c']") ?: [] as $c) {
                 $idx = self::columnIndex((string) $c['r']);
                 $cells[$idx] = trim(self::cellValue($c, $shared, $dateStyles));
             }
@@ -342,18 +338,16 @@ class Xlsx
     private static function dateStyles(string $stylesXml): array
     {
         $sx = $stylesXml !== '' ? simplexml_load_string($stylesXml) : false;
-        if (!$sx) {
+        if ($sx === false) {
             return [];
         }
-        $sx->registerXPathNamespace('m', self::NS_MAIN);
-
         $custom = [];
-        foreach ($sx->xpath('//m:numFmts/m:numFmt') ?: [] as $nf) {
+        foreach ($sx->xpath("//*[local-name()='numFmts']/*[local-name()='numFmt']") ?: [] as $nf) {
             $custom[(int) $nf['numFmtId']] = (string) $nf['formatCode'];
         }
 
         $out = [];
-        foreach ($sx->xpath('//m:cellXfs/m:xf') ?: [] as $i => $xf) {
+        foreach ($sx->xpath("//*[local-name()='cellXfs']/*[local-name()='xf']") ?: [] as $i => $xf) {
             $id = (int) $xf['numFmtId'];
             if (($id >= 14 && $id <= 22) || ($id >= 27 && $id <= 36) || ($id >= 45 && $id <= 47) || ($id >= 50 && $id <= 58)) {
                 $out[$i] = true;
@@ -366,15 +360,20 @@ class Xlsx
         return $out;
     }
 
+    /** Semua node <t> di dalam elemen (tanpa teks fonetik <rPh>), tanpa bergantung prefix namespace. @return \SimpleXMLElement[] */
+    private static function textNodes(\SimpleXMLElement $el): array
+    {
+        return $el->xpath(".//*[local-name()='t'][not(ancestor::*[local-name()='rPh'])]") ?: [];
+    }
+
     private static function cellValue(\SimpleXMLElement $c, array $shared, array $dateStyles = []): string
     {
         $type = (string) $c['t'];
         if ($type === 'inlineStr') {
-            $c->registerXPathNamespace('m', self::NS_MAIN);
-
-            return implode('', array_map(fn ($t) => (string) $t, $c->xpath('.//m:t') ?: []));
+            return implode('', array_map(fn ($t) => (string) $t, self::textNodes($c)));
         }
-        $v = (string) $c->v;
+        $vNode = $c->xpath("*[local-name()='v']");
+        $v = $vNode ? (string) $vNode[0] : '';
         if ($type === 's') {
             return $shared[(int) $v] ?? '';
         }

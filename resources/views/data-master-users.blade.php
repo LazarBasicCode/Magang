@@ -257,10 +257,29 @@ $__accessRows = $__user->accessBreakdown();
                         <h1 class="page-title">Data Master Pengguna</h1>
                         <p class="page-subtitle">Kelola akun pengguna sistem: Superadmin, Admin, Dosen, dan Mahasiswa</p>
                     </div>
-                    <button type="button" class="btn-primary" id="btnTambahUser">
-                        <span class="material-symbols-outlined">add</span>
-                        <span>Tambah Pengguna</span>
-                    </button>
+                    @php
+                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
+                        $bulkUser = auth()->user();
+                        $bulkLevel = $bulkUser->menuLevel('data_master');
+                        $bulkRole = in_array($bulkUser->role, ['admin', 'superadmin'], true);
+                        $showBulk = $bulkRole && in_array($bulkLevel, ['readonly', 'penuh'], true);
+                        $bulkWrite = $bulkRole && $bulkLevel === 'penuh';
+                    @endphp
+                    <div class="title-actions">
+                        <button type="button" class="btn-primary" id="btnTambahUser">
+                            <span class="material-symbols-outlined">add</span>
+                            <span>Tambah Pengguna</span>
+                        </button>
+                        @if($showBulk)
+                            @include('partials.bulk-menu', [
+                                'bulkLabel'    => 'Data Master',
+                                'bulkTemplate' => $bulkWrite ? route('data-master.users.template') : null,
+                                'bulkImport'   => $bulkWrite ? route('data-master.users.import') : null,
+                                'bulkExport'   => route('data-master.users.export'),
+                            ])
+                        @endif
+                    </div>
                 </div>
 
                 <!-- SUMMARY STAT CARDS -->
@@ -543,6 +562,14 @@ $__accessRows = $__user->accessBreakdown();
             </div>
         </form>
     </div>
+
+    @if($showBulk && $bulkWrite)
+        @include('partials.bulk-import-modal', [
+            'bulkLabel'    => 'Data Master',
+            'bulkImport'   => route('data-master.users.import'),
+            'bulkTemplate' => route('data-master.users.template'),
+        ])
+    @endif
 
     <script src="{{ asset('js/script.js') }}"></script>
     <script>
@@ -1070,6 +1097,9 @@ $__accessRows = $__user->accessBreakdown();
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
+    @if($showBulk)
+        <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+    @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
         // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.

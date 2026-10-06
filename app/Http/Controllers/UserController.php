@@ -6,13 +6,20 @@ use App\Models\User;
 use App\Models\Mahasiswa;
 use App\Models\Dosen;
 use App\Models\UserNotification;
+use App\Http\Controllers\Concerns\HandlesBulkData;
+use App\Support\Csv;
+use App\Support\Xlsx;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    use HandlesBulkData;
+
     /**
      * Halaman utama Data Master Pengguna (server-rendered untuk load pertama).
      * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
@@ -202,6 +209,247 @@ class UserController extends Controller
             'success' => true,
             'id'      => $id,
         ]);
+    }
+
+    // =====================================================================
+    // UNGGAH / UNDUH MASSAL (EXCEL .xlsx) — khusus admin & superadmin
+    // Kerangka umum: Concerns\HandlesBulkData + Support\Xlsx.
+    // Aturan keamanan (sengaja ketat, karena ini data akun & password):
+    //  - Admin hanya boleh membuat/mengubah akun dosen & mahasiswa; superadmin boleh semua role.
+    //  - Role akun yang sudah ada TIDAK bisa diubah lewat unggah massal (ubah lewat form edit).
+    //  - Password tidak pernah diekspor. Kolom password saat edit: kosong = tidak diganti.
+    // =====================================================================
+
+    private const SHEET = 'Data Master';
+
+    protected function bulkMenu(): string
+    {
+        return 'data_master';
+    }
+
+    // Model User tidak punya relasi pemilik; relasi ini hanya dipakai bulkExistingById().
+    protected function bulkOwnerWith(): string
+    {
+        return 'mahasiswa';
+    }
+
+    protected function bulkSheetName(): ?string
+    {
+        return self::SHEET;
+    }
+
+    protected function bulkExtraAliases(): array
+    {
+        return ['name' => 'nama', 'peran' => 'role', 'kata_sandi' => 'password'];
+    }
+
+    /** Role yang boleh dibuat lewat unggah massal oleh user yang sedang login. */
+    private function bulkRoles(Request $request): array
+    {
+        return $request->user()->role === 'superadmin'
+            ? ['mahasiswa', 'dosen', 'admin', 'superadmin']
+            : ['mahasiswa', 'dosen'];
+    }
+
+    /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown role. */
+    public function template(Request $request)
+    {
+        $this->bulkEnsureAccess($request, true);
+        $roles = $this->bulkRoles($request);
+
+        return $this->bulkXlsxTemplateResponse(
+            'template-data-master.xlsx',
+            'PETUNJUK IMPORT / EXPORT DATA MASTER',
+            self::SHEET,
+            [
+                'id'       => ['required' => 'Tidak',          'example' => '',                'width' => 10, 'note' => 'KOSONGKAN untuk akun baru. Isi id (dari hasil Download) untuk MENGEDIT akun yang sudah ada.'],
+                'nim_nidn' => ['required' => 'Ya',             'example' => '2210001',         'width' => 18, 'note' => 'NIM / NIDN, dipakai sebagai username login. Harus unik. Tulis persis, termasuk 0 di depan.'],
+                'nama'     => ['required' => 'Ya',             'example' => 'Budi Santoso',    'width' => 30, 'note' => 'Nama lengkap pengguna.'],
+                'role'     => ['required' => 'Ya',             'example' => 'mahasiswa',       'width' => 16, 'options' => $roles, 'note' => 'Pilih dari dropdown: ' . implode(' | ', $roles) . '. Role akun yang sudah ada tidak bisa diubah di sini.'],
+                'email'    => ['required' => 'Tidak',          'example' => '',                'width' => 30, 'note' => 'Email pemulihan password (opsional). Kalau diisi harus unik.'],
+                'password' => ['required' => 'Ya (akun baru)', 'example' => 'rahasia123',      'width' => 20, 'note' => 'Minimal 6 karakter. Saat edit: kosongkan kalau password tidak diganti.'],
+            ],
+            [
+                'Isi data di sheet "' . self::SHEET . '", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
+                'Kolom id: kosongkan untuk akun baru, isi id (dari hasil Download) untuk mengedit akun.',
+                'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
+                'File ini berisi password asli: hapus file setelah diunggah dan jangan dibagikan.',
+                'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
+            ]
+        );
+    }
+
+    /** Unduh data akun sebagai Excel (tanpa password). Admin hanya melihat dosen & mahasiswa. */
+    public function export(Request $request)
+    {
+        $this->bulkEnsureAccess($request, false);
+
+        $cell = fn ($v, $style = Xlsx::STYLE_CELL) => ['value' => (string) $v, 'style' => $style];
+        $header = ['id', 'nim_nidn', 'nama', 'role', 'email', 'password'];
+        $rows = [array_map(fn ($h) => $cell($h, Xlsx::STYLE_HEADER), $header)];
+
+        User::query()
+            ->when($request->user()->role !== 'superadmin', fn ($q) => $q->whereIn('role', ['mahasiswa', 'dosen']))
+            ->chunkById(500, function ($users) use (&$rows, $cell) {
+                foreach ($users as $u) {
+                    // Kolom password sengaja kosong: hash tidak boleh keluar, kosong = tidak diganti saat diunggah ulang.
+                    $rows[] = array_map(fn ($v) => $cell(Csv::safeCell($v)), [$u->id, $u->nim_nidn, $u->name, $u->role, $u->email, '']);
+                }
+            });
+
+        return Xlsx::download('data-master-' . now()->format('Ymd-His') . '.xlsx', [[
+            'name' => self::SHEET, 'widths' => [10, 18, 30, 16, 30, 20], 'rows' => $rows, 'freeze' => true, 'autofilter' => true,
+            'autoborder' => ['cols' => count($header), 'from' => 2, 'to' => max(count($rows) + 1000, 2000)],
+        ]]);
+    }
+
+    /**
+     * Unggah Excel (.xlsx) atau CSV: baris dengan id => edit akun itu, tanpa id => akun baru.
+     * Semua baris divalidasi dulu; kalau ada yang bermasalah, TIDAK ADA data yang disimpan.
+     */
+    public function import(Request $request)
+    {
+        $this->bulkEnsureAccess($request, true);
+
+        $parsed = $this->bulkParseUpload($request, ['nim_nidn', 'nama', 'role']);
+        if ($parsed instanceof JsonResponse) {
+            return $parsed;
+        }
+        [, $rows] = $parsed;
+
+        $actor = $request->user();
+        $roles = $this->bulkRoles($request);
+        $existingById = $this->bulkExistingById(User::class, $rows);
+
+        $plan = [];
+        $errors = [];
+        $seenNim = [];
+        $seenEmail = [];
+
+        foreach ($rows as $row) {
+            $d = $row['data'];
+            $rowErrors = [];
+
+            $existing = null;
+            $id = trim((string) ($d['id'] ?? ''));
+            if ($id !== '') {
+                $existing = ctype_digit($id) ? $existingById->get((int) $id) : null;
+                if (!$existing) {
+                    $rowErrors[] = "id \"{$id}\" tidak ditemukan.";
+                }
+            }
+
+            $payload = [
+                'name'     => trim((string) ($d['nama'] ?? '')),
+                'nim_nidn' => trim((string) ($d['nim_nidn'] ?? '')),
+                'role'     => Csv::normalizeKey($d['role'] ?? ''),
+                'email'    => strtolower(trim((string) ($d['email'] ?? ''))) ?: null,
+                'password' => (string) ($d['password'] ?? ''),
+            ];
+
+            $validator = Validator::make($payload, [
+                'name'     => ['required', 'string', 'max:255'],
+                // Akun lama: role dikunci (dicek di bawah). Akun baru: hanya role yang boleh dibuat user ini.
+                'role'     => $existing ? ['required'] : ['required', Rule::in($roles)],
+                'nim_nidn' => ['required', 'string', 'max:50', Rule::unique('users', 'nim_nidn')->ignore($existing?->id)],
+                'email'    => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($existing?->id)],
+                'password' => [$existing ? 'nullable' : 'required', 'string', 'min:6'],
+            ], [
+                'required' => ':attribute wajib diisi.',
+                'in'       => ':attribute tidak valid atau tidak boleh Anda buat (boleh: ' . implode(', ', $roles) . ').',
+                'unique'   => ':attribute sudah dipakai akun lain.',
+                'email'    => ':attribute bukan alamat email yang valid.',
+                'min'      => ':attribute minimal :min karakter.',
+                'max'      => ':attribute terlalu panjang.',
+            ], ['name' => 'nama', 'nim_nidn' => 'nim_nidn', 'role' => 'role', 'email' => 'email', 'password' => 'password']);
+            $rowErrors = array_merge($rowErrors, $validator->errors()->all());
+
+            if ($existing) {
+                if ($payload['role'] !== '' && $payload['role'] !== $existing->role) {
+                    $rowErrors[] = "Role tidak bisa diubah lewat unggah massal (role saat ini: {$existing->role}). Ubah lewat form edit.";
+                }
+                if ($actor->id !== $existing->id && !$actor->canManageTargetUser($existing)) {
+                    $rowErrors[] = 'Anda tidak berhak mengubah akun ini.';
+                }
+            }
+
+            // Duplikat di dalam file yang sama (belum ada di database, jadi lolos aturan unique di atas).
+            if ($payload['nim_nidn'] !== '') {
+                if (isset($seenNim[$payload['nim_nidn']])) {
+                    $rowErrors[] = "nim_nidn \"{$payload['nim_nidn']}\" muncul lagi di baris {$seenNim[$payload['nim_nidn']]}.";
+                } else {
+                    $seenNim[$payload['nim_nidn']] = $row['line'];
+                }
+            }
+            if ($payload['email']) {
+                if (isset($seenEmail[$payload['email']])) {
+                    $rowErrors[] = "email \"{$payload['email']}\" muncul lagi di baris {$seenEmail[$payload['email']]}.";
+                } else {
+                    $seenEmail[$payload['email']] = $row['line'];
+                }
+            }
+
+            if ($rowErrors) {
+                $errors[] = ['row' => $row['line'], 'messages' => array_values(array_unique($rowErrors))];
+                continue;
+            }
+
+            $plan[] = ['existing' => $existing, 'payload' => $payload];
+        }
+
+        if ($errors) {
+            return $this->bulkRejected($errors);
+        }
+
+        $created = $updated = $unchanged = 0;
+        $notify = [];
+
+        DB::transaction(function () use ($plan, $actor, &$created, &$updated, &$unchanged, &$notify) {
+            foreach ($plan as $p) {
+                $pl = $p['payload'];
+
+                if ($p['existing']) {
+                    $user = $p['existing'];
+                    $user->name = $pl['name'];
+                    $user->nim_nidn = $pl['nim_nidn'];
+                    $user->email = $pl['email'];
+                    if ($pl['password'] !== '') {
+                        $user->password = Hash::make($pl['password']);
+                    }
+                    if ($user->isDirty()) {
+                        $user->save();
+                        $this->syncIdentifier($user, $user->role, $pl['nim_nidn']);
+                        $updated++;
+                        if ($user->id !== $actor->id) {
+                            $notify[] = $user->id;
+                        }
+                    } else {
+                        $unchanged++;
+                    }
+                } else {
+                    $user = User::create([
+                        'name'     => $pl['name'],
+                        'nim_nidn' => $pl['nim_nidn'],
+                        'email'    => $pl['email'],
+                        'password' => Hash::make($pl['password']),
+                        'role'     => $pl['role'],
+                    ]);
+                    $this->syncIdentifier($user, $pl['role'], $pl['nim_nidn']);
+                    $created++;
+                }
+            }
+        });
+
+        // Sama seperti edit lewat form: beri tahu pemilik akun yang datanya diubah orang lain.
+        foreach (array_unique($notify) as $userId) {
+            UserNotification::send($userId, 'data_updated', [
+                'title'       => 'Data akun Anda diperbarui',
+                'description' => "Diubah oleh {$actor->name} ({$actor->role}) lewat unggah massal.",
+                'data'        => ['actor_id' => $actor->id, 'actor_name' => $actor->name],
+            ]);
+        }
+
+        return $this->bulkSuccess($created, $updated, $unchanged);
     }
 
     private function validated(Request $request, bool $isUpdate, ?User $user = null): array

@@ -12,6 +12,7 @@ use App\Http\Controllers\HakAksesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\CetakLaporanController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccountController;
@@ -173,6 +174,10 @@ Route::middleware(['auth'])->group(function () {
 
     // ---- Laporan (khusus superadmin, dicek di controller) ----
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+
+    // ---- Cetak Laporan per menu (admin/superadmin; akses menu dicek di controller) ----
+    // Daftar menu & kolom: App\Support\PrintReports. Slug: kemahasiswaan, lppm-mahasiswa, lppm-dosen, rekognisi, kerja-sama, data-master.
+    Route::get('/cetak/{menu}', [CetakLaporanController::class, 'show'])->name('cetak.show');
 
     Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
     Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');

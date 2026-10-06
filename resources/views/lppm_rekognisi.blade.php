@@ -257,7 +257,7 @@
                         <p class="page-subtitle">Pendataan rekognisi dosen dan mahasiswa &middot; Tahun 2026</p>
                     </div>
                     @php
-                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
                         // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
                         $bulkUser = auth()->user();
                         $bulkLevel = $bulkUser->menuLevel('rekognisi');
@@ -276,6 +276,7 @@
                                 'bulkTemplate' => $bulkWrite ? route('lppm.rekognisi.template') : null,
                                 'bulkImport'   => $bulkWrite ? route('lppm.rekognisi.import') : null,
                                 'bulkExport'   => route('lppm.rekognisi.export'),
+                                'bulkPrint'    => route('cetak.show', 'rekognisi'),
                             ])
                         @endif
                     </div>

@@ -254,7 +254,7 @@
                         <p class="page-subtitle">Pendataan kerja sama mahasiswa, dosen, guest lecture, pengabdian &amp; research internasional &middot; Tahun 2026</p>
                     </div>
                     @php
-                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
                         // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
                         $bulkUser = auth()->user();
                         $bulkLevel = $bulkUser->menuLevel('kerja_sama');
@@ -273,6 +273,7 @@
                                 'bulkTemplate' => $bulkWrite ? route('kerja-sama.template') : null,
                                 'bulkImport'   => $bulkWrite ? route('kerja-sama.import') : null,
                                 'bulkExport'   => route('kerja-sama.export'),
+                                'bulkPrint'    => route('cetak.show', 'kerja-sama'),
                             ])
                         @endif
                     </div>

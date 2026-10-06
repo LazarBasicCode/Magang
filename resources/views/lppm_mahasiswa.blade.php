@@ -260,7 +260,7 @@
                         <p class="page-subtitle">Pendataan luaran publikasi SINTA Nasional, Conference, dan Jurnal Internasional &middot; Tahun 2026</p>
                     </div>
                     @php
-                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
                         // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
                         $bulkUser = auth()->user();
                         $bulkLevel = $bulkUser->menuLevel('lppm_mahasiswa');
@@ -279,6 +279,7 @@
                                 'bulkTemplate' => $bulkWrite ? route('lppm.mahasiswa.template') : null,
                                 'bulkImport'   => $bulkWrite ? route('lppm.mahasiswa.import') : null,
                                 'bulkExport'   => route('lppm.mahasiswa.export'),
+                                'bulkPrint'    => route('cetak.show', 'lppm-mahasiswa'),
                             ])
                         @endif
                     </div>

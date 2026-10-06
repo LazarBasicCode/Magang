@@ -257,7 +257,7 @@
                         <p class="page-subtitle">Pendataan luaran Jurnal Q1-Q4, SINTA, HKI, dan Buku Dosen &middot; Tahun 2026</p>
                     </div>
                     @php
-                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
                         // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
                         $bulkUser = auth()->user();
                         $bulkLevel = $bulkUser->menuLevel('lppm_dosen');
@@ -276,6 +276,7 @@
                                 'bulkTemplate' => $bulkWrite ? route('lppm.dosen.template') : null,
                                 'bulkImport'   => $bulkWrite ? route('lppm.dosen.import') : null,
                                 'bulkExport'   => route('lppm.dosen.export'),
+                                'bulkPrint'    => route('cetak.show', 'lppm-dosen'),
                             ])
                         @endif
                     </div>

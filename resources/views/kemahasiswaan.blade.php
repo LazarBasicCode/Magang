@@ -264,7 +264,7 @@
                             &middot; Tahun Akademik 2025/2026 (Genap)</p>
                     </div>
                     @php
-                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
                         // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
                         $bulkUser = auth()->user();
                         $bulkLevel = $bulkUser->menuLevel('kemahasiswaan');
@@ -283,6 +283,7 @@
                                 'bulkTemplate' => $bulkWrite ? route('kemahasiswaan.template') : null,
                                 'bulkImport'   => $bulkWrite ? route('kemahasiswaan.import') : null,
                                 'bulkExport'   => route('kemahasiswaan.export'),
+                                'bulkPrint'    => route('cetak.show', 'kemahasiswaan'),
                             ])
                         @endif
                     </div>

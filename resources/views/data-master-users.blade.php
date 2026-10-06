@@ -258,7 +258,7 @@ $__accessRows = $__user->accessBreakdown();
                         <p class="page-subtitle">Kelola akun pengguna sistem: Superadmin, Admin, Dosen, dan Mahasiswa</p>
                     </div>
                     @php
-                        // Menu "+" (Unduh Template / Upload / Download): hanya admin & superadmin.
+                        // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
                         // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
                         $bulkUser = auth()->user();
                         $bulkLevel = $bulkUser->menuLevel('data_master');
@@ -277,6 +277,7 @@ $__accessRows = $__user->accessBreakdown();
                                 'bulkTemplate' => $bulkWrite ? route('data-master.users.template') : null,
                                 'bulkImport'   => $bulkWrite ? route('data-master.users.import') : null,
                                 'bulkExport'   => route('data-master.users.export'),
+                                'bulkPrint'    => route('cetak.show', 'data-master'),
                             ])
                         @endif
                     </div>

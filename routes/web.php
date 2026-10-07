@@ -12,6 +12,7 @@ use App\Http\Controllers\HakAksesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\BulkSelectionController;
 use App\Http\Controllers\CetakLaporanController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
@@ -178,6 +179,11 @@ Route::middleware(['auth'])->group(function () {
     // ---- Cetak Laporan per menu (admin/superadmin; akses menu dicek di controller) ----
     // Daftar menu & kolom: App\Support\PrintReports. Slug: kemahasiswaan, lppm-mahasiswa, lppm-dosen, rekognisi, kerja-sama, data-master.
     Route::get('/cetak/{menu}', [CetakLaporanController::class, 'show'])->name('cetak.show');
+
+    // ---- Aksi untuk data terpilih (centang baris tabel): export & cetak. Daftar menu: BulkSelectionController::MENUS ----
+    Route::post('/pilihan/{menu}/export', [BulkSelectionController::class, 'export'])->name('pilihan.export');
+    Route::post('/pilihan/{menu}/cetak', [BulkSelectionController::class, 'cetak'])->name('pilihan.cetak');
+    Route::post('/pilihan/{menu}/hapus', [BulkSelectionController::class, 'hapus'])->name('pilihan.hapus');
 
     Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
     Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');

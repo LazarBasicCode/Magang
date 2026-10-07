@@ -6,7 +6,8 @@
 --}}
 @php
     $user      = auth()->user();
-    $periode   = $tahun ? 'Tahun ' . $tahun : ($cfg['year'] ? 'Semua Tahun' : 'Seluruh Data');
+    $selectedCount = $selectedCount ?? null; // diisi bila dicetak dari data terpilih (centang baris)
+    $periode   = $selectedCount ? 'Data terpilih (' . $selectedCount . ' data)' : ($tahun ? 'Tahun ' . $tahun : ($cfg['year'] ? 'Semua Tahun' : 'Seluruh Data'));
     $jabatan   = $user->role === 'superadmin' ? 'Super Admin' : 'Admin';
     $generated = now();
 @endphp
@@ -14,7 +15,7 @@
 <div class="rp-page pm-report" data-orient="{{ $cfg['landscape'] ? 'landscape' : 'portrait' }}">
 
     <!-- ===== FILTER PERIODE (tidak ikut tercetak) — dropdown custom .dropdown, ditangani bulk-import.js ===== -->
-    @if($cfg['year'])
+    @if($cfg['year'] && !$selectedCount)
         <div class="rp-filter pm-filter no-print">
             <label>Periode</label>
             <div class="dropdown" data-dropdown id="dd-pm-tahun">
@@ -52,7 +53,7 @@
     <!-- ===== RINGKASAN ===== -->
     <section class="rp-card">
         <div class="rp-card-head" style="cursor:default"><div class="rp-card-title"><h2>Ringkasan</h2>
-            <p>Angka kunci untuk periode: {{ $periode }}</p></div></div>
+            <p>Angka kunci untuk {{ $selectedCount ? strtolower($periode) : 'periode: ' . $periode }}</p></div></div>
         <div class="rp-kpi-grid rp-kpi-grid-4" style="margin-bottom:0">
             @foreach($stats as $s)
                 <div class="rp-kpi rp-c-{{ $s['color'] }}">
@@ -67,7 +68,7 @@
     <!-- ===== DAFTAR DATA ===== -->
     <section class="rp-card pm-card">
         <div class="rp-card-head" style="cursor:default"><div class="rp-card-title"><h2>Daftar Data</h2>
-            <p>{{ $items->count() }} data &middot; periode: {{ $periode }}</p></div></div>
+            <p>{{ $items->count() }} data &middot; {{ $selectedCount ? 'hanya data terpilih' : 'periode: ' . $periode }}</p></div></div>
         @if($items->count())
             <div class="rp-table-wrap">
                 <table class="rp-table pm-table">

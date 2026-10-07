@@ -108,6 +108,17 @@ class KemahasiswaanController extends Controller
         ]);
     }
 
+    /** Hapus data terpilih (centang baris tabel) — dipanggil dari BulkSelectionController::hapus(). */
+    public function destroyMany(Request $request)
+    {
+        return $this->bulkDestroySelected(
+            $request,
+            Kemahasiswaan::class,
+            ['mahasiswa.user'],
+            fn (Kemahasiswaan $item) => $this->notifyKegiatan($request, $item, 'dihapus')
+        );
+    }
+
     // =====================================================================
     // UNGGAH / UNDUH MASSAL (EXCEL .xlsx; CSV lama tetap diterima saat unggah) — khusus admin & superadmin
     // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;

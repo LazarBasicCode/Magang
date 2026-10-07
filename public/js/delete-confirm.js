@@ -1,6 +1,7 @@
 /* ==========================================================
-   DeleteConfirm.ask({ name, entity }) -> Promise<boolean>
+   DeleteConfirm.ask({ name, entity, count }) -> Promise<boolean>
    entity: 'user' (default untuk akun pengguna) | 'data' (data biasa)
+   count : (opsional) hapus banyak sekaligus -> teks "N data terpilih" menggantikan name
    Langkah 1: peringatan + [Lanjutkan]
    Langkah 2: peringatan lagi, tombol terkunci 3 dtk (garis progress)
    ========================================================== */
@@ -57,6 +58,7 @@
 
     function subject(name) {
         const who = currentEntity === 'user' ? 'akun' : 'data';
+        if (currentCount > 0) return `<strong>${currentCount} ${who} terpilih</strong>`;
         return name ? `${who} <strong>${esc(name)}</strong>` : `${who} ini`;
     }
 
@@ -79,7 +81,9 @@
         els.card.classList.add('is-final');
         els.icon.textContent = 'block';
         els.title.textContent = 'Tindakan ini permanen';
-        els.text.innerHTML = `${currentEntity === 'user' ? 'Akun' : 'Data'} ${name ? '<strong>' + esc(name) + '</strong> ' : 'ini '}akan dihapus permanen dan <strong>tidak bisa dikembalikan</strong>. Tombol hapus aktif setelah 3 detik.`;
+        els.text.innerHTML = currentCount > 0
+            ? `${subject(name)} akan dihapus permanen dan <strong>tidak bisa dikembalikan</strong>. Tombol hapus aktif setelah 3 detik.`
+            : `${currentEntity === 'user' ? 'Akun' : 'Data'} ${name ? '<strong>' + esc(name) + '</strong> ' : 'ini '}akan dihapus permanen dan <strong>tidak bisa dikembalikan</strong>. Tombol hapus aktif setelah 3 detik.`;
         els.next.disabled = true;
         els.next.className = 'dc-btn dc-btn--next is-locked';
         setNext('lock', 'Hapus');
@@ -91,11 +95,11 @@
         timer = setTimeout(() => {
             els.next.disabled = false;
             els.next.className = 'dc-btn dc-btn--next is-danger is-ready';
-            setNext('delete', 'Hapus sekarang');
+            setNext('delete', currentCount > 0 ? `Hapus ${currentCount} data` : 'Hapus sekarang');
         }, WAIT_MS);
     }
 
-    let currentName = '', currentEntity = 'user';
+    let currentName = '', currentEntity = 'user', currentCount = 0;
     function onNext() {
         if (els.next.disabled) return;
         if (step === 1) showStep2(currentName);
@@ -112,11 +116,12 @@
     }
 
     window.DeleteConfirm = {
-        ask({ name, entity = 'user' } = {}) {
+        ask({ name, entity = 'user', count = 0 } = {}) {
             build();
             if (resolver) finish(false);
             currentName = name || '';
             currentEntity = entity;
+            currentCount = Number(count) > 0 ? Number(count) : 0;
             lastFocus = document.activeElement;
             els.backdrop.classList.add('is-active');
             showStep1(currentName);

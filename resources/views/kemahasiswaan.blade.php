@@ -445,8 +445,19 @@
                         </div>
                     </div>
 
+                    @if($showBulk)
+                        {{-- Bar aksi data terpilih (Export Excel / Cetak PDF / Batal pilih); muncul saat ada baris dicentang --}}
+                        @include('partials.row-select-bar')
+                    @endif
+
                     <div class="table-scroll">
-                        <table class="data-table">
+                        <table class="data-table"
+                            @if($showBulk)
+                                data-selectable="kemahasiswaan"
+                                data-select-export="{{ route('pilihan.export', 'kemahasiswaan') }}"
+                                data-select-print="{{ route('pilihan.cetak', 'kemahasiswaan') }}"
+                                @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'kemahasiswaan') }}" @endif
+                            @endif>
                             <thead>
                                 <tr>
                                     <th>NIM</th>
@@ -889,7 +900,8 @@
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)
-    <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+        <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+        <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
     @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms

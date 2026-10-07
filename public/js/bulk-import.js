@@ -51,6 +51,10 @@
 
         const val = (id) => printBody.querySelector('#' + id)?.value ?? null;
         let loadSeq = 0;
+        // Cetak data terpilih (centang baris, public/js/row-select.js): {url, ids}. null = cetak semua data menu.
+        let selection = null;
+        const printSubtitle = printCard.querySelector('.modal-subtitle');
+        const printSubtitleDefault = printSubtitle ? printSubtitle.textContent : '';
 
         async function loadReport(tahun) {
             const seq = ++loadSeq;
@@ -59,10 +63,22 @@
             printBody.innerHTML = '<p class="pm-state">Memuat laporan…</p>';
 
             try {
-                const res = await fetch(printUrl + (tahun ? '?tahun=' + encodeURIComponent(tahun) : ''), {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
-                    credentials: 'same-origin',
-                });
+                const res = selection
+                    ? await fetch(selection.url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': SIDA.util.csrfToken(),
+                        },
+                        body: JSON.stringify({ ids: selection.ids }),
+                        credentials: 'same-origin',
+                    })
+                    : await fetch(printUrl + (tahun ? '?tahun=' + encodeURIComponent(tahun) : ''), {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                        credentials: 'same-origin',
+                    });
                 if (res.redirected || res.status === 419 || res.status === 401) throw new Error('Sesi habis. Muat ulang halaman lalu coba lagi.');
                 if (res.status === 403) throw new Error('Kamu tidak punya akses untuk fitur ini.');
                 if (!res.ok) throw new Error('Gagal memuat laporan (' + res.status + ').');
@@ -88,9 +104,21 @@
         }
 
         printBtn.addEventListener('click', () => {
+            selection = null;
+            if (printSubtitle) printSubtitle.textContent = printSubtitleDefault;
             printModal.open();
             loadReport('');
         });
+
+        // Dipakai row-select.js: buka modal yang sama, tapi hanya untuk id terpilih (tanpa filter periode).
+        SIDA.reportPrint = {
+            open(url, ids) {
+                selection = { url, ids };
+                if (printSubtitle) printSubtitle.textContent = ids.length + ' data terpilih siap cetak. Untuk PDF, pilih "Simpan sebagai PDF" di dialog cetak.';
+                printModal.open();
+                loadReport('');
+            },
+        };
         printBody.addEventListener('input', (e) => { if (e.target.closest('#pmName, #pmRole')) syncSign(); });
 
         // Dropdown Periode (komponen custom .dropdown). Isi modal dimuat belakangan lewat fetch, jadi

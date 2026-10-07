@@ -637,6 +637,86 @@
 
     window.SIDA = SIDA;
 })(window, document);
+/**
+ * Sidebar bisa diperlebar / diperkecil dengan menyeret garis titik tiga di tepi kanan sidebar.
+ * Gaya, animasi & mode ikon-saja ada di style.css (bagian "SIDEBAR RESIZE"); JS ini hanya
+ * membuat pegangannya dan mengubah --sidebar-w.
+ * Lebar tersimpan juga dipasang lebih awal oleh resources/views/partials/sidebar-init.blade.php (di <head>).
+ *
+ * Pasang: tempel isi file ini di akhir public/js/script.js (tanpa markup tambahan),
+ *         atau muat sebagai <script> terpisah di layout.
+ */
+(function () {
+    const sidebar = document.querySelector('.app-sidebar');
+    if (!sidebar) return;
+
+    const root = document.documentElement;
+    const MIN = 72;            // mode ikon (samakan dengan --sidebar-min)
+    const EXPANDED_MIN = 200;  // lebar terkecil yang masih menampilkan teks
+    const MAX = 340;           // samakan dengan --sidebar-max
+    const SNAP = 140;          // dilepas di bawah ini -> mode ikon, di atasnya -> minimal EXPANDED_MIN
+    const DEFAULT = 260;
+    const KEY = 'sida.sidebarW';
+
+    const isDesktop = () => window.matchMedia('(min-width: 800px)').matches;
+    const apply = (w) => root.style.setProperty('--sidebar-w', w + 'px');
+    const snapTo = (w) => (w < SNAP ? MIN : Math.min(MAX, Math.max(EXPANDED_MIN, w)));
+    const current = () => Math.round(sidebar.getBoundingClientRect().width);
+    const save = (w) => { try { localStorage.setItem(KEY, w); } catch (e) {} };
+
+    // Pegangan dibuat di sini supaya tidak perlu mengubah markup 11 halaman
+    const handle = document.createElement('div');
+    handle.className = 'sidebar-resizer';
+    handle.setAttribute('aria-hidden', 'true');
+    handle.title = 'Seret untuk ubah lebar · klik 2x untuk ciutkan/lebarkan';
+    sidebar.append(handle);
+
+    try {
+        const saved = parseInt(localStorage.getItem(KEY), 10);
+        if (saved) apply(snapTo(saved));
+    } catch (e) {}
+
+    // Pindah ke lebar akhir dengan animasi halus (class hanya aktif selama animasi)
+    let snapTimer;
+    function animateTo(w) {
+        clearTimeout(snapTimer);
+        document.body.classList.add('is-snapping-sidebar');
+        void sidebar.offsetWidth;            // pastikan transisi terbaca sebelum nilai berubah
+        apply(w);
+        save(w);
+        snapTimer = setTimeout(() => {
+            document.body.classList.remove('is-snapping-sidebar');
+            window.dispatchEvent(new Event('resize')); // supaya chart ikut menyesuaikan
+        }, 360);
+    }
+
+    handle.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 || !isDesktop()) return;
+        e.preventDefault();
+        clearTimeout(snapTimer);
+        document.body.classList.remove('is-snapping-sidebar');
+        handle.setPointerCapture(e.pointerId);
+        document.body.classList.add('is-resizing-sidebar');
+
+        // Saat menyeret: mengikuti mouse langsung (tanpa transisi), teks memudar & blur bila terpotong
+        const move = (ev) => apply(Math.min(MAX, Math.max(MIN, ev.clientX)));
+        const stop = () => {
+            handle.removeEventListener('pointermove', move);
+            handle.removeEventListener('pointerup', stop);
+            handle.removeEventListener('pointercancel', stop);
+            document.body.classList.remove('is-resizing-sidebar');
+            animateTo(snapTo(current())); // lepas -> menempel ke mode ikon / lebar normal dengan animasi
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', stop);
+        handle.addEventListener('pointercancel', stop);
+    });
+
+    // Klik dua kali: bolak-balik mode ikon <-> lebar normal
+    handle.addEventListener('dblclick', () => {
+        if (isDesktop()) animateTo(current() <= MIN ? DEFAULT : MIN);
+    });
+})();
 
 /**
  * =====================================================================

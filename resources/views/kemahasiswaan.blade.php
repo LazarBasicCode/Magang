@@ -15,6 +15,14 @@
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
+    <script>
+        (function() {
+            try {
+                var w = parseInt(localStorage.getItem('sida.sidebarW'), 10);
+                if (w) document.documentElement.style.setProperty('--sidebar-w', (w < 140 ? 72 : Math.min(340, Math.max(200, w))) + 'px');
+            } catch (e) {}
+        })();
+    </script>
     <title>Kemahasiswaan &middot; SIDA</title>
 </head>
 
@@ -23,9 +31,11 @@
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
             <symbol id="sida-mark" viewBox="0 0 48 48">
-                <clipPath id="sidaClip"><circle cx="24" cy="24" r="22.5"/></clipPath>
-                <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)"/>
-                <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/>
+                <clipPath id="sidaClip">
+                    <circle cx="24" cy="24" r="22.5" />
+                </clipPath>
+                <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)" />
+                <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5" />
             </symbol>
         </defs>
     </svg>
@@ -33,7 +43,9 @@
     <!-- ============ SIDEBAR ============ -->
     <aside class="app-sidebar">
         <div class="sidebar-brand">
-            <svg class="sidebar-brand-mark" aria-hidden="true"><use href="#sida-mark"/></svg>
+            <svg class="sidebar-brand-mark" aria-hidden="true">
+                <use href="#sida-mark" />
+            </svg>
             <div class="sidebar-brand-text">
                 <span class="sidebar-brand-title">SIDA</span>
                 <span class="sidebar-brand-sub">Institut Asia Malang</span>
@@ -264,13 +276,13 @@
                             &middot; Tahun Akademik 2025/2026 (Genap)</p>
                     </div>
                     @php
-                        // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
-                        // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
-                        $bulkUser = auth()->user();
-                        $bulkLevel = $bulkUser->menuLevel('kemahasiswaan');
-                        $bulkRole = in_array($bulkUser->role, ['admin', 'superadmin'], true);
-                        $showBulk = $bulkRole && in_array($bulkLevel, ['readonly', 'penuh'], true);
-                        $bulkWrite = $bulkRole && $bulkLevel === 'penuh';
+                    // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
+                    // Download butuh akses readonly ke atas; Template & Upload butuh akses penuh.
+                    $bulkUser = auth()->user();
+                    $bulkLevel = $bulkUser->menuLevel('kemahasiswaan');
+                    $bulkRole = in_array($bulkUser->role, ['admin', 'superadmin'], true);
+                    $showBulk = $bulkRole && in_array($bulkLevel, ['readonly', 'penuh'], true);
+                    $bulkWrite = $bulkRole && $bulkLevel === 'penuh';
                     @endphp
                     <div class="title-actions">
                         <button type="button" class="btn-primary" id="btnTambahKegiatan">
@@ -278,13 +290,13 @@
                             <span>Tambah Kegiatan</span>
                         </button>
                         @if($showBulk)
-                            @include('partials.bulk-menu', [
-                                'bulkLabel'    => 'Kemahasiswaan',
-                                'bulkTemplate' => $bulkWrite ? route('kemahasiswaan.template') : null,
-                                'bulkImport'   => $bulkWrite ? route('kemahasiswaan.import') : null,
-                                'bulkExport'   => route('kemahasiswaan.export'),
-                                'bulkPrint'    => route('cetak.show', 'kemahasiswaan'),
-                            ])
+                        @include('partials.bulk-menu', [
+                        'bulkLabel' => 'Kemahasiswaan',
+                        'bulkTemplate' => $bulkWrite ? route('kemahasiswaan.template') : null,
+                        'bulkImport' => $bulkWrite ? route('kemahasiswaan.import') : null,
+                        'bulkExport' => route('kemahasiswaan.export'),
+                        'bulkPrint' => route('cetak.show', 'kemahasiswaan'),
+                        ])
                         @endif
                     </div>
                 </div>
@@ -524,8 +536,10 @@
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
                             <tbody class="sk-body" aria-hidden="true">
                                 @for($i = 0; $i < 7; $i++)
-                                <tr><td colspan="9"><span class="sk-bar"></span></td></tr>
-                                @endfor
+                                    <tr>
+                                    <td colspan="9"><span class="sk-bar"></span></td>
+                                    </tr>
+                                    @endfor
                             </tbody>
                         </table>
                     </div>
@@ -659,11 +673,11 @@
     </div>
 
     @if($showBulk && $bulkWrite)
-        @include('partials.bulk-import-modal', [
-            'bulkLabel'    => 'Kemahasiswaan',
-            'bulkImport'   => route('kemahasiswaan.import'),
-            'bulkTemplate' => route('kemahasiswaan.template'),
-        ])
+    @include('partials.bulk-import-modal', [
+    'bulkLabel' => 'Kemahasiswaan',
+    'bulkImport' => route('kemahasiswaan.import'),
+    'bulkTemplate' => route('kemahasiswaan.template'),
+    ])
     @endif
 
     @if($showBulk && $bulkWrite)
@@ -869,7 +883,10 @@
 
         // ---- Delete — endpoint khusus halaman ini ----
         async function handleDelete(id, name) {
-            const ok = await DeleteConfirm.ask({ name, entity: 'data' });
+            const ok = await DeleteConfirm.ask({
+                name,
+                entity: 'data'
+            });
             if (!ok) return;
             try {
                 const res = await fetch(`/kemahasiswaan/${id}`, {

@@ -47,6 +47,7 @@
     --chart-5: #d21515;
 
     --sidebar-w: 260px;
+    --sidebar-ease: cubic-bezier(.4, 0, .2, 1);
     --header-h: 64px;
     --radius: 10px;
     --radius-lg: 14px;
@@ -299,6 +300,8 @@ button {
     padding: 0 24px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    overflow: hidden;
+    transition: padding .32s var(--sidebar-ease);
 }
 
 .sidebar-brand img {
@@ -330,6 +333,9 @@ button {
     display: flex;
     flex-direction: column;
     line-height: 1.1;
+    min-width: 0;
+    white-space: nowrap;
+    transition: opacity .2s ease, filter .2s ease;
 }
 
 .sidebar-brand-title {
@@ -368,7 +374,8 @@ button {
     color: var(--ink-muted);
     font-size: 13.5px;
     font-weight: 500;
-    transition: background-color .15s ease, color .15s ease;
+    white-space: nowrap;
+    transition: background-color .25s ease, color .25s ease, padding .32s var(--sidebar-ease);
 }
 
 .nav-link:hover {
@@ -378,12 +385,21 @@ button {
 
 .nav-link .material-symbols-outlined {
     font-size: 19px;
+    transition: font-size .32s var(--sidebar-ease);
+}
+
+/* Efek tekan: langsung berubah warna saat diklik, sebelum halaman berpindah */
+.nav-link:active:not(.is-active) {
+    background: var(--primary-soft);
+    color: var(--primary);
 }
 
 .nav-link.is-active {
     background: var(--primary-soft);
     color: var(--primary);
     font-weight: 700;
+    /* Navigasi = pindah halaman, jadi transisi antar-state tidak bisa jalan; animasi dimainkan saat menu aktif muncul */
+    animation: navActiveIn .35s ease both;
 }
 
 .nav-link.is-active::before {
@@ -396,6 +412,25 @@ button {
     width: 4px;
     border-radius: 0 4px 4px 0;
     background: var(--primary);
+    transform-origin: center;
+    animation: navBarGrow .4s cubic-bezier(.34, 1.56, .64, 1) .05s both;
+}
+
+/* Background & warna teks menghangat dari abu ke warna aktif */
+@keyframes navActiveIn {
+    from { background-color: transparent; color: var(--ink-muted); }
+    to   { background-color: var(--primary-soft); color: var(--primary); }
+}
+
+/* Indikator kiri melebar dari tengah ke atas & bawah */
+@keyframes navBarGrow {
+    from { transform: translateY(-50%) scaleY(0); }
+    to   { transform: translateY(-50%) scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-link.is-active,
+    .nav-link.is-active::before { animation: none; }
 }
 
 .nav-heading {
@@ -405,10 +440,16 @@ button {
     text-transform: uppercase;
     letter-spacing: .06em;
     color: var(--ink-faint);
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: color .2s ease;
 }
 
 .sidebar-help {
     flex-shrink: 0;
+    overflow: hidden;
+    transition: opacity .2s ease, filter .2s ease;
 }
 
 .help-card {
@@ -3651,4 +3692,144 @@ body.dark-mode .bulk-menu-panel {
     body.is-printing-report .pm-table { font-size: 11.5px; }
     body.is-printing-report .pm-table td.wrap { min-width: 0; }
     body.is-printing-report .pm-table thead { display: table-header-group; }
+}
+
+
+/* ==========================================================
+   SIDEBAR RESIZE  (desktop ≥ 800px)
+   Lebar sidebar = --sidebar-w (dipakai juga .app-content & .app-header).
+   Pegangan (.sidebar-resizer) dibuat oleh public/js/sidebar-resize.js; lebar tersimpan dipasang lebih awal
+   oleh partials/sidebar-init.blade.php (di <head>) supaya tidak ada kedipan saat memuat.
+   Mode ikon-saja aktif otomatis lewat container query berdasarkan lebar sidebar (tanpa class tambahan).
+   ========================================================== */
+.app-sidebar {
+    container: sidebar / inline-size;
+}
+
+/* --- Scrollbar: tersembunyi, muncul saat sidebar di-hover --- */
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: transparent;
+    transition: background-color .2s ease;
+}
+
+.app-sidebar:hover .sidebar-nav::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+}
+
+@supports (-moz-appearance: none) {
+    .sidebar-nav { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+    .app-sidebar:hover .sidebar-nav { scrollbar-color: var(--border-strong) transparent; }
+}
+
+/* --- Pegangan geser: garis sempit di luar tepi kanan, hanya muncul saat pegangannya sendiri di-hover --- */
+.sidebar-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -7px;
+    z-index: 2;
+    width: 7px;
+    cursor: col-resize;
+    touch-action: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 0;
+    border-radius: 0 6px 6px 0;
+    opacity: 0;
+    transition: opacity .18s ease, background-color .15s ease;
+}
+
+/* area klik diperluas ke kanan (tampilan tetap sempit) */
+.sidebar-resizer::after {
+    content: "";
+    position: absolute;
+    inset: 0 -5px 0 0;
+}
+
+/* titik tiga */
+.sidebar-resizer::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 22px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, var(--ink-faint) 1.3px, transparent 1.7px) center top / 3px 8px repeat-y;
+}
+
+.sidebar-resizer:hover,
+body.is-resizing-sidebar .sidebar-resizer {
+    opacity: 1;
+    background: var(--primary-soft);
+}
+
+body.is-resizing-sidebar,
+body.is-resizing-sidebar * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+/* --- Animasi saat sidebar "menempel" ke lebar akhir (class dipasang sebentar oleh JS; saat menyeret tanpa transisi) --- */
+@media (min-width: 800px) {
+    body.is-snapping-sidebar .app-sidebar { transition: width .32s var(--sidebar-ease); }
+    body.is-snapping-sidebar .app-content { transition: margin-left .32s var(--sidebar-ease); }
+    body.is-snapping-sidebar .app-header  { transition: left .32s var(--sidebar-ease); }
+}
+
+/* --- Teks menu: terpotong rapi & memudar + blur saat sidebar menyempit
+   (properti dasarnya ada di .nav-link, .sidebar-brand, .sidebar-help, .nav-heading di bagian 4. SIDEBAR) --- */
+.nav-link > span:not(.material-symbols-outlined) {
+    min-width: 0;
+    overflow: hidden;
+    transition: opacity .2s ease, filter .2s ease;
+}
+
+/* garis pemisah pengganti judul grup (muncul di mode ikon) */
+.nav-heading::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: 62%;
+    height: 1px;
+    background: var(--border);
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+
+/* Tahap 1: mulai terpotong -> teks memudar & blur */
+@container sidebar (max-width: 190px) {
+    .nav-link > span:not(.material-symbols-outlined),
+    .sidebar-brand-text,
+    .sidebar-help { opacity: 0; filter: blur(4px); }
+
+    .nav-heading { color: transparent; }
+}
+
+/* Tahap 2: mode ikon saja -> ikon dirapikan ke tengah */
+@container sidebar (max-width: 100px) {
+    .sidebar-brand { padding: 0 0 0 20px; }
+
+    .nav-link { padding: 0 0 0 8px; }
+    .nav-link .material-symbols-outlined { font-size: 22px; }
+
+    .nav-heading::after { opacity: 1; }
+
+    .sidebar-help { display: none; }
+
+    .sidebar-nav { scrollbar-width: none; }
+    .sidebar-nav::-webkit-scrollbar { width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.is-snapping-sidebar .app-sidebar,
+    body.is-snapping-sidebar .app-content,
+    body.is-snapping-sidebar .app-header { transition: none; }
+}
+
+/* Mobile (drawer): lebar tetap & tanpa pegangan, abaikan lebar hasil seret di desktop */
+@media (max-width: 799px) {
+    .app-sidebar { width: 260px; }
+    .sidebar-resizer { display: none; }
 }

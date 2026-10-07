@@ -812,6 +812,14 @@
 </script>
 <script src="{{ asset('js/toast.js') }}"></script>
 <script>
+    // Kalau halaman login ini dipulihkan dari back-forward cache (mis. user
+    // login lalu menekan Back), muat ulang supaya server memutuskan:
+    // sudah login -> dialihkan ke dashboard, belum -> form login baru.
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) window.location.reload();
+    });
+</script>
+<script>
     // Pesan hasil login gagal / reset password berhasil, dulunya box <div class="alert">
     // statis di dalam form — sekarang ditampilkan sebagai toast (dengan suara) begitu
     // halaman ini selesai dimuat.

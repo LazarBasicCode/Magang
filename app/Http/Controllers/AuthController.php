@@ -29,6 +29,13 @@ class AuthController extends Controller
 
     public function loginProcess(Request $request)
     {
+        // Lapis kedua di luar middleware 'guest': kalau karena alasan apa pun
+        // request sampai ke sini dengan sesi yang sudah login, jangan
+        // pernah menimpa sesi itu dengan akun lain.
+        if (Auth::check()) {
+            return redirect()->route('dashboard.index');
+        }
+
         // Validasi input dari index.blade.php
         $request->validate([
             'username' => 'required',

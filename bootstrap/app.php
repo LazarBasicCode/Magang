@@ -14,6 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'menu.access' => \App\Http\Middleware\EnsureMenuAccess::class,
         ]);
+
+        // Pengguna yang SUDAH login dan mencoba membuka route khusus tamu
+        // (halaman login, proses login, lupa/reset password) dialihkan ke dashboard.
+        $middleware->redirectUsersTo(fn () => route('dashboard.index'));
+
+        // Cegah halaman tersimpan di cache/Back button (lihat PreventBackHistory).
+        $middleware->web(append: [
+            \App\Http\Middleware\PreventBackHistory::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

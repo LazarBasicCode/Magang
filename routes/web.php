@@ -18,20 +18,31 @@ use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccountController;
 
-// Halaman Login (index.blade.php)
-Route::get('/', function () {
-    return view('index');
-})->name('login');
+// ---- Route khusus TAMU (belum login) ----
+// Middleware 'guest' mengalihkan user yang sudah login ke /dashboard, jadi
+// tidak bisa membuka halaman login, mengirim login baru, atau memakai
+// lupa/reset password selama sesinya masih aktif. Untuk ganti akun,
+// user wajib logout dulu.
+Route::middleware('guest')->group(function () {
+    // Halaman Login (index.blade.php)
+    Route::get('/', function () {
+        return view('index');
+    })->name('login');
 
-// Rute Pemrosesan Login & Logout
-Route::post('/login-process', [AuthController::class, 'loginProcess'])
-    ->middleware('throttle:login-ip');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    // Pemrosesan login
+    Route::post('/login-process', [AuthController::class, 'loginProcess'])
+        ->middleware('throttle:login-ip');
 
-// ---- Lupa Password ----
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
-Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    // ---- Lupa Password ----
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+});
+
+// Logout hanya untuk user yang sedang login (POST + CSRF, bukan GET).
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
 
 // Rute yang dilindungi (Hanya bisa diakses jika sudah login)
 Route::middleware(['auth'])->group(function () {

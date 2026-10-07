@@ -95,6 +95,67 @@ class LppmMahasiswaController extends Controller
         return response()->json(['success' => true, 'id' => $id]);
     }
 
+    /** Hapus data terpilih (centang baris tabel) — dipanggil dari BulkSelectionController::hapus(). */
+    public function destroyMany(Request $request)
+    {
+        return $this->bulkDestroySelected(
+            $request,
+            LppmMahasiswa::class,
+            ['mahasiswa.user'],
+            fn (LppmMahasiswa $item) => $this->notifyPublikasi($request, $item, 'dihapus')
+        );
+    }
+
+    /**
+     * Update massal data terpilih — dipanggil dari BulkSelectionController::ubah().
+     * Kolom yang khas per baris (NIM, mahasiswa, bukti) sengaja TIDAK bisa diubah massal.
+     * Kolom yang dikosongkan tidak diubah.
+     */
+    public function updateMany(Request $request)
+    {
+        return $this->bulkUpdateSelected(
+            $request,
+            LppmMahasiswa::class,
+            ['mahasiswa.user'],
+            [
+                'jenis'      => ['nullable', 'in:sinta_nasional,conference_internasional,jurnal_internasional'],
+                'judul'      => ['nullable', 'string', 'max:255'],
+                'penulis'    => ['nullable', 'string', 'max:255'],
+                'nama_jurnal'=> ['nullable', 'string', 'max:255'],
+                'peringkat'  => ['nullable', 'string', 'max:50'],
+                'tahun'      => ['nullable', 'integer', 'min:2000', 'max:2100'],
+            ],
+            fn (LppmMahasiswa $item) => $this->notifyPublikasi($request, $item, 'diperbarui'),
+            fn (LppmMahasiswa $item) => $this->format($item),
+            fn (LppmMahasiswa $item, array $changes) => $this->resolveBulkRow($item, $changes)
+        );
+    }
+
+    /**
+     * Validasi silang satu baris untuk update massal (nilai akhir = data lama + kolom yang diisi).
+     * Kolom yang tidak berlaku untuk jenis akhirnya dikosongkan, kolom yang wajib dicek terisi.
+     *
+     * @return array{0: array, 1: string[]}
+     */
+    private function resolveBulkRow(LppmMahasiswa $item, array $changes): array
+    {
+        $final = $this->normalizeByJenis(array_merge($item->only(['jenis', 'nama_jurnal', 'peringkat']), $changes));
+        $errors = [];
+
+        if (in_array($final['jenis'], self::JENIS_JURNAL, true)) {
+            foreach (['nama_jurnal', 'peringkat'] as $col) {
+                if (trim((string) ($final[$col] ?? '')) === '') {
+                    $errors[] = "{$col} wajib diisi untuk jenis {$final['jenis']}.";
+                }
+            }
+        }
+
+        return [array_merge($changes, [
+            'nama_jurnal' => $final['nama_jurnal'] ?? null,
+            'peringkat'   => $final['peringkat'] ?? null,
+        ]), $errors];
+    }
+
     // =====================================================================
     // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
     // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;
@@ -319,9 +380,23 @@ class LppmMahasiswaController extends Controller
         ];
     }
 
+    /** Jenis yang memakai nama_jurnal & peringkat. */
+    private const JENIS_JURNAL = ['sinta_nasional', 'jurnal_internasional'];
+
+    /** Kosongkan kolom yang tidak relevan untuk jenisnya (dipakai form, update massal; import sudah setara). */
+    private function normalizeByJenis(array $data): array
+    {
+        if (!in_array($data['jenis'] ?? null, self::JENIS_JURNAL, true)) {
+            $data['nama_jurnal'] = null;
+            $data['peringkat'] = null;
+        }
+
+        return $data;
+    }
+
     private function validated(Request $request): array
     {
-        return $request->validate($this->rules());
+        return $this->normalizeByJenis($request->validate($this->rules()));
     }
 
     private function format(LppmMahasiswa $item): array

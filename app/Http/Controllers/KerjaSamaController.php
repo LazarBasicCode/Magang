@@ -124,6 +124,88 @@ class KerjaSamaController extends Controller
         ]);
     }
 
+    /** Hapus data terpilih (centang baris tabel) — dipanggil dari BulkSelectionController::hapus(). */
+    public function destroyMany(Request $request)
+    {
+        return $this->bulkDestroySelected(
+            $request,
+            KerjaSama::class,
+            ['user'],
+            fn (KerjaSama $item) => $this->notifyKerjaSama($request, $item, 'dihapus')
+        );
+    }
+
+    /**
+     * Update massal data terpilih — dipanggil dari BulkSelectionController::ubah().
+     * Kolom yang khas per baris (NIM/NIDN, user, tanggal, bukti) sengaja TIDAK bisa diubah massal.
+     * Kolom yang dikosongkan tidak diubah.
+     */
+    public function updateMany(Request $request)
+    {
+        return $this->bulkUpdateSelected(
+            $request,
+            KerjaSama::class,
+            ['user'],
+            [
+                'jenis'          => ['nullable', 'in:conference_internasional,pkl,sharing_session,keynote_session,guest_lecture,pengabdian_internasional,research_internasional,lainnya'],
+                'jenis_lainnya'  => ['nullable', 'string', 'max:255'],
+                'arah'           => ['nullable', 'in:inbound,outbound'],
+                'mitra'          => ['nullable', 'string', 'max:255'],
+                'judul_kegiatan' => ['nullable', 'string', 'max:255'],
+            ],
+            fn (KerjaSama $item) => $this->notifyKerjaSama($request, $item, 'diperbarui'),
+            fn (KerjaSama $item) => $this->format($item),
+            fn (KerjaSama $item, array $changes) => $this->resolveBulkRow($item, $changes)
+        );
+    }
+
+    /**
+     * Validasi silang satu baris untuk update massal: nilai akhir = data lama + kolom yang diisi.
+     * Aturannya sama dengan form tambah/edit (RULES + jenisRestriction + kolom kondisional).
+     *
+     * @return array{0: array, 1: string[]}  [atribut yang disimpan, pesan error]
+     */
+    private function resolveBulkRow(KerjaSama $item, array $changes): array
+    {
+        $final = array_merge($item->only(['tipe_user', 'jenis', 'jenis_lainnya', 'arah']), $changes);
+        $jenis = (string) $final['jenis'];
+        $errors = [];
+
+        // jenis vs tipe_user (mahasiswa hanya jenis tertentu, dosen tidak boleh PKL)
+        if ($message = $this->jenisRestriction($item->tipe_user, $jenis)) {
+            $errors[] = rtrim($message, '.') . " (jenis \"{$jenis}\", pemilik terdaftar sebagai {$item->tipe_user}).";
+        }
+
+        // arah: hanya untuk guest_lecture (dan wajib di sana)
+        if ($jenis === 'guest_lecture') {
+            if (empty($final['arah'])) {
+                $errors[] = 'Arah wajib diisi untuk jenis guest_lecture (inbound/outbound).';
+            }
+        } else {
+            if (array_key_exists('arah', $changes)) {
+                $errors[] = 'Arah hanya boleh diisi jika jenis = guest_lecture (jenis akhir: ' . $jenis . ').';
+            }
+            $final['arah'] = null;
+        }
+
+        // jenis_lainnya: hanya untuk jenis = lainnya (dan wajib di sana)
+        if ($jenis === 'lainnya') {
+            if (trim((string) ($final['jenis_lainnya'] ?? '')) === '') {
+                $errors[] = 'Jenis lainnya wajib diisi jika jenis = lainnya.';
+            }
+        } else {
+            if (array_key_exists('jenis_lainnya', $changes)) {
+                $errors[] = 'Jenis lainnya hanya boleh diisi jika jenis = lainnya (jenis akhir: ' . $jenis . ').';
+            }
+            $final['jenis_lainnya'] = null;
+        }
+
+        return [array_merge($changes, [
+            'arah'          => $final['arah'],
+            'jenis_lainnya' => $final['jenis_lainnya'],
+        ]), $errors];
+    }
+
     // =====================================================================
     // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
     // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;

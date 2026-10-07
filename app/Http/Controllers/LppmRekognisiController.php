@@ -105,6 +105,65 @@ class LppmRekognisiController extends Controller
         return response()->json(['success' => true, 'id' => $id]);
     }
 
+    /** Hapus data terpilih (centang baris tabel) — dipanggil dari BulkSelectionController::hapus(). */
+    public function destroyMany(Request $request)
+    {
+        return $this->bulkDestroySelected(
+            $request,
+            Rekognisi::class,
+            ['user'],
+            fn (Rekognisi $item) => $this->notifyRekognisi($request, $item, 'dihapus')
+        );
+    }
+
+    /**
+     * Update massal data terpilih — dipanggil dari BulkSelectionController::ubah().
+     * Kolom yang khas per baris (NIM/NIDN, user, tanggal, bukti) sengaja TIDAK bisa diubah massal.
+     * Kolom yang dikosongkan tidak diubah.
+     */
+    public function updateMany(Request $request)
+    {
+        return $this->bulkUpdateSelected(
+            $request,
+            Rekognisi::class,
+            ['user'],
+            [
+                'jenis'   => ['nullable', 'in:nasional,internasional,alumni'],
+                'mitra'   => ['nullable', 'string', 'max:255'],
+                'jabatan' => ['nullable', 'string', 'max:255'],
+            ],
+            fn (Rekognisi $item) => $this->notifyRekognisi($request, $item, 'diperbarui'),
+            fn (Rekognisi $item) => $this->format($item),
+            fn (Rekognisi $item, array $changes) => $this->resolveBulkRow($item, $changes)
+        );
+    }
+
+    /**
+     * Validasi silang satu baris untuk update massal (nilai akhir = data lama + kolom yang diisi):
+     * jabatan wajib untuk alumni, dan otomatis dikosongkan jika jenis bukan alumni (sama seperti form).
+     *
+     * @return array{0: array, 1: string[]}
+     */
+    private function resolveBulkRow(Rekognisi $item, array $changes): array
+    {
+        $jenis = (string) ($changes['jenis'] ?? $item->jenis);
+        $jabatan = $changes['jabatan'] ?? $item->jabatan;
+        $errors = [];
+
+        if ($jenis === 'alumni') {
+            if (trim((string) $jabatan) === '') {
+                $errors[] = 'Jabatan wajib diisi untuk jenis alumni.';
+            }
+        } else {
+            if (array_key_exists('jabatan', $changes)) {
+                $errors[] = 'Jabatan hanya boleh diisi jika jenis = alumni (jenis akhir: ' . $jenis . ').';
+            }
+            $changes['jabatan'] = null;
+        }
+
+        return [$changes, $errors];
+    }
+
     // =====================================================================
     // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
     // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;

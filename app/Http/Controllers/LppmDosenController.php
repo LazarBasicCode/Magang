@@ -95,6 +95,78 @@ class LppmDosenController extends Controller
         return response()->json(['success' => true, 'id' => $id]);
     }
 
+    /** Hapus data terpilih (centang baris tabel) — dipanggil dari BulkSelectionController::hapus(). */
+    public function destroyMany(Request $request)
+    {
+        return $this->bulkDestroySelected(
+            $request,
+            LppmDosen::class,
+            ['dosen.user'],
+            fn (LppmDosen $item) => $this->notifyPublikasi($request, $item, 'dihapus')
+        );
+    }
+
+    /**
+     * Update massal data terpilih — dipanggil dari BulkSelectionController::ubah().
+     * Kolom yang khas per baris (NIDN, dosen, bukti, link_doi) sengaja TIDAK bisa diubah massal.
+     * Kolom yang dikosongkan tidak diubah.
+     */
+    public function updateMany(Request $request)
+    {
+        return $this->bulkUpdateSelected(
+            $request,
+            LppmDosen::class,
+            ['dosen.user'],
+            [
+                'jenis'         => ['nullable', 'in:q_internasional,sinta_nasional,hki,book'],
+                'judul'         => ['nullable', 'string', 'max:255'],
+                'penulis'       => ['nullable', 'string', 'max:255'],
+                'nama_jurnal'   => ['nullable', 'string', 'max:255'],
+                'peringkat'     => ['nullable', 'string', 'max:50'],
+                'jenis_hki'     => ['nullable', 'in:hak_cipta,paten,merek'],
+                'kategori_buku' => ['nullable', 'in:ajar,referensi,chapter'],
+                'tahun'         => ['nullable', 'integer', 'min:2000', 'max:2100'],
+            ],
+            fn (LppmDosen $item) => $this->notifyPublikasi($request, $item, 'diperbarui'),
+            fn (LppmDosen $item) => $this->format($item),
+            fn (LppmDosen $item, array $changes) => $this->resolveBulkRow($item, $changes)
+        );
+    }
+
+    /**
+     * Validasi silang satu baris untuk update massal (nilai akhir = data lama + kolom yang diisi).
+     * Kolom yang tidak berlaku untuk jenis akhirnya dikosongkan, kolom yang wajib dicek terisi.
+     *
+     * @return array{0: array, 1: string[]}
+     */
+    private function resolveBulkRow(LppmDosen $item, array $changes): array
+    {
+        $final = $this->normalizeByJenis(array_merge(
+            $item->only(['jenis', 'nama_jurnal', 'peringkat', 'jenis_hki', 'kategori_buku']),
+            $changes
+        ));
+
+        $required = match (true) {
+            in_array($final['jenis'], self::JENIS_JURNAL, true) => ['nama_jurnal', 'peringkat'],
+            $final['jenis'] === 'hki'  => ['jenis_hki'],
+            $final['jenis'] === 'book' => ['kategori_buku'],
+            default => [],
+        };
+        $errors = [];
+        foreach ($required as $col) {
+            if (trim((string) ($final[$col] ?? '')) === '') {
+                $errors[] = "{$col} wajib diisi untuk jenis {$final['jenis']}.";
+            }
+        }
+
+        return [array_merge($changes, [
+            'nama_jurnal'   => $final['nama_jurnal'] ?? null,
+            'peringkat'     => $final['peringkat'] ?? null,
+            'jenis_hki'     => $final['jenis_hki'] ?? null,
+            'kategori_buku' => $final['kategori_buku'] ?? null,
+        ]), $errors];
+    }
+
     // =====================================================================
     // UNGGAH / UNDUH MASSAL (CSV) — khusus admin & superadmin
     // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;
@@ -327,9 +399,31 @@ class LppmDosenController extends Controller
         ];
     }
 
+    /** Jenis yang memakai nama_jurnal & peringkat. */
+    private const JENIS_JURNAL = ['q_internasional', 'sinta_nasional'];
+
+    /** Kosongkan kolom yang tidak relevan untuk jenisnya (dipakai form, update massal; import sudah setara). */
+    private function normalizeByJenis(array $data): array
+    {
+        $jenis = $data['jenis'] ?? null;
+
+        if (!in_array($jenis, self::JENIS_JURNAL, true)) {
+            $data['nama_jurnal'] = null;
+            $data['peringkat'] = null;
+        }
+        if ($jenis !== 'hki') {
+            $data['jenis_hki'] = null;
+        }
+        if ($jenis !== 'book') {
+            $data['kategori_buku'] = null;
+        }
+
+        return $data;
+    }
+
     private function validated(Request $request): array
     {
-        return $request->validate($this->rules());
+        return $this->normalizeByJenis($request->validate($this->rules()));
     }
 
     private function format(LppmDosen $item): array

@@ -426,8 +426,20 @@
                         </div>
                     </div>
 
+                    @if($showBulk)
+                        {{-- Bar aksi data terpilih (Export Excel / Cetak PDF / Update / Hapus / Batal pilih); muncul saat ada baris dicentang --}}
+                        @include('partials.row-select-bar')
+                    @endif
+
                     <div class="table-scroll">
-                        <table class="data-table">
+                        <table class="data-table"
+                            @if($showBulk)
+                                data-selectable="kerja-sama"
+                                data-select-export="{{ route('pilihan.export', 'kerja-sama') }}"
+                                data-select-print="{{ route('pilihan.cetak', 'kerja-sama') }}"
+                                @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'kerja-sama') }}" @endif
+                                @if($bulkWrite) data-select-update="{{ route('pilihan.ubah', 'kerja-sama') }}" @endif
+                            @endif>
                             <thead>
                                 <tr>
                                     <th>NIM/NIDN</th>
@@ -719,6 +731,31 @@
             'bulkLabel'    => 'Kerja Sama',
             'bulkImport'   => route('kerja-sama.import'),
             'bulkTemplate' => route('kerja-sama.template'),
+        ])
+    @endif
+
+    @if($showBulk && $bulkWrite)
+        {{-- Modal Update Massal (data terpilih). Kolom NIM/NIDN, Nama, Tipe User, Periode & Bukti sengaja tidak ada: khas per baris. --}}
+        @include('partials.bulk-update-modal', [
+            'updateLabel'  => 'Kerja Sama',
+            'updateFields' => [
+                ['name' => 'jenis',          'label' => 'Jenis Kerja Sama',  'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.badge',
+                    'options' => [
+                        'conference_internasional' => 'Conference Internasional',
+                        'pkl'                      => 'PKL (Output)',
+                        'sharing_session'          => 'Sharing Session',
+                        'keynote_session'          => 'Keynote Speaker',
+                        'guest_lecture'            => 'Guest Lecture',
+                        'pengabdian_internasional' => 'Pengabdian Internasional',
+                        'research_internasional'   => 'Research Internasional',
+                        'lainnya'                  => 'Lainnya',
+                    ]],
+                ['name' => 'arah',           'label' => 'Arah (Guest Lecture)', 'type' => 'select', 'row' => 'a', 'col' => 5, 'target' => '.badge',
+                    'options' => ['inbound' => 'Inbound', 'outbound' => 'Outbound']],
+                ['name' => 'judul_kegiatan', 'label' => 'Judul Kegiatan',     'type' => 'text',   'col' => 2, 'target' => '.activity-title'],
+                ['name' => 'mitra',          'label' => 'Mitra',              'type' => 'text',   'row' => 'c', 'col' => 6, 'target' => '.plain-text'],
+                ['name' => 'jenis_lainnya',  'label' => 'Jenis Lainnya (jika jenis = Lainnya)', 'type' => 'text', 'row' => 'c'],
+            ],
         ])
     @endif
 
@@ -1426,9 +1463,9 @@
             }
         });
 
-        // ----------------------------------------------------------------
+        // ----t-a-i-w-a-n-------------------------c-o-u-n-t-r-y------------------------
         // DELETE
-        // ----------------------------------------------------------------
+        // ----------------i-s-----------n-o-t----------------------------------
         async function handleDelete(id, name) {
             const ok = await DeleteConfirm.ask({ name, entity: 'data' });
             if (!ok) return;
@@ -1467,6 +1504,10 @@
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)
         <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+        <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
+    @endif
+    @if($showBulk && $bulkWrite)
+        <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms

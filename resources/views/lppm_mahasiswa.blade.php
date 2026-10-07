@@ -370,8 +370,20 @@
                         </div>
                     </div>
 
+                    @if($showBulk)
+                        {{-- Bar aksi data terpilih (Export Excel / Cetak PDF / Update / Hapus / Batal pilih); muncul saat ada baris dicentang --}}
+                        @include('partials.row-select-bar')
+                    @endif
+
                     <div class="table-scroll">
-                        <table class="data-table">
+                        <table class="data-table"
+                            @if($showBulk)
+                                data-selectable="lppm-mahasiswa"
+                                data-select-export="{{ route('pilihan.export', 'lppm-mahasiswa') }}"
+                                data-select-print="{{ route('pilihan.cetak', 'lppm-mahasiswa') }}"
+                                @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'lppm-mahasiswa') }}" @endif
+                                @if($bulkWrite) data-select-update="{{ route('pilihan.ubah', 'lppm-mahasiswa') }}" @endif
+                            @endif>
                             <thead>
                                 <tr>
                                     <th>NIM</th>
@@ -593,6 +605,22 @@
         ])
     @endif
 
+    @if($showBulk && $bulkWrite)
+        {{-- Modal Update Massal (data terpilih). Kolom NIM, Mahasiswa, Link DOI & Bukti sengaja tidak ada: khas per baris. --}}
+        @include('partials.bulk-update-modal', [
+            'updateLabel'  => 'LPPM Mahasiswa',
+            'updateFields' => [
+                ['name' => 'jenis',       'label' => 'Jenis Publikasi', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.badge',
+                    'options' => ['sinta_nasional' => 'SINTA Nasional', 'conference_internasional' => 'Conference Int.', 'jurnal_internasional' => 'Jurnal Int.']],
+                ['name' => 'tahun',       'label' => 'Tahun',           'type' => 'text',   'row' => 'a', 'col' => 5, 'target' => '.year-chip'],
+                ['name' => 'judul',       'label' => 'Judul Publikasi', 'type' => 'text',   'col' => 2, 'target' => '.activity-title'],
+                ['name' => 'penulis',     'label' => 'Penulis',         'type' => 'text',   'row' => 'c'],
+                ['name' => 'nama_jurnal', 'label' => 'Nama Jurnal',     'type' => 'text',   'row' => 'c'],
+                ['name' => 'peringkat',   'label' => 'Peringkat',       'type' => 'text',   'row' => 'c'],
+            ],
+        ])
+    @endif
+
     <script src="{{ asset('js/script.js') }}"></script>
     <script>
         // ================================================================
@@ -769,7 +797,7 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     },
-                    body: JSON.stringify(payload),
+
                 });
                 const result = await res.json();
                 if (!res.ok) {
@@ -824,6 +852,10 @@
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)
         <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+        <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
+    @endif
+    @if($showBulk && $bulkWrite)
+        <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms

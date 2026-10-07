@@ -383,8 +383,20 @@
                         </div>
                     </div>
 
+                    @if($showBulk)
+                        {{-- Bar aksi data terpilih (Export Excel / Cetak PDF / Update / Hapus / Batal pilih); muncul saat ada baris dicentang --}}
+                        @include('partials.row-select-bar')
+                    @endif
+
                     <div class="table-scroll">
-                        <table class="data-table">
+                        <table class="data-table"
+                            @if($showBulk)
+                                data-selectable="rekognisi"
+                                data-select-export="{{ route('pilihan.export', 'rekognisi') }}"
+                                data-select-print="{{ route('pilihan.cetak', 'rekognisi') }}"
+                                @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'rekognisi') }}" @endif
+                                @if($bulkWrite) data-select-update="{{ route('pilihan.ubah', 'rekognisi') }}" @endif
+                            @endif>
                             <thead>
                                 <tr>
                                     <th>NIM/NIDN</th>
@@ -632,6 +644,19 @@
             'bulkLabel'    => 'Rekognisi',
             'bulkImport'   => route('lppm.rekognisi.import'),
             'bulkTemplate' => route('lppm.rekognisi.template'),
+        ])
+    @endif
+
+    @if($showBulk && $bulkWrite)
+        {{-- Modal Update Massal (data terpilih). Kolom NIM/NIDN, Nama, Tipe, Tanggal & Bukti sengaja tidak ada: khas per baris. --}}
+        @include('partials.bulk-update-modal', [
+            'updateLabel'  => 'Rekognisi',
+            'updateFields' => [
+                ['name' => 'jenis',   'label' => 'Jenis Rekognisi', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
+                    'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional', 'alumni' => 'Alumni']],
+                ['name' => 'mitra',   'label' => 'Mitra / Instansi', 'type' => 'text',   'row' => 'a', 'col' => 3, 'target' => '.activity-title'],
+                ['name' => 'jabatan', 'label' => 'Jabatan (Alumni)', 'type' => 'text',   'col' => 5, 'target' => '.plain-text'],
+            ],
         ])
     @endif
 
@@ -1154,6 +1179,10 @@
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)
         <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+        <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
+    @endif
+    @if($showBulk && $bulkWrite)
+        <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms

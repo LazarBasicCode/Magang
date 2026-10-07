@@ -368,8 +368,20 @@
                         </div>
                     </div>
 
+                    @if($showBulk)
+                        {{-- Bar aksi data terpilih (Export Excel / Cetak PDF / Update / Hapus / Batal pilih); muncul saat ada baris dicentang --}}
+                        @include('partials.row-select-bar')
+                    @endif
+
                     <div class="table-scroll">
-                        <table class="data-table">
+                        <table class="data-table"
+                            @if($showBulk)
+                                data-selectable="lppm-dosen"
+                                data-select-export="{{ route('pilihan.export', 'lppm-dosen') }}"
+                                data-select-print="{{ route('pilihan.cetak', 'lppm-dosen') }}"
+                                @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'lppm-dosen') }}" @endif
+                                @if($bulkWrite) data-select-update="{{ route('pilihan.ubah', 'lppm-dosen') }}" @endif
+                            @endif>
                             <thead>
                                 <tr>
                                     <th>NIDN</th>
@@ -628,6 +640,26 @@
         ])
     @endif
 
+    @if($showBulk && $bulkWrite)
+        {{-- Modal Update Massal (data terpilih). Kolom NIDN, Dosen, Link DOI & Bukti sengaja tidak ada: khas per baris. --}}
+        @include('partials.bulk-update-modal', [
+            'updateLabel'  => 'LPPM Dosen',
+            'updateFields' => [
+                ['name' => 'jenis',         'label' => 'Jenis Karya',     'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
+                    'options' => ['q_internasional' => 'Jurnal Int.', 'sinta_nasional' => 'Jurnal Nasional', 'hki' => 'HKI', 'book' => 'Buku']],
+                ['name' => 'tahun',         'label' => 'Tahun',           'type' => 'text',   'row' => 'a', 'col' => 5, 'target' => '.year-chip'],
+                ['name' => 'judul',         'label' => 'Judul Karya',     'type' => 'text',   'col' => 2, 'target' => '.activity-title'],
+                ['name' => 'penulis',       'label' => 'Penulis',         'type' => 'text',   'row' => 'c'],
+                ['name' => 'nama_jurnal',   'label' => 'Nama Jurnal',     'type' => 'text',   'row' => 'c'],
+                ['name' => 'peringkat',     'label' => 'Peringkat',       'type' => 'text',   'row' => 'c'],
+                ['name' => 'jenis_hki',     'label' => 'Jenis HKI',       'type' => 'select', 'row' => 'd',
+                    'options' => ['hak_cipta' => 'Hak Cipta', 'paten' => 'Paten', 'merek' => 'Merek']],
+                ['name' => 'kategori_buku', 'label' => 'Kategori Buku',   'type' => 'select', 'row' => 'd',
+                    'options' => ['ajar' => 'Buku Ajar', 'referensi' => 'Referensi', 'chapter' => 'Chapter']],
+            ],
+        ])
+    @endif
+
     <script src="{{ asset('js/script.js') }}"></script>
     <script>
         // ================================================================
@@ -872,6 +904,10 @@
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)
         <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+        <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
+    @endif
+    @if($showBulk && $bulkWrite)
+        <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 2000 ms

@@ -255,8 +255,11 @@ trait HandlesBulkData
      * @param  array<string,mixed>  $rules   aturan validasi tiap kolom (semua harus 'nullable')
      * @param  callable(object):void  $notify  dipanggil per data setelah commit
      * @param  callable(object):array  $format payload baris untuk JS (sama dengan format() menu itu)
+     * @param  (callable(object,array):array{0:array,1:string[]})|null  $resolve  validasi silang per baris (opsional).
+     *         Menerima (data lama, kolom yang diisi) dan mengembalikan [atribut yang disimpan, pesan error].
+     *         Satu baris saja punya error => seluruh batch ditolak (422), tidak ada yang tersimpan.
      */
-    protected function bulkUpdateSelected(Request $request, string $modelClass, array $with, array $rules, callable $notify, callable $format): JsonResponse
+    protected function bulkUpdateSelected(Request $request, string $modelClass, array $with, array $rules, callable $notify, callable $format, ?callable $resolve = null): JsonResponse
     {
         $this->bulkEnsureAccess($request, true);
 
@@ -271,9 +274,30 @@ trait HandlesBulkData
 
         $items = $modelClass::with($with)->whereKey($ids)->get();
 
-        DB::transaction(function () use ($items, $changes) {
+        // Rencana perubahan per baris. Tanpa $resolve, semua baris memakai $changes apa adanya.
+        $plans = [];
+        $errors = [];
+        foreach ($items as $item) {
+            [$attrs, $messages] = $resolve ? $resolve($item, $changes) : [$changes, []];
+            if ($messages) {
+                $errors[] = [
+                    'row'      => '#' . $item->getKey(),
+                    'messages' => array_values(array_unique($messages)),
+                ];
+            }
+            $plans[$item->getKey()] = $attrs;
+        }
+        if ($errors) {
+            return $this->bulkFail(
+                count($errors) . ' data terpilih tidak cocok dengan perubahan ini. Tidak ada data yang diubah — sesuaikan pilihan atau isian lalu coba lagi.',
+                array_slice($errors, 0, 50),
+                max(0, count($errors) - 50)
+            );
+        }
+
+        DB::transaction(function () use ($items, $plans) {
             foreach ($items as $item) {
-                $item->update($changes);
+                $item->update($plans[$item->getKey()]);
             }
         });
 

@@ -27,8 +27,11 @@ class BulkSelectionController extends Controller
 {
     /** @var array<string,array{controller:class-string,print:string}> */
     private const MENUS = [
-        'kemahasiswaan' => ['controller' => KemahasiswaanController::class, 'print' => 'kemahasiswaan'],
-        // 'lppm-dosen' => ['controller' => LppmDosenController::class, 'print' => 'lppm-dosen'],
+        'kemahasiswaan'   => ['controller' => KemahasiswaanController::class, 'print' => 'kemahasiswaan'],
+        'lppm-mahasiswa'  => ['controller' => LppmMahasiswaController::class, 'print' => 'lppm-mahasiswa'],
+        'lppm-dosen'      => ['controller' => LppmDosenController::class, 'print' => 'lppm-dosen'],
+        'rekognisi'       => ['controller' => LppmRekognisiController::class, 'print' => 'rekognisi'],
+        'kerja-sama'      => ['controller' => KerjaSamaController::class, 'print' => 'kerja-sama'],
     ];
 
     /** Export Excel hanya baris terpilih (format sama dengan tombol Download, bisa diedit & di-upload lagi). */

@@ -645,16 +645,20 @@
         @include('partials.bulk-update-modal', [
             'updateLabel'  => 'LPPM Dosen',
             'updateFields' => [
-                ['name' => 'jenis',         'label' => 'Jenis Karya',     'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
+                ['name' => 'jenis',         'label' => 'Jenis Karya',     'type' => 'select', 'row' => 'a',
                     'options' => ['q_internasional' => 'Jurnal Int.', 'sinta_nasional' => 'Jurnal Nasional', 'hki' => 'HKI', 'book' => 'Buku']],
-                ['name' => 'tahun',         'label' => 'Tahun',           'type' => 'text',   'row' => 'a', 'col' => 5, 'target' => '.year-chip'],
-                ['name' => 'judul',         'label' => 'Judul Karya',     'type' => 'text',   'col' => 2, 'target' => '.activity-title'],
-                ['name' => 'penulis',       'label' => 'Penulis',         'type' => 'text',   'row' => 'c'],
-                ['name' => 'nama_jurnal',   'label' => 'Nama Jurnal',     'type' => 'text',   'row' => 'c'],
-                ['name' => 'peringkat',     'label' => 'Peringkat',       'type' => 'text',   'row' => 'c'],
-                ['name' => 'jenis_hki',     'label' => 'Jenis HKI',       'type' => 'select', 'row' => 'd',
+                ['name' => 'tahun',         'label' => 'Tahun',           'type' => 'text',   'row' => 'a'],
+                ['name' => 'judul',         'label' => 'Judul Karya',     'type' => 'text'],
+                ['name' => 'penulis',       'label' => 'Penulis',         'type' => 'text'],
+                ['name' => 'nama_jurnal',   'label' => 'Nama Jurnal',     'type' => 'text',
+                    'showWhen' => ['jenis' => ['q_internasional', 'sinta_nasional']]],
+                ['name' => 'peringkat',     'label' => 'Peringkat',       'type' => 'text',
+                    'showWhen' => ['jenis' => ['q_internasional', 'sinta_nasional']]],
+                ['name' => 'jenis_hki',     'label' => 'Jenis HKI',       'type' => 'select',
+                    'showWhen' => ['jenis' => ['hki']],
                     'options' => ['hak_cipta' => 'Hak Cipta', 'paten' => 'Paten', 'merek' => 'Merek']],
-                ['name' => 'kategori_buku', 'label' => 'Kategori Buku',   'type' => 'select', 'row' => 'd',
+                ['name' => 'kategori_buku', 'label' => 'Kategori Buku',   'type' => 'select',
+                    'showWhen' => ['jenis' => ['book']],
                     'options' => ['ajar' => 'Buku Ajar', 'referensi' => 'Referensi', 'chapter' => 'Chapter']],
             ],
         ])
@@ -754,6 +758,9 @@
             </tr>`.trim();
         }
         const { insertRow, updateRow, removeRow } = SIDA.table.create(tableBody, buildRowHTML);
+
+        // Update massal: baris dirender ulang dengan template tabel ini (badge jenis & kolom turunan ikut konsisten).
+        SIDA.bulkUpdateApply = (rows) => { rows.forEach(updateRow); applyFilters(); };
 
         // ---- Live filter (khusus halaman ini: 1 dropdown + search) ----
         const applyFilters = SIDA.filter.setup({

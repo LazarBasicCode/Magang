@@ -610,13 +610,15 @@
         @include('partials.bulk-update-modal', [
             'updateLabel'  => 'LPPM Mahasiswa',
             'updateFields' => [
-                ['name' => 'jenis',       'label' => 'Jenis Publikasi', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.badge',
+                ['name' => 'jenis',       'label' => 'Jenis Publikasi', 'type' => 'select', 'row' => 'a',
                     'options' => ['sinta_nasional' => 'SINTA Nasional', 'conference_internasional' => 'Conference Int.', 'jurnal_internasional' => 'Jurnal Int.']],
-                ['name' => 'tahun',       'label' => 'Tahun',           'type' => 'text',   'row' => 'a', 'col' => 5, 'target' => '.year-chip'],
-                ['name' => 'judul',       'label' => 'Judul Publikasi', 'type' => 'text',   'col' => 2, 'target' => '.activity-title'],
-                ['name' => 'penulis',     'label' => 'Penulis',         'type' => 'text',   'row' => 'c'],
-                ['name' => 'nama_jurnal', 'label' => 'Nama Jurnal',     'type' => 'text',   'row' => 'c'],
-                ['name' => 'peringkat',   'label' => 'Peringkat',       'type' => 'text',   'row' => 'c'],
+                ['name' => 'tahun',       'label' => 'Tahun',           'type' => 'text',   'row' => 'a'],
+                ['name' => 'judul',       'label' => 'Judul Publikasi', 'type' => 'text'],
+                ['name' => 'penulis',     'label' => 'Penulis',         'type' => 'text'],
+                ['name' => 'nama_jurnal', 'label' => 'Nama Jurnal',     'type' => 'text',
+                    'showWhen' => ['jenis' => ['sinta_nasional', 'jurnal_internasional']]],
+                ['name' => 'peringkat',   'label' => 'Peringkat',       'type' => 'text',
+                    'showWhen' => ['jenis' => ['sinta_nasional', 'jurnal_internasional']]],
             ],
         ])
     @endif
@@ -709,6 +711,9 @@
             </tr>`.trim();
         }
         const { insertRow, updateRow, removeRow } = SIDA.table.create(tableBody, buildRowHTML);
+
+        // Update massal: baris dirender ulang dengan template tabel ini (badge jenis & kolom turunan ikut konsisten).
+        SIDA.bulkUpdateApply = (rows) => { rows.forEach(updateRow); applyFilters(); };
 
         // ---- Live filter (khusus halaman ini: 1 dropdown + search) ----
         const applyFilters = SIDA.filter.setup({

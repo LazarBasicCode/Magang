@@ -29,6 +29,13 @@ class KerjaSamaController extends Controller
         'bukti_kegiatan'   => ['required', 'url', 'max:2048'],
     ];
 
+    /** Jenis kerja sama yang boleh dipilih tiap tipe pengguna. Satu sumber untuk server (jenisRestriction) & UI (filter, form, update massal). */
+    public const JENIS_BY_TIPE = [
+        'mahasiswa' => ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'],
+        'dosen'     => ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
+                        'pengabdian_internasional', 'research_internasional', 'lainnya'],
+    ];
+
     /**
      * Halaman utama Kerja Sama (server-rendered untuk load pertama & SEO).
      * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
@@ -69,7 +76,7 @@ class KerjaSamaController extends Controller
             'internasional' => (clone $statsQuery())->whereIn('jenis', $internasionalJenis)->count(),
         ];
 
-        return view('kerja-sama', compact('items', 'userList', 'stats'));
+        return view('kerja-sama', compact('items', 'userList', 'stats') + ['jenisByTipe' => self::JENIS_BY_TIPE]);
     }
 
     public function store(Request $request)
@@ -404,14 +411,9 @@ class KerjaSamaController extends Controller
     /** Pesan error kalau kombinasi tipe pengguna & jenis tidak diizinkan, atau null kalau boleh. */
     private function jenisRestriction(string $tipe, string $jenis): ?string
     {
-        if ($tipe === 'mahasiswa' && !in_array($jenis, ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'], true)) {
-            return 'Jenis ini tidak tersedia untuk mahasiswa.';
-        }
-        if ($tipe === 'dosen' && $jenis === 'pkl') {
-            return 'PKL tidak tersedia untuk dosen.';
-        }
-
-        return null;
+        return in_array($jenis, self::JENIS_BY_TIPE[$tipe] ?? [], true)
+            ? null
+            : "Jenis ini tidak tersedia untuk {$tipe}.";
     }
 
     private function validated(Request $request): array

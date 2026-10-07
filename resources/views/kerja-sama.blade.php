@@ -739,7 +739,8 @@
         @include('partials.bulk-update-modal', [
             'updateLabel'  => 'Kerja Sama',
             'updateFields' => [
-                ['name' => 'jenis',          'label' => 'Jenis Kerja Sama',  'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.badge',
+                ['name' => 'jenis',          'label' => 'Jenis Kerja Sama',  'type' => 'select', 'row' => 'a',
+                    'optionsBy' => ['attr' => 'tipe_user', 'allowed' => $jenisByTipe],
                     'options' => [
                         'conference_internasional' => 'Conference Internasional',
                         'pkl'                      => 'PKL (Output)',
@@ -750,11 +751,13 @@
                         'research_internasional'   => 'Research Internasional',
                         'lainnya'                  => 'Lainnya',
                     ]],
-                ['name' => 'arah',           'label' => 'Arah (Guest Lecture)', 'type' => 'select', 'row' => 'a', 'col' => 5, 'target' => '.badge',
+                ['name' => 'arah',           'label' => 'Arah (Guest Lecture)', 'type' => 'select', 'row' => 'a',
+                    'showWhen' => ['jenis' => ['guest_lecture']],
                     'options' => ['inbound' => 'Inbound', 'outbound' => 'Outbound']],
-                ['name' => 'judul_kegiatan', 'label' => 'Judul Kegiatan',     'type' => 'text',   'col' => 2, 'target' => '.activity-title'],
-                ['name' => 'mitra',          'label' => 'Mitra',              'type' => 'text',   'row' => 'c', 'col' => 6, 'target' => '.plain-text'],
-                ['name' => 'jenis_lainnya',  'label' => 'Jenis Lainnya (jika jenis = Lainnya)', 'type' => 'text', 'row' => 'c'],
+                ['name' => 'jenis_lainnya',  'label' => 'Jenis Lainnya',      'type' => 'text',
+                    'showWhen' => ['jenis' => ['lainnya']]],
+                ['name' => 'judul_kegiatan', 'label' => 'Judul Kegiatan',     'type' => 'text'],
+                ['name' => 'mitra',          'label' => 'Mitra',              'type' => 'text'],
             ],
         ])
     @endif
@@ -1135,16 +1138,11 @@
         // ----------------------------------------------------------------
         // BATASI "JENIS" SESUAI "TIPE USER" DI FILTER (business rule)
         // ----------------------------------------------------------------
-        const JENIS_ALLOWED_BY_TIPE = {
-            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'],
-            dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
-                'pengabdian_internasional', 'research_internasional', 'lainnya'
-            ],
-        };
+        const JENIS_BY_TIPE = @json($jenisByTipe); // sumber: KerjaSamaController::JENIS_BY_TIPE
 
         function syncFilterJenisOptions() {
             const tipe = document.getElementById('filter-tipe-user')?.value || 'semua';
-            const allowed = JENIS_ALLOWED_BY_TIPE[tipe];
+            const allowed = JENIS_BY_TIPE[tipe];
             const jenisDropdown = document.getElementById('filter-jenis')?.closest('[data-dropdown]');
             if (!jenisDropdown) return;
 
@@ -1219,16 +1217,9 @@
         // ----------------------------------------------------------------
         // BATASI "JENIS" DI MODAL SESUAI ROLE USER (business rule)
         // ----------------------------------------------------------------
-        const FORM_JENIS_ALLOWED = {
-            mahasiswa: ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'],
-            dosen: ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
-                'pengabdian_internasional', 'research_internasional', 'lainnya'
-            ],
-        };
-
         function syncFormJenisOptions() {
             const role = document.getElementById('form-tipe_user').value;
-            const allowed = FORM_JENIS_ALLOWED[role];
+            const allowed = JENIS_BY_TIPE[role];
             const dd = document.getElementById('dd-jenis');
             dd.querySelectorAll('.dropdown-option').forEach((opt) => {
                 opt.style.display = (!allowed || allowed.includes(opt.dataset.value)) ? '' : 'none';
@@ -1387,6 +1378,12 @@
             updateRow,
             removeRow
         } = SIDA.table.create(tableBody, buildRowHTML);
+
+        // Update massal: baris dirender ulang dengan template tabel ini (badge jenis/arah, atribut filter) lalu filter diterapkan lagi.
+        SIDA.bulkUpdateApply = (rows) => {
+            rows.forEach(updateRow);
+            applyFilters();
+        };
 
         // ----------------------------------------------------------------
         // SUBMIT

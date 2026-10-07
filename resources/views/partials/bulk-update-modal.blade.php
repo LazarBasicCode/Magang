@@ -13,6 +13,10 @@
           'col'         indeks kolom di tabel (mulai 0, TIDAK menghitung kolom checkbox)
           'target'      selector di dalam sel tsb yang diisi teks baru (mis. '.plain-text')
           'row'         (opsional) field dengan nilai 'row' sama ditaruh sejajar 1 baris
+          'showWhen'    (opsional) ['nama_field' => [nilai, ...]] kolom hanya tampil jika kolom lain sedang bernilai salah satunya;
+                        saat disembunyikan isinya dikosongkan (tidak ikut dikirim). Mis. ['jenis' => ['guest_lecture']]
+          'optionsBy'   (opsional, select) ['attr' => 'tipe_user', 'allowed' => [nilai_attr => [opsi yang boleh]]]
+                        opsi dibatasi sesuai atribut data-* baris terpilih; bila atributnya beragam, dipakai IRISAN-nya
     Kolom khas per baris (NIM, nama, tahun, bukti, dsb.) cukup tidak dimasukkan ke $updateFields.
 
     CARA PASANG di halaman lain (4 langkah):
@@ -29,10 +33,12 @@
 @php
     $buGroups = collect($updateFields)->values()->groupBy(fn ($f, $i) => $f['row'] ?? 'f' . $i);
     $buConfig = collect($updateFields)->map(fn ($f) => [
-        'name'   => $f['name'],
-        'col'    => $f['col'] ?? null,
-        'target' => $f['target'] ?? null,
-        'type'   => $f['type'] ?? 'text',
+        'name'      => $f['name'],
+        'col'       => $f['col'] ?? null,
+        'target'    => $f['target'] ?? null,
+        'type'      => $f['type'] ?? 'text',
+        'showWhen'  => $f['showWhen'] ?? null,
+        'optionsBy' => $f['optionsBy'] ?? null,
     ])->values();
 @endphp
 
@@ -54,7 +60,7 @@
             @if($group->count() > 1)<div class="field-row">@endif
             @foreach($group as $f)
                 @php $fid = 'bu-' . $f['name']; @endphp
-                <div class="field">
+                <div class="field" data-field="{{ $f['name'] }}">
                     <label class="field-label" for="{{ $fid }}">{{ $f['label'] }}</label>
                     @if(($f['type'] ?? 'text') === 'select')
                         <div class="dropdown" data-dropdown>

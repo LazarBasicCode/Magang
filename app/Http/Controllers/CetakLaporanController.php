@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\PrintReports;
+use App\Support\SelectedIds;
 use Illuminate\Http\Request;
 
 class CetakLaporanController extends Controller
@@ -33,11 +34,12 @@ class CetakLaporanController extends Controller
         $model = $cfg['model'];
         $year  = $cfg['year'];
         $col   = $year['column'] ?? 'id';
+        $ids   = SelectedIds::from($request); // data terpilih (dari BulkSelectionController); kosong = semua data
 
         $years = collect();
         $tahun = null;
 
-        if ($year) {
+        if ($year && !$ids) {
             $isDate = !empty($year['date']);
             $years  = $model::query()->pluck($col)
                 ->map(fn ($v) => $isDate ? ($v ? \Carbon\Carbon::parse($v)->year : null) : (int) $v)
@@ -48,6 +50,7 @@ class CetakLaporanController extends Controller
         }
 
         $items = $model::with($cfg['with'])
+            ->when($ids, fn ($q) => $q->whereKey($ids))
             ->when($tahun && $year, fn ($q) => !empty($year['date'])
                 ? $q->whereYear($col, $tahun)
                 : $q->where($col, $tahun))
@@ -60,6 +63,7 @@ class CetakLaporanController extends Controller
             'slug'    => $menu,
             'items'   => $items,
             'years'   => $years,
+            'selectedCount' => $ids ? $items->count() : null,
             'tahun'   => $tahun,
             'stats'   => collect($cfg['stats'])->map(fn ($s) => [
                 'label' => $s[0], 'icon' => $s[1], 'color' => $s[2], 'value' => $s[3]($items),

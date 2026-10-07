@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\User;
 use App\Support\Csv;
+use App\Support\SelectedIds;
 use App\Support\Xlsx;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -210,13 +211,56 @@ trait HandlesBulkData
         ]);
     }
 
+    /**
+     * Hapus banyak data sekaligus (data terpilih / centang baris tabel; lihat BulkSelectionController).
+     * Akses: admin/superadmin dengan akses PENUH pada menu ini. Semua-atau-tidak-sama-sekali (satu transaksi);
+     * id yang sudah tidak ada dilewati dan dihitung di "missing".
+     *
+     * @param  string[]  $with    relasi yang di-load (dipakai untuk notifikasi)
+     * @param  callable  $notify  fn($item): void — notifikasi ke pemilik data, sama seperti hapus satuan
+     */
+    protected function bulkDestroySelected(Request $request, string $modelClass, array $with, callable $notify): JsonResponse
+    {
+        $this->bulkEnsureAccess($request, true);
+
+        $ids = SelectedIds::from($request);
+        abort_if(!$ids, 422, 'Belum ada data yang dipilih.');
+
+        $items = $modelClass::with($with)->whereKey($ids)->get();
+
+        $deleted = [];
+        DB::transaction(function () use ($items, &$deleted) {
+            foreach ($items as $item) {
+                $deleted[] = $item->getKey();
+                $item->delete();
+            }
+        });
+
+        // Notifikasi setelah commit, supaya penghapusan yang gagal tidak meninggalkan notifikasi palsu.
+        foreach ($items as $item) {
+            $notify($item);
+        }
+
+        return response()->json([
+            'success' => true,
+            'deleted' => $deleted,
+            'missing' => count($ids) - count($deleted),
+        ]);
+    }
+
     /** Ekspor seluruh data model ke Excel (.xlsx), sheet pertama = data, siap diedit & diunggah ulang. */
     protected function bulkXlsxExportResponse(string $filename, string $sheetName, array $header, array $widths, string $modelClass, callable $mapRow)
     {
         $cell = fn ($v, $style = Xlsx::STYLE_CELL) => ['value' => (string) $v, 'style' => $style];
 
+        // Data terpilih (centang baris): kalau ada ids, hanya baris itu yang diekspor (lihat BulkSelectionController).
+        $ids = SelectedIds::from(request());
+        if ($ids) {
+            $filename = preg_replace('/\.xlsx$/', '-terpilih.xlsx', $filename);
+        }
+
         $rows = [array_map(fn ($h) => $cell($h, Xlsx::STYLE_HEADER), $header)];
-        $modelClass::with($this->bulkOwnerWith())->chunkById(500, function ($items) use (&$rows, $mapRow, $cell) {
+        $modelClass::with($this->bulkOwnerWith())->when($ids, fn ($q) => $q->whereKey($ids))->chunkById(500, function ($items) use (&$rows, $mapRow, $cell) {
             foreach ($items as $item) {
                 $rows[] = array_map(fn ($v) => $cell(Csv::safeCell($v)), $mapRow($item));
             }

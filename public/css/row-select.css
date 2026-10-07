@@ -1,0 +1,157 @@
+/* =====================================================================
+   PILIH BANYAK BARIS (checkbox tabel + bar aksi)
+   Markup checkbox di-inject oleh public/js/row-select.js; bar aksi: partials/row-select-bar.blade.php
+   Checkbox: dasar animasi dari Uiverse.io (andrew-manzyk), warna disesuaikan ke tema (light/dark)
+   lewat variabel --ink-faint / --primary, bukan putih.
+   ===================================================================== */
+
+/* ---------- Checkbox ---------- */
+.sel-checkbox {
+    --sel-size: 1.2rem;
+    --sel-off: var(--ink-faint, #9aa1b5);
+    --sel-on: var(--primary, #5b5fef);
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    font-size: var(--sel-size);
+    line-height: 0;
+    vertical-align: middle;
+    color: var(--sel-off);
+    transition: color 150ms ease, opacity 150ms ease, transform 150ms ease;
+}
+.sel-checkbox:hover { color: var(--ink-muted, #6b7280); }
+.sel-checkbox:has(input:checked),
+.sel-checkbox:has(input:indeterminate) { color: var(--sel-on); }
+.sel-checkbox:has(input:focus-visible) { outline: 2px solid var(--sel-on); outline-offset: 3px; border-radius: 6px; }
+
+.sel-checkbox input {
+    position: absolute;
+    pointer-events: none;
+    inset: 0;
+    opacity: 0;
+}
+
+.sel-checkbox .checkmark { display: flex; align-items: center; }
+.sel-checkbox .checkmark svg { width: var(--sel-size); height: var(--sel-size); }
+
+.sel-checkbox .checkmark svg rect {
+    stroke-dasharray: 88 0;
+    stroke-dashoffset: 73;
+    transition: stroke-dasharray 100ms ease;
+}
+.sel-checkbox input:checked ~ .checkmark svg rect { stroke-dasharray: 80 18; }
+
+.sel-checkbox .checkmark svg polyline {
+    stroke-dasharray: 0 30;
+    stroke-dashoffset: 1;
+    transition: stroke-dasharray 150ms ease;
+}
+.sel-checkbox input:checked ~ .checkmark svg polyline { stroke-dasharray: 30 30; }
+
+/* Setengah terpilih (master checkbox): strip di tengah kotak.
+   Pakai opacity, bukan stroke-dasharray 0: ujung garis bulat membuat dash panjang 0 tetap tergambar sebagai titik. */
+.sel-checkbox .checkmark svg line {
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+.sel-checkbox input:indeterminate ~ .checkmark svg line { opacity: 1; }
+
+/* ---------- Kolom checkbox di tabel ---------- */
+.data-table th.sel-col,
+.data-table td.sel-col {
+    width: 44px;
+    min-width: 44px;
+    padding-right: 0;
+    text-align: center;
+}
+.data-table td.sel-col::before { content: none !important; } /* tabel mode kartu: tanpa label kolom */
+
+/* Master checkbox (header): baru muncul setelah ada baris yang dicentang */
+.sel-head .sel-checkbox {
+    opacity: 0;
+    transform: scale(.7);
+    pointer-events: none;
+}
+.data-table.has-selection .sel-head .sel-checkbox {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+
+.data-table tbody tr.is-selected > td {
+    background: color-mix(in srgb, var(--primary, #5b5fef) 9%, transparent);
+}
+
+/* ---------- Bar aksi data terpilih ---------- */
+.sel-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 0 20px;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    visibility: hidden;
+    background: var(--primary-soft, #e2e2fd);
+    border-bottom: 1px solid transparent;
+    transition: max-height 200ms ease, opacity 150ms ease, padding 200ms ease, visibility 0s linear 200ms;
+}
+.sel-bar.is-open {
+    max-height: 160px;
+    opacity: 1;
+    visibility: visible;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom-color: var(--primary-border, #b9baf7);
+    transition: max-height 200ms ease, opacity 150ms ease, padding 200ms ease, visibility 0s;
+}
+
+.sel-bar-info {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink, #2f3349);
+}
+.sel-bar-info strong { font-size: 16px; color: var(--primary-dark, #4547d1); }
+.sel-bar-hint { font-size: 12px; font-weight: 500; color: var(--ink-muted, #6b7280); }
+
+.sel-bar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.sel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--primary-border, #b9baf7);
+    border-radius: 10px;
+    background: var(--card, #fff);
+    color: var(--primary-dark, #4547d1);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.sel-btn .material-symbols-outlined { font-size: 18px; }
+.sel-btn:hover { background: var(--primary, #5b5fef); border-color: var(--primary, #5b5fef); color: #fff; }
+.sel-btn:active { transform: translateY(1px); }
+.sel-btn:disabled { opacity: .55; cursor: progress; }
+.sel-btn.is-danger { border-color: var(--danger-border, #ffab97); color: var(--danger, #d12c0f); }
+.sel-btn.is-danger:hover { background: var(--danger, #d12c0f); border-color: var(--danger, #d12c0f); color: #fff; }
+.sel-btn.is-ghost { background: transparent; border-color: transparent; color: var(--ink-muted, #6b7280); }
+.sel-btn.is-ghost:hover { background: var(--card, #fff); border-color: var(--border-strong, #ced3e4); color: var(--ink, #2f3349); }
+
+@media (max-width: 640px) {
+    .sel-bar { padding-left: 14px; padding-right: 14px; }
+    .sel-bar-actions { width: 100%; }
+    .sel-btn { flex: 1 1 auto; justify-content: center; }
+}
+
+@media print { .sel-bar, .sel-col { display: none !important; } }

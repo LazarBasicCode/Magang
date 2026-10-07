@@ -119,6 +119,28 @@ class KemahasiswaanController extends Controller
         );
     }
 
+    /**
+     * Update massal data terpilih — dipanggil dari BulkSelectionController::ubah().
+     * Kolom yang khas per baris (NIM, mahasiswa, tahun, bukti) sengaja TIDAK bisa diubah massal.
+     * Kolom yang dikosongkan tidak diubah.
+     */
+    public function updateMany(Request $request)
+    {
+        return $this->bulkUpdateSelected(
+            $request,
+            Kemahasiswaan::class,
+            ['mahasiswa.user'],
+            [
+                'nama_kegiatan' => ['nullable', 'string', 'max:255'],
+                'jenis'         => ['nullable', 'in:inbis,kemahasiswaan'],
+                'tab'           => ['nullable', 'in:akademik,non_akademik'],
+                'tingkat'       => ['nullable', 'in:lokal,nasional,internasional'],
+            ],
+            fn (Kemahasiswaan $item) => $this->notifyKegiatan($request, $item, 'diperbarui'),
+            fn (Kemahasiswaan $item) => $this->format($item)
+        );
+    }
+
     // =====================================================================
     // UNGGAH / UNDUH MASSAL (EXCEL .xlsx; CSV lama tetap diterima saat unggah) — khusus admin & superadmin
     // Kerangka umumnya ada di Concerns\HandlesBulkData + Support\Csv;

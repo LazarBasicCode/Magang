@@ -445,6 +445,7 @@
                                 data-select-export="{{ route('pilihan.export', 'kemahasiswaan') }}"
                                 data-select-print="{{ route('pilihan.cetak', 'kemahasiswaan') }}"
                                 @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'kemahasiswaan') }}" @endif
+                                @if($bulkWrite) data-select-update="{{ route('pilihan.ubah', 'kemahasiswaan') }}" @endif
                             @endif>
                             <thead>
                                 <tr>
@@ -662,6 +663,22 @@
             'bulkLabel'    => 'Kemahasiswaan',
             'bulkImport'   => route('kemahasiswaan.import'),
             'bulkTemplate' => route('kemahasiswaan.template'),
+        ])
+    @endif
+
+    @if($showBulk && $bulkWrite)
+        {{-- Modal Update Massal (data terpilih). Kolom NIM, Mahasiswa, Tahun & Bukti sengaja tidak ada: khas per baris. --}}
+        @include('partials.bulk-update-modal', [
+            'updateLabel'  => 'Kemahasiswaan',
+            'updateFields' => [
+                ['name' => 'nama_kegiatan', 'label' => 'Nama Kegiatan', 'type' => 'text', 'placeholder' => 'Kosongkan = nama kegiatan tidak diubah', 'col' => 2, 'target' => '.activity-title'],
+                ['name' => 'jenis',   'label' => 'Jenis Kegiatan',  'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
+                    'options' => ['kemahasiswaan' => 'Kemahasiswaan', 'inbis' => 'Inbis (Inkubator Bisnis)']],
+                ['name' => 'tab',     'label' => 'Kategori Tab',    'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
+                    'options' => ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']],
+                ['name' => 'tingkat', 'label' => 'Tingkat Capaian', 'type' => 'select', 'col' => 5, 'target' => '.plain-text',
+                    'options' => ['lokal' => 'Lokal (Kota/Wilayah)', 'nasional' => 'Nasional (RI)', 'internasional' => 'Internasional (Global)']],
+            ],
         ])
     @endif
 
@@ -885,6 +902,9 @@
     @if($showBulk)
         <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
         <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
+    @endif
+    @if($showBulk && $bulkWrite)
+        <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
     <script>
         // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms

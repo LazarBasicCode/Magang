@@ -7,6 +7,8 @@
  *   data-select-export  URL POST export data terpilih   (route pilihan.export)
  *   data-select-print   URL POST isi laporan terpilih    (route pilihan.cetak)
  *   data-select-delete  URL POST hapus data terpilih     (route pilihan.hapus; tanpa atribut ini tombol Hapus disembunyikan)
+ *   data-select-update  URL POST update massal terpilih  (route pilihan.ubah; tanpa atribut ini tombol Update disembunyikan;
+ *                       modal & logika: partials/bulk-update-modal.blade.php + js/bulk-update.js)
  * Markup bar aksi & cara pasang: resources/views/partials/row-select-bar.blade.php
  * Server: App\Http\Controllers\BulkSelectionController
  *
@@ -33,6 +35,7 @@
     const exportUrl = table.dataset.selectExport || '';
     const printUrl = table.dataset.selectPrint || '';
     const deleteUrl = table.dataset.selectDelete || '';
+    const updateUrl = table.dataset.selectUpdate || '';
     const selected = new Set();
 
     const countEl = bar.querySelector('[data-sel-count]');
@@ -40,6 +43,7 @@
     const btnExport = bar.querySelector('[data-sel-action="export"]');
     const btnPrint = bar.querySelector('[data-sel-action="print"]');
     const btnDelete = bar.querySelector('[data-sel-action="delete"]');
+    const btnUpdate = bar.querySelector('[data-sel-action="update"]');
     const btnClear = bar.querySelector('[data-sel-action="clear"]');
 
     // ---------- Markup checkbox (animasi: public/css/row-select.css) ----------
@@ -247,6 +251,19 @@
     if (btnDelete) {
         if (!deleteUrl) btnDelete.hidden = true;
         else btnDelete.addEventListener('click', deleteSelected);
+    }
+
+    // ---------- Update massal (modal: js/bulk-update.js) ----------
+    if (btnUpdate) {
+        if (!updateUrl) btnUpdate.hidden = true;
+        else btnUpdate.addEventListener('click', () => {
+            if (!selected.size) return;
+            if (!window.SIDA || !window.SIDA.bulkUpdate) {
+                (window.Toast ? window.Toast.show({ type: 'error', message: 'Modal Update Massal belum dipasang di halaman ini.' }) : null);
+                return;
+            }
+            window.SIDA.bulkUpdate.open({ url: updateUrl, ids: ids() });
+        });
     }
 
     btnClear?.addEventListener('click', () => {

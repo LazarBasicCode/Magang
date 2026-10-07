@@ -1,0 +1,10 @@
+/* Modal Update Massal (resources/views/partials/bulk-update-modal.blade.php) */
+.bulk-update-card { width: min(520px, calc(100vw - 32px)); }
+/* beri ruang di bawah supaya panel dropdown terakhir tidak terpotong */
+.bulk-update-card .modal-body { padding-bottom: 8px; }
+.bulk-update-card .modal-subtitle strong { color: var(--primary, #5b5fef); }
+
+/* Baris yang baru di-update berkedip sebentar */
+@keyframes buFlash { 0% { background-color: var(--primary-soft, #e2e2fd); } 100% { background-color: transparent; } }
+tr.is-updated-flash > td { animation: buFlash 1.6s ease-out; }
+@media (prefers-reduced-motion: reduce) { tr.is-updated-flash > td { animation: none; } }

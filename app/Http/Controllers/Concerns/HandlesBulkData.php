@@ -248,6 +248,48 @@ trait HandlesBulkData
         ]);
     }
 
+    /**
+     * Update massal data terpilih (centang baris). Hanya kolom yang DIISI yang diubah;
+     * kolom yang dikosongkan tetap memakai nilai lama tiap baris.
+     *
+     * @param  array<string,mixed>  $rules   aturan validasi tiap kolom (semua harus 'nullable')
+     * @param  callable(object):void  $notify  dipanggil per data setelah commit
+     * @param  callable(object):array  $format payload baris untuk JS (sama dengan format() menu itu)
+     */
+    protected function bulkUpdateSelected(Request $request, string $modelClass, array $with, array $rules, callable $notify, callable $format): JsonResponse
+    {
+        $this->bulkEnsureAccess($request, true);
+
+        $ids = SelectedIds::from($request);
+        abort_if(!$ids, 422, 'Belum ada data yang dipilih.');
+
+        $changes = collect($request->validate($rules))
+            ->map(fn ($v) => is_string($v) ? trim($v) : $v)
+            ->filter(fn ($v) => $v !== null && $v !== '')
+            ->all();
+        abort_if(!$changes, 422, 'Isi minimal satu kolom yang ingin diubah.');
+
+        $items = $modelClass::with($with)->whereKey($ids)->get();
+
+        DB::transaction(function () use ($items, $changes) {
+            foreach ($items as $item) {
+                $item->update($changes);
+            }
+        });
+
+        foreach ($items as $item) {
+            $item->loadMissing($with);
+            $notify($item);
+        }
+
+        return response()->json([
+            'success' => true,
+            'updated' => $items->pluck($items->first()?->getKeyName() ?? 'id')->all(),
+            'missing' => count($ids) - $items->count(),
+            'rows'    => $items->map(fn ($item) => $format($item))->values()->all(),
+        ]);
+    }
+
     /** Ekspor seluruh data model ke Excel (.xlsx), sheet pertama = data, siap diedit & diunggah ulang. */
     protected function bulkXlsxExportResponse(string $filename, string $sheetName, array $header, array $widths, string $modelClass, callable $mapRow)
     {

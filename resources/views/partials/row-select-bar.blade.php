@@ -8,6 +8,7 @@
            data-select-export="{{ route('pilihan.export', 'slug-menu') }}"
            data-select-print="{{ route('pilihan.cetak', 'slug-menu') }}"
            data-select-delete="{{ route('pilihan.hapus', 'slug-menu') }}"   (opsional; hanya untuk akses penuh)
+           data-select-update="{{ route('pilihan.ubah', 'slug-menu') }}"    (opsional; hanya untuk akses penuh; butuh partials/bulk-update-modal + js/bulk-update.js)
          (slug-menu harus terdaftar di BulkSelectionController::MENUS)
       2. Taruh @include('partials.row-select-bar') tepat di atas pembungkus tabel (di dalam kartu tabel).
       3. Muat script setelah js/script.js, js/bulk-import.js, js/delete-confirm.js dan js/toast.js:
@@ -31,6 +32,11 @@
         <button type="button" class="sel-btn" data-sel-action="print" title="Cetak laporan data yang dipilih / simpan sebagai PDF">
             <span class="material-symbols-outlined">picture_as_pdf</span>
             <span>Cetak PDF</span>
+        </button>
+        {{-- Update massal: hanya tampil bila <table> punya data-select-update (akses penuh). Modal: partials/bulk-update-modal --}}
+        <button type="button" class="sel-btn" data-sel-action="update" title="Ubah beberapa kolom sekaligus untuk data yang dipilih">
+            <span class="material-symbols-outlined">edit_note</span>
+            <span>Update</span>
         </button>
         {{-- Hapus: hanya aktif bila <table> punya data-select-delete (akses penuh). Konfirmasi 2 langkah: DeleteConfirm. --}}
         <button type="button" class="sel-btn is-danger" data-sel-action="delete" title="Hapus permanen data yang dipilih">

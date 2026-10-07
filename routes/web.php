@@ -184,6 +184,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pilihan/{menu}/export', [BulkSelectionController::class, 'export'])->name('pilihan.export');
     Route::post('/pilihan/{menu}/cetak', [BulkSelectionController::class, 'cetak'])->name('pilihan.cetak');
     Route::post('/pilihan/{menu}/hapus', [BulkSelectionController::class, 'hapus'])->name('pilihan.hapus');
+    Route::post('/pilihan/{menu}/ubah', [BulkSelectionController::class, 'ubah'])->name('pilihan.ubah');
 
     Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
     Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');

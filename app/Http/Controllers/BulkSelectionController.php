@@ -17,6 +17,8 @@ use Illuminate\Http\Request;
  *
  * Hapus massal: controller menu harus punya destroyMany(Request) yang memanggil
  * HandlesBulkData::bulkDestroySelected() (lihat KemahasiswaanController).
+ * Update massal: controller menu harus punya updateMany(Request) yang memanggil
+ * HandlesBulkData::bulkUpdateSelected() (lihat KemahasiswaanController).
  *
  * Hak akses TIDAK diatur di sini: export(), show() & destroyMany() milik controller sasaran sudah memeriksa
  * peran admin/superadmin + akses menu (Download/Cetak: readonly ke atas; Hapus: akses penuh).
@@ -55,6 +57,16 @@ class BulkSelectionController extends Controller
         $request->merge(['ids' => $this->ids($request)]);
 
         return app($cfg['controller'])->destroyMany($request);
+    }
+
+    /** Update massal semua baris terpilih (modal "Update Massal"; kolom kosong = tidak diubah). */
+    public function ubah(Request $request, string $menu)
+    {
+        $cfg = $this->menu($menu);
+        abort_unless(method_exists($cfg['controller'], 'updateMany'), 404);
+        $request->merge(['ids' => $this->ids($request)]);
+
+        return app($cfg['controller'])->updateMany($request);
     }
 
     private function menu(string $menu): array

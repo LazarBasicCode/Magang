@@ -8,6 +8,7 @@ use App\Models\Dosen;
 use App\Models\UserNotification;
 use App\Http\Controllers\Concerns\HandlesBulkData;
 use App\Support\Csv;
+use App\Support\SessionRevoker;
 use App\Support\Xlsx;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -137,10 +138,22 @@ class UserController extends Controller
             $user->role = $data['role'];
             $user->nim_nidn = $data['identifier'] ?? null;
             $user->email = $data['email'] ?? null;
-            if (!empty($data['password'])) {
+            $passwordChanged = !empty($data['password']);
+            if ($passwordChanged) {
                 $user->password = Hash::make($data['password']);
             }
             $user->save();
+
+            // Password berubah -> semua sesi login akun itu dikeluarkan (mencegah penyusup yang sudah masuk).
+            // Kalau yang diubah akun si pengubah sendiri, sesi yang sedang dipakai dipertahankan agar form ini tetap jalan.
+            if ($passwordChanged) {
+                $self = $request->user()?->id === $user->id;
+                SessionRevoker::revoke(
+                    $user,
+                    $self ? SessionRevoker::PASSWORD_CHANGED : SessionRevoker::PASSWORD_ADMIN,
+                    $self ? $request->session()->getId() : null
+                );
+            }
 
             $this->syncIdentifier($user, $data['role'], $data['identifier'] ?? null);
 
@@ -404,7 +417,7 @@ class UserController extends Controller
         $created = $updated = $unchanged = 0;
         $notify = [];
 
-        DB::transaction(function () use ($plan, $actor, &$created, &$updated, &$unchanged, &$notify) {
+        DB::transaction(function () use ($plan, $actor, $request, &$created, &$updated, &$unchanged, &$notify) {
             foreach ($plan as $p) {
                 $pl = $p['payload'];
 
@@ -413,11 +426,21 @@ class UserController extends Controller
                     $user->name = $pl['name'];
                     $user->nim_nidn = $pl['nim_nidn'];
                     $user->email = $pl['email'];
-                    if ($pl['password'] !== '') {
+                    $passwordChanged = $pl['password'] !== '';
+                    if ($passwordChanged) {
                         $user->password = Hash::make($pl['password']);
                     }
                     if ($user->isDirty()) {
                         $user->save();
+                        if ($passwordChanged) {
+                            // Sama seperti edit lewat form: password berubah -> semua sesi akun itu dikeluarkan.
+                            $self = $user->id === $actor->id;
+                            SessionRevoker::revoke(
+                                $user,
+                                $self ? SessionRevoker::PASSWORD_CHANGED : SessionRevoker::PASSWORD_ADMIN,
+                                $self ? $request->session()->getId() : null
+                            );
+                        }
                         $this->syncIdentifier($user, $user->role, $pl['nim_nidn']);
                         $updated++;
                         if ($user->id !== $actor->id) {

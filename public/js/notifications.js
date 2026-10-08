@@ -37,6 +37,7 @@
     const TYPE_LABELS = {
         data_updated: 'Perubahan Data',
         concurrent_login: 'Keamanan Akun',
+        password_changed: 'Keamanan Akun',
         account_deleted: 'Akun Dihapus',
     };
 

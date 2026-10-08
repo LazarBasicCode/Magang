@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\SessionRevoker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,17 @@ class AuthController extends Controller
      * Lama penguncian dalam detik setelah percobaan gagal melebihi batas.
      */
     private const LOGIN_LOCKOUT_SECONDS = 60;
+
+    /**
+     * Halaman login. Kalau pengunjung ini baru saja dikeluarkan paksa karena password akunnya
+     * diubah/direset (lihat SessionRevoker), tampilkan pemberitahuan kenapa ia terpental.
+     */
+    public function showLogin(Request $request)
+    {
+        return view('index', [
+            'sessionNotice' => SessionRevoker::pullNotice($request->session()->getId()),
+        ]);
+    }
 
     public function loginProcess(Request $request)
     {
@@ -262,13 +274,11 @@ class AuthController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
 
-                // Paksa keluar semua sesi login yang sedang aktif untuk akun
-                // ini di device/browser manapun. Tanpa ini, kalau akun sempat
-                // dipakai orang lain sebelum passwordnya diganti, sesi orang
-                // itu akan tetap jalan terus walau passwordnya sudah beda —
-                // reset password baru menutup pintu masuk yang BARU, bukan
-                // mengusir yang sudah kepalang berada di dalam.
-                DB::table('sessions')->where('user_id', $user->id)->delete();
+                // Paksa keluar semua sesi login yang sedang aktif untuk akun ini di
+                // device/browser manapun (kalau akun sempat dipakai orang lain, sesinya
+                // ikut terputus). Perangkat yang terpental melihat pemberitahuan di
+                // halaman login — lihat SessionRevoker.
+                SessionRevoker::revoke($user, SessionRevoker::PASSWORD_RESET);
             }
         );
 

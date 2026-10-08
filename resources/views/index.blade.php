@@ -349,6 +349,15 @@
         .alert-ok {
             background: var(--ok-bg, #f0fdf4); border-color: var(--ok-line, #bbf7d0); color: var(--ok-ink, #15803d);
         }
+        .alert-warn {
+            background: #fffbeb; border-color: #fde68a; color: #92400e;
+            align-items: flex-start; line-height: 1.5; margin-bottom: 14px;
+        }
+        .alert-warn i { margin-top: 3px; }
+        :root[data-theme="dark"] .alert-warn { background: #3a2a08; border-color: #7a5a14; color: #fcd98a; }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .alert-warn { background: #3a2a08; border-color: #7a5a14; color: #fcd98a; }
+        }
 
         .field { display: flex; flex-direction: column; gap: .4rem; }
         .field label { font-size: .8rem; font-weight: 600; }
@@ -605,6 +614,14 @@
                 <p class="sub-title">Masuk ke akun kampus Anda untuk melanjutkan.</p>
             </div>
 
+            @if (!empty($sessionNotice))
+                {{-- Akun ini baru dimodifikasi (password diganti/direset) dan sesi perangkat ini dikeluarkan paksa. --}}
+                <div class="alert alert-warn rise" style="--i:4" role="alert">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <div><strong>{{ $sessionNotice['title'] }}</strong><br>{{ $sessionNotice['message'] }}</div>
+                </div>
+            @endif
+
             <form id="loginForm" method="POST" action="{{ url('/login-process') }}" class="rise" style="--i:4">
                 @csrf
                 <div class="field">
@@ -825,6 +842,9 @@
     // halaman ini selesai dimuat.
     @if (session('status'))
         Toast.show({ type: 'success', message: @json(session('status')) });
+    @endif
+    @if (!empty($sessionNotice))
+        Toast.show({ type: 'warning', title: @json($sessionNotice['title']), message: @json($sessionNotice['message']) });
     @endif
     @error('username')
         Toast.show({ type: 'error', title: 'Login gagal', message: @json($message) });

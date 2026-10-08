@@ -251,6 +251,8 @@
             if (res.ok) {
                 notify('success', data.message || cfg.success);
                 close();
+                // Password diganti -> server mengeluarkan semua sesi (termasuk ini): lanjut ke halaman login.
+                if (data.logout && data.redirect) setTimeout(() => { window.location.href = data.redirect; }, 1600);
                 return;
             }
             if (res.status === 422 && data.errors) {

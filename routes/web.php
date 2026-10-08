@@ -25,9 +25,7 @@ use App\Http\Controllers\AccountController;
 // user wajib logout dulu.
 Route::middleware('guest')->group(function () {
     // Halaman Login (index.blade.php)
-    Route::get('/', function () {
-        return view('index');
-    })->name('login');
+    Route::get('/', [AuthController::class, 'showLogin'])->name('login');
 
     // Pemrosesan login
     Route::post('/login-process', [AuthController::class, 'loginProcess'])

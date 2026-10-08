@@ -53,6 +53,7 @@ class UserNotification extends Model
             'data_updated'      => ['color' => 'warning', 'icon' => 'edit_note'],
             'concurrent_login'  => ['color' => 'danger', 'icon' => 'gpp_maybe'],
             'account_deleted'   => ['color' => 'danger', 'icon' => 'person_remove'],
+            'password_changed'  => ['color' => 'warning', 'icon' => 'lock_reset'],
             default              => ['color' => 'primary', 'icon' => 'notifications'],
         };
 

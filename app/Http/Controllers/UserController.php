@@ -253,7 +253,16 @@ class UserController extends Controller
 
     protected function bulkExtraAliases(): array
     {
-        return ['name' => 'nama', 'peran' => 'role', 'kata_sandi' => 'password'];
+        return [
+            'name'             => 'nama',
+            'peran'            => 'role',
+            'kata_sandi'       => 'password',
+            // Alias untuk kolom baru: angkatan & status
+            'tahun_angkatan'   => 'angkatan',
+            'tahun'            => 'angkatan',
+            'status_mahasiswa' => 'status',
+            'status_dosen'     => 'status',
+        ];
     }
 
     /** Role yang boleh dibuat lewat unggah massal oleh user yang sedang login. */
@@ -264,11 +273,20 @@ class UserController extends Controller
             : ['mahasiswa', 'dosen'];
     }
 
-    /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown role. */
+    /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown role & status. */
     public function template(Request $request)
     {
         $this->bulkEnsureAccess($request, true);
         $roles = $this->bulkRoles($request);
+
+        // Dropdown status digabung dari Mahasiswa::STATUS + Dosen::STATUS.
+        // Key-nya sama (aktif, cuti, lulus, dll) — kalau ada beda, union tetap aman.
+        $statusOptions = array_values(array_unique(array_merge(
+            array_keys(Mahasiswa::STATUS),
+            array_keys(Dosen::STATUS),
+        )));
+
+        $maxYear = now()->year + 1;
 
         return $this->bulkXlsxTemplateResponse(
             'template-data-master.xlsx',
@@ -280,11 +298,14 @@ class UserController extends Controller
                 'nama'     => ['required' => 'Ya',             'example' => 'Budi Santoso',    'width' => 30, 'note' => 'Nama lengkap pengguna.'],
                 'role'     => ['required' => 'Ya',             'example' => 'mahasiswa',       'width' => 16, 'options' => $roles, 'note' => 'Pilih dari dropdown: ' . implode(' | ', $roles) . '. Role akun yang sudah ada tidak bisa diubah di sini.'],
                 'email'    => ['required' => 'Tidak',          'example' => '',                'width' => 30, 'note' => 'Email pemulihan password (opsional). Kalau diisi harus unik.'],
+                'angkatan' => ['required' => 'Ya (mahasiswa)', 'example' => '2022',            'width' => 12, 'note' => 'Hanya untuk role mahasiswa. Tahun 4 digit (1990–' . $maxYear . '). Kosongkan untuk dosen/admin/superadmin.'],
+                'status'   => ['required' => 'Ya (mhs/dosen)', 'example' => 'aktif',           'width' => 14, 'options' => $statusOptions, 'note' => 'Wajib untuk mahasiswa/dosen (pilihan: ' . implode(' | ', $statusOptions) . '). Kosongkan untuk admin/superadmin.'],
                 'password' => ['required' => 'Ya (akun baru)', 'example' => 'rahasia123',      'width' => 20, 'note' => 'Minimal 6 karakter. Saat edit: kosongkan kalau password tidak diganti.'],
             ],
             [
                 'Isi data di sheet "' . self::SHEET . '", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
                 'Kolom id: kosongkan untuk akun baru, isi id (dari hasil Download) untuk mengedit akun.',
+                'Kolom angkatan & status: WAJIB untuk mahasiswa/dosen, kosongkan untuk admin/superadmin.',
                 'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
                 'File ini berisi password asli: hapus file setelah diunggah dan jangan dibagikan.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
@@ -298,20 +319,32 @@ class UserController extends Controller
         $this->bulkEnsureAccess($request, false);
 
         $cell = fn ($v, $style = Xlsx::STYLE_CELL) => ['value' => (string) $v, 'style' => $style];
-        $header = ['id', 'nim_nidn', 'nama', 'role', 'email', 'password'];
+        $header = ['id', 'nim_nidn', 'nama', 'role', 'email', 'angkatan', 'status', 'password'];
         $rows = [array_map(fn ($h) => $cell($h, Xlsx::STYLE_HEADER), $header)];
 
-        User::query()
+        User::with(['mahasiswa', 'dosen'])
             ->when($request->user()->role !== 'superadmin', fn ($q) => $q->whereIn('role', ['mahasiswa', 'dosen']))
             ->chunkById(500, function ($users) use (&$rows, $cell) {
                 foreach ($users as $u) {
+                    // Angkatan hanya untuk mahasiswa; status diambil dari relasi yang sesuai.
+                    $angkatan = $u->role === 'mahasiswa' ? ($u->mahasiswa?->angkatan ?? '') : '';
+                    $status = match ($u->role) {
+                        'mahasiswa' => $u->mahasiswa?->status ?? '',
+                        'dosen'     => $u->dosen?->status ?? '',
+                        default     => '',
+                    };
+
                     // Kolom password sengaja kosong: hash tidak boleh keluar, kosong = tidak diganti saat diunggah ulang.
-                    $rows[] = array_map(fn ($v) => $cell(Csv::safeCell($v)), [$u->id, $u->nim_nidn, $u->name, $u->role, $u->email, '']);
+                    $rows[] = array_map(fn ($v) => $cell(Csv::safeCell($v)), [
+                        $u->id, $u->nim_nidn, $u->name, $u->role, $u->email,
+                        $angkatan, $status,
+                        '',
+                    ]);
                 }
             });
 
         return Xlsx::download('data-master-' . now()->format('Ymd-His') . '.xlsx', [[
-            'name' => self::SHEET, 'widths' => [10, 18, 30, 16, 30, 20], 'rows' => $rows, 'freeze' => true, 'autofilter' => true,
+            'name' => self::SHEET, 'widths' => [10, 18, 30, 16, 30, 12, 14, 20], 'rows' => $rows, 'freeze' => true, 'autofilter' => true,
             'autoborder' => ['cols' => count($header), 'from' => 2, 'to' => max(count($rows) + 1000, 2000)],
         ]]);
     }
@@ -334,6 +367,7 @@ class UserController extends Controller
         $roles = $this->bulkRoles($request);
         $existingById = $this->bulkExistingById(User::class, $rows);
 
+        $maxYear = now()->year + 1;
         $plan = [];
         $errors = [];
         $seenNim = [];
@@ -357,8 +391,21 @@ class UserController extends Controller
                 'nim_nidn' => trim((string) ($d['nim_nidn'] ?? '')),
                 'role'     => Csv::normalizeKey($d['role'] ?? ''),
                 'email'    => strtolower(trim((string) ($d['email'] ?? ''))) ?: null,
+                'angkatan' => trim((string) ($d['angkatan'] ?? '')),
+                'status'   => Csv::normalizeKey($d['status'] ?? ''),
                 'password' => (string) ($d['password'] ?? ''),
             ];
+
+            // Aturan angkatan/status mengikuti role di baris itu.
+            $angkatanRule = $payload['role'] === 'mahasiswa'
+                ? ['required', 'integer', 'between:1990,' . $maxYear]
+                : ['nullable'];
+
+            $statusRule = match ($payload['role']) {
+                'mahasiswa' => ['required', Rule::in(array_keys(Mahasiswa::STATUS))],
+                'dosen'     => ['required', Rule::in(array_keys(Dosen::STATUS))],
+                default     => ['nullable'],
+            };
 
             $validator = Validator::make($payload, [
                 'name'     => ['required', 'string', 'max:255'],
@@ -366,15 +413,24 @@ class UserController extends Controller
                 'role'     => $existing ? ['required'] : ['required', Rule::in($roles)],
                 'nim_nidn' => ['required', 'string', 'max:50', Rule::unique('users', 'nim_nidn')->ignore($existing?->id)],
                 'email'    => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($existing?->id)],
+                'angkatan' => $angkatanRule,
+                'status'   => $statusRule,
                 'password' => [$existing ? 'nullable' : 'required', 'string', 'min:6'],
             ], [
-                'required' => ':attribute wajib diisi.',
-                'in'       => ':attribute tidak valid atau tidak boleh Anda buat (boleh: ' . implode(', ', $roles) . ').',
-                'unique'   => ':attribute sudah dipakai akun lain.',
-                'email'    => ':attribute bukan alamat email yang valid.',
-                'min'      => ':attribute minimal :min karakter.',
-                'max'      => ':attribute terlalu panjang.',
-            ], ['name' => 'nama', 'nim_nidn' => 'nim_nidn', 'role' => 'role', 'email' => 'email', 'password' => 'password']);
+                'required'          => ':attribute wajib diisi.',
+                'in'                => ':attribute tidak valid atau tidak boleh Anda buat (boleh: ' . implode(', ', $roles) . ').',
+                'unique'            => ':attribute sudah dipakai akun lain.',
+                'email'             => ':attribute bukan alamat email yang valid.',
+                'min'               => ':attribute minimal :min karakter.',
+                'max'               => ':attribute terlalu panjang.',
+                'integer'           => ':attribute harus berupa angka tahun (contoh: 2022).',
+                'between'           => ':attribute harus di antara 1990 dan ' . $maxYear . '.',
+                'angkatan.required' => 'angkatan wajib diisi untuk mahasiswa.',
+                'angkatan.integer'  => 'angkatan harus berupa angka tahun (contoh: 2022).',
+                'angkatan.between'  => 'angkatan harus di antara 1990 dan ' . $maxYear . '.',
+                'status.required'   => 'status wajib diisi untuk mahasiswa/dosen.',
+                'status.in'         => 'status tidak valid (pilihan: ' . implode(', ', array_keys(Mahasiswa::STATUS)) . ').',
+            ], ['name' => 'nama', 'nim_nidn' => 'nim_nidn', 'role' => 'role', 'email' => 'email', 'angkatan' => 'angkatan', 'status' => 'status', 'password' => 'password']);
             $rowErrors = array_merge($rowErrors, $validator->errors()->all());
 
             if ($existing) {
@@ -441,7 +497,10 @@ class UserController extends Controller
                                 $self ? $request->session()->getId() : null
                             );
                         }
-                        $this->syncIdentifier($user, $user->role, $pl['nim_nidn']);
+                        $this->syncIdentifier($user, $user->role, $pl['nim_nidn'], [
+                            'angkatan' => $pl['angkatan'] !== '' ? $pl['angkatan'] : null,
+                            'status'   => $pl['status']   !== '' ? $pl['status']   : null,
+                        ]);
                         $updated++;
                         if ($user->id !== $actor->id) {
                             $notify[] = $user->id;
@@ -457,7 +516,10 @@ class UserController extends Controller
                         'password' => Hash::make($pl['password']),
                         'role'     => $pl['role'],
                     ]);
-                    $this->syncIdentifier($user, $pl['role'], $pl['nim_nidn']);
+                    $this->syncIdentifier($user, $pl['role'], $pl['nim_nidn'], [
+                        'angkatan' => $pl['angkatan'] !== '' ? $pl['angkatan'] : null,
+                        'status'   => $pl['status']   !== '' ? $pl['status']   : null,
+                    ]);
                     $created++;
                 }
             }

@@ -443,7 +443,7 @@
                                     <td class="center"><span class="plain-text">{{ ucfirst($item->tipe_user) }}</span></td>
                                     <td><span class="activity-title" title="{{ $item->mitra }}">{{ $item->mitra }}</span></td>
                                     <td class="center"><span class="plain-text">{{ $jenisLabel[$item->jenis] ?? $item->jenis }}</span></td>
-                                    <td><span class="plain-text">{{ $item->jabatan ?? '-' }}</span></td>
+                                    <td><span class="plain-text">{{ $item->jabatan_efektif ?? '-' }}</span></td>
                                     <td class="center"><span class="year-chip">{{ optional($item->tanggal_mulai)->format('d M Y') }} &ndash; {{ optional($item->tanggal_selesai)->format('d M Y') }}</span></td>
                                     <td class="center">
                                         <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
@@ -948,6 +948,35 @@
             alumni: 'Alumni'
         };
 
+        // ---- Tampilkan hasil Update Massal di baris tabel (khusus halaman ini) ----
+        // Beda dari default bulk-update.js: jenis tampil sebagai label, dan jabatan hanya tampil untuk alumni.
+        SIDA.bulkUpdateApply = function(rows) {
+            const body = document.getElementById('rekognisiTableBody') || document.querySelector('table[data-selectable] tbody');
+            (rows || []).forEach((r) => {
+                const tr = body && body.querySelector(`tr[data-id="${r.id}"]`);
+                if (!tr) return;
+                const cells = Array.from(tr.children).filter((td) => !td.classList.contains('sel-col'));
+                const mitraEl = cells[3] && cells[3].querySelector('.activity-title');
+                if (mitraEl) { mitraEl.textContent = r.mitra; mitraEl.title = r.mitra; }
+                const jenisEl = cells[4] && cells[4].querySelector('.plain-text');
+                if (jenisEl) jenisEl.textContent = jenisLabel[r.jenis] || r.jenis;
+                const jabEl = cells[5] && cells[5].querySelector('.plain-text');
+                if (jabEl) jabEl.textContent = r.jabatan_tampil || '-';
+
+                const edit = tr.querySelector('.btn-edit-row');
+                ['jenis', 'mitra', 'jabatan'].forEach((k) => {
+                    const v = r[k] == null ? '' : String(r[k]);
+                    if (tr.hasAttribute('data-' + k)) tr.setAttribute('data-' + k, v);
+                    if (edit && edit.hasAttribute('data-' + k)) edit.setAttribute('data-' + k, v);
+                });
+
+                tr.classList.remove('is-updated-flash');
+                void tr.offsetWidth;
+                tr.classList.add('is-updated-flash');
+                setTimeout(() => tr.classList.remove('is-updated-flash'), 1800);
+            });
+        };
+
         // ---- Bangun HTML baris tabel dari data JSON (khusus halaman ini) ----
         function fmtDate(d) {
             if (!d) return '-';
@@ -973,7 +1002,7 @@
                 <td class="center"><span class="plain-text">${esc(item.tipe_user.charAt(0).toUpperCase() + item.tipe_user.slice(1))}</span></td>
                 <td><span class="activity-title" title="${esc(item.mitra)}">${esc(item.mitra)}</span></td>
                 <td class="center"><span class="plain-text">${esc(jenisLabel[item.jenis] || item.jenis)}</span></td>
-                <td><span class="plain-text">${esc(item.jabatan || '-')}</span></td>
+                <td><span class="plain-text">${esc(item.jabatan_tampil || '-')}</span></td>
                 <td class="center"><span class="year-chip">${fmtDate(item.tanggal_mulai)} &ndash; ${fmtDate(item.tanggal_selesai)}</span></td>
                 <td class="center">
                     <a href="${esc(item.bukti_kegiatan)}" target="_blank" rel="noopener noreferrer" class="evidence-link">

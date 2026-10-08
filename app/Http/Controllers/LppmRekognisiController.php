@@ -140,7 +140,7 @@ class LppmRekognisiController extends Controller
 
     /**
      * Validasi silang satu baris untuk update massal (nilai akhir = data lama + kolom yang diisi):
-     * jabatan wajib untuk alumni, dan otomatis dikosongkan jika jenis bukan alumni (sama seperti form).
+     * jabatan wajib untuk alumni; untuk jenis lain jabatan lama dibiarkan (tidak dihapus), dan tidak boleh diisi.
      *
      * @return array{0: array, 1: string[]}
      */
@@ -158,7 +158,7 @@ class LppmRekognisiController extends Controller
             if (array_key_exists('jabatan', $changes)) {
                 $errors[] = 'Jabatan hanya boleh diisi jika jenis = alumni (jenis akhir: ' . $jenis . ').';
             }
-            $changes['jabatan'] = null;
+            // jabatan lama tidak disentuh: kalau nanti jenis kembali ke alumni, isinya muncul lagi
         }
 
         return [$changes, $errors];
@@ -229,7 +229,7 @@ class LppmRekognisiController extends Controller
                 $item->user->name ?? '',
                 $item->jenis,
                 $item->mitra,
-                $item->jabatan,
+                $item->jabatan_efektif,
                 optional($item->tanggal_mulai)->format('Y-m-d'),
                 optional($item->tanggal_selesai)->format('Y-m-d'),
                 $item->bukti_kegiatan,
@@ -289,9 +289,9 @@ class LppmRekognisiController extends Controller
                 continue;
             }
 
-            // Jabatan hanya berlaku untuk alumni (sama seperti form).
+            // Jabatan hanya berlaku untuk alumni; untuk jenis lain jabatan lama dibiarkan (tidak dihapus).
             if ($jenis !== 'alumni') {
-                $payload['jabatan'] = null;
+                unset($payload['jabatan']);
             }
 
             $plan[] = ['existing' => $existing, 'payload' => $payload, 'owner' => $owner];
@@ -351,8 +351,10 @@ class LppmRekognisiController extends Controller
         $user = User::findOrFail($data['user_id']);
         $data['tipe_user'] = $user->role === 'dosen' ? 'dosen' : 'mahasiswa';
 
+        // Jabatan hanya berlaku untuk alumni, tapi nilai lama TIDAK dihapus saat jenis diganti ke
+        // non-alumni (supaya kembali muncul kalau dikembalikan ke alumni): cukup tidak diubah.
         if ($data['jenis'] !== 'alumni') {
-            $data['jabatan'] = null;
+            unset($data['jabatan']);
         }
 
         return $data;
@@ -368,7 +370,8 @@ class LppmRekognisiController extends Controller
             'nama'            => optional($item->user)->name ?? 'Tanpa Nama',
             'jenis'           => $item->jenis,
             'mitra'           => $item->mitra,
-            'jabatan'         => $item->jabatan,
+            'jabatan'         => $item->jabatan,          // nilai tersimpan (dipakai form edit untuk memulihkan isian)
+            'jabatan_tampil'  => $item->jabatan_efektif,  // nilai yang ditampilkan di tabel (null bila bukan alumni)
             'tanggal_mulai'   => optional($item->tanggal_mulai)->format('Y-m-d'),
             'tanggal_selesai' => optional($item->tanggal_selesai)->format('Y-m-d'),
             'bukti_kegiatan'  => $item->bukti_kegiatan,

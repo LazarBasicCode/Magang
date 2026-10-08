@@ -292,7 +292,7 @@ class DashboardController extends Controller
                 'date'  => $i->created_at,
             ]))
             ->concat($rekognisi->map(fn ($i) => [
-                'title' => $i->jabatan ?? $i->mitra,
+                'title' => $i->jabatan_efektif ?? $i->mitra,
                 'menu'  => 'Rekognisi',
                 'icon'  => 'workspace_premium',
                 'date'  => $i->created_at,
@@ -444,7 +444,7 @@ class DashboardController extends Controller
                 'end'   => $i->tanggal_selesai,
             ])
             ->concat($rekognisi->map(fn ($i) => [
-                'title' => $i->jabatan ?? $i->mitra,
+                'title' => $i->jabatan_efektif ?? $i->mitra,
                 'menu'  => 'Rekognisi',
                 'icon'  => 'workspace_premium',
                 'start' => $i->tanggal_mulai,
@@ -477,7 +477,7 @@ class DashboardController extends Controller
                 'date'  => $i->created_at,
             ]))
             ->concat($rekognisi->map(fn ($i) => [
-                'title' => $i->jabatan ?? $i->mitra,
+                'title' => $i->jabatan_efektif ?? $i->mitra,
                 'menu'  => 'Rekognisi',
                 'icon'  => 'workspace_premium',
                 'date'  => $i->created_at,

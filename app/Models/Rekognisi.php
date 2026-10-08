@@ -26,6 +26,17 @@ class Rekognisi extends Model
         'tanggal_selesai' => 'date',
     ];
 
+    /**
+     * Jabatan yang BERLAKU: hanya untuk jenis alumni, selain itu null.
+     * Kolom `jabatan` di database sengaja tidak dihapus saat jenis diganti ke non-alumni,
+     * supaya kalau dikembalikan ke alumni isinya muncul lagi. Tampilan, export, cetak & dashboard
+     * memakai accessor ini ($item->jabatan_efektif), bukan $item->jabatan langsung.
+     */
+    public function getJabatanEfektifAttribute(): ?string
+    {
+        return $this->jenis === 'alumni' ? ($this->jabatan ?: null) : null;
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

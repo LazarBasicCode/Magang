@@ -141,7 +141,7 @@ class PrintReports
                     ['Tipe',       fn ($i) => self::label($i->tipe_user)],
                     ['Mitra',      fn ($i) => $i->mitra, 'wrap'],
                     ['Jenis',      fn ($i) => self::label($i->jenis)],
-                    ['Jabatan',    fn ($i) => $i->jabatan ?: '-'],
+                    ['Jabatan',    fn ($i) => $i->jabatan_efektif ?: '-'],
                     ['Periode',    fn ($i) => self::period($i)],
                 ],
             ],

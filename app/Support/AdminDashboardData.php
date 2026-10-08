@@ -296,7 +296,7 @@ class AdminDashboardData
         $total = $items->count();
         $owner = fn ($i) => $i->user?->name;
         $intl = $items->where('jenis', 'internasional')->count();
-        $upcoming = self::upcoming([[$items, fn ($i) => $i->jabatan ?: $i->mitra, 'Rekognisi', 'workspace_premium', $owner]]);
+        $upcoming = self::upcoming([[$items, fn ($i) => $i->jabatan_efektif ?: $i->mitra, 'Rekognisi', 'workspace_premium', $owner]]);
         $alumniTanpaJabatan = $items->where('jenis', 'alumni')->filter(fn ($i) => blank($i->jabatan));
         $alumni = $items->where('jenis', 'alumni')->count();
 
@@ -357,7 +357,7 @@ class AdminDashboardData
                 ['label' => 'Mahasiswa', 'items' => $items->where('tipe_user', 'mahasiswa')->values()],
                 ['label' => 'Dosen', 'items' => $items->where('tipe_user', 'dosen')->values()],
             ],
-            'recent' => self::recent([[$items, fn ($i) => $i->jabatan ?: $i->mitra, 'Rekognisi', 'workspace_premium', $owner]]),
+            'recent' => self::recent([[$items, fn ($i) => $i->jabatan_efektif ?: $i->mitra, 'Rekognisi', 'workspace_premium', $owner]]),
         ];
     }
 
@@ -465,7 +465,7 @@ class AdminDashboardData
         $ownerUsr = fn ($i) => $i->user?->name;
 
         $upcoming = self::upcoming([
-            [$rek, fn ($i) => $i->jabatan ?: $i->mitra, 'Rekognisi', 'workspace_premium', $ownerUsr],
+            [$rek, fn ($i) => $i->jabatan_efektif ?: $i->mitra, 'Rekognisi', 'workspace_premium', $ownerUsr],
             [$ks, fn ($i) => $i->judul_kegiatan, 'Kerja Sama', 'handshake', $ownerUsr],
         ]);
 
@@ -567,7 +567,7 @@ class AdminDashboardData
                 [$kem, fn ($i) => $i->nama_kegiatan, 'Kemahasiswaan', 'school', $ownerMhs],
                 [$lm, fn ($i) => $i->judul, 'LPPM Mahasiswa', 'person', $ownerMhs],
                 [$ld, fn ($i) => $i->judul, 'LPPM Dosen', 'co_present', $ownerDsn],
-                [$rek, fn ($i) => $i->jabatan ?: $i->mitra, 'Rekognisi', 'workspace_premium', $ownerUsr],
+                [$rek, fn ($i) => $i->jabatan_efektif ?: $i->mitra, 'Rekognisi', 'workspace_premium', $ownerUsr],
                 [$ks, fn ($i) => $i->judul_kegiatan, 'Kerja Sama', 'handshake', $ownerUsr],
             ]),
         ];

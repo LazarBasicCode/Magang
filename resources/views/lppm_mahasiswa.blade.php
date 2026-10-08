@@ -23,6 +23,8 @@
 </head>
 
 <body>
+    <!-- Definisi dark mode -->
+    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
@@ -412,7 +414,7 @@
                                 $avatarColor = $colors[$item->mahasiswa_id % count($colors)];
                                 $jb = $jenisBadge[$item->jenis] ?? ['label' => $item->jenis, 'class' => 'badge-neutral'];
                                 $buktiLabel = $item->link_doi ? 'Link DOI' : 'Lihat Bukti';
-                                $buktiIcon = $item->link_doi ? 'link' : 'cloud';
+                                $buktiIcon = $item->link_doi ? 'link' : 'link';
                                 $buktiUrl = $item->link_doi ?: $item->bukti_kegiatan;
                                 @endphp
                                 <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}">
@@ -673,7 +675,7 @@
             const jb = jenisBadge[item.jenis] || { label: item.jenis, cls: 'badge-neutral' };
             const buktiUrl = item.link_doi || item.bukti_kegiatan;
             const buktiLabel = item.link_doi ? 'Link DOI' : 'Lihat Bukti';
-            const buktiIcon = item.link_doi ? 'link' : 'cloud';
+            const buktiIcon = item.link_doi ? 'link' : 'link';
             return `
             <tr data-id="${item.id}" data-jenis="${item.jenis}">
                 <td><span class="nim-code">${esc(item.nim)}</span></td>

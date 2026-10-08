@@ -638,7 +638,8 @@
     window.SIDA = SIDA;
 })(window, document);
 /**
- * Sidebar bisa diperlebar / diperkecil dengan menyeret garis titik tiga di tepi kanan sidebar.
+ * Sidebar bisa diperlebar / diperkecil dengan menyeret garis titik tiga di tepi kanan sidebar
+ * (di desktop maupun saat tampil sebagai drawer di layar kecil; lebarnya satu & sama di semua tampilan).
  * Gaya, animasi & mode ikon-saja ada di style.css (bagian "SIDEBAR RESIZE"); JS ini hanya
  * membuat pegangannya dan mengubah --sidebar-w.
  * Lebar tersimpan juga dipasang lebih awal oleh resources/views/partials/sidebar-init.blade.php (di <head>).
@@ -658,9 +659,10 @@
     const DEFAULT = 260;
     const KEY = 'sida.sidebarW';
 
-    const isDesktop = () => window.matchMedia('(min-width: 800px)').matches;
+    // Lebar maksimum: 340px, tapi di layar kecil (drawer) sisakan ruang overlay (samakan dengan CSS: 100vw - 48px)
+    const maxW = () => Math.max(MIN, Math.min(MAX, window.innerWidth - 48));
     const apply = (w) => root.style.setProperty('--sidebar-w', w + 'px');
-    const snapTo = (w) => (w < SNAP ? MIN : Math.min(MAX, Math.max(EXPANDED_MIN, w)));
+    const snapTo = (w) => (w < SNAP ? MIN : Math.min(maxW(), Math.max(EXPANDED_MIN, w)));
     const current = () => Math.round(sidebar.getBoundingClientRect().width);
     const save = (w) => { try { localStorage.setItem(KEY, w); } catch (e) {} };
 
@@ -691,7 +693,7 @@
     }
 
     handle.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0 || !isDesktop()) return;
+        if (e.button !== 0) return;
         e.preventDefault();
         clearTimeout(snapTimer);
         document.body.classList.remove('is-snapping-sidebar');
@@ -699,7 +701,7 @@
         document.body.classList.add('is-resizing-sidebar');
 
         // Saat menyeret: mengikuti mouse langsung (tanpa transisi), teks memudar & blur bila terpotong
-        const move = (ev) => apply(Math.min(MAX, Math.max(MIN, ev.clientX)));
+        const move = (ev) => apply(Math.min(maxW(), Math.max(MIN, ev.clientX)));
         const stop = () => {
             handle.removeEventListener('pointermove', move);
             handle.removeEventListener('pointerup', stop);
@@ -714,7 +716,7 @@
 
     // Klik dua kali: bolak-balik mode ikon <-> lebar normal
     handle.addEventListener('dblclick', () => {
-        if (isDesktop()) animateTo(current() <= MIN ? DEFAULT : MIN);
+        animateTo(current() <= MIN ? Math.min(DEFAULT, maxW()) : MIN);
     });
 })();
 

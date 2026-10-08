@@ -15,18 +15,12 @@
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
-    <script>
-        (function() {
-            try {
-                var w = parseInt(localStorage.getItem('sida.sidebarW'), 10);
-                if (w) document.documentElement.style.setProperty('--sidebar-w', (w < 140 ? 72 : Math.min(340, Math.max(200, w))) + 'px');
-            } catch (e) {}
-        })();
-    </script>
     <title>Kemahasiswaan &middot; SIDA</title>
 </head>
 
 <body>
+    <!-- Definisi dark mode -->
+    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
@@ -500,7 +494,7 @@
                                     <td class="center">
                                         <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer"
                                             class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span class="material-symbols-outlined">link</span>
                                             <span>Lihat Bukti</span>
                                         </a>
                                     </td>
@@ -743,7 +737,7 @@
                 <td class="center"><span class="year-chip">${esc(item.tahun)}</span></td>
                 <td class="center">
                     <a href="${esc(item.bukti_kegiatan)}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                        <span class="material-symbols-outlined">cloud</span><span>Lihat Bukti</span>
+                        <span class="material-symbols-outlined">link</span><span>Lihat Bukti</span>
                     </a>
                 </td>
                 <td class="center">

@@ -23,6 +23,8 @@
 </head>
 
 <body>
+    <!-- Definisi dark mode -->
+    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
@@ -427,7 +429,7 @@
                                     <td class="center"><span class="year-chip">{{ $item->tahun }}</span></td>
                                     <td class="center">
                                         <a href="{{ $buktiUrl }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                                            <span class="material-symbols-outlined">{{ $item->link_doi ? 'link' : 'cloud' }}</span>
+                                            <span class="material-symbols-outlined">{{ $item->link_doi ? 'link' : 'link' }}</span>
                                             <span>{{ $buktiLabel }}</span>
                                         </a>
                                     </td>
@@ -719,7 +721,7 @@
             const kategori = item.peringkat || item.jenis_hki || item.kategori_buku || '-';
             const buktiUrl = item.link_doi || item.bukti_kegiatan;
             const buktiLabel = item.link_doi ? 'Link DOI' : 'Lihat Bukti';
-            const buktiIcon = item.link_doi ? 'link' : 'cloud';
+            const buktiIcon = item.link_doi ? 'link' : 'link';
             return `
             <tr data-id="${item.id}" data-jenis="${item.jenis}">
                 <td><span class="nim-code">${esc(item.nidn)}</span></td>

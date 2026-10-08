@@ -131,11 +131,6 @@ body.dark-mode ::-webkit-scrollbar-thumb {
     background: var(--border-strong);
 }
 
-body.dark-mode .evidence-link:hover {
-    background: var(--primary);
-    border-color: var(--primary-dark);
-}
-
 body.dark-mode .field-control input:focus,
 body.dark-mode .dropdown.is-open .dropdown-trigger {
     box-shadow: 0 0 0 3px var(--primary-soft);
@@ -335,6 +330,7 @@ button {
     line-height: 1.1;
     min-width: 0;
     white-space: nowrap;
+    overflow: hidden;
     transition: opacity .2s ease, filter .2s ease;
 }
 
@@ -1429,12 +1425,15 @@ table.data-table {
         display: block;
         margin-bottom: 12px;
         padding: 4px 14px;
-        border: 1px solid var(--border);
+        border: 1px solid var(--border-strong);
         border-radius: var(--radius);
         background: var(--card);
+        box-shadow: 0 2px 4px rgba(57, 72, 110, 0.10);
     }
 
-    .data-table tbody tr:last-child { border-bottom: 1px solid var(--border); }
+    body.dark-mode .data-table tbody tr { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.30); }
+
+    .data-table tbody tr:last-child { border-bottom: 1px solid var(--border-strong); }
 
     .data-table td,
     .data-table td:first-child,
@@ -1475,8 +1474,7 @@ table.data-table {
         width: fit-content;
         max-width: 100%;
     }
-    .data-table td > .badge,
-    .data-table td > .evidence-link { white-space: normal; text-align: left; }
+    .data-table td > .badge { white-space: normal; text-align: left; }
     .data-table td { overflow-wrap: break-word; }
     .data-table .activity-title { max-width: none; white-space: normal; }
 
@@ -1580,21 +1578,27 @@ table.data-table {
 .evidence-link {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-strong);
-    background: var(--canvas);
-    color: var(--ink);
-    font-size: 11.5px;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--primary);
+    font-size: 12.5px;
     font-weight: 700;
-    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+    transition: color .15s ease;
+}
+
+.evidence-link .material-symbols-outlined {
+    font-size: 16px;
 }
 
 .evidence-link:hover {
-    background: var(--primary);
-    border-color: var(--primary-dark);
-    color: #fff;
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+body.dark-mode .evidence-link:hover {
+    color: var(--ink);
 }
 
 .row-actions {
@@ -1711,6 +1715,7 @@ table.data-table {
 
     .sidebar-close-btn {
         display: flex;
+        flex-shrink: 0;
         align-items: center;
         justify-content: center;
         width: 32px;
@@ -3819,6 +3824,13 @@ body.is-resizing-sidebar * {
     body.is-snapping-sidebar .app-header  { transition: left .32s var(--sidebar-ease); }
 }
 
+/* Drawer (<800px): lebar dianimasikan, transisi buka/tutup (transform) tetap dipertahankan */
+@media (max-width: 799px) {
+    body.is-snapping-sidebar .app-sidebar {
+        transition: transform .3s cubic-bezier(.4, 0, .2, 1), width .32s var(--sidebar-ease);
+    }
+}
+
 /* --- Teks menu: terpotong rapi & memudar + blur saat sidebar menyempit
    (properti dasarnya ada di .nav-link, .sidebar-brand, .sidebar-help, .nav-heading di bagian 4. SIDEBAR) --- */
 .nav-link > span:not(.material-symbols-outlined) {
@@ -3870,8 +3882,22 @@ body.is-resizing-sidebar * {
     body.is-snapping-sidebar .app-header { transition: none; }
 }
 
-/* Mobile (drawer): lebar tetap & tanpa pegangan, abaikan lebar hasil seret di desktop */
+/* Mobile (drawer): memakai lebar --sidebar-w yang SAMA dengan desktop (tersimpan & bisa diseret).
+   Dibatasi agar selalu menyisakan sedikit area overlay di kanan untuk menutup drawer. */
 @media (max-width: 799px) {
-    .app-sidebar { width: 260px; }
-    .sidebar-resizer { display: none; }
+    .app-sidebar { max-width: calc(100vw - 48px); }
+
+    /* pegangan lebih lebar & area sentuh lebih besar untuk jari */
+    .sidebar-resizer { width: 12px; right: -12px; }
+    .sidebar-resizer::after { inset: 0 -10px 0 0; }
+}
+
+/* Layar sentuh tidak punya hover: pegangan dibuat selalu terlihat (samar) */
+@media (hover: none) {
+    .sidebar-resizer { opacity: .75; }
+}
+
+/* Mode ikon-saja di drawer: tombol X disembunyikan (tutup lewat overlay) */
+@container sidebar (max-width: 100px) {
+    .sidebar-close-btn { display: none; }
 }

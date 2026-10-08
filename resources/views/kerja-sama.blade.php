@@ -23,6 +23,8 @@
 </head>
 
 <body>
+    <!-- Definisi dark mode -->
+    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
@@ -503,7 +505,7 @@
                                     <td class="center"><span class="year-chip">{{ $periode }}</span></td>
                                     <td class="center">
                                         <a href="{{ $item->bukti_kegiatan }}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                                            <span class="material-symbols-outlined">cloud</span>
+                                            <span class="material-symbols-outlined">link</span>
                                             <span>Lihat Bukti</span>
                                         </a>
                                     </td>
@@ -1352,7 +1354,7 @@
                 <td class="center"><span class="year-chip">${esc(periode)}</span></td>
                 <td class="center">
                     <a href="${esc(item.bukti_kegiatan)}" target="_blank" rel="noopener noreferrer" class="evidence-link">
-                        <span class="material-symbols-outlined">cloud</span><span>Lihat Bukti</span>
+                        <span class="material-symbols-outlined">link</span><span>Lihat Bukti</span>
                     </a>
                 </td>
                 <td class="center">

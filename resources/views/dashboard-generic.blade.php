@@ -22,6 +22,8 @@
 </head>
 
 <body>
+    <!-- Definisi dark mode -->
+    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>

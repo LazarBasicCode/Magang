@@ -12,9 +12,9 @@ class UserSeeder extends Seeder
     {
         // 1. Akun Superadmin / Admin
         User::create([
-            'name' => 'Admin Kemahasiswaan',
-            'nim_nidn' => 'admin.kemahasiswaan',
-            'password' => Hash::make('password123'),
+            'name' => 'superadmin',
+            'nim_nidn' => 'superadmin',
+            'password' => Hash::make('12345678'),
             'role' => 'admin'
         ]);
 

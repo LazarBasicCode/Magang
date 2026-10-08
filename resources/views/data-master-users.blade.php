@@ -333,35 +333,24 @@ $__accessRows = $__user->accessBreakdown();
                     </div>
                 </div>
 
-                <!-- FILTER BAR (aktif: filter & pencarian jalan otomatis tanpa reload) -->
+                <!-- FILTER CARD: tab kelompok pengguna + pencarian cepat -->
                 <div class="filter-card">
+                    <div class="view-tabs" id="viewTabs" role="tablist" aria-label="Kelompok pengguna">
+                        <button type="button" class="view-tab is-active" role="tab" aria-selected="true" tabindex="0"
+                            data-view="mahasiswa" data-total="{{ $stats['mahasiswa'] }}">Mahasiswa</button>
+                        <button type="button" class="view-tab" role="tab" aria-selected="false" tabindex="-1"
+                            data-view="dosen" data-total="{{ $stats['dosen'] }}">Dosen</button>
+                        <button type="button" class="view-tab" role="tab" aria-selected="false" tabindex="-1"
+                            data-view="admin" data-total="{{ $stats['admin'] }}">Administrator</button>
+                    </div>
+
                     <div class="filter-grid">
-                        <div class="field">
-                            <label class="field-label">Role Pengguna</label>
-                            <div class="dropdown" data-dropdown id="dd-filter-role">
-                                <input type="hidden" id="filter-role" value="semua" />
-                                <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Role</span>
-                                    <span class="material-symbols-outlined caret">expand_more</span>
-                                </button>
-                                <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
-                                        Role</button>
-                                    <button type="button" class="dropdown-option"
-                                        data-value="superadmin">Superadmin</button>
-                                    <button type="button" class="dropdown-option" data-value="admin">Admin</button>
-                                    <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
-                                    <button type="button" class="dropdown-option"
-                                        data-value="mahasiswa">Mahasiswa</button>
-                                </div>
-                            </div>
-                        </div>
                         <div class="filter-search-row">
                             <div class="field field-search-wide">
                                 <label class="field-label" for="filter-search">Pencarian Cepat</label>
                                 <div class="field-control">
                                     <span class="material-symbols-outlined icon-search">search</span>
-                                    <input id="filter-search" type="text" placeholder="Cari ID, nama, NIM, atau NIDN..." />
+                                    <input id="filter-search" type="text" placeholder="Cari ID, nama, NIM, angkatan, status, atau email..." />
                                 </div>
                             </div>
                             <div class="field field-reset">
@@ -390,13 +379,16 @@ $__accessRows = $__user->accessBreakdown();
                     </div>
 
                     <div class="table-scroll">
-                        <table class="data-table">
+                        <table class="data-table" id="userTable" data-view="mahasiswa">
                             <thead>
                                 <tr>
                                     <th>ID</th>
                                     <th>Nama Lengkap</th>
-                                    <th class="center">Role</th>
-                                    <th class="center">NIM / NIDN</th>
+                                    <th class="center" data-v="admin">Role</th>
+                                    {{-- Label kolom ini berganti per tab (NIM / NIDN / Username), diisi JS lewat data-text --}}
+                                    <th class="center th-dyn" id="thIdentifier" data-text="NIM" aria-label="NIM"></th>
+                                    <th class="center" data-v="mahasiswa">Angkatan</th>
+                                    <th class="center" data-v="mahasiswa dosen">Status</th>
                                     <th class="center">Email</th>
                                     <th class="center">Aksi</th>
                                 </tr>
@@ -422,6 +414,9 @@ $__accessRows = $__user->accessBreakdown();
                                 $identifier = $item->role === 'mahasiswa'
                                 ? optional($item->mahasiswa)->nim
                                 : ($item->role === 'dosen' ? optional($item->dosen)->nidn : $item->nim_nidn);
+                                // Profil sesuai role: sumber angkatan & status (admin/superadmin tidak punya).
+                                $profile = $item->role === 'mahasiswa' ? $item->mahasiswa : ($item->role === 'dosen' ? $item->dosen : null);
+                                $angkatan = $item->role === 'mahasiswa' ? optional($item->mahasiswa)->angkatan : null;
                                 @endphp
                                 <tr data-id="{{ $item->id }}" data-role="{{ $item->role }}">
                                     <td><span class="nim-code">USR-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</span></td>
@@ -433,11 +428,21 @@ $__accessRows = $__user->accessBreakdown();
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="center"><span class="badge {{ $roleBadge }}">{{ $roleLabel }}</span></td>
-                                    <td class="center">
+                                    <td class="center col-role" data-v="admin"><span class="badge {{ $roleBadge }}">{{ $roleLabel }}</span></td>
+                                    <td class="center col-identifier">
                                         <span class="plain-text">{{ $identifier ?? '—' }}</span>
                                     </td>
-                                    <td class="center">
+                                    <td class="center col-angkatan" data-v="mahasiswa">
+                                        <span class="plain-text">{{ $angkatan ?? '—' }}</span>
+                                    </td>
+                                    <td class="center col-status" data-v="mahasiswa dosen">
+                                        @if($profile && $profile->status)
+                                            <span class="badge {{ $profile->statusBadge() }}">{{ $profile->statusLabel() }}</span>
+                                        @else
+                                            <span class="plain-text">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="center col-email">
                                         <span class="plain-text">{{ $item->email ?? '—' }}</span>
                                     </td>
                                     <td class="center">
@@ -447,7 +452,9 @@ $__accessRows = $__user->accessBreakdown();
                                                 data-name="{{ $item->name }}"
                                                 data-role="{{ $item->role }}"
                                                 data-identifier="{{ $identifier ?? '' }}"
-                                                data-email="{{ $item->email ?? '' }}">
+                                                data-email="{{ $item->email ?? '' }}"
+                                                data-angkatan="{{ $angkatan ?? '' }}"
+                                                data-status="{{ optional($profile)->status ?? '' }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
@@ -459,13 +466,13 @@ $__accessRows = $__user->accessBreakdown();
                                 </tr>
                                 @empty
                                 <tr id="emptyRow">
-                                    <td colspan="6" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="8" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data pengguna. Klik "Tambah Pengguna" untuk mulai mengisi.
                                     </td>
                                 </tr>
                                 @endforelse
                                 <tr id="noResultsRow" hidden>
-                                    <td colspan="6" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="8" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Tidak ada pengguna yang cocok dengan filter/pencarian.
                                     </td>
                                 </tr>
@@ -474,7 +481,7 @@ $__accessRows = $__user->accessBreakdown();
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
                             <tbody class="sk-body" aria-hidden="true">
                                 @for($i = 0; $i < 7; $i++)
-                                <tr><td colspan="6"><span class="sk-bar"></span></td></tr>
+                                <tr><td colspan="8"><span class="sk-bar"></span></td></tr>
                                 @endfor
                             </tbody>
                         </table>
@@ -547,6 +554,46 @@ $__accessRows = $__user->accessBreakdown();
                 </div>
             </div>
 
+            {{-- Angkatan & Status: tampil sesuai role (mahasiswa: angkatan + status; dosen: status; admin: disembunyikan) --}}
+            <div class="field-row" id="row-profile">
+                <div class="field" id="field-angkatan">
+                    <label class="field-label" for="form-angkatan">Angkatan</label>
+                    <div class="field-control">
+                        <input id="form-angkatan" type="number" inputmode="numeric" min="1990" max="{{ now()->year + 1 }}" step="1" placeholder="Contoh: {{ now()->year - 3 }}">
+                    </div>
+                </div>
+                <div class="field" id="field-status-mahasiswa">
+                    <label class="field-label">Status Mahasiswa</label>
+                    <div class="dropdown" data-dropdown id="dd-status-mahasiswa">
+                        <input type="hidden" id="form-status-mahasiswa" value="aktif" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">{{ \App\Models\Mahasiswa::STATUS['aktif'] }}</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            @foreach(\App\Models\Mahasiswa::STATUS as $value => $label)
+                            <button type="button" class="dropdown-option {{ $value === 'aktif' ? 'is-selected' : '' }}" data-value="{{ $value }}">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                <div class="field" id="field-status-dosen">
+                    <label class="field-label">Status Dosen</label>
+                    <div class="dropdown" data-dropdown id="dd-status-dosen">
+                        <input type="hidden" id="form-status-dosen" value="aktif" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">{{ \App\Models\Dosen::STATUS['aktif'] }}</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            @foreach(\App\Models\Dosen::STATUS as $value => $label)
+                            <button type="button" class="dropdown-option {{ $value === 'aktif' ? 'is-selected' : '' }}" data-value="{{ $value }}">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="field">
                 <label class="field-label" for="form-email">Email</label>
                 <div class="field-control">
@@ -612,6 +659,16 @@ $__accessRows = $__user->accessBreakdown();
         const dragHandle = document.getElementById('modalDragHandle');
         const labelIdentifier = document.getElementById('label-identifier');
         const inputIdentifier = document.getElementById('form-identifier');
+        // Angkatan & status (hanya relevan untuk mahasiswa/dosen)
+        const rowProfile = document.getElementById('row-profile');
+        const fieldAngkatan = document.getElementById('field-angkatan');
+        const fieldStatusMhs = document.getElementById('field-status-mahasiswa');
+        const fieldStatusDosen = document.getElementById('field-status-dosen');
+        const ddStatusMhs = document.getElementById('dd-status-mahasiswa');
+        const ddStatusDosen = document.getElementById('dd-status-dosen');
+        const inputAngkatan = document.getElementById('form-angkatan');
+        const inputStatusMhs = document.getElementById('form-status-mahasiswa');
+        const inputStatusDosen = document.getElementById('form-status-dosen');
 
         // ================================================================
         // DROPDOWN PORTAL (khusus halaman ini)
@@ -733,42 +790,103 @@ $__accessRows = $__user->accessBreakdown();
         // FILTER & PENCARIAN (khusus halaman ini)
         // ----------------------------------------------------------------
         // Beda dari halaman lain: filter di sini baca kolom by POSISI
-        // (td:nth-child), bukan row.dataset. Karena kolom identifier
-        // (NIM/NIDN) dan email tidak ada di data-* pada <tr>.
+        // (class .col-*), bukan row.dataset. Karena kolom identifier
+        // (NIM/NIDN), angkatan, status, dan email tidak ada di data-* pada <tr>.
         // ================================================================
         const filterSearchInput = document.getElementById('filter-search');
-        const filterRoleInput = document.getElementById('filter-role');
         const noResultsRow = document.getElementById('noResultsRow');
         const footerVisibleCount = document.getElementById('footerVisibleCount');
         const footerTotalCount = document.getElementById('footerTotalCount');
         const footerLoading = document.getElementById('footerLoading');
 
-        // Total data menurut server; disesuaikan saat tambah/hapus, dan
-        // disamakan dengan jumlah baris nyata setelah semua halaman termuat.
-        let totalCount = Number(tableBody?.dataset.total) || 0;
+        // ---- Tab kelompok pengguna: Mahasiswa / Dosen / Administrator ----
+        // Satu tabel dipakai bersama. Kolom diatur CSS lewat table[data-view]
+        // + atribut data-v di <th>/<td>; baris diatur applyFilters().
+        const userTable = document.getElementById('userTable');
+        const thIdentifier = document.getElementById('thIdentifier');
+        const viewTabs = Array.from(document.querySelectorAll('.view-tab'));
+        const DEFAULT_VIEW = 'mahasiswa';
+        const VIEW_META = {
+            mahasiswa: { identifier: 'NIM', noun: 'mahasiswa', createRole: 'mahasiswa', search: 'Cari ID, nama, NIM, angkatan, status, atau email...' },
+            dosen: { identifier: 'NIDN', noun: 'dosen', createRole: 'dosen', search: 'Cari ID, nama, NIDN, status, atau email...' },
+            admin: { identifier: 'Username', noun: 'administrator', createRole: 'admin', search: 'Cari ID, nama, role, username, atau email...' },
+        };
+        let activeView = DEFAULT_VIEW;
+
+        // superadmin & admin -> kelompok 'admin'
+        const viewOf = (role) => (role === 'mahasiswa' || role === 'dosen' ? role : 'admin');
+
+        // Total per kelompok: dari server, disesuaikan saat tambah/hapus/ubah role,
+        // lalu disamakan dengan baris nyata setelah semua halaman termuat.
+        const groupTotals = {};
+        viewTabs.forEach((t) => { groupTotals[t.dataset.view] = Number(t.dataset.total) || 0; });
+        let loadingPages = !!tableBody?.dataset.nextUrl;
+
+        function setView(view) {
+            activeView = VIEW_META[view] ? view : DEFAULT_VIEW;
+            viewTabs.forEach((t) => {
+                const on = t.dataset.view === activeView;
+                t.classList.toggle('is-active', on);
+                t.setAttribute('aria-selected', String(on));
+                t.tabIndex = on ? 0 : -1;
+            });
+            applyFilters();
+        }
+
+        viewTabs.forEach((tab, i) => {
+            tab.addEventListener('click', () => setView(tab.dataset.view));
+            // Panah kiri/kanan pindah tab
+            tab.addEventListener('keydown', (e) => {
+                if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                e.preventDefault();
+                const step = e.key === 'ArrowRight' ? 1 : -1;
+                const next = viewTabs[(i + step + viewTabs.length) % viewTabs.length];
+                next.focus();
+                setView(next.dataset.view);
+            });
+        });
 
         function applyFilters() {
             if (!tableBody) return;
             const term = (filterSearchInput?.value || '').trim().toLowerCase();
-            const role = filterRoleInput?.value || 'semua';
+            const meta = VIEW_META[activeView];
+
+            // Kolom tabel & label kolom identifier mengikuti tab aktif
+            userTable.dataset.view = activeView;
+            thIdentifier.dataset.text = meta.identifier;
+            thIdentifier.setAttribute('aria-label', meta.identifier);
+            if (filterSearchInput) filterSearchInput.placeholder = meta.search;
 
             const rows = tableBody.querySelectorAll('tr[data-id]');
             let visibleCount = 0;
+            let viewCount = 0;
 
             rows.forEach((row) => {
+                const roleValue = (row.dataset.role || '').toLowerCase();
                 const idText = (row.querySelector('.nim-code')?.textContent || '').toLowerCase();
                 const nameText = (row.querySelector('.student-name .name')?.textContent || '').toLowerCase();
-                const identifierText = (row.querySelector('td:nth-child(4) .plain-text')?.textContent || '').toLowerCase();
-                const emailText = (row.querySelector('td:nth-child(5) .plain-text')?.textContent || '').toLowerCase();
-                const roleValue = (row.dataset.role || '').toLowerCase();
+                const roleText = (row.querySelector('.col-role')?.textContent || '').trim().toLowerCase();
+                const identifierText = (row.querySelector('.col-identifier .plain-text')?.textContent || '').toLowerCase();
+                const angkatanText = (row.querySelector('.col-angkatan .plain-text')?.textContent || '').toLowerCase();
+                const statusText = (row.querySelector('.col-status')?.textContent || '').trim().toLowerCase();
+                const emailText = (row.querySelector('.col-email .plain-text')?.textContent || '').toLowerCase();
+
+                // Label kartu di HP untuk kolom identifier (th-nya kosong, jadi tidak diisi SIDA.tableLabels)
+                const idCell = row.querySelector('.col-identifier');
+                if (idCell) idCell.dataset.label = meta.identifier;
+
+                const matchesView = viewOf(roleValue) === activeView;
+                if (matchesView) viewCount++;
 
                 const matchesSearch = !term ||
                     idText.includes(term) ||
                     nameText.includes(term) ||
+                    roleText.includes(term) ||
                     identifierText.includes(term) ||
+                    angkatanText.includes(term) ||
+                    statusText.includes(term) ||
                     emailText.includes(term);
-                const matchesRole = role === 'semua' || roleValue === role;
-                const visible = matchesSearch && matchesRole;
+                const visible = matchesView && matchesSearch;
 
                 row.hidden = !visible;
                 if (visible) visibleCount++;
@@ -777,10 +895,16 @@ $__accessRows = $__user->accessBreakdown();
             const emptyRow = document.getElementById('emptyRow');
             const hasData = rows.length > 0;
             if (noResultsRow) {
-                noResultsRow.hidden = !(hasData && visibleCount === 0);
+                const empty = hasData && visibleCount === 0;
+                noResultsRow.hidden = !empty;
+                if (empty) {
+                    noResultsRow.firstElementChild.textContent = loadingPages
+                        ? 'Memuat data…'
+                        : (term ? 'Tidak ada ' + meta.noun + ' yang cocok dengan pencarian.' : 'Belum ada data ' + meta.noun + '.');
+                }
             }
             if (footerVisibleCount) footerVisibleCount.textContent = visibleCount;
-            if (footerTotalCount) footerTotalCount.textContent = Math.max(totalCount, rows.length);
+            if (footerTotalCount) footerTotalCount.textContent = Math.max(groupTotals[activeView] || 0, viewCount);
             if (emptyRow) {
                 emptyRow.hidden = hasData;
             }
@@ -819,12 +943,16 @@ $__accessRows = $__user->accessBreakdown();
                     nextUrl = body.dataset.nextUrl || '';
                     applyFilters();
                 }
-                // Semua halaman sudah termuat: total = jumlah baris nyata
-                totalCount = tableBody.querySelectorAll('tr[data-id]').length;
+                // Semua halaman sudah termuat: total per kelompok = jumlah baris nyata
+                Object.keys(groupTotals).forEach((k) => { groupTotals[k] = 0; });
+                tableBody.querySelectorAll('tr[data-id]').forEach((r) => {
+                    if (!r.dataset.removing) groupTotals[viewOf(r.dataset.role)]++;
+                });
             } catch (err) {
                 console.error('[Data Master] Gagal memuat sisa halaman:', err);
                 window.Toast?.show?.({ type: 'error', title: 'Data belum lengkap', message: 'Sebagian data pengguna gagal dimuat. Muat ulang halaman.' });
             } finally {
+                loadingPages = false;
                 if (footerLoading) footerLoading.hidden = true;
                 applyFilters();
             }
@@ -838,9 +966,8 @@ $__accessRows = $__user->accessBreakdown();
         });
 
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            document.querySelectorAll('.filter-grid [data-dropdown]').forEach((d) => SIDA.dropdown.reset(d));
             if (filterSearchInput) filterSearchInput.value = '';
-            applyFilters();
+            setView(DEFAULT_VIEW);
         });
 
         // ================================================================
@@ -879,8 +1006,35 @@ $__accessRows = $__user->accessBreakdown();
             }
         }
 
+        // Tampilkan/sembunyikan angkatan & status sesuai role.
+        // Pakai hidden + style.display supaya aman walau CSS .field/.field-row
+        // mengatur display sendiri.
+        function setVisible(el, visible) {
+            el.hidden = !visible;
+            el.style.display = visible ? '' : 'none';
+        }
+
+        function syncProfileFields(role) {
+            const isMhs = role === 'mahasiswa';
+            const isDosen = role === 'dosen';
+            setVisible(rowProfile, isMhs || isDosen);
+            setVisible(fieldAngkatan, isMhs);
+            setVisible(fieldStatusMhs, isMhs);
+            setVisible(fieldStatusDosen, isDosen);
+        }
+
+        // Nilai status yang sedang dipilih untuk role tertentu ('' kalau role tidak punya status).
+        function currentStatus(role) {
+            if (role === 'mahasiswa') return inputStatusMhs.value;
+            if (role === 'dosen') return inputStatusDosen.value;
+            return '';
+        }
+
         document.querySelectorAll('#dd-role .dropdown-option').forEach((option) => {
-            option.addEventListener('click', () => syncIdentifierField(option.dataset.value));
+            option.addEventListener('click', () => {
+                syncIdentifierField(option.dataset.value);
+                syncProfileFields(option.dataset.value);
+            });
         });
 
         function openModal(mode, data = {}) {
@@ -905,7 +1059,12 @@ $__accessRows = $__user->accessBreakdown();
             roleTrigger.style.cursor = isSuper ? 'not-allowed' : '';
             SIDA.dropdown.select(ddRole, role);
             syncIdentifierField(role);
+            syncProfileFields(role);
             inputIdentifier.value = data.identifier || '';
+            inputAngkatan.value = data.angkatan || '';
+            // Status: edit -> nilai tersimpan; tambah / role berbeda -> default 'aktif'
+            SIDA.dropdown.select(ddStatusMhs, role === 'mahasiswa' && data.status ? data.status : 'aktif');
+            SIDA.dropdown.select(ddStatusDosen, role === 'dosen' && data.status ? data.status : 'aktif');
             document.getElementById('form-email').value = data.email || '';
 
             document.getElementById('form-password').value = '';
@@ -914,7 +1073,8 @@ $__accessRows = $__user->accessBreakdown();
             openModalBase();
         }
 
-        btnTambah?.addEventListener('click', () => openModal('create'));
+        // Default role di modal mengikuti tab yang sedang dibuka
+        btnTambah?.addEventListener('click', () => openModal('create', { role: VIEW_META[activeView].createRole }));
 
         // Drag: tambahkan closeAllDropdowns sebelum drag mulai (khusus halaman ini)
         dragHandle.addEventListener('pointerdown', (e) => {
@@ -946,15 +1106,21 @@ $__accessRows = $__user->accessBreakdown();
                         <div class="student-name"><span class="name">${esc(item.name)}</span></div>
                     </div>
                 </td>
-                <td class="center"><span class="badge ${roleBadgeClass(item.role)}">${esc(roleLabel(item.role))}</span></td>
-                <td class="center"><span class="plain-text">${esc(item.identifier || '—')}</span></td>
-                <td class="center"><span class="plain-text">${esc(item.email || '—')}</span></td>
+                <td class="center col-role" data-v="admin"><span class="badge ${roleBadgeClass(item.role)}">${esc(roleLabel(item.role))}</span></td>
+                <td class="center col-identifier"><span class="plain-text">${esc(item.identifier || '—')}</span></td>
+                <td class="center col-angkatan" data-v="mahasiswa"><span class="plain-text">${esc(item.angkatan || '—')}</span></td>
+                <td class="center col-status" data-v="mahasiswa dosen">${item.status
+                    ? `<span class="badge ${esc(item.status_badge || 'badge-neutral')}">${esc(item.status_label || item.status)}</span>`
+                    : '<span class="plain-text">—</span>'}</td>
+                <td class="center col-email"><span class="plain-text">${esc(item.email || '—')}</span></td>
                 <td class="center">
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-name="${esc(item.name)}" data-role="${item.role}"
                             data-identifier="${esc(item.identifier || '')}"
-                            data-email="${esc(item.email || '')}">
+                            data-email="${esc(item.email || '')}"
+                            data-angkatan="${esc(item.angkatan || '')}"
+                            data-status="${esc(item.status || '')}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -978,8 +1144,9 @@ $__accessRows = $__user->accessBreakdown();
             const finish = () => {
                 if (done) return;
                 done = true;
+                const v = viewOf(row.dataset.role);
                 row.remove();
-                totalCount = Math.max(0, totalCount - 1);
+                groupTotals[v] = Math.max(0, (groupTotals[v] || 0) - 1);
                 applyFilters();
             };
             row.addEventListener('transitionend', finish, { once: true });
@@ -1000,6 +1167,9 @@ $__accessRows = $__user->accessBreakdown();
                 email: document.getElementById('form-email').value,
                 password: document.getElementById('form-password').value,
             };
+            // Angkatan & status hanya dikirim untuk role yang memilikinya.
+            payload.angkatan = payload.role === 'mahasiswa' ? inputAngkatan.value.trim() : null;
+            payload.status = currentStatus(payload.role) || null;
 
             if (!payload.name) {
                 modalError.textContent = 'Nama lengkap wajib diisi.';
@@ -1014,6 +1184,12 @@ $__accessRows = $__user->accessBreakdown();
                 return;
             }
             payload.identifier = payload.identifier.trim();
+            if (payload.role === 'mahasiswa' && !/^\d{4}$/.test(payload.angkatan || '')) {
+                modalError.textContent = 'Angkatan wajib diisi dengan tahun 4 digit (contoh: 2022).';
+                modalError.hidden = false;
+                modalSubmitBtn.disabled = false;
+                return;
+            }
             if (!id && !payload.password) {
                 modalError.textContent = 'Password wajib diisi untuk pengguna baru.';
                 modalError.hidden = false;
@@ -1044,12 +1220,22 @@ $__accessRows = $__user->accessBreakdown();
                     return;
                 }
 
-                if (id) updateRow(result.data);
-                else {
+                const newView = viewOf(result.data.role);
+                if (id) {
+                    const oldRole = tableBody.querySelector(`tr[data-id="${id}"]`)?.dataset.role;
+                    updateRow(result.data);
+                    // Role berubah lintas kelompok: pindahkan hitungannya
+                    if (oldRole && viewOf(oldRole) !== newView) {
+                        groupTotals[viewOf(oldRole)] = Math.max(0, groupTotals[viewOf(oldRole)] - 1);
+                        groupTotals[newView]++;
+                    }
+                } else {
                     insertRow(result.data);
-                    totalCount++;
+                    groupTotals[newView]++;
                 }
-                applyFilters();
+                // Pindah ke tab tempat data itu berada supaya langsung terlihat
+                if (newView !== activeView) setView(newView);
+                else applyFilters();
                 closeModal();
                 Toast.show({
                     type: 'success',

@@ -3901,3 +3901,93 @@ body.is-resizing-sidebar * {
 @container sidebar (max-width: 100px) {
     .sidebar-close-btn { display: none; }
 }
+
+/* ==========================================================
+   VIEW TABS + KOLOM PER TAB
+   Tab pemilih kelompok data (Data Master Pengguna). Tab aktif ditandai
+   garis bawah lurus yang melebar dari tengah.
+   ========================================================== */
+.view-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.view-tabs::-webkit-scrollbar { display: none; }
+
+/* Sudut bawah kiri & kanan tidak melengkung: tab "menempel" di garis bawah */
+.view-tab {
+    position: relative;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: transparent;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+
+.view-tab:hover { background: var(--canvas); color: var(--ink); }
+
+.view-tab.is-active {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+/* Garis bawah tab aktif: melebar dari tengah */
+.view-tab::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--primary);
+    transform: scaleX(0);
+    transition: transform .25s ease;
+}
+
+.view-tab.is-active::after { transform: scaleX(1); }
+
+.view-tab:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* HP: 3 tab sama lebar */
+@media (max-width: 560px) {
+    .view-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    .view-tab {
+        padding: 10px 4px;
+        font-size: 13px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .view-tab,
+    .view-tab::after { transition: none; }
+}
+
+/* Kolom per tab: <table data-view="x"> hanya menampilkan kolom yang data-v-nya
+   memuat "x" (kolom tanpa data-v selalu tampil). */
+.data-table[data-view="mahasiswa"] [data-v]:not([data-v~="mahasiswa"]),
+.data-table[data-view="dosen"] [data-v]:not([data-v~="dosen"]),
+.data-table[data-view="admin"] [data-v]:not([data-v~="admin"]) {
+    display: none;
+}
+
+/* Judul kolom yang berganti per tab (teks dari atribut data-text) */
+.data-table th.th-dyn::before { content: attr(data-text); }

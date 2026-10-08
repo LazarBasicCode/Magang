@@ -63,7 +63,7 @@ class UserController extends Controller
                 'role'     => $data['role'],
             ]);
 
-            $this->syncIdentifier($user, $data['role'], $data['identifier'] ?? null);
+            $this->syncIdentifier($user, $data['role'], $data['identifier'] ?? null, $data);
 
             return $user->load('mahasiswa', 'dosen');
         });
@@ -155,7 +155,7 @@ class UserController extends Controller
                 );
             }
 
-            $this->syncIdentifier($user, $data['role'], $data['identifier'] ?? null);
+            $this->syncIdentifier($user, $data['role'], $data['identifier'] ?? null, $data);
 
             // Beri tahu pemilik akun kalau datanya diubah oleh orang lain
             // (admin/superadmin) — bukan oleh dirinya sendiri.
@@ -477,7 +477,26 @@ class UserController extends Controller
 
     private function validated(Request $request, bool $isUpdate, ?User $user = null): array
     {
+        // Angkatan & status hanya relevan (dan wajib) untuk role tertentu:
+        // - mahasiswa: angkatan + status akademik
+        // - dosen    : status dosen
+        // - admin/superadmin: tidak punya keduanya (diabaikan).
+        $role = $request->input('role');
+        $maxYear = now()->year + 1;
+
+        $angkatanRule = $role === 'mahasiswa'
+            ? ['required', 'integer', 'between:1990,' . $maxYear]
+            : ['nullable'];
+
+        $statusRule = match ($role) {
+            'mahasiswa' => ['required', Rule::in(array_keys(Mahasiswa::STATUS))],
+            'dosen'     => ['required', Rule::in(array_keys(Dosen::STATUS))],
+            default     => ['nullable'],
+        };
+
         return $request->validate([
+            'angkatan'   => $angkatanRule,
+            'status'     => $statusRule,
             'name'       => ['required', 'string', 'max:255'],
             'role'       => ['required', 'in:superadmin,admin,dosen,mahasiswa'],
             'password'   => [$isUpdate ? 'nullable' : 'required', 'string', 'min:6'],
@@ -494,6 +513,12 @@ class UserController extends Controller
                 'nullable', 'string', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($user?->id),
             ],
+        ], [
+            'angkatan.required' => 'Angkatan wajib diisi untuk mahasiswa.',
+            'angkatan.integer'  => 'Angkatan harus berupa angka tahun (contoh: 2022).',
+            'angkatan.between'  => 'Angkatan harus di antara 1990 dan ' . $maxYear . '.',
+            'status.required'   => 'Status wajib dipilih.',
+            'status.in'         => 'Status yang dipilih tidak valid.',
         ]);
     }
 
@@ -502,8 +527,12 @@ class UserController extends Controller
      * Kalau role berubah, baris relasi lama yang tidak relevan dihapus.
      * Catatan: users.nim_nidn ditulis terpisah di store()/update() karena
      * kolom itu ada langsung di tabel users, di luar tabel mahasiswa/dosen.
+     *
+     * $profile (opsional) berisi 'angkatan' & 'status' dari form. Kalau null
+     * (mis. unggah massal yang tidak membawa kolom itu), angkatan/status yang
+     * sudah tersimpan TIDAK ditimpa.
      */
-    private function syncIdentifier(User $user, string $role, ?string $identifier): void
+    private function syncIdentifier(User $user, string $role, ?string $identifier, ?array $profile = null): void
     {
         if ($role !== 'mahasiswa') {
             Mahasiswa::where('user_id', $user->id)->delete();
@@ -513,15 +542,18 @@ class UserController extends Controller
         }
 
         if ($role === 'mahasiswa') {
-            Mahasiswa::updateOrCreate(
-                ['user_id' => $user->id],
-                ['nim' => $identifier]
-            );
+            $attrs = ['nim' => $identifier];
+            if ($profile !== null) {
+                $attrs['angkatan'] = $profile['angkatan'] ?? null;
+                $attrs['status']   = $profile['status'] ?? 'aktif';
+            }
+            Mahasiswa::updateOrCreate(['user_id' => $user->id], $attrs);
         } elseif ($role === 'dosen') {
-            Dosen::updateOrCreate(
-                ['user_id' => $user->id],
-                ['nidn' => $identifier]
-            );
+            $attrs = ['nidn' => $identifier];
+            if ($profile !== null) {
+                $attrs['status'] = $profile['status'] ?? 'aktif';
+            }
+            Dosen::updateOrCreate(['user_id' => $user->id], $attrs);
         }
     }
 
@@ -530,12 +562,22 @@ class UserController extends Controller
      */
     private function format(User $user): array
     {
+        $profile = match ($user->role) {
+            'mahasiswa' => $user->mahasiswa,
+            'dosen'     => $user->dosen,
+            default     => null,
+        };
+
         return [
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'role'       => $user->role,
-            'identifier' => $user->nim_nidn,
-            'email'      => $user->email,
+            'id'           => $user->id,
+            'name'         => $user->name,
+            'role'         => $user->role,
+            'identifier'   => $user->nim_nidn,
+            'email'        => $user->email,
+            'angkatan'     => $user->role === 'mahasiswa' ? $user->mahasiswa?->angkatan : null,
+            'status'       => $profile?->status,
+            'status_label' => $profile?->statusLabel(),
+            'status_badge' => $profile?->statusBadge(),
         ];
     }
 }

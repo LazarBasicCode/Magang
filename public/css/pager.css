@@ -1,0 +1,30 @@
+/* Tombol halaman (public/js/pager.js) */
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pager[hidden] { display: none; }
+
+.pager-btn {
+    min-width: 34px; height: 34px; padding: 0 12px;
+    border: 1px solid var(--border, #dde1f1); border-radius: 8px;
+    background: var(--card, #fff); color: var(--ink, #12204a);
+    font: inherit; font-size: 13px; font-weight: 600; line-height: 1;
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s, color .15s;
+}
+.pager-btn:hover:not(:disabled):not(.is-current) {
+    background: var(--primary-soft, #e2e2fd); border-color: var(--primary, #5b5fef);
+}
+.pager-btn.is-current {
+    background: var(--primary, #5b5fef); border-color: var(--primary, #5b5fef);
+    color: #fff; cursor: default;
+}
+.pager-btn:disabled { opacity: .45; cursor: not-allowed; }
+.pager-btn:focus-visible { outline: 2px solid var(--primary, #5b5fef); outline-offset: 2px; }
+.pager-gap { min-width: 22px; text-align: center; color: var(--ink-muted, #6b7390); user-select: none; cursor: default; }
+.pager-nav { padding: 0 14px; }
+
+/* Tabel meredup sebentar selama halaman baru diambil dari server */
+#userTableBody.is-fetching { opacity: .55; pointer-events: none; transition: opacity .15s; }
+
+@media (max-width: 600px) {
+    .table-footer .pager { width: 100%; justify-content: center; }
+}

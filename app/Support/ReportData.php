@@ -32,7 +32,10 @@ class ReportData
         $ks  = KerjaSama::with('user')->get();
 
         // Daftar tahun yang tersedia untuk filter
-        $years = $kem->concat($lm)->concat($ld)->concat($rek)->concat($ks)
+        // toBase(): jangan biarkan koleksi Eloquent dipakai untuk menampung angka tahun. Kalau semua
+        // tabel kosong, map() mengembalikan koleksi Eloquent kosong, lalu push(int)+unique() memanggil
+        // getKey() pada angka -> "Call to a member function getKey() on int".
+        $years = $kem->toBase()->concat($lm)->concat($ld)->concat($rek)->concat($ks)
             ->map(fn ($i) => self::year($i))->filter()->push((int) now()->year)
             ->unique()->sortDesc()->values()->all();
 

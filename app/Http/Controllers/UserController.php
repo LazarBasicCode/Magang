@@ -21,13 +21,29 @@ class UserController extends Controller
 {
     use HandlesBulkData;
 
+    /** Jumlah baris per halaman di tabel Data Master. */
+    private const PER_PAGE = 50;
+
+    /** Kelompok tab: mahasiswa | dosen | admin (admin = admin + superadmin). */
+    private const VIEWS = ['mahasiswa', 'dosen', 'admin'];
+
     /**
-     * Halaman utama Data Master Pengguna (server-rendered untuk load pertama).
-     * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
+     * Halaman utama Data Master Pengguna.
+     * Paginasi, tab kelompok & pencarian diproses di SERVER (50 baris per halaman):
+     *   GET /data-master/users?view=mahasiswa|dosen|admin&q=kata&page=2
+     * Request AJAX (dari tombol halaman / tab / kotak cari) dibalas JSON berisi HTML baris + meta halaman.
+     * Aksi tambah/edit/hapus tetap lewat fetch(), lalu halaman aktif dimuat ulang.
      */
     public function index(Request $request)
     {
-        $users = User::with(['mahasiswa', 'dosen'])->latest()->paginate(10);
+        $view = in_array($request->query('view'), self::VIEWS, true) ? $request->query('view') : 'mahasiswa';
+        $term = trim((string) $request->query('q', ''));
+
+        $users = $this->listQuery($view, $term)->paginate(self::PER_PAGE)->withQueryString();
+        // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
+        if ($users->lastPage() > 0 && $users->currentPage() > $users->lastPage()) {
+            $users = $this->listQuery($view, $term)->paginate(self::PER_PAGE, ['*'], 'page', $users->lastPage())->withQueryString();
+        }
 
         $stats = [
             'total'     => User::count(),
@@ -36,7 +52,71 @@ class UserController extends Controller
             'admin'     => User::whereIn('role', ['admin', 'superadmin'])->count(),
         ];
 
-        return view('data-master-users', compact('users', 'stats'));
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'html'  => view('partials.user-rows', ['users' => $users])->render(),
+                'meta'  => [
+                    'page'     => $users->currentPage(),
+                    'last'     => max(1, $users->lastPage()),
+                    'total'    => $users->total(),
+                    'from'     => $users->firstItem() ?? 0,
+                    'to'       => $users->lastItem() ?? 0,
+                    'per_page' => $users->perPage(),
+                ],
+                'stats' => $stats,
+            ]);
+        }
+
+        return view('data-master-users', compact('users', 'stats', 'view', 'term'));
+    }
+
+    /** Query daftar pengguna untuk satu tab + kata kunci pencarian (terbaru dulu). */
+    private function listQuery(string $view, string $term)
+    {
+        $query = User::with(['mahasiswa', 'dosen']);
+
+        match ($view) {
+            'mahasiswa' => $query->where('role', 'mahasiswa'),
+            'dosen'     => $query->where('role', 'dosen'),
+            default     => $query->whereNotIn('role', ['mahasiswa', 'dosen']),
+        };
+
+        if ($term !== '') {
+            $like = '%' . addcslashes($term, '%_\\') . '%';
+            $statusKeys = $this->statusKeysMatching($term);
+
+            $query->where(function ($w) use ($like, $statusKeys) {
+                $w->where('name', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('nim_nidn', 'like', $like)
+                    ->orWhere('role', 'like', $like)
+                    ->orWhereRaw("CONCAT('USR-', LPAD(id, 3, '0')) LIKE ?", [$like])
+                    ->orWhereHas('mahasiswa', function ($m) use ($like, $statusKeys) {
+                        $m->where('nim', 'like', $like)->orWhere('angkatan', 'like', $like);
+                        if ($statusKeys) $m->orWhereIn('status', $statusKeys);
+                    })
+                    ->orWhereHas('dosen', function ($d) use ($like, $statusKeys) {
+                        $d->where('nidn', 'like', $like);
+                        if ($statusKeys) $d->orWhereIn('status', $statusKeys);
+                    });
+            });
+        }
+
+        return $query->latest()->orderByDesc('id');
+    }
+
+    /** Kunci status yang LABEL-nya cocok dengan kata kunci (pencarian status memakai label yang tampil di tabel). */
+    private function statusKeysMatching(string $term): array
+    {
+        $keys = [];
+        foreach ([Mahasiswa::STATUS, Dosen::STATUS] as $map) {
+            foreach ($map as $key => $label) {
+                if (mb_stripos($label, $term) !== false || mb_stripos((string) $key, $term) !== false) {
+                    $keys[] = $key;
+                }
+            }
+        }
+        return array_values(array_unique($keys));
     }
 
     public function store(Request $request)

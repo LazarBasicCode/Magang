@@ -24,7 +24,14 @@ $angkatan = $item->role === 'mahasiswa' ? optional($item->mahasiswa)->angkatan :
         <div class="student-cell">
             <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
             <div class="student-name">
-                <span class="name">{{ $item->name }}</span>
+                <div class="name-line">
+                    <span class="name">{{ $item->name }}</span>
+                    @unless($item->has_logged_in ?? true)
+                        <span class="never-login-badge" title="Belum pernah login" aria-label="Belum pernah login" role="img">
+                            <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+                        </span>
+                    @endunless
+                </div>
             </div>
         </div>
     </td>

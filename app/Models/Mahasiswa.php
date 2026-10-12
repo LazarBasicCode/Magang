@@ -45,6 +45,12 @@ class Mahasiswa extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** Mahasiswa yang baru berupa NIM (mis. dari impor LPPM) dan belum punya akun. */
+    public function scopeTanpaAkun($query)
+    {
+        return $query->whereNull('user_id');
+    }
+
     public function kemahasiswaan()
     {
         return $this->hasMany(Kemahasiswaan::class);

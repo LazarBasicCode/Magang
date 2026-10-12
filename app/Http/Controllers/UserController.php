@@ -8,14 +8,17 @@ use App\Models\Dosen;
 use App\Models\UserNotification;
 use App\Http\Controllers\Concerns\HandlesBulkData;
 use App\Support\Csv;
+use App\Support\DefaultPassword;
 use App\Support\SessionRevoker;
 use App\Support\Xlsx;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -151,6 +154,231 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($user),
+        ]);
+    }
+
+    // ================================================================
+    //  Tambah Mahasiswa / Tambah Dosen (NIM/NIDN dari impor LPPM yang belum punya akun)
+    // ================================================================
+
+    /**
+     * Daftar mahasiswa/dosen yang baru berupa NIM/NIDN (belum punya akun).
+     * GET /data-master/users/calon/{type}   type = mahasiswa | dosen
+     */
+    public function calon(string $type): JsonResponse
+    {
+        abort_unless(in_array($type, ['mahasiswa', 'dosen'], true), 404);
+
+        // Nama diambil otomatis dari kolom "penulis" data LPPM milik NIM/NIDN itu (nilai yang paling sering muncul).
+        if ($type === 'mahasiswa') {
+            $rows = Mahasiswa::tanpaAkun()
+                ->with('lppmMahasiswa:id,mahasiswa_id,penulis')
+                ->withCount(['lppmMahasiswa', 'kemahasiswaan'])
+                ->orderBy('nim')->get()
+                ->map(fn ($m) => [
+                    'id'         => $m->id,
+                    'identifier' => $m->nim,
+                    'angkatan'   => $m->angkatan,
+                    'refs'       => $m->lppm_mahasiswa_count + $m->kemahasiswaan_count,
+                ] + $this->suggestName($m->lppmMahasiswa->pluck('penulis')));
+        } else {
+            $rows = Dosen::tanpaAkun()
+                ->with('lppm:id,dosen_id,penulis')
+                ->withCount('lppm')
+                ->orderBy('nidn')->get()
+                ->map(fn ($d) => [
+                    'id'         => $d->id,
+                    'identifier' => $d->nidn,
+                    'angkatan'   => null,
+                    'refs'       => $d->lppm_count,
+                ] + $this->suggestName($d->lppm->pluck('penulis')));
+        }
+
+        return response()->json(['success' => true, 'data' => $rows->values()]);
+    }
+
+    /**
+     * Tebak nama dari kolom "penulis" data LPPM.
+     * - satu nama jelas        -> 'name' terisi (otomatis dipakai di tabel)
+     * - beberapa penulis ("A, B", "A & B", "A dan B") -> tidak ditebak (siapa pemilik NIM-nya
+     *   tidak jelas); nilainya dikirim sebagai 'hint' agar admin memilih sendiri
+     * - kolom kosong           -> keduanya null, admin mengisi manual
+     *
+     * @param  \Illuminate\Support\Collection<int, string|null>  $penulis
+     * @return array{name: ?string, hint: ?string}
+     */
+    private function suggestName($penulis): array
+    {
+        $top = $penulis
+            ->map(fn ($p) => trim(preg_replace('/\s+/u', ' ', (string) $p)))
+            ->filter()
+            ->countBy()
+            ->sortDesc()
+            ->keys()
+            ->first();
+
+        if ($top === null) {
+            return ['name' => null, 'hint' => null];
+        }
+
+        $multi = preg_match('/[,;\/&]|\s(?:dan|and)\s/iu', $top) === 1;
+
+        return $multi
+            ? ['name' => null, 'hint' => $top]
+            : ['name' => $top, 'hint' => null];
+    }
+
+    /**
+     * Simpan akun mahasiswa/dosen sekaligus: isian manual (opsional) + baris NIM yang dipilih dari tabel.
+     * POST /data-master/users/people
+     *   role: mahasiswa|dosen
+     *   manual:   {name, identifier, email?, angkatan?, status?, password?}   (opsional)
+     *   selected: [{id, name, angkatan?}, ...]                                 (opsional)
+     * Role dipaksa sesuai tombol (tidak bisa diubah dari form). Password awal = nama depan + angkatan
+     * (tanpa angkatan = tahun terbaru). Semua-atau-tidak-sama-sekali (satu transaksi).
+     */
+    public function storePeople(Request $request): JsonResponse
+    {
+        $role    = $request->input('role');
+        $maxYear = now()->year + 1;
+
+        $request->validate([
+            'role'                => ['required', 'in:mahasiswa,dosen'],
+            'manual'              => ['nullable', 'array'],
+            'selected'            => ['nullable', 'array', 'max:1000'],
+            'selected.*.id'       => ['required', 'integer'],
+            'selected.*.name'     => ['required', 'string', 'max:255'],
+            'selected.*.angkatan' => ['nullable', 'integer', 'between:1990,' . $maxYear],
+        ], [
+            'selected.*.name.required'     => 'Nama wajib diisi untuk setiap baris yang dipilih.',
+            'selected.*.angkatan.integer'  => 'Angkatan pada tabel harus berupa tahun 4 digit (contoh: 2022).',
+            'selected.*.angkatan.between'  => 'Angkatan pada tabel harus di antara 1990 dan ' . $maxYear . '.',
+        ]);
+
+        $manual = collect($request->input('manual', []))->map(fn ($v) => is_string($v) ? trim($v) : $v);
+        $hasManual = filled($manual->get('name')) || filled($manual->get('identifier'));
+        $selected = collect($request->input('selected', []));
+
+        if (!$hasManual && $selected->isEmpty()) {
+            throw ValidationException::withMessages([
+                'selected' => ['Isi data manual atau pilih minimal satu NIM/NIDN dari tabel.'],
+            ]);
+        }
+
+        // ---- Validasi isian manual ----
+        $idLabel = $role === 'mahasiswa' ? 'NIM' : 'NIDN';
+        if ($hasManual) {
+            $table = $role === 'mahasiswa' ? 'mahasiswa' : 'dosen';
+            $col   = $role === 'mahasiswa' ? 'nim' : 'nidn';
+
+            Validator::make(['manual' => $manual->all()], [
+                'manual.name'       => ['required', 'string', 'max:255'],
+                'manual.identifier' => [
+                    'required', 'string', 'max:50',
+                    Rule::unique('users', 'nim_nidn'),
+                    // NIM yang sudah ada TANPA akun boleh dipakai (akan disambungkan), selain itu harus unik.
+                    Rule::unique($table, $col)->whereNotNull('user_id'),
+                ],
+                'manual.email'      => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+                'manual.angkatan'   => ['nullable', 'integer', 'between:1990,' . $maxYear],
+                'manual.status'     => ['nullable', Rule::in(array_keys($role === 'mahasiswa' ? Mahasiswa::STATUS : Dosen::STATUS))],
+                'manual.password'   => ['nullable', 'string', 'min:6'],
+            ], [
+                'manual.name.required'       => 'Nama lengkap wajib diisi.',
+                'manual.identifier.required' => "{$idLabel} wajib diisi karena dipakai untuk login.",
+                'manual.identifier.unique'   => "{$idLabel} ini sudah dipakai akun lain.",
+                'manual.email.unique'        => 'Email ini sudah dipakai akun lain.',
+                'manual.angkatan.integer'    => 'Angkatan harus berupa tahun 4 digit (contoh: 2022).',
+                'manual.angkatan.between'    => 'Angkatan harus di antara 1990 dan ' . $maxYear . '.',
+                'manual.password.min'        => 'Password minimal 6 karakter.',
+            ])->validate();
+        }
+
+        // ---- Cek baris terpilih: harus benar-benar masih "tanpa akun" & NIM-nya belum dipakai akun lain ----
+        $model = $role === 'mahasiswa' ? Mahasiswa::class : Dosen::class;
+        $col   = $role === 'mahasiswa' ? 'nim' : 'nidn';
+        $calon = $model::tanpaAkun()->whereIn('id', $selected->pluck('id'))->get()->keyBy('id');
+
+        $problems = [];
+        foreach ($selected as $row) {
+            $c = $calon->get((int) $row['id']);
+            if (!$c) {
+                $problems[] = "Data #{$row['id']} sudah tidak tersedia (mungkin baru saja dibuatkan akun).";
+            } elseif (User::where('nim_nidn', $c->{$col})->exists()) {
+                $problems[] = "{$idLabel} {$c->{$col}} sudah dipakai akun lain.";
+            } elseif ($hasManual && (string) $manual->get('identifier') === (string) $c->{$col}) {
+                $problems[] = "{$idLabel} {$c->{$col}} ada di isian manual dan tabel sekaligus.";
+            }
+        }
+        if ($problems) {
+            return response()->json(['success' => false, 'message' => implode(' ', array_slice($problems, 0, 3))], 422);
+        }
+
+        // ---- Simpan ----
+        try {
+            $created = DB::transaction(function () use ($role, $manual, $hasManual, $selected, $model, $col) {
+                $count = 0;
+
+                if ($hasManual) {
+                    $angkatan = $role === 'mahasiswa' ? ((int) $manual->get('angkatan') ?: now()->year) : null;
+                    $password = filled($manual->get('password'))
+                        ? $manual->get('password')
+                        : DefaultPassword::make($manual->get('name'), $angkatan);
+
+                    $user = User::create([
+                        'name'     => $manual->get('name'),
+                        'nim_nidn' => $manual->get('identifier'),
+                        'email'    => $manual->get('email') ?: null,
+                        'password' => Hash::make($password),
+                        'role'     => $role,
+                    ]);
+                    $this->syncIdentifier($user, $role, $manual->get('identifier'), [
+                        'angkatan' => $angkatan,
+                        'status'   => $manual->get('status') ?: 'aktif',
+                    ]);
+                    $count++;
+                }
+
+                foreach ($selected as $row) {
+                    $c = $model::tanpaAkun()->lockForUpdate()->findOrFail((int) $row['id']);
+
+                    $angkatan = $role === 'mahasiswa'
+                        ? ((int) ($row['angkatan'] ?? 0) ?: ((int) $c->angkatan ?: now()->year))
+                        : null;
+
+                    $user = User::create([
+                        'name'     => trim($row['name']),
+                        'nim_nidn' => $c->{$col},
+                        'password' => Hash::make(DefaultPassword::make($row['name'], $angkatan)),
+                        'role'     => $role,
+                    ]);
+
+                    $c->user_id = $user->id;
+                    if ($role === 'mahasiswa') {
+                        $c->angkatan = $angkatan;
+                    }
+                    $c->save();
+                    $count++;
+                }
+
+                return $count;
+            });
+        } catch (QueryException $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => "Gagal menyimpan: ada {$idLabel} yang bentrok dengan data lain. Muat ulang daftar lalu coba lagi.",
+            ], 422);
+        }
+
+        $label = $role === 'mahasiswa' ? 'mahasiswa' : 'dosen';
+
+        return response()->json([
+            'success' => true,
+            'role'    => $role,
+            'created' => $created,
+            'message' => "{$created} akun {$label} berhasil ditambahkan.",
         ]);
     }
 
@@ -689,13 +917,24 @@ class UserController extends Controller
                 $attrs['angkatan'] = $profile['angkatan'] ?? null;
                 $attrs['status']   = $profile['status'] ?? 'aktif';
             }
-            Mahasiswa::updateOrCreate(['user_id' => $user->id], $attrs);
+            $calon = Mahasiswa::tanpaAkun()->where('nim', $identifier)->first();
+            if ($calon && !Mahasiswa::where('user_id', $user->id)->exists()) {
+                // NIM ini sudah ada tanpa akun (mis. dari impor LPPM): sambungkan, jangan buat ganda.
+                $calon->fill(['user_id' => $user->id] + $attrs)->save();
+            } else {
+                Mahasiswa::updateOrCreate(['user_id' => $user->id], $attrs);
+            }
         } elseif ($role === 'dosen') {
             $attrs = ['nidn' => $identifier];
             if ($profile !== null) {
                 $attrs['status'] = $profile['status'] ?? 'aktif';
             }
-            Dosen::updateOrCreate(['user_id' => $user->id], $attrs);
+            $calon = Dosen::tanpaAkun()->where('nidn', $identifier)->first();
+            if ($calon && !Dosen::where('user_id', $user->id)->exists()) {
+                $calon->fill(['user_id' => $user->id] + $attrs)->save();
+            } else {
+                Dosen::updateOrCreate(['user_id' => $user->id], $attrs);
+            }
         }
     }
 

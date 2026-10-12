@@ -60,6 +60,12 @@ class User extends Authenticatable
     }
 
     // Relasi ke baris Hak Akses milik user ini (satu baris per menu)
+    /** Jejak percobaan login akun ini (berhasil/gagal/terkunci). */
+    public function loginAttempts()
+    {
+        return $this->hasMany(LoginAttempt::class);
+    }
+
     public function hakAkses()
     {
         return $this->hasMany(HakAkses::class);

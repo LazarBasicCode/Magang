@@ -12,6 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/add-people.css') }}?v={{ @filemtime(public_path('css/add-people.css')) }}">
     <script>
         (function() {
             try {
@@ -278,6 +279,14 @@ $__accessRows = $__user->accessBreakdown();
                         $bulkWrite = $bulkRole && $bulkLevel === 'penuh';
                     @endphp
                     <div class="title-actions">
+                        <button type="button" class="ap-open-btn" data-ap-open="mahasiswa">
+                            <span class="material-symbols-outlined">school</span>
+                            <span>Tambah Mahasiswa</span>
+                        </button>
+                        <button type="button" class="ap-open-btn" data-ap-open="dosen">
+                            <span class="material-symbols-outlined">badge</span>
+                            <span>Tambah Dosen</span>
+                        </button>
                         <button type="button" class="btn-primary" id="btnTambahUser">
                             <span class="material-symbols-outlined">add</span>
                             <span>Tambah Pengguna</span>
@@ -546,6 +555,88 @@ $__accessRows = $__user->accessBreakdown();
         </form>
     </div>
 
+    <!-- ============ MODAL: Tambah Mahasiswa / Tambah Dosen (role dikunci) ============ -->
+    <div class="modal-backdrop" id="apBackdrop"></div>
+    <div class="modal-card ap-card" id="apModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="apTitle">
+        <div class="ap-head">
+            <div>
+                <h3 class="modal-title" id="apTitle">Tambah Mahasiswa</h3>
+                <p class="modal-subtitle" id="apSubtitle">Isi manual, atau pilih NIM dari data LPPM yang belum punya akun</p>
+            </div>
+            <button type="button" class="modal-close-btn" id="apCloseBtn" aria-label="Tutup">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form id="apForm" class="ap-body" novalidate>
+            <section class="ap-manual">
+                <p class="ap-section-title">Isi manual <span>(opsional jika memilih dari tabel)</span></p>
+                <div class="ap-grid">
+                    <div class="field">
+                        <label class="field-label" for="ap-name">Nama Lengkap</label>
+                        <div class="field-control"><input id="ap-name" type="text" placeholder="Contoh: Budi Santoso" autocomplete="off"></div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="ap-identifier" id="apIdLabel">NIM</label>
+                        <div class="field-control"><input id="ap-identifier" type="text" placeholder="Contoh: 222011005" autocomplete="off"></div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="ap-email">Email</label>
+                        <div class="field-control"><input id="ap-email" type="email" placeholder="Opsional" autocomplete="off"></div>
+                    </div>
+                    <div class="field" id="apFieldAngkatan">
+                        <label class="field-label" for="ap-angkatan">Angkatan</label>
+                        <div class="field-control"><input id="ap-angkatan" type="number" min="1990" max="2100" placeholder="Kosong = tahun terbaru"></div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="ap-status">Status</label>
+                        <div class="field-control"><select id="ap-status" class="ap-select"></select></div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="ap-password">Password</label>
+                        <div class="field-control"><input id="ap-password" type="text" placeholder="Kosong = nama depan + angkatan" autocomplete="off"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="ap-pending">
+                <div class="ap-pending-head">
+                    <p class="ap-section-title" id="apPendingTitle">NIM dari LPPM yang belum punya akun</p>
+                    <label class="ap-search">
+                        <span class="material-symbols-outlined">search</span>
+                        <input id="apSearch" type="text" placeholder="Cari NIM / nama" autocomplete="off">
+                    </label>
+                </div>
+                <div class="ap-table-wrap" id="apTableWrap">
+                    <table class="ap-table">
+                        <thead>
+                            <tr>
+                                <th class="ap-col-check"><input type="checkbox" id="apCheckAll" aria-label="Pilih semua yang tampil"></th>
+                                <th id="apThId">NIM</th>
+                                <th>Nama lengkap</th>
+                                <th class="ap-col-angkatan">Angkatan</th>
+                                <th class="ap-col-refs">Dipakai di</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apRows"></tbody>
+                    </table>
+                    <div class="ap-empty" id="apEmpty" hidden></div>
+                </div>
+                <p class="ap-note" id="apNote"></p>
+            </section>
+
+            <div class="modal-error" id="apError" hidden></div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" id="apCancelBtn">Batal</button>
+                <button type="submit" class="btn-apply" id="apSubmitBtn">
+                    <span class="material-symbols-outlined">save</span>
+                    <span id="apSubmitLabel">Simpan</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
     @if($showBulk && $bulkWrite)
         @include('partials.bulk-import-modal', [
             'bulkLabel'    => 'Data Master',
@@ -557,6 +648,8 @@ $__accessRows = $__user->accessBreakdown();
     <script id="dmInit" type="application/json">{!! json_encode(['view' => $view, 'q' => $term, 'page' => $users->currentPage(), 'last' => max(1, $users->lastPage())], JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
+    <script id="apInit" type="application/json">{!! json_encode(['mahasiswa' => \App\Models\Mahasiswa::STATUS, 'dosen' => \App\Models\Dosen::STATUS], JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+    <script src="{{ asset('js/add-people.js') }}?v={{ @filemtime(public_path('js/add-people.js')) }}"></script>
     <script>
         // ================================================================
         // Bagian ini KHUSUS halaman Data Master Pengguna:
@@ -982,6 +1075,16 @@ $__accessRows = $__user->accessBreakdown();
         function roleLabel(role) {
             return role ? role.charAt(0).toUpperCase() + role.slice(1) : '-';
         }
+
+        // Setelah Tambah Mahasiswa / Tambah Dosen (add-people.js) berhasil: pindah ke tab-nya & muat ulang dari halaman 1.
+        window.addEventListener('dm:people-added', (e) => {
+            const newView = viewOf(e.detail.role);
+            if (newView !== activeView) {
+                activeView = newView;
+                syncViewUI();
+            }
+            loadPage(1);
+        });
 
         // Baris tabel dirender SERVER (partials/user-rows.blade.php). Setelah tambah / ubah / hapus,
         // halaman aktif cukup dimuat ulang lewat loadPage() sehingga tabel, total, dan tombol halaman selalu sinkron.

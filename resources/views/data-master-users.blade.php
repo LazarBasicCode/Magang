@@ -379,7 +379,7 @@ $__accessRows = $__user->accessBreakdown();
                         </div> -->
                     </div>
 
-                    <div class="table-scroll">
+                    <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table" id="userTable" data-view="{{ $view }}">
                             <thead>
                                 <tr>
@@ -789,6 +789,7 @@ $__accessRows = $__user->accessBreakdown();
 
                 tableBody.querySelectorAll('tr[data-id]').forEach((r) => r.remove());
                 tableBody.insertAdjacentHTML('afterbegin', data.html);
+                document.getElementById('tableScroll')?.scrollTo({ top: 0 }); // kembali ke baris teratas tiap ganti halaman/tab/cari
 
                 currentPage = data.meta.page;
                 lastPage = data.meta.last;

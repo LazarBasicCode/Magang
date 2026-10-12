@@ -1486,6 +1486,76 @@ table.data-table {
     .data-table td[colspan]::before { content: none; }
 }
 
+/* ----------------------------------------------------------
+   TABEL SCROLL INTERNAL (opt-in: tambahkan class "is-scrollable"
+   di <div class="table-scroll">). Tabel dibatasi tingginya,
+   baris di-scroll di dalam kartu, header tetap menempel di atas,
+   dan footer/pagination tetap terlihat tanpa scroll halaman jauh.
+   Halaman lain yang memakai .table-scroll TIDAK terpengaruh.
+   ---------------------------------------------------------- */
+.table-scroll.is-scrollable {
+    max-height: clamp(360px, 64vh, 640px);
+    overflow-y: auto;
+    overflow-x: auto;
+    scrollbar-gutter: stable;                    /* ruang scrollbar dicadangkan, tidak menimpa kolom Aksi */
+}
+
+.table-scroll.is-scrollable::-webkit-scrollbar { width: 10px; height: 10px; }
+.table-scroll.is-scrollable::-webkit-scrollbar-thumb { border: 2px solid var(--card); }
+/* Track scrollbar dimulai DI BAWAH header (tinggi header = --th-h) */
+.table-scroll.is-scrollable { --th-h: 44px; background: linear-gradient(var(--border-strong), var(--border-strong)) 0 calc(var(--th-h) - 1px) / 100% 1px no-repeat, linear-gradient(var(--canvas), var(--canvas)) top / 100% var(--th-h) no-repeat, var(--card); }
+.table-scroll.is-scrollable .data-table thead th { height: var(--th-h); padding-top: 0; padding-bottom: 0; box-sizing: border-box; }
+.table-scroll.is-scrollable::-webkit-scrollbar-track { background: transparent; }
+/* Panah atas/bawah/kiri/kanan. Tombol atas dibuat setinggi header (44px) + 16px:
+   bagian atasnya berwarna header, panahnya duduk di bawah header. */
+.table-scroll.is-scrollable::-webkit-scrollbar-button { display: none; }
+.table-scroll.is-scrollable::-webkit-scrollbar-button:vertical:start:decrement {
+    display: block; width: 10px; height: 60px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 7l4-4 4 4z' fill='%239aa1b5'/%3E%3C/svg%3E") center 47px / 10px 10px no-repeat,   /* 44px header + 3px = jarak sama dengan panah bawah (16px - 10px) / 2 */
+                linear-gradient(var(--border-strong), var(--border-strong)) 0 43px / 100% 1px no-repeat,
+                linear-gradient(var(--canvas), var(--canvas)) top / 100% 44px no-repeat,
+                var(--card);
+}
+.table-scroll.is-scrollable::-webkit-scrollbar-button:vertical:end:increment {
+    display: block; width: 10px; height: 16px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 3l4 4 4-4z' fill='%239aa1b5'/%3E%3C/svg%3E") center / 10px 10px no-repeat, var(--card);
+}
+.table-scroll.is-scrollable::-webkit-scrollbar-button:horizontal:start:decrement {
+    display: block; width: 16px; height: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M7 1L3 5l4 4z' fill='%239aa1b5'/%3E%3C/svg%3E") center / 10px 10px no-repeat, var(--card);
+}
+.table-scroll.is-scrollable::-webkit-scrollbar-button:horizontal:end:increment {
+    display: block; width: 16px; height: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 1l4 4-4 4z' fill='%239aa1b5'/%3E%3C/svg%3E") center / 10px 10px no-repeat, var(--card);
+}
+/* Penting: scrollbar-width/color mematikan style ::-webkit-scrollbar di Chrome baru, jadi hanya dipakai untuk Firefox */
+@supports not selector(::-webkit-scrollbar) {
+    .table-scroll.is-scrollable { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+}
+.table-scroll.is-scrollable::-webkit-scrollbar-corner { background: var(--card); }
+
+/* Garis bawah header ikut menempel (border <tr> pada border-collapse ikut ter-scroll) */
+.table-scroll.is-scrollable .data-table thead tr { border-bottom: 0; }
+
+.table-scroll.is-scrollable .data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--canvas);
+    box-shadow: inset 0 -1px 0 var(--border-strong);
+}
+
+@media (max-width: 640px) {
+    /* Mode kartu: header disembunyikan, jadi sticky tidak dipakai */
+    .table-scroll.is-scrollable { max-height: 70vh; overflow-x: visible; --th-h: 0px; background: var(--card); scrollbar-gutter: auto; }
+    .table-scroll.is-scrollable::-webkit-scrollbar-button:vertical:start:decrement,
+    .table-scroll.is-scrollable::-webkit-scrollbar-button:vertical:end:increment { display: none; }
+    .table-scroll.is-scrollable .data-table thead th { height: auto; }
+    .table-scroll.is-scrollable .data-table tbody { padding-bottom: 0; padding-right: 0; }
+    .table-scroll.is-scrollable .data-table tbody tr:last-child { margin-bottom: 0; }
+    .table-scroll.is-scrollable .data-table thead th { position: static; box-shadow: none; }
+}
+
 .nim-code {
     font-weight: 700;
     color: var(--primary);
@@ -3895,6 +3965,11 @@ body.is-resizing-sidebar * {
 /* Layar sentuh tidak punya hover: pegangan dibuat selalu terlihat (samar) */
 @media (hover: none) {
     .sidebar-resizer { opacity: .75; }
+}
+
+/* Mode mobile (≤640px): pegangan geser sidebar disembunyikan */
+@media (max-width: 640px) {
+    .sidebar-resizer { display: none !important; }
 }
 
 /* Mode ikon-saja di drawer: tombol X disembunyikan (tutup lewat overlay) */

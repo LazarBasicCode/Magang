@@ -375,7 +375,7 @@
                         </div>
                     </div>
 
-                    <div class="table-scroll">
+                    <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -1042,23 +1042,6 @@
     <script src="{{ asset('js/toast.js') }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
-    <script>
-        // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
-        // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.
-        (function() {
-            const wrap = document.getElementById('pageWrap');
-            if (!wrap) return;
-            const MIN_MS = 350;
-            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
-            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
-                setTimeout(() => {
-                    wrap.classList.remove('is-loading');
-                    wrap.classList.add('is-loaded');
-                    wrap.removeAttribute('aria-busy');
-                }, Math.max(0, MIN_MS - performance.now()));
-            });
-        })();
-    </script>
 </body>
 
 </html>

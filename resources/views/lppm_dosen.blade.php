@@ -375,7 +375,7 @@
                         @include('partials.row-select-bar')
                     @endif
 
-                    <div class="table-scroll">
+                    <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table"
                             @if($showBulk)
                                 data-selectable="lppm-dosen"
@@ -918,23 +918,6 @@
     @if($showBulk && $bulkWrite)
         <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
-    <script>
-        // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 2000 ms
-        // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.
-        (function() {
-            const wrap = document.getElementById('pageWrap');
-            if (!wrap) return;
-            const MIN_MS = 500;
-            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
-            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
-                setTimeout(() => {
-                    wrap.classList.remove('is-loading');
-                    wrap.classList.add('is-loaded');
-                    wrap.removeAttribute('aria-busy');
-                }, Math.max(0, MIN_MS - performance.now()));
-            });
-        })();
-    </script>
 </body>
 
 </html>

@@ -209,6 +209,18 @@ class LppmDosenController extends Controller
         return $owner?->user_id;
     }
 
+    /** @var array<string, Dosen> Calon dosen baru (NIM/NIDN belum punya akun) selama satu unggahan. */
+    private array $newOwners = [];
+
+    /**
+     * NIM/NIDN yang belum terdaftar TIDAK ditolak: disimpan sebagai dosen tanpa akun,
+     * lalu dilengkapi lewat Data Master -> Tambah Dosen.
+     */
+    protected function bulkNewOwner(string $id): ?object
+    {
+        return $this->newOwners[$id] ??= new Dosen(['nidn' => $id]);
+    }
+
     protected function bulkOwnerFinder(): \Closure
     {
         return $this->bulkMakeFinder(Dosen::all(), 'nidn');
@@ -327,7 +339,7 @@ class LppmDosenController extends Controller
             ];
 
             // Pemilik sudah ditangani pesan di bulkResolveTarget; hindari pesan ganda.
-            [$messages] = $this->bulkValidate($payload, $this->rules(), $owner ? [] : [$this->bulkOwnerKey()]);
+            [$messages] = $this->bulkValidate($payload, $this->rules(), $this->bulkOwnerIsSaved($owner) ? [] : [$this->bulkOwnerKey()]);
             $rowErrors = array_merge($rowErrors, $messages);
 
             if ($rowErrors) {
@@ -345,7 +357,7 @@ class LppmDosenController extends Controller
         $result = $this->bulkSave(LppmDosen::class, $plan);
         $this->bulkNotifyOwners($request, $result['perOwner'], 'publikasi');
 
-        return $this->bulkSuccess($result['created'], $result['updated'], $result['unchanged']);
+        return $this->bulkSuccess($result['created'], $result['updated'], $result['unchanged'], $result['newOwners'], 'Dosen');
     }
 
     private function notifyPublikasi(Request $request, LppmDosen $item, string $aksi): void

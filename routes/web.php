@@ -150,6 +150,10 @@ Route::middleware(['auth'])->group(function () {
     });
     Route::middleware('menu.access:data_master,biasa')->group(function () {
         Route::post('/data-master/users', [UserController::class, 'store'])->name('data-master.users.store');
+        // Tambah Mahasiswa / Tambah Dosen: NIM/NIDN dari impor LPPM yang belum punya akun.
+        Route::get('/data-master/users/calon/{type}', [UserController::class, 'calon'])
+            ->whereIn('type', ['mahasiswa', 'dosen'])->name('data-master.users.calon');
+        Route::post('/data-master/users/people', [UserController::class, 'storePeople'])->name('data-master.users.people');
         Route::put('/data-master/users/{user}', [UserController::class, 'update'])->name('data-master.users.update');
         Route::delete('/data-master/users/{user}', [UserController::class, 'destroy'])->name('data-master.users.destroy');
     });

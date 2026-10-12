@@ -43,6 +43,12 @@ class Dosen extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** Dosen yang baru berupa NIDN (mis. dari impor LPPM) dan belum punya akun. */
+    public function scopeTanpaAkun($query)
+    {
+        return $query->whereNull('user_id');
+    }
+
     public function lppm()
     {
         return $this->hasMany(LppmDosen::class, 'dosen_id');

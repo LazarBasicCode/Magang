@@ -477,6 +477,10 @@ trait HandlesBulkData
 
         $nim = trim((string) ($d[$idCol] ?? ''));
         $owner = $nim !== '' ? $findOwner($nim) : null;
+        // Menu tertentu (LPPM) boleh memakai NIM/NIDN yang belum punya akun: dibuatkan "calon" (belum disimpan).
+        if ($nim !== '' && !$owner) {
+            $owner = $this->bulkNewOwner($nim);
+        }
         if ($nim !== '' && !$owner) {
             $errors[] = "{$idLabel} \"{$nim}\" tidak terdaftar sebagai {$this->bulkOwnerLabel()}.";
         }
@@ -490,6 +494,22 @@ trait HandlesBulkData
         }
 
         return [$existing, $owner, $errors];
+    }
+
+    /**
+     * Pemilik BARU (belum tersimpan) untuk NIM/NIDN yang belum terdaftar. Default: tidak boleh (null)
+     * sehingga baris ditolak. Controller yang mengizinkan menimpa method ini.
+     * Objek yang sama harus dikembalikan untuk NIM yang sama dalam satu unggahan.
+     */
+    protected function bulkNewOwner(string $id): ?object
+    {
+        return null;
+    }
+
+    /** Pemilik sudah tersimpan di database (bukan calon baru)? */
+    protected function bulkOwnerIsSaved(?object $owner): bool
+    {
+        return $owner !== null && ($owner->exists ?? true);
     }
 
     /** Tahun dari CSV: "2026" -> 2026 (angka), selain itu dibiarkan agar ditolak validator. */
@@ -581,11 +601,24 @@ trait HandlesBulkData
     {
         $created = $updated = $unchanged = 0;
         $perOwner = [];
+        $newOwners = 0;
 
-        DB::transaction(function () use ($modelClass, $plan, &$created, &$updated, &$unchanged, &$perOwner) {
+        DB::transaction(function () use ($modelClass, $plan, &$created, &$updated, &$unchanged, &$perOwner, &$newOwners) {
             foreach ($plan as $p) {
                 $payload = $p['payload'];
-                $userId = $this->bulkOwnerUserId($p['owner'] ?? null);
+
+                // Pemilik calon baru (NIM belum punya akun): simpan dulu, lalu pakai id-nya.
+                // Objek yang sama dipakai ulang antar-baris, jadi cukup disimpan sekali.
+                $owner = $p['owner'] ?? null;
+                if ($owner && !($owner->exists ?? true)) {
+                    $owner->save();
+                    $newOwners++;
+                }
+                if (!$p['existing'] && $owner) {
+                    $payload[$this->bulkOwnerKey()] = $owner->id;
+                }
+
+                $userId = $this->bulkOwnerUserId($owner);
 
                 if ($p['existing']) {
                     // Pemilik & tipe tidak diubah saat edit.
@@ -610,7 +643,7 @@ trait HandlesBulkData
             }
         });
 
-        return compact('created', 'updated', 'unchanged', 'perOwner');
+        return compact('created', 'updated', 'unchanged', 'perOwner', 'newOwners');
     }
 
     /** Satu notifikasi ringkas per pemilik data (bukan satu per baris). */
@@ -633,14 +666,20 @@ trait HandlesBulkData
         }
     }
 
-    protected function bulkSuccess(int $created, int $updated, int $unchanged): JsonResponse
+    protected function bulkSuccess(int $created, int $updated, int $unchanged, int $newOwners = 0, string $newOwnerLabel = ''): JsonResponse
     {
+        $message = "Berhasil: {$created} data ditambahkan, {$updated} diperbarui, {$unchanged} tidak berubah.";
+        if ($newOwners > 0) {
+            $message .= " {$newOwners} {$newOwnerLabel} baru belum punya akun — lengkapi lewat Data Master (Tambah {$newOwnerLabel}).";
+        }
+
         return response()->json([
-            'success'   => true,
-            'created'   => $created,
-            'updated'   => $updated,
-            'unchanged' => $unchanged,
-            'message'   => "Berhasil: {$created} data ditambahkan, {$updated} diperbarui, {$unchanged} tidak berubah.",
+            'success'    => true,
+            'created'    => $created,
+            'updated'    => $updated,
+            'unchanged'  => $unchanged,
+            'new_owners' => $newOwners,
+            'message'    => $message,
         ]);
     }
 }

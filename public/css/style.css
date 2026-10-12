@@ -4066,3 +4066,27 @@ body.is-resizing-sidebar * {
 
 /* Judul kolom yang berganti per tab (teks dari atribut data-text) */
 .data-table th.th-dyn::before { content: attr(data-text); }
+
+/* Gembok kuning di sebelah kanan nama: akun yang belum pernah dipakai login */
+.data-table .name-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.never-login-badge {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 6px;
+    color: var(--warning);
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    cursor: help;
+}
+.never-login-badge .material-symbols-outlined {
+    font-size: 13px;
+    line-height: 1;
+}

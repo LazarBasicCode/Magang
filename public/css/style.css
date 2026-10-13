@@ -1810,12 +1810,19 @@ body.dark-mode .evidence-link:hover {
     -webkit-backdrop-filter: blur(6px);
     opacity: 0;
     visibility: hidden;
-    transition: opacity .25s ease, visibility .25s ease;
+    transition: opacity .25s ease, visibility .25s ease, backdrop-filter .3s ease, -webkit-backdrop-filter .3s ease;
 }
 
 .modal-backdrop.is-active {
     opacity: 1;
     visibility: visible;
+}
+
+/* Saat modal digeser: latar tidak blur (transisi halus blur -> jernih), blur lagi setelah dilepas.
+   Kelas .is-dragging dipasang JS: SIDA.modal.attach (script.js), add-people.js, profile-account.js, delete-confirm.js */
+.modal-backdrop.is-active.is-dragging {
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
 }
 
 body.dark-mode .modal-backdrop {
@@ -3375,9 +3382,11 @@ body.dark-mode {
     display: flex; align-items: center; justify-content: center;
     background: rgba(15, 20, 50, .35);
     -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, backdrop-filter .3s ease, -webkit-backdrop-filter .3s ease;
 }
 .pa-overlay.is-open { opacity: 1; pointer-events: auto; }
+.pa-overlay.is-open.is-dragging { -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); }  /* latar jernih saat modal digeser */
 
 .pa-modal {
     position: absolute; left: 50%; top: 50%;

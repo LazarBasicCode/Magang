@@ -31,8 +31,8 @@
 }
 
 .ap-card {
-    width: min(780px, calc(100vw - 32px));
-    max-height: calc(100vh - 32px);
+    width: min(480px, calc(100vw - 32px)); /* ramping, sama dengan modal Tambah Pengguna */
+    max-height: min(680px, calc(100vh - 48px)); /* sama dengan modal lain; isi di dalamnya yang di-scroll */
 }
 
 .ap-head {
@@ -40,7 +40,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    padding: 22px 26px;
+    padding: 18px 20px; /* sama dengan header modal lain */
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
@@ -48,15 +48,15 @@
 .ap-body {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 14px;          /* sama dengan .modal-body modal lain */
     flex: 1 1 auto;
     min-height: 0;
-    padding: 22px 26px 24px;
-    overflow: hidden; /* modal tidak scroll; yang scroll hanya tabel */
+    padding: 18px 20px 20px;
+    overflow-y: auto;   /* seluruh isi modal bisa di-scroll sampai tombol Simpan */
 }
 
 .ap-section-title {
-    margin: 0 0 12px;
+    margin: 0 0 10px;
     font-size: 12.5px;
     font-weight: 700;
     color: var(--ink);
@@ -65,10 +65,12 @@
 
 .ap-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px 16px;
+    grid-template-columns: 1fr 1fr;   /* dua input per baris */
+    gap: 14px;
 }
-.ap-grid .field { min-width: 0; gap: 8px; }
+.ap-grid .field { min-width: 0; }
+/* Dosen tidak punya Angkatan: Status melebar satu baris penuh supaya Email & Password tetap berdampingan */
+.ap-card.ap-no-angkatan #apFieldStatus { grid-column: 1 / -1; }
 .ap-select {
     width: 100%;
     height: 40px;
@@ -96,8 +98,7 @@
 .ap-pending {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 0 0 auto;     /* tinggi mengikuti isi; tabel punya scroll sendiri (max-height) */
 }
 .ap-pending-head {
     display: flex;
@@ -105,7 +106,7 @@
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 .ap-pending-head .ap-section-title { margin: 0; }
 
@@ -132,15 +133,15 @@
 
 .ap-table-wrap {
     position: relative;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 120px;
-    max-height: 250px;
+    max-height: 220px;
     overflow: auto; /* scroll tabel */
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--card);
 }
-.ap-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ap-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 12.5px; } /* min-width: tabel digeser kanan-kiri di modal ramping */
 .ap-table th {
     position: sticky;
     top: 0;
@@ -186,20 +187,15 @@
     line-height: 1.5;
     color: var(--ink-muted);
 }
-.ap-note { margin: 12px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--ink-muted); }
+.ap-note { margin: 10px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--ink-muted); }
 
 @media (max-width: 640px) {
-    .ap-body { padding: 18px 18px 20px; gap: 18px; }
-    .ap-head { padding: 18px; }
-    .ap-grid { grid-template-columns: 1fr 1fr; }
+    .ap-body { padding: 16px 16px 18px; }
+    .ap-head { padding: 16px; }
     .ap-search input { width: 120px; }
 }
 @media (max-width: 420px) {
     .ap-grid { grid-template-columns: 1fr; }
-}
-/* Layar sangat pendek: jangan sampai tombol Simpan terpotong. */
-@media (max-height: 720px) {
-    .ap-body { overflow-y: auto; }
 }
 
 /* Input teks di modal ini tidak punya ikon di kiri, jadi padding-left 36px dari .field-control dibatalkan. */

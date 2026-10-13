@@ -36,10 +36,53 @@
         els.cancel.addEventListener('click', () => finish(false));
         backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) finish(false); });
         els.next.addEventListener('click', onNext);
+        enableDrag();
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && els.backdrop.classList.contains('is-active')) finish(false);
         });
         return els;
+    }
+
+    // Kartu bisa digeser dengan menarik bagian mana pun selain tombol. Memakai properti `translate`
+    // (bukan `transform`) supaya tidak bentrok dengan animasi dcPop. Saat digeser, latar berhenti blur.
+    function enableDrag() {
+        const { card, backdrop } = els;
+        let d = null;
+        card.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            if (e.target.closest('button')) return;
+            d = { x: e.clientX, y: e.clientY, tx: card._tx || 0, ty: card._ty || 0 };
+            card.classList.add('is-dragging');
+            backdrop.classList.add('is-dragging');
+            card.setPointerCapture(e.pointerId);
+        });
+        card.addEventListener('pointermove', (e) => {
+            if (!d) return;
+            // batas: kartu tetap berada di dalam layar
+            const r = card.getBoundingClientRect();
+            const baseLeft = r.left - (card._tx || 0), baseTop = r.top - (card._ty || 0);
+            const tx = Math.min(Math.max(d.tx + e.clientX - d.x, 8 - baseLeft), window.innerWidth - 8 - r.width - baseLeft);
+            const ty = Math.min(Math.max(d.ty + e.clientY - d.y, 8 - baseTop), window.innerHeight - 8 - r.height - baseTop);
+            card._tx = tx; card._ty = ty;
+            card.style.translate = tx + 'px ' + ty + 'px';
+        });
+        const end = (e) => {
+            if (!d) return;
+            d = null;
+            card.classList.remove('is-dragging');
+            backdrop.classList.remove('is-dragging');
+            try { card.releasePointerCapture(e.pointerId); } catch (_) { /* sudah terlepas */ }
+        };
+        card.addEventListener('pointerup', end);
+        card.addEventListener('pointercancel', end);
+        card.addEventListener('lostpointercapture', end);
+    }
+
+    function resetDrag() {
+        els.card._tx = 0; els.card._ty = 0;
+        els.card.style.translate = '';
+        els.card.classList.remove('is-dragging');
+        els.backdrop.classList.remove('is-dragging');
     }
 
     function esc(s) {
@@ -110,6 +153,7 @@
         clearTimeout(timer);
         els.backdrop.classList.remove('is-active');
         els.card.classList.remove('is-pop');
+        resetDrag();
         const r = resolver; resolver = null;
         if (lastFocus && lastFocus.focus) lastFocus.focus();
         if (r) r(result);
@@ -123,6 +167,7 @@
             currentEntity = entity;
             currentCount = Number(count) > 0 ? Number(count) : 0;
             lastFocus = document.activeElement;
+            resetDrag();   // selalu mulai dari tengah layar
             els.backdrop.classList.add('is-active');
             showStep1(currentName);
             els.next.focus();

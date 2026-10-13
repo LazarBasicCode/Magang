@@ -293,12 +293,24 @@
          * @param {HTMLElement} opts.dragHandle
          */
         attach({ backdrop, card, closeBtn, cancelBtn, dragHandle }) {
+            let dragState = null;
+            // Elemen interaktif di dalam header tidak boleh memicu geser (tombol, tautan, input, dst.)
+            const INTERACTIVE = "button, a, input, select, textarea, label, [contenteditable]";
+
+            // Hentikan geser & kembalikan latar ke blur normal (dipakai saat lepas / tutup / buka)
+            function stopDrag() {
+                dragState = null;
+                card?.classList.remove("is-dragging");
+                backdrop?.classList.remove("is-dragging");
+            }
             function close() {
+                stopDrag();
                 backdrop?.classList.remove("is-active");
                 card?.classList.remove("is-active");
                 card?.setAttribute("aria-hidden", "true");
             }
             function open() {
+                stopDrag();
                 card.style.left = "";
                 card.style.top = "";
                 card.style.transform = "";
@@ -315,12 +327,13 @@
                     close();
             });
 
-            // Drag lewat header (pointer events -> jalan di mouse & touch)
+            // Drag lewat header (pointer events -> jalan di mouse & touch).
+            // Selama digeser, latar belakang berhenti blur (transisi halus, lihat .modal-backdrop.is-dragging)
+            // dan blur lagi setelah dilepas.
             if (dragHandle && card) {
-                let dragState = null;
-
                 dragHandle.addEventListener("pointerdown", (e) => {
-                    if (e.target.closest(".modal-close-btn")) return;
+                    if (e.button !== undefined && e.button !== 0) return; // hanya klik kiri / sentuhan
+                    if (e.target.closest(INTERACTIVE)) return;
                     const rect = card.getBoundingClientRect();
                     dragState = {
                         startX: e.clientX,
@@ -332,6 +345,7 @@
                     card.style.top = rect.top + "px";
                     card.style.transform = "none";
                     card.classList.add("is-dragging");
+                    backdrop?.classList.add("is-dragging");
                     dragHandle.setPointerCapture(e.pointerId);
                 });
 
@@ -355,14 +369,24 @@
 
                 function endDrag(e) {
                     if (!dragState) return;
-                    dragState = null;
-                    card.classList.remove("is-dragging");
+                    stopDrag();
                     try {
                         dragHandle.releasePointerCapture(e.pointerId);
                     } catch (_) {}
                 }
                 dragHandle.addEventListener("pointerup", endDrag);
                 dragHandle.addEventListener("pointercancel", endDrag);
+                dragHandle.addEventListener("lostpointercapture", endDrag);
+
+                // Jendela diperkecil saat modal sudah digeser: jaga supaya modal tidak keluar layar
+                window.addEventListener("resize", () => {
+                    if (!card.classList.contains("is-active") || !card.style.left) return;
+                    const r = card.getBoundingClientRect();
+                    card.style.left =
+                        Math.min(Math.max(8, r.left), Math.max(8, window.innerWidth - card.offsetWidth - 8)) + "px";
+                    card.style.top =
+                        Math.min(Math.max(8, r.top), Math.max(8, window.innerHeight - card.offsetHeight - 8)) + "px";
+                });
             }
 
             return { open, close };

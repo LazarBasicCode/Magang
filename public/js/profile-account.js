@@ -159,9 +159,12 @@
     function makeDraggable(modal, handle) {
         let sx, sy, ox, oy;
         handle.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
             if (e.target.closest('.pa-close')) return;
             const r = modal.getBoundingClientRect();
             // pindah dari posisi center (translate) ke koordinat absolut
+            const overlay = modal.closest('.pa-overlay');
+            overlay?.classList.add('is-dragging');   // latar berhenti blur selama digeser
             modal.classList.add('is-dragged');
             modal.style.transform = 'none';
             modal.style.left = r.left + 'px';
@@ -177,6 +180,7 @@
                 modal.style.top = y + 'px';
             };
             const up = () => {
+                overlay?.classList.remove('is-dragging');
                 handle.classList.remove('is-dragging');
                 handle.removeEventListener('pointermove', move);
                 handle.removeEventListener('pointerup', up);
@@ -213,7 +217,7 @@
 
     function close() {
         if (!active) return;
-        active.classList.remove('is-open');
+        active.classList.remove('is-open', 'is-dragging');
         active = null;
     }
 

@@ -95,6 +95,11 @@
         emptyEl.textContent = 'Memuat data...';
         updateSummary();
 
+        // posisi kembali ke tengah (bekas digeser sebelumnya dibuang)
+        stopDrag();
+        modal.style.left = '';
+        modal.style.top = '';
+        modal.style.transform = '';
         backdrop.classList.add('is-active');
         modal.classList.add('is-active');
         modal.setAttribute('aria-hidden', 'false');
@@ -105,6 +110,7 @@
 
     function close() {
         if (busy) return;
+        stopDrag();
         backdrop.classList.remove('is-active');
         modal.classList.remove('is-active');
         modal.setAttribute('aria-hidden', 'true');
@@ -338,6 +344,63 @@
             submitBtn.disabled = false;
         }
     });
+
+    // ---------- geser modal lewat header ----------
+    // Saat digeser, latar belakang berhenti blur (transisi halus), lalu blur lagi setelah dilepas.
+    let drag = null;
+    function stopDrag() {
+        drag = null;
+        modal.classList.remove('is-dragging');
+        backdrop.classList.remove('is-dragging');
+    }
+    (function enableDrag() {
+        // Header dicari lewat id, atau langsung dari kelas .ap-head (tidak perlu mengubah blade / CSS)
+        const handle = $('apDragHandle') || modal.querySelector('.ap-head');
+        if (!handle) return;
+        handle.style.cursor = 'grab';
+        handle.style.userSelect = 'none';
+        handle.style.touchAction = 'none';   // wajib agar pointer events jalan di layar sentuh
+
+        handle.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            if (e.target.closest('button, a, input, select, textarea, label')) return;
+            const rect = modal.getBoundingClientRect();
+            drag = { x: e.clientX, y: e.clientY, left: rect.left, top: rect.top };
+            modal.style.left = rect.left + 'px';
+            modal.style.top = rect.top + 'px';
+            modal.style.transform = 'none';
+            modal.classList.add('is-dragging');
+            backdrop.classList.add('is-dragging');
+            handle.style.cursor = 'grabbing';
+            handle.setPointerCapture(e.pointerId);
+        });
+
+        handle.addEventListener('pointermove', (e) => {
+            if (!drag) return;
+            const maxLeft = Math.max(8, window.innerWidth - modal.offsetWidth - 8);
+            const maxTop = Math.max(8, window.innerHeight - modal.offsetHeight - 8);
+            modal.style.left = Math.min(Math.max(8, drag.left + e.clientX - drag.x), maxLeft) + 'px';
+            modal.style.top = Math.min(Math.max(8, drag.top + e.clientY - drag.y), maxTop) + 'px';
+        });
+
+        function endDrag(e) {
+            if (!drag) return;
+            stopDrag();
+            handle.style.cursor = 'grab';
+            try { handle.releasePointerCapture(e.pointerId); } catch (_) { /* sudah terlepas */ }
+        }
+        handle.addEventListener('pointerup', endDrag);
+        handle.addEventListener('pointercancel', endDrag);
+        handle.addEventListener('lostpointercapture', endDrag);
+
+        // Jendela diperkecil setelah digeser: jaga modal tetap di dalam layar
+        window.addEventListener('resize', () => {
+            if (!modal.classList.contains('is-active') || !modal.style.left) return;
+            const r = modal.getBoundingClientRect();
+            modal.style.left = Math.min(Math.max(8, r.left), Math.max(8, window.innerWidth - modal.offsetWidth - 8)) + 'px';
+            modal.style.top = Math.min(Math.max(8, r.top), Math.max(8, window.innerHeight - modal.offsetHeight - 8)) + 'px';
+        });
+    })();
 
     // ---------- pemicu & penutup ----------
     document.querySelectorAll('[data-ap-open]').forEach((btn) => {

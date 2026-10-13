@@ -1,22 +1,25 @@
 /* =====================================================================
    GEMBOK "BELUM PERNAH LOGIN" — di samping nama pengguna (Data Master)
-   Markup: resources/views/partials/user-rows.blade.php (muncul hanya untuk akun tanpa catatan login sukses).
+   Markup: resources/views/partials/user-rows.blade.php (hanya untuk akun tanpa catatan login sukses)
+   Pemicu: public/js/never-login.js
 
-   Lapisan animasi (semua CSS murni, tanpa JS):
-     1. Muncul     : membal masuk (scale + putar) saat baris dirender
-     2. Cincin     : denyut gelombang melebar & memudar dari tepi lencana
-     3. Gerendel   : gembok "mencoba terbuka" — gerendel terangkat, berayun, lalu klik menutup + badan membal
-     4. Kilau      : sapuan cahaya diagonal melintasi lencana
-     5. Bintang    : dua kilau kecil berkedip bergantian
-     6. Hover/fokus: gembok bergetar "ditolak" + balon penjelasan meluncur keluar
-   Tiap baris punya jeda berbeda (--nl-delay dari Blade) supaya gerak tidak serempak.
-   Warna mengikuti token tema (--warning*) sehingga otomatis cocok di mode terang & gelap.
-   prefers-reduced-motion: semua gerak dimatikan, gembok tampil diam.
+   Hemat render: animasi HANYA berjalan untuk gembok yang sedang terlihat di layar.
+   public/js/never-login.js menambahkan kelas .is-visible saat gembok masuk viewport & mencabutnya saat
+   keluar, jadi animasi MULAI ULANG tiap kali baris di-scroll kembali ke layar. Gembok yang muncul
+   bersamaan dimunculkan BERURUTAN mengikuti arah scroll (scroll ke atas = dari bawah ke atas,
+   scroll ke bawah = dari atas ke bawah) lewat --nl-order (0,1,2,...) yang diisi JS.
+
+   Animasi (sederhana, hanya 2, masing-masing sekali):
+     1. Muncul   : membal masuk
+     2. Gerendel : "mencoba terbuka" — terangkat, goyang sekali, klik menutup
+   Hover/fokus: gembok bergetar "ditolak" + balon penjelasan.
+   prefers-reduced-motion: semua gerak dimatikan.
    ===================================================================== */
 
 .never-login-badge {
     --nl-size: 24px;
-    --nl-delay: 0s;
+    --nl-order: 0;          /* urutan muncul, diisi JS */
+    --nl-step: 90ms;        /* jeda antar gembok yang muncul bersamaan */
     position: relative;
     flex-shrink: 0;
     width: var(--nl-size);
@@ -26,9 +29,6 @@
     color: var(--warning);
     cursor: help;
     outline: none;
-    /* 1. muncul */
-    animation: nl-pop .7s cubic-bezier(.34, 1.56, .64, 1) both;
-    animation-delay: calc(var(--nl-delay) * .35);
 }
 
 /* ---------- wajah lencana ---------- */
@@ -56,18 +56,6 @@
 }
 .never-login-badge:focus-visible .nl-face { outline: 2px solid var(--warning); outline-offset: 2px; }
 
-/* ---------- 2. cincin denyut ---------- */
-.never-login-badge .nl-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 8px;
-    border: 2px solid var(--warning);
-    opacity: 0;
-    pointer-events: none;
-    animation: nl-ring 2.9s cubic-bezier(.2, .7, .3, 1) infinite;
-    animation-delay: calc(var(--nl-delay) + .9s);
-}
-
 /* ---------- ikon gembok ---------- */
 .never-login-badge .nl-icon {
     position: relative;
@@ -78,42 +66,6 @@
     filter: drop-shadow(0 .5px 0 color-mix(in srgb, #fff 45%, transparent));
 }
 .never-login-badge .nl-hole { fill: var(--warning-bg); }
-
-/* 3. gerendel mencoba terbuka — berputar di "kaki" kanannya, lalu klik menutup */
-.never-login-badge .nl-shackle {
-    transform-box: fill-box;
-    transform-origin: 100% 100%;
-    animation: nl-shackle 5.2s ease-in-out infinite;
-    animation-delay: calc(var(--nl-delay) + 1.2s);
-}
-.never-login-badge .nl-body {
-    transform-box: fill-box;
-    transform-origin: 50% 100%;
-    animation: nl-body 5.2s ease-in-out infinite;
-    animation-delay: calc(var(--nl-delay) + 1.2s);
-}
-
-/* 5. bintang berkedip */
-.never-login-badge .nl-spark {
-    fill: var(--warning);
-    transform-box: fill-box;
-    transform-origin: center;
-    opacity: 0;
-}
-.never-login-badge .nl-spark-1 { animation: nl-twinkle 3.1s ease-in-out infinite; animation-delay: calc(var(--nl-delay) + .4s); }
-.never-login-badge .nl-spark-2 { animation: nl-twinkle 3.1s ease-in-out infinite; animation-delay: calc(var(--nl-delay) + 1.95s); }
-
-/* 4. kilau diagonal */
-.never-login-badge .nl-shine {
-    position: absolute;
-    inset: -20% auto -20% 0;
-    width: 55%;
-    background: linear-gradient(105deg, transparent 0%, color-mix(in srgb, #fff 80%, transparent) 50%, transparent 100%);
-    transform: translateX(-160%) skewX(-18deg);
-    pointer-events: none;
-    animation: nl-shine 4.2s ease-in-out infinite;
-    animation-delay: calc(var(--nl-delay) + 2.2s);
-}
 
 /* 6. hover / fokus: getar "ditolak" */
 .never-login-badge:hover .nl-icon,
@@ -171,54 +123,32 @@
     transition: opacity .18s ease, transform .28s cubic-bezier(.34, 1.56, .64, 1), visibility 0s;
 }
 
-/* ===================== keyframes ===================== */
+/* ===================== animasi — hanya saat .is-visible ===================== */
+.never-login-badge.is-visible {
+    animation: nl-pop .45s cubic-bezier(.34, 1.56, .64, 1) both;
+    animation-delay: calc(var(--nl-order) * var(--nl-step));
+}
+/* gerendel berputar di "kaki" kanannya; jalan sekali setelah gembok selesai muncul */
+.never-login-badge .nl-shackle {
+    transform-box: fill-box;
+    transform-origin: 100% 100%;
+}
+.never-login-badge.is-visible .nl-shackle {
+    animation: nl-shackle 1.1s ease-in-out both;
+    animation-delay: calc(var(--nl-order) * var(--nl-step) + .5s);
+}
+
 @keyframes nl-pop {
-    0%   { opacity: 0; transform: scale(0) rotate(-35deg); }
-    55%  { opacity: 1; transform: scale(1.22) rotate(8deg); }
-    78%  { transform: scale(.93) rotate(-3deg); }
-    100% { opacity: 1; transform: scale(1) rotate(0); }
+    0%   { opacity: 0; transform: scale(.3); }
+    100% { opacity: 1; transform: scale(1); }
 }
-
-@keyframes nl-ring {
-    0%   { opacity: .55; transform: scale(1); }
-    70%  { opacity: 0;   transform: scale(1.95); }
-    100% { opacity: 0;   transform: scale(1.95); }
-}
-
-/* gerendel diam ±70% siklus, lalu mengangkat → berayun → klik menutup */
 @keyframes nl-shackle {
-    0%, 66%  { transform: translateY(0) rotate(0); }
-    70%      { transform: translateY(-2.2px) rotate(0); }
-    76%      { transform: translateY(-2.2px) rotate(-17deg); }
-    82%      { transform: translateY(-2.2px) rotate(9deg); }
-    88%      { transform: translateY(-1.8px) rotate(-4deg); }
-    93%      { transform: translateY(-1px) rotate(0); }
-    96%      { transform: translateY(.5px) rotate(0); }      /* klik! menutup agak keras */
-    100%     { transform: translateY(0) rotate(0); }
+    0%, 15%  { transform: translateY(0) rotate(0); }
+    35%      { transform: translateY(-2.2px) rotate(0); }
+    55%      { transform: translateY(-2.2px) rotate(-14deg); }
+    75%      { transform: translateY(-2px) rotate(6deg); }
+    90%, 100% { transform: translateY(0) rotate(0); }
 }
-/* badan gembok ikut bergetar tipis lalu membal saat gerendel menutup */
-@keyframes nl-body {
-    0%, 70%  { transform: scale(1) rotate(0); }
-    76%      { transform: scale(1) rotate(-2.5deg); }
-    82%      { transform: scale(1) rotate(2deg); }
-    88%      { transform: scale(1) rotate(-1deg); }
-    95%      { transform: scale(1) rotate(0); }
-    96.5%    { transform: scale(1.1, .88) rotate(0); }
-    98.5%    { transform: scale(.97, 1.04) rotate(0); }
-    100%     { transform: scale(1) rotate(0); }
-}
-
-@keyframes nl-twinkle {
-    0%, 55%, 100% { opacity: 0; transform: scale(0) rotate(0); }
-    70%           { opacity: 1; transform: scale(1.25) rotate(45deg); }
-    85%           { opacity: .9; transform: scale(.8) rotate(90deg); }
-}
-
-@keyframes nl-shine {
-    0%, 45%  { transform: translateX(-160%) skewX(-18deg); }
-    75%, 100% { transform: translateX(330%) skewX(-18deg); }
-}
-
 @keyframes nl-denied {
     10%, 90% { transform: translateX(-1px); }
     20%, 80% { transform: translateX(2px); }
@@ -228,19 +158,12 @@
 
 /* ===================== aksesibilitas ===================== */
 @media (prefers-reduced-motion: reduce) {
-    .never-login-badge,
-    .never-login-badge .nl-ring,
-    .never-login-badge .nl-shackle,
-    .never-login-badge .nl-body,
-    .never-login-badge .nl-spark,
-    .never-login-badge .nl-shine,
+    .never-login-badge.is-visible,
+    .never-login-badge.is-visible .nl-shackle,
     .never-login-badge:hover .nl-icon,
     .never-login-badge:focus-visible .nl-icon {
         animation: none !important;
     }
-    .never-login-badge .nl-ring,
-    .never-login-badge .nl-shine,
-    .never-login-badge .nl-spark { display: none; }
     .never-login-badge .nl-face,
     .never-login-badge .nl-tip { transition: none; }
 }

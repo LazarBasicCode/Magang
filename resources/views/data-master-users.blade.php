@@ -649,6 +649,7 @@ $__accessRows = $__user->accessBreakdown();
     <script id="dmInit" type="application/json">{!! json_encode(['view' => $view, 'q' => $term, 'page' => $users->currentPage(), 'last' => max(1, $users->lastPage())], JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
+    <script src="{{ asset('js/never-login.js') }}?v={{ @filemtime(public_path('js/never-login.js')) }}"></script>
     <script id="apInit" type="application/json">{!! json_encode(['mahasiswa' => \App\Models\Mahasiswa::STATUS, 'dosen' => \App\Models\Dosen::STATUS], JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     <script src="{{ asset('js/add-people.js') }}?v={{ @filemtime(public_path('js/add-people.js')) }}"></script>
     <script>

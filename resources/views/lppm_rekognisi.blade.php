@@ -265,7 +265,7 @@
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Rekognisi Nasional, Internasional &amp; Alumni</h1>
-                        <p class="page-subtitle">Pendataan rekognisi dosen dan mahasiswa &middot; Tahun 2026</p>
+                        <p class="page-subtitle">Pendataan rekognisi dosen dan mahasiswa &middot; Tahun {{ now()->year }}</p>
                     </div>
                     @php
                         // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
@@ -382,7 +382,7 @@
                     <div class="table-card-header">
                         <div>
                             <h2 class="table-card-title">Daftar Rekap Rekognisi</h2>
-                            <p class="table-card-subtitle">Data rekognisi nasional, internasional, dan alumni 2026</p>
+                            <p class="table-card-subtitle">Data rekognisi nasional, internasional, dan alumni {{ now()->year }}</p>
                         </div>
                     </div>
 

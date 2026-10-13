@@ -262,7 +262,7 @@
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Kerja Sama &amp; Kemitraan</h1>
-                        <p class="page-subtitle">Pendataan kerja sama mahasiswa, dosen, guest lecture, pengabdian &amp; research internasional &middot; Tahun 2026</p>
+                        <p class="page-subtitle">Pendataan kerja sama mahasiswa, dosen, guest lecture, pengabdian &amp; research internasional &middot; Tahun {{ now()->year }}</p>
                     </div>
                     @php
                         // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
@@ -396,7 +396,7 @@
                             <div class="field-locked">
                                 <div class="field-locked-inner">
                                     <span class="material-symbols-outlined">lock</span>
-                                    <span class="field-locked-value">2026</span>
+                                    <span class="field-locked-value">{{ now()->year }}</span>
                                 </div>
                             </div>
                         </div>
@@ -553,7 +553,7 @@
                     <div class="table-footer">
                         <div class="footer-summary">
                             Menampilkan <strong id="footerRange">{{ $items->firstItem() ?? 0 }}&ndash;{{ $items->lastItem() ?? 0 }}</strong>
-                            dari <strong id="footerTotalCount">{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">2026</span>
+                            dari <strong id="footerTotalCount">{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">{{ now()->year }}</span>
                         </div>
                         <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
                         @if($items->hasPages())

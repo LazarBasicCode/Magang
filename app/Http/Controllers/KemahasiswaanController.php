@@ -16,6 +16,9 @@ class KemahasiswaanController extends Controller
     use NotifiesOwner;
     use HandlesBulkData;
 
+    /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
+    private const PER_PAGE = 50;
+
     /**
      * Halaman utama Kemahasiswaan (server-rendered untuk load pertama & SEO).
      * Aksi tambah/edit/hapus selanjutnya berjalan lewat fetch() tanpa reload.
@@ -30,11 +33,52 @@ class KemahasiswaanController extends Controller
         $ownScope = $user->menuLevel('kemahasiswaan') === 'biasa';
         $mahasiswa = $user->mahasiswa;
 
-        $query = Kemahasiswaan::with('mahasiswa.user')->latest();
-        if ($ownScope) {
-            $query->where('mahasiswa_id', $mahasiswa->id ?? 0);
+        $jenis = $request->query('jenis');
+        $tab = $request->query('tab');
+        $tingkat = $request->query('tingkat');
+        $tahun = $request->query('tahun');
+        $term = trim((string) $request->query('q', ''));
+
+        $listQuery = function () use ($ownScope, $mahasiswa, $jenis, $tab, $tingkat, $tahun, $term) {
+            $query = Kemahasiswaan::with('mahasiswa.user')->latest()->orderByDesc('id');
+            if ($ownScope) {
+                $query->where('mahasiswa_id', $mahasiswa->id ?? 0);
+            }
+            if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
+            if ($tab && $tab !== 'semua') $query->where('tab', $tab);
+            if ($tingkat && $tingkat !== 'semua') $query->where('tingkat', $tingkat);
+            if ($tahun && $tahun !== 'semua') $query->where('tahun', $tahun);
+            if ($term !== '') {
+                $like = '%' . addcslashes($term, '%_\\') . '%';
+                $query->where(function ($w) use ($like) {
+                    $w->where('nama_kegiatan', 'like', $like)
+                        ->orWhereHas('mahasiswa', fn ($m) => $m->where('nim', 'like', $like)
+                            ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)));
+                });
+            }
+            return $query;
+        };
+
+        $kegiatan = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
+        if ($kegiatan->lastPage() > 0 && $kegiatan->currentPage() > $kegiatan->lastPage()) {
+            $kegiatan = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $kegiatan->lastPage())->withQueryString();
         }
-        $kegiatan = $query->paginate(10);
+
+        // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
+        // Baris digambar JS (buildRowHTML) di blade, jadi tidak perlu partial.
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'items' => $kegiatan->getCollection()->map(fn ($i) => $this->format($i))->values(),
+                'meta'  => [
+                    'page'  => $kegiatan->currentPage(),
+                    'last'  => max(1, $kegiatan->lastPage()),
+                    'total' => $kegiatan->total(),
+                    'from'  => $kegiatan->firstItem() ?? 0,
+                    'to'    => $kegiatan->lastItem() ?? 0,
+                ],
+            ]);
+        }
 
         $mahasiswaList = $ownScope
             ? ($mahasiswa ? collect([$mahasiswa->load('user')]) : collect())

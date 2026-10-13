@@ -15,6 +15,9 @@ class LppmMahasiswaController extends Controller
     use NotifiesOwner;
     use HandlesBulkData;
 
+    /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
+    private const PER_PAGE = 50;
+
     /**
      * Akses "biasa" (default mahasiswa) hanya bisa melihat & mengisi
      * publikasinya sendiri. Akses "penuh"/"readonly" melihat & mengelola
@@ -26,11 +29,49 @@ class LppmMahasiswaController extends Controller
         $ownScope = $user->menuLevel('lppm_mahasiswa') === 'biasa';
         $mahasiswa = $user->mahasiswa;
 
-        $query = LppmMahasiswa::with('mahasiswa.user')->latest();
-        if ($ownScope) {
-            $query->where('mahasiswa_id', $mahasiswa->id ?? 0);
+        $jenis = $request->query('jenis');
+        $term  = trim((string) $request->query('q', ''));
+
+        $listQuery = function () use ($ownScope, $mahasiswa, $jenis, $term) {
+            $query = LppmMahasiswa::with('mahasiswa.user')->latest()->orderByDesc('id');
+            if ($ownScope) {
+                $query->where('mahasiswa_id', $mahasiswa->id ?? 0);
+            }
+            if ($jenis && $jenis !== 'semua') {
+                $query->where('jenis', $jenis);
+            }
+            if ($term !== '') {
+                $like = '%' . addcslashes($term, '%_\\') . '%';
+                $query->where(function ($w) use ($like) {
+                    $w->where('judul', 'like', $like)
+                        ->orWhere('penulis', 'like', $like)
+                        ->orWhere('nama_jurnal', 'like', $like)
+                        ->orWhereHas('mahasiswa', fn ($m) => $m->where('nim', 'like', $like)
+                            ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)));
+                });
+            }
+            return $query;
+        };
+
+        $items = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
+        if ($items->lastPage() > 0 && $items->currentPage() > $items->lastPage()) {
+            $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();
         }
-        $items = $query->paginate(10);
+
+        // Request AJAX (tombol halaman / filter / cari): balas JSON baris + meta halaman.
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
+                'meta' => [
+                    'page'  => $items->currentPage(),
+                    'last'  => max(1, $items->lastPage()),
+                    'total' => $items->total(),
+                    'from'  => $items->firstItem() ?? 0,
+                    'to'    => $items->lastItem() ?? 0,
+                ],
+            ]);
+        }
 
         $mahasiswaList = $ownScope
             ? ($mahasiswa ? collect([$mahasiswa->load('user')]) : collect())

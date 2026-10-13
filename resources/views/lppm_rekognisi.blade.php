@@ -16,6 +16,7 @@
             } catch (e) {}
         })();
     </script>
+    <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
@@ -390,7 +391,7 @@
                         @include('partials.row-select-bar')
                     @endif
 
-                    <div class="table-scroll">
+                    <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table"
                             @if($showBulk)
                                 data-selectable="rekognisi"
@@ -426,7 +427,7 @@
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
-                                @forelse($items as $item)
+                                @foreach($items as $item)
                                 @php
                                 $nama = optional($item->user)->name ?? 'Tanpa Nama';
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
@@ -471,13 +472,12 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @empty
-                                <tr id="emptyRow">
+                                @endforeach
+                                <tr id="emptyRow" {{ $items->total() === 0 ? '' : 'hidden' }}>
                                     <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data. Klik "Tambah Rekognisi" untuk mulai mengisi.
                                     </td>
                                 </tr>
-                                @endforelse
                             </tbody>
 
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
@@ -491,9 +491,13 @@
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>{{ $items->firstItem() ?? 0 }}-{{ $items->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $items->total() }}</strong> data rekognisi
+                            Menampilkan <strong id="footerRange">{{ $items->firstItem() ?? 0 }}&ndash;{{ $items->lastItem() ?? 0 }}</strong>
+                            dari <strong id="footerTotalCount">{{ $items->total() }}</strong> data rekognisi
                         </div>
+                        <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
+                        @if($items->hasPages())
+                        <noscript>{{ $items->links() }}</noscript>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -663,17 +667,15 @@
     @endif
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script>
         // ================================================================
         // Bagian ini KHUSUS halaman LPPM Rekognisi:
         // endpoint API, bentuk baris tabel, field form, field kondisional,
-        // datepicker, dan filter tambahan.
+        // dan filter tambahan.
         // Semua yang generik (dropdown, sidebar, dark mode, notifikasi,
         // modal buka/tutup/drag, live search, profile dropdown) sudah
         // ditangani public/js/script.js via SIDA.
-        //
-        // CATATAN: Datepicker TIDAK ada di SIDA.*, jadi tetap ditulis
-        // lengkap di sini (khusus halaman ini).
         // ================================================================
         const csrfToken = SIDA.util.csrfToken();
         const {
@@ -705,241 +707,11 @@
             opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));
         });
 
-        // ================================================================
-        // CUSTOM DATEPICKER (khusus halaman ini — belum ada di script.js)
-        // ================================================================
-        const MONTH_NAMES_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-        function pad2(n) {
-            return String(n).padStart(2, '0');
-        }
-
-        function toISO(y, m, d) {
-            return `${y}-${pad2(m + 1)}-${pad2(d)}`;
-        }
-
-        function parseISO(str) {
-            if (!str) return null;
-            const [y, m, d] = str.split('-').map(Number);
-            if (!y || !m || !d) return null;
-            return new Date(y, m - 1, d);
-        }
-
-        function formatDisplayDate(dateObj) {
-            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-            return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${MONTH_NAMES_ID[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-        }
-
-        function createDatepicker(rootEl) {
-            const hiddenInput = rootEl.querySelector('input[type="hidden"]');
-            const trigger = rootEl.querySelector('.datepicker-trigger');
-            const valueEl = rootEl.querySelector('.datepicker-value');
-            const panel = rootEl.querySelector('.datepicker-panel');
-            const monthLabel = rootEl.querySelector('.dp-month-label');
-            const daysGrid = rootEl.querySelector('.dp-days');
-            const prevBtn = rootEl.querySelector('.dp-prev');
-            const nextBtn = rootEl.querySelector('.dp-next');
-            const todayBtn = rootEl.querySelector('.dp-today-btn');
-            const clearBtn = rootEl.querySelector('.dp-clear-btn');
-
-            // Pindahkan panel kalender ke <body> supaya posisinya lepas dari overflow modal
-            // dan tidak pernah menggeser/mengubah ukuran modal saat dibuka.
-            document.body.appendChild(panel);
-
-            let selected = null;
-            let minDate = null;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            let view = {
-                year: today.getFullYear(),
-                month: today.getMonth()
-            };
-
-            function render() {
-                monthLabel.textContent = `${MONTH_NAMES_ID[view.month]} ${view.year}`;
-                daysGrid.innerHTML = '';
-
-                const firstDay = new Date(view.year, view.month, 1);
-                const startWeekday = firstDay.getDay();
-                const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
-
-                for (let i = 0; i < startWeekday; i++) {
-                    const blank = document.createElement('span');
-                    blank.className = 'dp-day is-empty';
-                    daysGrid.appendChild(blank);
-                }
-
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const cellDate = new Date(view.year, view.month, d);
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'dp-day';
-                    btn.textContent = d;
-
-                    if (cellDate.getTime() === today.getTime()) btn.classList.add('is-today');
-                    if (selected && cellDate.getTime() === selected.getTime()) btn.classList.add('is-selected');
-                    if (minDate && cellDate.getTime() < minDate.getTime()) btn.disabled = true;
-
-                    btn.addEventListener('click', () => selectDate(cellDate));
-                    daysGrid.appendChild(btn);
-                }
-            }
-
-            function positionPanel() {
-                const rect = trigger.getBoundingClientRect();
-                const panelWidth = panel.offsetWidth || 268;
-                let left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
-                left = Math.max(8, left);
-                panel.style.left = left + 'px';
-
-                const panelHeight = panel.offsetHeight;
-                let top = rect.bottom + 6;
-                if (top + panelHeight > window.innerHeight - 8) {
-                    const above = rect.top - panelHeight - 6;
-                    top = above > 8 ? above : Math.max(8, window.innerHeight - panelHeight - 8);
-                }
-                panel.style.top = top + 'px';
-            }
-
-            function selectDate(dateObj) {
-                selected = dateObj;
-                hiddenInput.value = toISO(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-                valueEl.textContent = formatDisplayDate(dateObj);
-                valueEl.classList.add('has-value');
-                closePanel();
-                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
-                    detail: {
-                        date: dateObj,
-                        iso: hiddenInput.value
-                    }
-                }));
-            }
-
-            function clear() {
-                selected = null;
-                hiddenInput.value = '';
-                valueEl.textContent = 'Pilih tanggal';
-                valueEl.classList.remove('has-value');
-                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
-                    detail: {
-                        date: null,
-                        iso: ''
-                    }
-                }));
-            }
-
-            function openPanel() {
-                closeAllDatepickers();
-                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
-                view = selected ? {
-                    year: selected.getFullYear(),
-                    month: selected.getMonth()
-                } : {
-                    year: today.getFullYear(),
-                    month: today.getMonth()
-                };
-                render();
-                panel.style.display = 'block';
-                positionPanel();
-                rootEl.classList.add('is-open');
-                activeDatepickers.add(api);
-            }
-
-            function closePanel() {
-                panel.style.display = 'none';
-                rootEl.classList.remove('is-open');
-                activeDatepickers.delete(api);
-            }
-
-            trigger.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const wasOpen = rootEl.classList.contains('is-open');
-                closeAllDatepickers();
-                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
-                if (!wasOpen) openPanel();
-            });
-            panel.addEventListener('click', (e) => e.stopPropagation());
-            prevBtn.addEventListener('click', () => {
-                view.month--;
-                if (view.month < 0) {
-                    view.month = 11;
-                    view.year--;
-                }
-                render();
-            });
-            nextBtn.addEventListener('click', () => {
-                view.month++;
-                if (view.month > 11) {
-                    view.month = 0;
-                    view.year++;
-                }
-                render();
-            });
-            todayBtn.addEventListener('click', () => selectDate(new Date(today)));
-            clearBtn.addEventListener('click', clear);
-
-            render();
-
-            const api = {
-                el: rootEl,
-                panel,
-                isOpen: () => rootEl.classList.contains('is-open'),
-                close: closePanel,
-                reposition: positionPanel,
-                setValue(iso) {
-                    const d = parseISO(iso);
-                    if (d) {
-                        selected = d;
-                        valueEl.textContent = formatDisplayDate(d);
-                        valueEl.classList.add('has-value');
-                        hiddenInput.value = iso;
-                    } else {
-                        selected = null;
-                        valueEl.textContent = 'Pilih tanggal';
-                        valueEl.classList.remove('has-value');
-                        hiddenInput.value = '';
-                    }
-                },
-                setMinDate(iso) {
-                    minDate = parseISO(iso);
-                },
-                clear,
-            };
-            return api;
-        }
-
-        const activeDatepickers = new Set();
-
-        function closeAllDatepickers() {
-            activeDatepickers.forEach((dp) => dp.close());
-        }
-
-        const dpMulai = createDatepicker(document.getElementById('dp-tanggal_mulai'));
-        const dpSelesai = createDatepicker(document.getElementById('dp-tanggal_selesai'));
-
-        // Tutup kalender saat klik di luar trigger maupun panel (panel kini ada di <body>)
-        document.addEventListener('click', (e) => {
-            [dpMulai, dpSelesai].forEach((dp) => {
-                if (!dp.isOpen()) return;
-                if (dp.el.contains(e.target) || dp.panel.contains(e.target)) return;
-                dp.close();
-            });
-        });
-        // Reposisi ulang kalender saat window di-resize atau ada scroll di mana pun (termasuk isi modal)
-        window.addEventListener('resize', () => activeDatepickers.forEach((dp) => dp.reposition()));
-        document.addEventListener('scroll', () => activeDatepickers.forEach((dp) => dp.reposition()), true);
-
-        // Tanggal selesai tidak boleh sebelum tanggal mulai
-        document.getElementById('dp-tanggal_mulai').addEventListener('datepicker:change', (e) => {
-            dpSelesai.setMinDate(e.detail.iso || null);
-            const selesaiVal = document.getElementById('form-tanggal_selesai').value;
-            if (e.detail.iso && selesaiVal && selesaiVal < e.detail.iso) {
-                dpSelesai.clear();
-            }
-        });
-        // ================================================================
-        // /CUSTOM DATEPICKER
-        // ================================================================
+        // Datepicker (Tanggal Mulai & Selesai) sudah ada di script.js: SIDA.datepicker
+        const { start: dpMulai, end: dpSelesai } = SIDA.datepicker.pair(
+            document.getElementById('dp-tanggal_mulai'),
+            document.getElementById('dp-tanggal_selesai'),
+        );
 
         // ---- Label jenis (khusus halaman ini) ----
         const jenisLabel = {
@@ -1034,22 +806,77 @@
             removeRow
         } = SIDA.table.create(tableBody, buildRowHTML);
 
-        // ---- Live filter (khusus halaman ini: 2 dropdown + search) ----
-        const applyFilters = SIDA.filter.setup({
-            tableBody,
-            dropdownFilterIds: ['filter-tipe-user', 'filter-jenis'],
-            searchInputId: 'filter-search',
-            matches: (row) => {
-                const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
-                const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
-                const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-                const matchesTipeUser = tipeUserVal === 'semua' || row.dataset.tipe_user === tipeUserVal;
-                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
-                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                return matchesTipeUser && matchesJenis && matchesSearch;
-            },
-            emptyMessage: 'Tidak ada data yang cocok dengan filter.',
+        // ================================================================
+        // FILTER, PENCARIAN & PAGINASI — diproses di SERVER (50 baris/halaman)
+        // GET /lppm/rekognisi?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
+        // Tombol halaman digambar public/js/pager.js.
+        // ================================================================
+        const FILTERS = ['filter-tipe-user','filter-jenis'];
+        const searchInput = document.getElementById('filter-search');
+        const emptyRow = document.getElementById('emptyRow');
+        const emptyDefault = emptyRow.firstElementChild.textContent.trim();
+        const footerRange = document.getElementById('footerRange');
+        const footerTotalCount = document.getElementById('footerTotalCount');
+        let currentPage = {{ $items->currentPage() }};
+        let requestSeq = 0;
+        let searchTimer = null;
+
+        const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => { loadPage(n); document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+        pager.render({{ $items->currentPage() }}, {{ max(1, $items->lastPage()) }});
+
+        async function loadPage(page = currentPage) {
+            const seq = ++requestSeq;
+            const term = (searchInput?.value || '').trim();
+            const params = new URLSearchParams({ page: String(page) });
+            let filtered = !!term;
+            FILTERS.forEach((id) => {
+                const v = document.getElementById(id)?.value || 'semua';
+                if (v !== 'semua') { params.set(id.replace('filter-', '').replace(/-/g, '_'), v); filtered = true; }
+            });
+            if (term) params.set('q', term);
+
+            tableBody.classList.add('is-fetching');
+            try {
+                const res = await fetch('/lppm/rekognisi?' + params, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (seq !== requestSeq) return;
+
+                tableBody.querySelectorAll('tr[data-id]').forEach((r) => r.remove());
+                tableBody.insertAdjacentHTML('afterbegin', data.items.map(buildRowHTML).join(''));
+                currentPage = data.meta.page;
+                emptyRow.hidden = data.meta.total !== 0;
+                if (data.meta.total === 0) {
+                    emptyRow.firstElementChild.textContent = filtered ? 'Tidak ada data yang cocok dengan filter.' : emptyDefault;
+                }
+                footerRange.textContent = data.meta.from + '–' + data.meta.to;
+                footerTotalCount.textContent = data.meta.total;
+                pager.render(data.meta.page, data.meta.last);
+            } catch (err) {
+                if (seq !== requestSeq) return;
+                console.error('[Rekognisi] Gagal memuat halaman:', err);
+                window.Toast?.show?.({ type: 'error', title: 'Gagal memuat data', message: 'Tidak bisa memuat halaman ini. Coba lagi.' });
+            } finally {
+                if (seq === requestSeq) tableBody.classList.remove('is-fetching');
+            }
+        }
+
+        // Cari (tunda 300ms), pilih dropdown, reset -> kembali ke halaman 1
+        searchInput?.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadPage(1), 300); });
+        // setTimeout 0: tunggu script.js selesai mengisi nilai dropdown tersembunyi
+        document.querySelectorAll('.filter-card .dropdown-option').forEach((opt) => opt.addEventListener('click', () => setTimeout(() => loadPage(1), 0)));
+        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            FILTERS.forEach((id) => SIDA.dropdown.reset(document.getElementById(id).closest('[data-dropdown]')));
+            loadPage(1);
         });
+
+        // Update massal: muat ulang halaman aktif supaya data & kolom turunan konsisten dengan server.
+        SIDA.bulkUpdateApply = () => loadPage(currentPage);
+
 
         // ---- Modal: mekanisme buka/tutup/drag dari script.js ----
         const {
@@ -1140,10 +967,8 @@
                     });
                     return;
                 }
-                if (id) updateRow(result.data);
-                else insertRow(result.data);
-                applyFilters();
                 closeModal();
+                await loadPage(id ? currentPage : 1); // data baru tampil di halaman 1 (terbaru dulu)
                 Toast.show({
                     type: 'success',
                     message: id ? 'Data rekognisi berhasil diperbarui.' : 'Data rekognisi baru berhasil ditambahkan.',
@@ -1175,7 +1000,7 @@
                 });
                 const result = await res.json();
                 if (res.ok && result.success) {
-                    removeRow(result.id);
+                    loadPage(currentPage);
                     Toast.show({
                         type: 'success',
                         message: 'Data rekognisi berhasil dihapus.'
@@ -1215,23 +1040,6 @@
     @if($showBulk && $bulkWrite)
         <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
-    <script>
-        // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
-        // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.
-        (function() {
-            const wrap = document.getElementById('pageWrap');
-            if (!wrap) return;
-            const MIN_MS = 350;
-            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
-            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
-                setTimeout(() => {
-                    wrap.classList.remove('is-loading');
-                    wrap.classList.add('is-loaded');
-                    wrap.removeAttribute('aria-busy');
-                }, Math.max(0, MIN_MS - performance.now()));
-            });
-        })();
-    </script>
 </body>
 
 </html>

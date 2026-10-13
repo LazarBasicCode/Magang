@@ -16,6 +16,7 @@
             } catch (e) {}
         })();
     </script>
+    <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/profile-account.css') }}?v={{ @filemtime(public_path('css/profile-account.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
@@ -375,7 +376,7 @@
                         </div>
                     </div>
 
-                    <div class="table-scroll">
+                    <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -452,7 +453,7 @@
                                 @empty
                                 <tr id="emptyRow">
                                     <td colspan="6" style="text-align:center; padding: 32px; color: var(--ink-faint);">
-                                        Belum ada pengguna terdaftar.
+                                        {{ request()->hasAny(['q', 'role', 'status']) ? 'Tidak ada pengguna yang cocok dengan filter/pencarian.' : 'Belum ada pengguna terdaftar.' }}
                                     </td>
                                 </tr>
                                 @endforelse
@@ -474,8 +475,9 @@
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong id="footerVisibleCount">{{ $rows->count() }}</strong> dari <strong>{{ $stats['total'] }}</strong> pengguna
+                            Menampilkan <strong>{{ $pager->firstItem() ?? 0 }}&ndash;{{ $pager->lastItem() ?? 0 }}</strong> dari <strong>{{ $pager->total() }}</strong> pengguna
                         </div>
+                        <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
                     </div>
                 </div>
             </div>
@@ -592,6 +594,7 @@
     </div>
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script>
         // ================================================================
         // KHUSUS halaman Hak Akses.
@@ -740,7 +743,7 @@
                     if (valueEl) valueEl.textContent = option.textContent.trim();
                     const row = dropdown.closest('.permission-row');
                     if (row) row.dataset.state = option.dataset.value;
-                    if (dropdown.closest('.filter-grid')) applyFilters();
+                    if (dropdown.closest('.filter-grid')) reloadWithFilters();
                     if (row && ['biasa', 'penuh'].includes(option.dataset.value)) {
                         enforceSingleResponsibility(row.dataset.menu);
                     }
@@ -760,6 +763,25 @@
         const noResultsRow = document.getElementById('noResultsRow');
         const footerVisibleCount = document.getElementById('footerVisibleCount');
 
+        // Filter/cari/halaman diproses di SERVER (50 baris/halaman): muat ulang halaman dengan query string.
+        // (Baris hak akses berisi chip hasil hitungan server, jadi dimuat ulang penuh, bukan lewat AJAX.)
+        const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => reloadWithFilters(n) });
+        pager.render({{ $pager->currentPage() }}, {{ max(1, $pager->lastPage()) }});
+
+        function reloadWithFilters(page = 1) {
+            const params = new URLSearchParams();
+            const q = (filterSearchInput?.value || '').trim();
+            const role = filterRoleInput?.value || 'semua';
+            const status = filterStatusInput?.value || 'semua';
+            if (q) params.set('q', q);
+            if (role !== 'semua') params.set('role', role);
+            if (status !== 'semua') params.set('status', status);
+            if (page > 1) params.set('page', String(page));
+            const qs = params.toString();
+            window.location.href = window.location.pathname + (qs ? '?' + qs : '');
+        }
+
+        // applyFilters: hanya menyaring baris di halaman ini (dipakai setelah simpan hak akses, tanpa reload).
         function applyFilters() {
             if (!tableBody) return;
             const term = (filterSearchInput?.value || '').trim().toLowerCase();
@@ -794,13 +816,13 @@
         let searchDebounceTimer = null;
         filterSearchInput?.addEventListener('input', () => {
             clearTimeout(searchDebounceTimer);
-            searchDebounceTimer = setTimeout(applyFilters, 150);
+            searchDebounceTimer = setTimeout(() => reloadWithFilters(), 400);
         });
 
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
             document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
             if (filterSearchInput) filterSearchInput.value = '';
-            applyFilters();
+            reloadWithFilters();
         });
 
         // ----------------------------------------------------------------
@@ -1036,29 +1058,19 @@
             }
         });
 
-        // Inisialisasi filter saat halaman pertama kali dimuat
+        // Isi ulang kontrol filter dari query string (hasil filter dikirim server)
+        (function () {
+            const p = new URLSearchParams(window.location.search);
+            if (filterSearchInput && p.get('q')) filterSearchInput.value = p.get('q');
+            [['role', filterRoleInput], ['status', filterStatusInput]].forEach(([k, input]) => {
+                if (p.get(k) && input) selectDropdownValue(input.closest('[data-dropdown]'), p.get(k));
+            });
+        })();
         applyFilters();
     </script>
     <script src="{{ asset('js/toast.js') }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
-    <script>
-        // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
-        // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.
-        (function() {
-            const wrap = document.getElementById('pageWrap');
-            if (!wrap) return;
-            const MIN_MS = 350;
-            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
-            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
-                setTimeout(() => {
-                    wrap.classList.remove('is-loading');
-                    wrap.classList.add('is-loaded');
-                    wrap.removeAttribute('aria-busy');
-                }, Math.max(0, MIN_MS - performance.now()));
-            });
-        })();
-    </script>
 </body>
 
 </html>

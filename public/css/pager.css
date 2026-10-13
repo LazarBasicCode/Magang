@@ -20,11 +20,25 @@
 .pager-btn:disabled { opacity: .45; cursor: not-allowed; }
 .pager-btn:focus-visible { outline: 2px solid var(--primary, #5b5fef); outline-offset: 2px; }
 .pager-gap { min-width: 22px; text-align: center; color: var(--ink-muted, #6b7390); user-select: none; cursor: default; }
-.pager-nav { padding: 0 14px; }
+.pager-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+
+/* Tombol Kembali/Lanjut: ukuran font sama dengan tombol angka agar proporsional */
+.pager-nav { padding: 0 14px; min-width: 34px; }
 
 /* Tabel meredup sebentar selama halaman baru diambil dari server */
-#userTableBody.is-fetching { opacity: .55; pointer-events: none; transition: opacity .15s; }
+tbody.is-fetching { opacity: .55; pointer-events: none; transition: opacity .15s; }
 
-@media (max-width: 600px) {
-    .table-footer .pager { width: 100%; justify-content: center; }
+@media (max-width: 640px) {
+    .table-footer { padding: 14px 12px; }
+    .table-footer .pager { width: 100%; justify-content: center; flex-wrap: nowrap; gap: 4px; }
+
+    /* Kotak diperkecil supaya Kembali / 1 2 3 4 / Lanjut tetap satu baris */
+    .pager-btn { min-width: 30px; height: 32px; padding: 0 8px; font-size: 12.5px; border-radius: 7px; flex: 0 1 auto; }
+    .pager-nav { padding: 0 10px; }
+    .pager-gap { min-width: 14px; }
+}
+
+@media (max-width: 360px) {
+    .pager-btn { min-width: 28px; padding: 0 6px; font-size: 12px; }
+    .pager-nav { padding: 0 8px; }
 }

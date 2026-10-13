@@ -13,6 +13,8 @@
  *   - Helper umum: esc, initials, avatarColor, csrfToken (SIDA.util)
  *   - CRUD row helper (insert/update/remove baris tabel) (SIDA.table)
  *   - Profile Dropdown
+ *   - Custom datepicker          (SIDA.datepicker)
+ *   - Skeleton loading           (SIDA.skeleton)
  *
  * Yang TIDAK ada di sini (karena beda tiap halaman) dan tetap ditulis
  * di masing-masing file Blade:
@@ -155,6 +157,7 @@
                 valueEl.textContent =
                     placeholderIfEmpty || options[0].textContent.trim();
             }
+            return matched;
         },
 
         // Kembalikan dropdown ke opsi pertama (dipakai tombol "Reset Filter")
@@ -485,6 +488,11 @@
 
             return { insertRow, updateRow, removeRow };
         },
+
+        // Kembalikan area scroll tabel ke baris teratas (ganti halaman/tab/cari).
+        scrollTop(id = "tableScroll") {
+            document.getElementById(id)?.scrollTo({ top: 0 });
+        },
     };
 
     // ---------------------------------------------------------------
@@ -582,6 +590,248 @@
     };
 
     // ---------------------------------------------------------------
+    // CUSTOM DATEPICKER (dipakai Kerja Sama & Rekognisi)
+    // Markup: .datepicker[data-datepicker] (lihat modal di blade).
+    // Panel kalender dipindah ke <body> supaya lepas dari overflow modal.
+    //   const { start, end } = SIDA.datepicker.pair(elMulai, elSelesai);
+    //   start.setValue('2026-01-31'); end.setMinDate(...); end.clear();
+    // ---------------------------------------------------------------
+    SIDA.datepicker = {
+        MONTHS: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
+        DAYS: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
+        active: new Set(),
+        _bound: false,
+
+        pad2(n) {
+            return String(n).padStart(2, "0");
+        },
+        toISO(y, m, d) {
+            return `${y}-${this.pad2(m + 1)}-${this.pad2(d)}`;
+        },
+        parseISO(str) {
+            if (!str) return null;
+            const [y, m, d] = str.split("-").map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+        },
+        format(dateObj) {
+            return `${this.DAYS[dateObj.getDay()]}, ${dateObj.getDate()} ${this.MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+        },
+        closeAll() {
+            this.active.forEach((dp) => dp.close());
+        },
+
+        // Listener global (klik di luar, resize, scroll) dipasang sekali saja
+        bindGlobal() {
+            if (this._bound) return;
+            this._bound = true;
+            document.addEventListener("click", (e) => {
+                this.active.forEach((dp) => {
+                    if (!dp.isOpen()) return;
+                    if (dp.el.contains(e.target) || dp.panel.contains(e.target)) return;
+                    dp.close();
+                });
+            });
+            window.addEventListener("resize", () => this.active.forEach((dp) => dp.reposition()));
+            document.addEventListener("scroll", () => this.active.forEach((dp) => dp.reposition()), true);
+        },
+
+        create(rootEl) {
+            const self = this;
+            self.bindGlobal();
+
+            const hiddenInput = rootEl.querySelector('input[type="hidden"]');
+            const trigger = rootEl.querySelector(".datepicker-trigger");
+            const valueEl = rootEl.querySelector(".datepicker-value");
+            const panel = rootEl.querySelector(".datepicker-panel");
+            const monthLabel = rootEl.querySelector(".dp-month-label");
+            const daysGrid = rootEl.querySelector(".dp-days");
+            const prevBtn = rootEl.querySelector(".dp-prev");
+            const nextBtn = rootEl.querySelector(".dp-next");
+            const todayBtn = rootEl.querySelector(".dp-today-btn");
+            const clearBtn = rootEl.querySelector(".dp-clear-btn");
+
+            document.body.appendChild(panel);
+
+            let selected = null;
+            let minDate = null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let view = { year: today.getFullYear(), month: today.getMonth() };
+
+            function render() {
+                monthLabel.textContent = `${self.MONTHS[view.month]} ${view.year}`;
+                daysGrid.innerHTML = "";
+
+                const startWeekday = new Date(view.year, view.month, 1).getDay();
+                const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+
+                for (let i = 0; i < startWeekday; i++) {
+                    const blank = document.createElement("span");
+                    blank.className = "dp-day is-empty";
+                    daysGrid.appendChild(blank);
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const cellDate = new Date(view.year, view.month, d);
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "dp-day";
+                    btn.textContent = d;
+
+                    if (cellDate.getTime() === today.getTime()) btn.classList.add("is-today");
+                    if (selected && cellDate.getTime() === selected.getTime()) btn.classList.add("is-selected");
+                    if (minDate && cellDate.getTime() < minDate.getTime()) btn.disabled = true;
+
+                    btn.addEventListener("click", () => selectDate(cellDate));
+                    daysGrid.appendChild(btn);
+                }
+            }
+
+            function positionPanel() {
+                const rect = trigger.getBoundingClientRect();
+                const panelWidth = panel.offsetWidth || 268;
+                let left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
+                left = Math.max(8, left);
+                panel.style.left = left + "px";
+
+                const panelHeight = panel.offsetHeight;
+                let top = rect.bottom + 6;
+                if (top + panelHeight > window.innerHeight - 8) {
+                    const above = rect.top - panelHeight - 6;
+                    top = above > 8 ? above : Math.max(8, window.innerHeight - panelHeight - 8);
+                }
+                panel.style.top = top + "px";
+            }
+
+            function emitChange(date) {
+                rootEl.dispatchEvent(new CustomEvent("datepicker:change", {
+                    detail: { date, iso: hiddenInput.value },
+                }));
+            }
+
+            function selectDate(dateObj) {
+                selected = dateObj;
+                hiddenInput.value = self.toISO(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+                valueEl.textContent = self.format(dateObj);
+                valueEl.classList.add("has-value");
+                closePanel();
+                emitChange(dateObj);
+            }
+
+            function clear() {
+                selected = null;
+                hiddenInput.value = "";
+                valueEl.textContent = "Pilih tanggal";
+                valueEl.classList.remove("has-value");
+                emitChange(null);
+            }
+
+            function openPanel() {
+                self.closeAll();
+                document.querySelectorAll(".dropdown.is-open").forEach((d) => d.classList.remove("is-open"));
+                view = selected
+                    ? { year: selected.getFullYear(), month: selected.getMonth() }
+                    : { year: today.getFullYear(), month: today.getMonth() };
+                render();
+                panel.style.display = "block";
+                positionPanel();
+                rootEl.classList.add("is-open");
+                self.active.add(api);
+            }
+
+            function closePanel() {
+                panel.style.display = "none";
+                rootEl.classList.remove("is-open");
+                self.active.delete(api);
+            }
+
+            trigger.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const wasOpen = rootEl.classList.contains("is-open");
+                self.closeAll();
+                document.querySelectorAll(".dropdown.is-open").forEach((d) => d.classList.remove("is-open"));
+                if (!wasOpen) openPanel();
+            });
+            panel.addEventListener("click", (e) => e.stopPropagation());
+            prevBtn.addEventListener("click", () => {
+                view.month--;
+                if (view.month < 0) { view.month = 11; view.year--; }
+                render();
+            });
+            nextBtn.addEventListener("click", () => {
+                view.month++;
+                if (view.month > 11) { view.month = 0; view.year++; }
+                render();
+            });
+            todayBtn.addEventListener("click", () => selectDate(new Date(today)));
+            clearBtn.addEventListener("click", clear);
+
+            render();
+
+            const api = {
+                el: rootEl,
+                panel,
+                isOpen: () => rootEl.classList.contains("is-open"),
+                close: closePanel,
+                reposition: positionPanel,
+                setValue(iso) {
+                    const d = self.parseISO(iso);
+                    if (d) {
+                        selected = d;
+                        valueEl.textContent = self.format(d);
+                        valueEl.classList.add("has-value");
+                        hiddenInput.value = iso;
+                    } else {
+                        selected = null;
+                        valueEl.textContent = "Pilih tanggal";
+                        valueEl.classList.remove("has-value");
+                        hiddenInput.value = "";
+                    }
+                },
+                setMinDate(iso) {
+                    minDate = self.parseISO(iso);
+                },
+                clear,
+            };
+            return api;
+        },
+
+        // Pasangan Tanggal Mulai & Selesai: tanggal selesai tidak boleh sebelum tanggal mulai
+        pair(startRoot, endRoot) {
+            const start = this.create(startRoot);
+            const end = this.create(endRoot);
+            const endInput = endRoot.querySelector('input[type="hidden"]');
+            startRoot.addEventListener("datepicker:change", (e) => {
+                end.setMinDate(e.detail.iso || null);
+                if (e.detail.iso && endInput.value && endInput.value < e.detail.iso) end.clear();
+            });
+            return { start, end };
+        },
+    };
+
+    // ---------------------------------------------------------------
+    // SKELETON LOADING: lepas .is-loading dari #pageWrap setelah font siap
+    // (maks. 2,5 dtk) dan minimal tampil N ms sejak halaman dimuat.
+    // Ubah durasi minimal per halaman lewat atribut: data-skeleton-min="500"
+    // ---------------------------------------------------------------
+    SIDA.skeleton = {
+        init() {
+            const wrap = document.getElementById("pageWrap");
+            if (!wrap) return;
+            const minMs = parseInt(wrap.dataset.skeletonMin, 10) || 350;
+            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
+            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
+                setTimeout(() => {
+                    wrap.classList.remove("is-loading");
+                    wrap.classList.add("is-loaded");
+                    wrap.removeAttribute("aria-busy");
+                }, Math.max(0, minMs - performance.now()));
+            });
+        },
+    };
+
+    // ---------------------------------------------------------------
     // AUTO-INIT bagian yang selalu ada di semua halaman berlayout ini
     // ---------------------------------------------------------------
     function autoInit() {
@@ -592,6 +842,7 @@
             // ['notif',    SIDA.notif],
             ['profile',  SIDA.profile],
             ['tableLabels', SIDA.tableLabels],
+            ['skeleton', SIDA.skeleton],
         ];
         steps.forEach(([name, mod]) => {
             try { mod?.init?.(); }

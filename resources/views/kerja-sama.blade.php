@@ -16,6 +16,7 @@
             } catch (e) {}
         })();
     </script>
+    <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
@@ -433,7 +434,7 @@
                         @include('partials.row-select-bar')
                     @endif
 
-                    <div class="table-scroll">
+                    <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table"
                             @if($showBulk)
                                 data-selectable="kerja-sama"
@@ -470,7 +471,7 @@
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
-                                @forelse($items as $item)
+                                @foreach($items as $item)
                                 @php
                                 $nama = $item->user->name ?? 'Tanpa Nama';
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
@@ -531,13 +532,12 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @empty
-                                <tr id="emptyRow">
+                                @endforeach
+                                <tr id="emptyRow" {{ $items->total() === 0 ? '' : 'hidden' }}>
                                     <td colspan="10" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data kerja sama. Klik "Tambah Kerja Sama" untuk mulai mengisi.
                                     </td>
                                 </tr>
-                                @endforelse
                             </tbody>
 
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
@@ -552,11 +552,13 @@
                     <!-- FOOTER -->
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>{{ $items->firstItem() ?? 0 }}-{{ $items->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">2026</span>
+                            Menampilkan <strong id="footerRange">{{ $items->firstItem() ?? 0 }}&ndash;{{ $items->lastItem() ?? 0 }}</strong>
+                            dari <strong id="footerTotalCount">{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">2026</span>
                         </div>
-                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $items->links() }}
-                        setelah view paginator kamu disesuaikan dengan desain ini. --}}
+                        <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
+                        @if($items->hasPages())
+                        <noscript>{{ $items->links() }}</noscript>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -765,6 +767,7 @@
     @endif
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script>
         // ================================================================
         // KHUSUS halaman Kerja Sama.
@@ -795,277 +798,14 @@
         const fieldLainnya = document.getElementById('field-lainnya');
         const ddUser = document.getElementById('dd-user');
 
-        // ================================================================
-        // CUSTOM DATEPICKER (khusus halaman ini)
-        // ================================================================
-        const MONTH_NAMES_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        const DAY_MS = 24 * 60 * 60 * 1000;
-
-        function pad2(n) {
-            return String(n).padStart(2, '0');
-        }
-
-        function toISO(y, m, d) {
-            return `${y}-${pad2(m + 1)}-${pad2(d)}`;
-        }
-
-        function parseISO(str) {
-            if (!str) return null;
-            const [y, m, d] = str.split('-').map(Number);
-            if (!y || !m || !d) return null;
-            return new Date(y, m - 1, d);
-        }
-
-        function formatDisplayDate(dateObj) {
-            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-            return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${MONTH_NAMES_ID[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-        }
-
-        function createDatepicker(rootEl) {
-            const hiddenInput = rootEl.querySelector('input[type="hidden"]');
-            const trigger = rootEl.querySelector('.datepicker-trigger');
-            const valueEl = rootEl.querySelector('.datepicker-value');
-            const panel = rootEl.querySelector('.datepicker-panel');
-            const monthLabel = rootEl.querySelector('.dp-month-label');
-            const daysGrid = rootEl.querySelector('.dp-days');
-            const prevBtn = rootEl.querySelector('.dp-prev');
-            const nextBtn = rootEl.querySelector('.dp-next');
-            const todayBtn = rootEl.querySelector('.dp-today-btn');
-            const clearBtn = rootEl.querySelector('.dp-clear-btn');
-
-            // Pindahkan panel kalender ke <body> supaya posisinya lepas dari overflow modal
-            document.body.appendChild(panel);
-
-            let selected = null;
-            let minDate = null;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            let view = {
-                year: today.getFullYear(),
-                month: today.getMonth()
-            };
-
-            function render() {
-                monthLabel.textContent = `${MONTH_NAMES_ID[view.month]} ${view.year}`;
-                daysGrid.innerHTML = '';
-
-                const firstDay = new Date(view.year, view.month, 1);
-                const startWeekday = firstDay.getDay();
-                const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
-
-                for (let i = 0; i < startWeekday; i++) {
-                    const blank = document.createElement('span');
-                    blank.className = 'dp-day is-empty';
-                    daysGrid.appendChild(blank);
-                }
-
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const cellDate = new Date(view.year, view.month, d);
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'dp-day';
-                    btn.textContent = d;
-
-                    if (cellDate.getTime() === today.getTime()) btn.classList.add('is-today');
-                    if (selected && cellDate.getTime() === selected.getTime()) btn.classList.add('is-selected');
-                    if (minDate && cellDate.getTime() < minDate.getTime()) btn.disabled = true;
-
-                    btn.addEventListener('click', () => selectDate(cellDate));
-                    daysGrid.appendChild(btn);
-                }
-            }
-
-            function positionPanel() {
-                const rect = trigger.getBoundingClientRect();
-                const panelWidth = panel.offsetWidth || 268;
-                let left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
-                left = Math.max(8, left);
-                panel.style.left = left + 'px';
-
-                const panelHeight = panel.offsetHeight;
-                let top = rect.bottom + 6;
-                if (top + panelHeight > window.innerHeight - 8) {
-                    const above = rect.top - panelHeight - 6;
-                    top = above > 8 ? above : Math.max(8, window.innerHeight - panelHeight - 8);
-                }
-                panel.style.top = top + 'px';
-            }
-
-            function selectDate(dateObj) {
-                selected = dateObj;
-                hiddenInput.value = toISO(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-                valueEl.textContent = formatDisplayDate(dateObj);
-                valueEl.classList.add('has-value');
-                closePanel();
-                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
-                    detail: {
-                        date: dateObj,
-                        iso: hiddenInput.value
-                    }
-                }));
-            }
-
-            function clear() {
-                selected = null;
-                hiddenInput.value = '';
-                valueEl.textContent = 'Pilih tanggal';
-                valueEl.classList.remove('has-value');
-                rootEl.dispatchEvent(new CustomEvent('datepicker:change', {
-                    detail: {
-                        date: null,
-                        iso: ''
-                    }
-                }));
-            }
-
-            function openPanel() {
-                closeAllDatepickers();
-                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
-                view = selected ? {
-                    year: selected.getFullYear(),
-                    month: selected.getMonth()
-                } : {
-                    year: today.getFullYear(),
-                    month: today.getMonth()
-                };
-                render();
-                panel.style.display = 'block';
-                positionPanel();
-                rootEl.classList.add('is-open');
-                activeDatepickers.add(api);
-            }
-
-            function closePanel() {
-                panel.style.display = 'none';
-                rootEl.classList.remove('is-open');
-                activeDatepickers.delete(api);
-            }
-
-            trigger.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const wasOpen = rootEl.classList.contains('is-open');
-                closeAllDatepickers();
-                document.querySelectorAll('.dropdown.is-open').forEach((d) => d.classList.remove('is-open'));
-                if (!wasOpen) openPanel();
-            });
-            panel.addEventListener('click', (e) => e.stopPropagation());
-            prevBtn.addEventListener('click', () => {
-                view.month--;
-                if (view.month < 0) {
-                    view.month = 11;
-                    view.year--;
-                }
-                render();
-            });
-            nextBtn.addEventListener('click', () => {
-                view.month++;
-                if (view.month > 11) {
-                    view.month = 0;
-                    view.year++;
-                }
-                render();
-            });
-            todayBtn.addEventListener('click', () => selectDate(new Date(today)));
-            clearBtn.addEventListener('click', clear);
-
-            render();
-
-            const api = {
-                el: rootEl,
-                panel,
-                isOpen: () => rootEl.classList.contains('is-open'),
-                close: closePanel,
-                reposition: positionPanel,
-                setValue(iso) {
-                    const d = parseISO(iso);
-                    if (d) {
-                        selected = d;
-                        valueEl.textContent = formatDisplayDate(d);
-                        valueEl.classList.add('has-value');
-                        hiddenInput.value = iso;
-                    } else {
-                        selected = null;
-                        valueEl.textContent = 'Pilih tanggal';
-                        valueEl.classList.remove('has-value');
-                        hiddenInput.value = '';
-                    }
-                },
-                setMinDate(iso) {
-                    minDate = parseISO(iso);
-                },
-                clear,
-            };
-            return api;
-        }
-
-        const activeDatepickers = new Set();
-
-        function closeAllDatepickers() {
-            activeDatepickers.forEach((dp) => dp.close());
-        }
-
-        const dpMulai = createDatepicker(document.getElementById('dp-tanggal_mulai'));
-        const dpSelesai = createDatepicker(document.getElementById('dp-tanggal_selesai'));
-
-        document.addEventListener('click', (e) => {
-            [dpMulai, dpSelesai].forEach((dp) => {
-                if (!dp.isOpen()) return;
-                if (dp.el.contains(e.target) || dp.panel.contains(e.target)) return;
-                dp.close();
-            });
-        });
-        window.addEventListener('resize', () => activeDatepickers.forEach((dp) => dp.reposition()));
-        document.addEventListener('scroll', () => activeDatepickers.forEach((dp) => dp.reposition()), true);
-
-        document.getElementById('dp-tanggal_mulai').addEventListener('datepicker:change', (e) => {
-            dpSelesai.setMinDate(e.detail.iso || null);
-            const selesaiVal = document.getElementById('form-tanggal_selesai').value;
-            if (e.detail.iso && selesaiVal && selesaiVal < e.detail.iso) {
-                dpSelesai.clear();
-            }
-        });
-        // ================================================================
-        // /CUSTOM DATEPICKER
-        // ================================================================
-
-        // ----------------------------------------------------------------
-        // SELECT DROPDOWN VALUE (lokal — 3 argumen + return matched)
-        // ----------------------------------------------------------------
-        function selectDropdownValue(dropdownEl, value, placeholder) {
-            if (!dropdownEl) return;
-            const options = dropdownEl.querySelectorAll('.dropdown-option');
-            const valueEl = dropdownEl.querySelector('.dropdown-value');
-            const hiddenInput = dropdownEl.querySelector('input[type="hidden"]');
-            let matched = false;
-            options.forEach((o) => {
-                const isMatch = o.dataset.value === String(value);
-                o.classList.toggle('is-selected', isMatch);
-                if (isMatch) {
-                    valueEl.textContent = o.textContent.trim();
-                    matched = true;
-                }
-            });
-            if (hiddenInput) hiddenInput.value = matched ? value : '';
-            if (!matched) valueEl.textContent = placeholder || (options[0] ? options[0].textContent.trim() : '');
-            return matched;
-        }
-
-        function resetDropdown(dropdown) {
-            if (!dropdown) return;
-            const options = dropdown.querySelectorAll('.dropdown-option');
-            const valueEl = dropdown.querySelector('.dropdown-value');
-            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            options.forEach((o, i) => {
-                o.classList.toggle('is-selected', i === 0);
-                if (i === 0) {
-                    valueEl.textContent = o.textContent.trim();
-                    if (hiddenInput) hiddenInput.value = o.dataset.value;
-                }
-            });
-        }
+        // Datepicker (Tanggal Mulai & Selesai) sudah ada di script.js: SIDA.datepicker
+        const { start: dpMulai, end: dpSelesai } = SIDA.datepicker.pair(
+            document.getElementById('dp-tanggal_mulai'),
+            document.getElementById('dp-tanggal_selesai'),
+        );
 
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
-            document.querySelectorAll('.filter-grid [data-dropdown]').forEach(resetDropdown);
+            document.querySelectorAll('.filter-grid [data-dropdown]').forEach((d) => SIDA.dropdown.reset(d));
             const search = document.getElementById('filter-search');
             if (search) search.value = '';
             updateFilterArahVisibility();
@@ -1083,42 +823,73 @@
             fieldFilterArah.classList.toggle('hidden', !isGuestLecture);
             fieldFilterArah.style.display = isGuestLecture ? '' : 'none';
             if (!isGuestLecture) {
-                resetDropdown(fieldFilterArah.querySelector('[data-dropdown]'));
+                SIDA.dropdown.reset(fieldFilterArah.querySelector('[data-dropdown]'));
             }
         }
 
-        function applyFilters() {
-            const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
-            const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
-            const arahVal = document.getElementById('filter-arah')?.value || 'semua';
-            const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-            const rows = tableBody.querySelectorAll('tr[data-id]');
-            let visibleCount = 0;
+        // ================================================================
+        // FILTER, PENCARIAN & PAGINASI — diproses di SERVER (50 baris/halaman)
+        // GET /kerja-sama?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
+        // Tombol halaman digambar public/js/pager.js.
+        // ================================================================
+        const FILTERS = ['filter-tipe-user','filter-jenis','filter-arah'];
+        const searchInput = document.getElementById('filter-search');
+        const emptyRow = document.getElementById('emptyRow');
+        const emptyDefault = emptyRow.firstElementChild.textContent.trim();
+        const footerRange = document.getElementById('footerRange');
+        const footerTotalCount = document.getElementById('footerTotalCount');
+        let currentPage = {{ $items->currentPage() }};
+        let requestSeq = 0;
+        let searchTimer = null;
 
-            rows.forEach((row) => {
-                const matchesTipeUser = tipeUserVal === 'semua' || row.dataset.tipe_user === tipeUserVal;
-                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
-                const matchesArah = arahVal === 'semua' || row.dataset.arah === arahVal;
-                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                const visible = matchesTipeUser && matchesJenis && matchesArah && matchesSearch;
-                row.style.display = visible ? '' : 'none';
-                if (visible) visibleCount++;
+        const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => { loadPage(n); document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+        pager.render({{ $items->currentPage() }}, {{ max(1, $items->lastPage()) }});
+
+        async function loadPage(page = currentPage) {
+            const seq = ++requestSeq;
+            const term = (searchInput?.value || '').trim();
+            const params = new URLSearchParams({ page: String(page) });
+            let filtered = !!term;
+            FILTERS.forEach((id) => {
+                const v = document.getElementById(id)?.value || 'semua';
+                if (v !== 'semua') { params.set(id.replace('filter-', '').replace(/-/g, '_'), v); filtered = true; }
             });
+            if (term) params.set('q', term);
 
-            let noResultRow = document.getElementById('noResultRow');
-            if (visibleCount === 0 && rows.length > 0) {
-                if (!noResultRow) {
-                    noResultRow = document.createElement('tr');
-                    noResultRow.id = 'noResultRow';
-                    const colCount = tableBody.closest('table')?.querySelectorAll('thead th').length || 9;
-                    noResultRow.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding: 32px; color: var(--ink-faint);">Tidak ada data yang cocok dengan filter.</td>`;
-                    tableBody.appendChild(noResultRow);
+            tableBody.classList.add('is-fetching');
+            try {
+                const res = await fetch('/kerja-sama?' + params, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (seq !== requestSeq) return;
+
+                tableBody.querySelectorAll('tr[data-id]').forEach((r) => r.remove());
+                tableBody.insertAdjacentHTML('afterbegin', data.items.map(buildRowHTML).join(''));
+                currentPage = data.meta.page;
+                emptyRow.hidden = data.meta.total !== 0;
+                if (data.meta.total === 0) {
+                    emptyRow.firstElementChild.textContent = filtered ? 'Tidak ada data yang cocok dengan filter.' : emptyDefault;
                 }
-                noResultRow.style.display = '';
-            } else if (noResultRow) {
-                noResultRow.style.display = 'none';
+                footerRange.textContent = data.meta.from + '–' + data.meta.to;
+                footerTotalCount.textContent = data.meta.total;
+                pager.render(data.meta.page, data.meta.last);
+            } catch (err) {
+                if (seq !== requestSeq) return;
+                console.error('[Kerja Sama] Gagal memuat halaman:', err);
+                window.Toast?.show?.({ type: 'error', title: 'Gagal memuat data', message: 'Tidak bisa memuat halaman ini. Coba lagi.' });
+            } finally {
+                if (seq === requestSeq) tableBody.classList.remove('is-fetching');
             }
         }
+
+        // Update massal: muat ulang halaman aktif supaya data & kolom turunan konsisten dengan server.
+        SIDA.bulkUpdateApply = () => loadPage(currentPage);
+
+        // Dipanggil listener filter di bawah (dropdown/reset) -> server, mulai dari halaman 1
+        function applyFilters() { loadPage(1); }
 
         // Listener filter — set nilai manual supaya tidak bergantung script.js
         document.querySelectorAll('#filter-tipe-user, #filter-jenis, #filter-arah').forEach((input) => {
@@ -1156,7 +927,7 @@
 
             const current = document.getElementById('filter-jenis').value;
             if (current !== 'semua' && allowed && !allowed.includes(current)) {
-                resetDropdown(jenisDropdown);
+                SIDA.dropdown.reset(jenisDropdown);
                 updateFilterArahVisibility();
                 applyFilters();
             }
@@ -1175,7 +946,7 @@
         let searchDebounce;
         document.getElementById('filter-search')?.addEventListener('input', () => {
             clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(applyFilters, 150);
+            searchDebounce = setTimeout(applyFilters, 300);
         });
 
         // ----------------------------------------------------------------
@@ -1201,7 +972,7 @@
             fieldArah.classList.toggle('hidden', !isGuestLecture);
             fieldArah.style.display = isGuestLecture ? '' : 'none';
             if (!isGuestLecture) {
-                selectDropdownValue(document.getElementById('dd-arah'), 'inbound', 'Inbound');
+                SIDA.dropdown.select(document.getElementById('dd-arah'), 'inbound', 'Inbound');
             }
         }
         document.querySelectorAll('#dd-jenis .dropdown-option').forEach((opt) => {
@@ -1228,7 +999,7 @@
             });
             const current = document.getElementById('form-jenis').value;
             if (allowed && !allowed.includes(current)) {
-                selectDropdownValue(dd, allowed[0]);
+                SIDA.dropdown.select(dd, allowed[0]);
                 updateConditionalFields(allowed[0]);
             }
         }
@@ -1248,7 +1019,7 @@
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Kerja Sama' : 'Tambah Kerja Sama';
 
-            selectDropdownValue(ddUser, data.user_id || '', 'Pilih mahasiswa/dosen...');
+            SIDA.dropdown.select(ddUser, data.user_id || '', 'Pilih mahasiswa/dosen...');
             document.getElementById('form-tipe_user').value = data.tipe_user || '';
 
             // Edit: kunci nama user. Tambah: dropdown normal.
@@ -1256,12 +1027,12 @@
             setUserLocked(mode === 'edit', selectedOpt ? selectedOpt.textContent.trim() : '');
 
             const jenis = data.jenis || 'conference_internasional';
-            selectDropdownValue(document.getElementById('dd-jenis'), jenis);
+            SIDA.dropdown.select(document.getElementById('dd-jenis'), jenis);
             updateConditionalFields(jenis);
             syncFormJenisOptions();
             document.getElementById('form-jenis_lainnya').value = data.jenis_lainnya || '';
 
-            selectDropdownValue(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');
+            SIDA.dropdown.select(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');
 
             document.getElementById('form-judul_kegiatan').value = data.judul_kegiatan || '';
             document.getElementById('form-mitra').value = data.mitra || '';
@@ -1381,11 +1152,6 @@
             removeRow
         } = SIDA.table.create(tableBody, buildRowHTML);
 
-        // Update massal: baris dirender ulang dengan template tabel ini (badge jenis/arah, atribut filter) lalu filter diterapkan lagi.
-        SIDA.bulkUpdateApply = (rows) => {
-            rows.forEach(updateRow);
-            applyFilters();
-        };
 
         // ----------------------------------------------------------------
         // SUBMIT
@@ -1450,10 +1216,8 @@
                     modalError.hidden = false;
                     return;
                 }
-                if (id) updateRow(result.data);
-                else insertRow(result.data);
-                applyFilters();
                 closeModal();
+                await loadPage(id ? currentPage : 1); // data baru tampil di halaman 1 (terbaru dulu)
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
@@ -1462,9 +1226,9 @@
             }
         });
 
-        // ----t-a-i-w-a-n-------------------------c-o-u-n-t-r-y------------------------
+        // ----------------------------------------------------------------
         // DELETE
-        // ----------------i-s-----------n-o-t----------------------------------
+        // ----------------------------------------------------------------
         async function handleDelete(id, name) {
             const ok = await DeleteConfirm.ask({ name, entity: 'data' });
             if (!ok) return;
@@ -1477,7 +1241,7 @@
                     }
                 });
                 const result = await res.json();
-                if (res.ok && result.success) removeRow(result.id);
+                if (res.ok && result.success) loadPage(currentPage);
                 else alert(result.message || 'Gagal menghapus data.');
             } catch (err) {
                 alert('Gagal terhubung ke server.');
@@ -1508,23 +1272,6 @@
     @if($showBulk && $bulkWrite)
         <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
-    <script>
-        // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
-        // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.
-        (function() {
-            const wrap = document.getElementById('pageWrap');
-            if (!wrap) return;
-            const MIN_MS = 350;
-            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
-            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
-                setTimeout(() => {
-                    wrap.classList.remove('is-loading');
-                    wrap.classList.add('is-loaded');
-                    wrap.removeAttribute('aria-busy');
-                }, Math.max(0, MIN_MS - performance.now()));
-            });
-        })();
-    </script>
 </body>
 
 </html>

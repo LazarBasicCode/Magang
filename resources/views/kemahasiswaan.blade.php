@@ -12,6 +12,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
@@ -260,7 +261,7 @@
         </header>
 
         <main class="app-main">
-            <div class="page-wrap is-loading" id="pageWrap" aria-busy="true">
+            <div class="page-wrap is-loading" id="pageWrap" aria-busy="true" data-skeleton-min="500">
 
                 <!-- PAGE TITLE + ACTION -->
                 <div class="title-bar">
@@ -444,7 +445,7 @@
                         @include('partials.row-select-bar')
                     @endif
 
-                    <div class="table-scroll">
+                    <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table"
                             @if($showBulk)
                                 data-selectable="kemahasiswaan"
@@ -467,7 +468,7 @@
                                 </tr>
                             </thead>
                             <tbody id="kegiatanTableBody">
-                                @forelse($kegiatan as $item)
+                                @foreach($kegiatan as $item)
                                 @php
                                 $nama = optional($item->mahasiswa->user)->name ?? 'Tanpa Nama';
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
@@ -518,13 +519,12 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @empty
-                                <tr id="emptyRow">
+                                @endforeach
+                                <tr id="emptyRow" {{ $kegiatan->total() === 0 ? '' : 'hidden' }}>
                                     <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data kegiatan. Klik "Tambah Kegiatan" untuk mulai mengisi.
                                     </td>
                                 </tr>
-                                @endforelse
                             </tbody>
 
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
@@ -540,11 +540,13 @@
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>{{ $kegiatan->firstItem() ?? 0 }}-{{ $kegiatan->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $kegiatan->total() }}</strong> data kegiatan mahasiswa
+                            Menampilkan <strong id="footerRange">{{ $kegiatan->firstItem() ?? 0 }}&ndash;{{ $kegiatan->lastItem() ?? 0 }}</strong>
+                            dari <strong id="footerTotalCount">{{ $kegiatan->total() }}</strong> data kegiatan mahasiswa
                         </div>
-                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $kegiatan->links() }}
-                        setelah view paginator kamu disesuaikan dengan desain ini. --}}
+                        <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
+                        @if($kegiatan->hasPages())
+                        <noscript>{{ $kegiatan->links() }}</noscript>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -691,6 +693,7 @@
     @endif
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script>
         // ================================================================
         // Bagian ini KHUSUS halaman Kemahasiswaan:
@@ -762,26 +765,77 @@
             removeRow
         } = SIDA.table.create(tableBody, buildRowHTML);
 
-        // ---- Live filter (khusus halaman ini: 3 dropdown + search) ----
-        const applyFilters = SIDA.filter.setup({
-            tableBody,
-            dropdownFilterIds: ['filter-jenis', 'filter-tab', 'filter-tingkat', 'filter-tahun'],
-            searchInputId: 'filter-search',
-            matches: (row) => {
-                const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
-                const tabVal = document.getElementById('filter-tab')?.value || 'semua';
-                const tingkatVal = document.getElementById('filter-tingkat')?.value || 'semua';
-                const tahunVal = document.getElementById('filter-tahun')?.value || 'semua';
-                const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
-                const matchesTab = tabVal === 'semua' || row.dataset.tab === tabVal;
-                const matchesTingkat = tingkatVal === 'semua' || row.dataset.tingkat === tingkatVal;
-                const matchesTahun = tahunVal === 'semua' || row.dataset.tahun === tahunVal;
-                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                return matchesJenis && matchesTab && matchesTingkat && matchesTahun && matchesSearch;
-            },
-            emptyMessage: 'Tidak ada data yang cocok dengan filter.',
+        // ================================================================
+        // FILTER, PENCARIAN & PAGINASI — diproses di SERVER (50 baris/halaman)
+        // GET /kemahasiswaan?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
+        // Tombol halaman digambar public/js/pager.js.
+        // ================================================================
+        const FILTERS = ['filter-jenis','filter-tab','filter-tingkat','filter-tahun'];
+        const searchInput = document.getElementById('filter-search');
+        const emptyRow = document.getElementById('emptyRow');
+        const footerRange = document.getElementById('footerRange');
+        const footerTotalCount = document.getElementById('footerTotalCount');
+        let currentPage = {{ $kegiatan->currentPage() }};
+        let requestSeq = 0;
+        let searchTimer = null;
+
+        const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => { loadPage(n); document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+        pager.render({{ $kegiatan->currentPage() }}, {{ max(1, $kegiatan->lastPage()) }});
+
+        async function loadPage(page = currentPage) {
+            const seq = ++requestSeq;
+            const term = (searchInput?.value || '').trim();
+            const params = new URLSearchParams({ page: String(page) });
+            let filtered = !!term;
+            FILTERS.forEach((id) => {
+                const v = document.getElementById(id)?.value || 'semua';
+                if (v !== 'semua') { params.set(id.replace('filter-', ''), v); filtered = true; }
+            });
+            if (term) params.set('q', term);
+
+            tableBody.classList.add('is-fetching');
+            try {
+                const res = await fetch('/kemahasiswaan?' + params, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (seq !== requestSeq) return;
+
+                tableBody.querySelectorAll('tr[data-id]').forEach((r) => r.remove());
+                tableBody.insertAdjacentHTML('afterbegin', data.items.map(buildRowHTML).join(''));
+                currentPage = data.meta.page;
+                emptyRow.hidden = data.meta.total !== 0;
+                if (data.meta.total === 0) {
+                    emptyRow.firstElementChild.textContent = filtered
+                        ? 'Tidak ada data yang cocok dengan filter.'
+                        : 'Belum ada data kegiatan. Klik "Tambah Kegiatan" untuk mulai mengisi.';
+                }
+                footerRange.textContent = data.meta.from + '–' + data.meta.to;
+                footerTotalCount.textContent = data.meta.total;
+                pager.render(data.meta.page, data.meta.last);
+            } catch (err) {
+                if (seq !== requestSeq) return;
+                console.error('[Kemahasiswaan] Gagal memuat halaman:', err);
+                window.Toast?.show?.({ type: 'error', title: 'Gagal memuat data', message: 'Tidak bisa memuat halaman ini. Coba lagi.' });
+            } finally {
+                if (seq === requestSeq) tableBody.classList.remove('is-fetching');
+            }
+        }
+
+        // Cari (tunda 300ms), pilih dropdown, reset -> kembali ke halaman 1
+        searchInput?.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadPage(1), 300); });
+        // setTimeout 0: tunggu script.js selesai mengisi nilai dropdown tersembunyi
+        document.querySelectorAll('.filter-card .dropdown-option').forEach((opt) => opt.addEventListener('click', () => setTimeout(() => loadPage(1), 0)));
+        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            FILTERS.forEach((id) => SIDA.dropdown.select(document.getElementById(id).closest('[data-dropdown]'), 'semua'));
+            loadPage(1);
         });
+
+        // Update massal: muat ulang halaman aktif supaya data & kolom turunan konsisten dengan server.
+        SIDA.bulkUpdateApply = () => loadPage(currentPage);
 
         // ---- Modal: mekanisme buka/tutup/drag dari script.js ----
         const {
@@ -863,10 +917,8 @@
                     return;
                 }
 
-                if (id) updateRow(result.data);
-                else insertRow(result.data);
-                applyFilters();
                 closeModal();
+                await loadPage(id ? currentPage : 1); // data baru tampil di halaman 1 (terbaru dulu)
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
@@ -891,7 +943,7 @@
                     },
                 });
                 const result = await res.json();
-                if (res.ok && result.success) removeRow(result.id);
+                if (res.ok && result.success) loadPage(currentPage);
                 else alert(result.message || 'Gagal menghapus data.');
             } catch (err) {
                 alert('Gagal terhubung ke server.');
@@ -917,23 +969,6 @@
     @if($showBulk && $bulkWrite)
         <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
-    <script>
-        // Lepas skeleton begitu font siap (maks. 2,5 dtk) dan minimal tampil 350 ms
-        // sejak halaman mulai dimuat, supaya tidak berkedip terlalu cepat.
-        (function() {
-            const wrap = document.getElementById('pageWrap');
-            if (!wrap) return;
-            const MIN_MS = 500;
-            const fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
-            Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
-                setTimeout(() => {
-                    wrap.classList.remove('is-loading');
-                    wrap.classList.add('is-loaded');
-                    wrap.removeAttribute('aria-busy');
-                }, Math.max(0, MIN_MS - performance.now()));
-            });
-        })();
-    </script>
 </body>
 
 </html>

@@ -585,17 +585,17 @@ $__accessRows = $__user->accessBreakdown();
                         <label class="field-label" for="ap-identifier" id="apIdLabel">NIM</label>
                         <div class="field-control"><input id="ap-identifier" type="text" placeholder="Contoh: 222011005" autocomplete="off"></div>
                     </div>
-                    <div class="field">
-                        <label class="field-label" for="ap-email">Email</label>
-                        <div class="field-control"><input id="ap-email" type="email" placeholder="Opsional" autocomplete="off"></div>
-                    </div>
                     <div class="field" id="apFieldAngkatan">
                         <label class="field-label" for="ap-angkatan">Angkatan</label>
                         <div class="field-control"><input id="ap-angkatan" type="number" min="1990" max="2100" placeholder="Kosong = tahun terbaru"></div>
                     </div>
-                    <div class="field">
+                    <div class="field" id="apFieldStatus">
                         <label class="field-label" for="ap-status">Status</label>
                         <div class="field-control"><select id="ap-status" class="ap-select"></select></div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="ap-email">Email</label>
+                        <div class="field-control"><input id="ap-email" type="email" placeholder="Opsional" autocomplete="off"></div>
                     </div>
                     <div class="field">
                         <label class="field-label" for="ap-password">Password</label>

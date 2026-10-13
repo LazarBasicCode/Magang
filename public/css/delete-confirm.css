@@ -38,6 +38,16 @@ body.dark-mode .dc-backdrop { background: rgba(12, 14, 19, .55); }
     border: none;
     box-shadow: 0 30px 60px -20px rgba(15, 23, 42, .25);
 }
+/* Kartu bisa digeser; latar jernih selama digeser (transisi backdrop-filter sudah ada di .dc-backdrop) */
+.dc-card { cursor: grab; touch-action: none; user-select: none; }
+.dc-card.is-dragging { cursor: grabbing; }
+.dc-card .dc-btn { cursor: pointer; }
+.dc-card .dc-btn:disabled { cursor: not-allowed; }
+.dc-backdrop.is-active.is-dragging {
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+}
+
 .dc-card.is-pop { animation: dcPop 520ms cubic-bezier(.34, 1.56, .64, 1) both; }
 
 @keyframes dcPop {

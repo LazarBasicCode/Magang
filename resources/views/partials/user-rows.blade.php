@@ -27,8 +27,30 @@ $angkatan = $item->role === 'mahasiswa' ? optional($item->mahasiswa)->angkatan :
                 <div class="name-line">
                     <span class="name">{{ $item->name }}</span>
                     @unless($item->has_logged_in ?? true)
-                        <span class="never-login-badge" title="Belum pernah login" aria-label="Belum pernah login" role="img">
-                            <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+                        {{-- Akun baru yang belum pernah login. Animasi: public/css/never-login.css (--nl-delay = jeda acak per baris
+                             supaya gembok-gembok tidak bergerak serempak). --}}
+                        <span class="never-login-badge" role="img" tabindex="0" aria-label="Belum pernah login"
+                              style="--nl-delay: {{ number_format(($item->id % 6) * 0.55, 2, '.', '') }}s">
+                            <span class="nl-ring" aria-hidden="true"></span>
+                            <span class="nl-face" aria-hidden="true">
+                                <svg class="nl-icon" viewBox="0 0 24 24" focusable="false">
+                                    <g class="nl-shackle">
+                                        <path d="M7.6 11V8.2a4.4 4.4 0 0 1 8.8 0V11" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+                                    </g>
+                                    <g class="nl-body">
+                                        <rect x="4.6" y="10.6" width="14.8" height="10.4" rx="3.1" fill="currentColor"/>
+                                        <circle class="nl-hole" cx="12" cy="14.9" r="1.75"/>
+                                        <rect class="nl-hole" x="11.15" y="15.4" width="1.7" height="3.1" rx=".85"/>
+                                    </g>
+                                    <path class="nl-spark nl-spark-1" d="M20.4 1.9l.62 1.62 1.62.62-1.62.62-.62 1.62-.62-1.62-1.62-.62 1.62-.62z"/>
+                                    <path class="nl-spark nl-spark-2" d="M3.4 5.3l.46 1.2 1.2.46-1.2.46-.46 1.2-.46-1.2-1.2-.46 1.2-.46z"/>
+                                </svg>
+                                <span class="nl-shine"></span>
+                            </span>
+                            <span class="nl-tip" role="tooltip">
+                                <strong>Belum pernah login</strong>
+                                <span>Akun baru, menunggu login pertama</span>
+                            </span>
                         </span>
                     @endunless
                 </div>

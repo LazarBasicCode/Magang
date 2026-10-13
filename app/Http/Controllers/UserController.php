@@ -76,7 +76,15 @@ class UserController extends Controller
     /** Query daftar pengguna untuk satu tab + kata kunci pencarian (terbaru dulu). */
     private function listQuery(string $view, string $term)
     {
-        $query = User::with(['mahasiswa', 'dosen']);
+        // has_logged_in: sudah pernah login = ada catatan login SUKSES (login_attempts) ATAU punya sesi aktif
+        // (akun lama yang login sebelum pencatatan login ada). Dipakai gembok animasi "belum pernah login"
+        // di samping nama (partials/user-rows.blade.php + public/css/never-login.css).
+        $query = User::with(['mahasiswa', 'dosen'])
+            ->selectRaw(
+                'users.*, (EXISTS (SELECT 1 FROM login_attempts WHERE login_attempts.user_id = users.id AND login_attempts.status = ?)'
+                . ' OR EXISTS (SELECT 1 FROM sessions WHERE sessions.user_id = users.id)) AS has_logged_in',
+                ['success']
+            );
 
         match ($view) {
             'mahasiswa' => $query->where('role', 'mahasiswa'),

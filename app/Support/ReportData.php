@@ -25,17 +25,18 @@ class ReportData
 {
     public static function build(?int $tahun): array
     {
-        $kem = Kemahasiswaan::with('mahasiswa.user')->get();
-        $lm  = LppmMahasiswa::with('mahasiswa.user')->get();
-        $ld  = LppmDosen::with('dosen.user')->get();
-        $rek = Rekognisi::with('user')->get();
-        $ks  = KerjaSama::with('user')->get();
+        // toBase(): semua hitungan di bawah (map -> concat -> unique, dst.) berisi angka / teks, bukan model.
+        // Koleksi Eloquent memanggil getKey() pada setiap isi saat unique(), jadi bila salah satu tabel
+        // kosong (map() tetap mengembalikan koleksi Eloquent) lalu digabung dengan angka, terjadi error
+        // "Call to a member function getKey() on int". Koleksi biasa tidak punya masalah itu.
+        $kem = Kemahasiswaan::with('mahasiswa.user')->get()->toBase();
+        $lm  = LppmMahasiswa::with('mahasiswa.user')->get()->toBase();
+        $ld  = LppmDosen::with('dosen.user')->get()->toBase();
+        $rek = Rekognisi::with('user')->get()->toBase();
+        $ks  = KerjaSama::with('user')->get()->toBase();
 
         // Daftar tahun yang tersedia untuk filter
-        // toBase(): jangan biarkan koleksi Eloquent dipakai untuk menampung angka tahun. Kalau semua
-        // tabel kosong, map() mengembalikan koleksi Eloquent kosong, lalu push(int)+unique() memanggil
-        // getKey() pada angka -> "Call to a member function getKey() on int".
-        $years = $kem->toBase()->concat($lm)->concat($ld)->concat($rek)->concat($ks)
+        $years = $kem->concat($lm)->concat($ld)->concat($rek)->concat($ks)
             ->map(fn ($i) => self::year($i))->filter()->push((int) now()->year)
             ->unique()->sortDesc()->values()->all();
 

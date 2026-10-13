@@ -262,7 +262,7 @@
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Manajemen Hak Akses</h1>
-                        <p class="page-subtitle">Atur akses menu per pengguna &middot; Sistem Informasi Data Akademik 2026</p>
+                        <p class="page-subtitle">Atur akses menu per pengguna &middot; Sistem Informasi Data Akademik {{ now()->year }}</p>
                     </div>
                 </div>
 

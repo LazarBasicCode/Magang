@@ -637,7 +637,7 @@
                 <div class="field">
                     <label class="field-label" for="form-tahun">Tahun</label>
                     <div class="field-control">
-                        <input id="form-tahun" type="number" min="2000" max="2100" value="2026" required>
+                        <input id="form-tahun" type="number" min="2000" max="2100" value="{{ now()->year }}" required>
                     </div>
                 </div>
             </div>
@@ -862,7 +862,7 @@
             SIDA.dropdown.select(document.getElementById('dd-tab'), data.tab || 'akademik');
             SIDA.dropdown.select(document.getElementById('dd-tingkat'), data.tingkat || 'lokal');
 
-            document.getElementById('form-tahun').value = data.tahun || 2026;
+            document.getElementById('form-tahun').value = data.tahun || new Date().getFullYear();
             document.getElementById('form-nama_kegiatan').value = data.nama_kegiatan || '';
             document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
 

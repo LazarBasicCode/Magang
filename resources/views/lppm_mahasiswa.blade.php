@@ -268,7 +268,7 @@
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Publikasi &amp; Conference Mahasiswa</h1>
-                        <p class="page-subtitle">Pendataan luaran publikasi SINTA Nasional, Conference, dan Jurnal Internasional &middot; Tahun 2026</p>
+                        <p class="page-subtitle">Pendataan luaran publikasi SINTA Nasional, Conference, dan Jurnal Internasional &middot; Tahun {{ now()->year }}</p>
                     </div>
                     @php
                         // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
@@ -542,7 +542,7 @@
                 <div class="field">
                     <label class="field-label" for="form-tahun">Tahun</label>
                     <div class="field-control">
-                        <input id="form-tahun" type="number" min="2000" max="2100" value="2026" required>
+                        <input id="form-tahun" type="number" min="2000" max="2100" value="{{ now()->year }}" required>
                     </div>
                 </div>
             </div>
@@ -811,7 +811,7 @@
             SIDA.dropdown.select(document.getElementById('dd-jenis'), jenis);
             updateConditionalFields(jenis);
 
-            document.getElementById('form-tahun').value = data.tahun || 2026;
+            document.getElementById('form-tahun').value = data.tahun || new Date().getFullYear();
             document.getElementById('form-judul').value = data.judul || '';
             document.getElementById('form-penulis').value = data.penulis || '';
             document.getElementById('form-nama_jurnal').value = data.nama_jurnal || '';

@@ -15,6 +15,9 @@ class LppmRekognisiController extends Controller
     use NotifiesOwner;
     use HandlesBulkData;
 
+    /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
+    private const PER_PAGE = 50;
+
     /** Aturan validasi yang sama dipakai form (store/update) dan unggah massal. */
     private const RULES = [
         'user_id'         => ['required', 'exists:users,id'],
@@ -37,13 +40,49 @@ class LppmRekognisiController extends Controller
         $user = $request->user();
         $ownScope = $user->menuLevel('rekognisi') === 'biasa';
 
-        $query = Rekognisi::with('user')->latest();
-        if ($ownScope) {
-            $query->where('user_id', $user->id);
-        }
-        $items = $query->paginate(10);
+        $tipe_user = $request->query('tipe_user');
+        $jenis = $request->query('jenis');
+        $term = trim((string) $request->query('q', ''));
 
-        // Semua user yang bisa punya rekognisi: dosen & mahasiswa
+        $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $term) {
+            $query = Rekognisi::with('user')->latest()->orderByDesc('id');
+            if ($ownScope) {
+                $query->where('user_id', $user->id);
+            }
+            if ($tipe_user && $tipe_user !== 'semua') $query->where('tipe_user', $tipe_user);
+            if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
+            if ($term !== '') {
+                $like = '%' . addcslashes($term, '%_\\') . '%';
+                $query->where(function ($w) use ($like) {
+                    $w->where('mitra', 'like', $like)
+                        ->orWhere('jabatan', 'like', $like)
+                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)->orWhere('nim_nidn', 'like', $like));
+                });
+            }
+            return $query;
+        };
+
+        $items = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
+        if ($items->lastPage() > 0 && $items->currentPage() > $items->lastPage()) {
+            $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();
+        }
+
+        // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
+        // Baris digambar JS (buildRowHTML) di blade, jadi tidak perlu partial.
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
+                'meta'  => [
+                    'page'  => $items->currentPage(),
+                    'last'  => max(1, $items->lastPage()),
+                    'total' => $items->total(),
+                    'from'  => $items->firstItem() ?? 0,
+                    'to'    => $items->lastItem() ?? 0,
+                ],
+            ]);
+        }
+
         $userList = $ownScope
             ? collect([$user])
             : User::whereIn('role', ['dosen', 'mahasiswa'])->orderBy('name')->get();

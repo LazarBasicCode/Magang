@@ -15,6 +15,9 @@ class LppmDosenController extends Controller
     use NotifiesOwner;
     use HandlesBulkData;
 
+    /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
+    private const PER_PAGE = 50;
+
     /**
      * Akses "biasa" (default dosen) hanya bisa melihat & mengisi
      * publikasinya sendiri. Akses "penuh"/"readonly" melihat & mengelola
@@ -26,11 +29,48 @@ class LppmDosenController extends Controller
         $ownScope = $user->menuLevel('lppm_dosen') === 'biasa';
         $dosen = $user->dosen;
 
-        $query = LppmDosen::with('dosen.user')->latest();
-        if ($ownScope) {
-            $query->where('dosen_id', $dosen->id ?? 0);
+        $jenis = $request->query('jenis');
+        $term = trim((string) $request->query('q', ''));
+
+        $listQuery = function () use ($ownScope, $dosen, $jenis, $term) {
+            $query = LppmDosen::with('dosen.user')->latest()->orderByDesc('id');
+            if ($ownScope) {
+                $query->where('dosen_id', $dosen->id ?? 0);
+            }
+            if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
+            if ($term !== '') {
+                $like = '%' . addcslashes($term, '%_\\') . '%';
+                $query->where(function ($w) use ($like) {
+                    $w->where('judul', 'like', $like)
+                        ->orWhere('penulis', 'like', $like)
+                        ->orWhere('nama_jurnal', 'like', $like)
+                        ->orWhereHas('dosen', fn ($m) => $m->where('nidn', 'like', $like)
+                            ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)));
+                });
+            }
+            return $query;
+        };
+
+        $items = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
+        if ($items->lastPage() > 0 && $items->currentPage() > $items->lastPage()) {
+            $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();
         }
-        $items = $query->paginate(10);
+
+        // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
+        // Baris digambar JS (buildRowHTML) di blade, jadi tidak perlu partial.
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
+                'meta'  => [
+                    'page'  => $items->currentPage(),
+                    'last'  => max(1, $items->lastPage()),
+                    'total' => $items->total(),
+                    'from'  => $items->firstItem() ?? 0,
+                    'to'    => $items->lastItem() ?? 0,
+                ],
+            ]);
+        }
 
         $dosenList = $ownScope
             ? ($dosen ? collect([$dosen->load('user')]) : collect())

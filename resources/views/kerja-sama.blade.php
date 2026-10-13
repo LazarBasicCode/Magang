@@ -16,6 +16,7 @@
             } catch (e) {}
         })();
     </script>
+    <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
@@ -470,7 +471,7 @@
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
-                                @forelse($items as $item)
+                                @foreach($items as $item)
                                 @php
                                 $nama = $item->user->name ?? 'Tanpa Nama';
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
@@ -531,13 +532,12 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @empty
-                                <tr id="emptyRow">
+                                @endforeach
+                                <tr id="emptyRow" {{ $items->total() === 0 ? '' : 'hidden' }}>
                                     <td colspan="10" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data kerja sama. Klik "Tambah Kerja Sama" untuk mulai mengisi.
                                     </td>
                                 </tr>
-                                @endforelse
                             </tbody>
 
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
@@ -552,11 +552,13 @@
                     <!-- FOOTER -->
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>{{ $items->firstItem() ?? 0 }}-{{ $items->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">2026</span>
+                            Menampilkan <strong id="footerRange">{{ $items->firstItem() ?? 0 }}&ndash;{{ $items->lastItem() ?? 0 }}</strong>
+                            dari <strong id="footerTotalCount">{{ $items->total() }}</strong> data kerja sama tahun <span class="highlight">2026</span>
                         </div>
-                        {{-- Pagination bawaan Laravel bisa ditambahkan di sini via {{ $items->links() }}
-                        setelah view paginator kamu disesuaikan dengan desain ini. --}}
+                        <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
+                        @if($items->hasPages())
+                        <noscript>{{ $items->links() }}</noscript>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -765,6 +767,7 @@
     @endif
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script>
         // ================================================================
         // KHUSUS halaman Kerja Sama.
@@ -824,38 +827,69 @@
             }
         }
 
-        function applyFilters() {
-            const tipeUserVal = document.getElementById('filter-tipe-user')?.value || 'semua';
-            const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
-            const arahVal = document.getElementById('filter-arah')?.value || 'semua';
-            const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-            const rows = tableBody.querySelectorAll('tr[data-id]');
-            let visibleCount = 0;
+        // ================================================================
+        // FILTER, PENCARIAN & PAGINASI — diproses di SERVER (50 baris/halaman)
+        // GET /kerja-sama?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
+        // Tombol halaman digambar public/js/pager.js.
+        // ================================================================
+        const FILTERS = ['filter-tipe-user','filter-jenis','filter-arah'];
+        const searchInput = document.getElementById('filter-search');
+        const emptyRow = document.getElementById('emptyRow');
+        const emptyDefault = emptyRow.firstElementChild.textContent.trim();
+        const footerRange = document.getElementById('footerRange');
+        const footerTotalCount = document.getElementById('footerTotalCount');
+        let currentPage = {{ $items->currentPage() }};
+        let requestSeq = 0;
+        let searchTimer = null;
 
-            rows.forEach((row) => {
-                const matchesTipeUser = tipeUserVal === 'semua' || row.dataset.tipe_user === tipeUserVal;
-                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
-                const matchesArah = arahVal === 'semua' || row.dataset.arah === arahVal;
-                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                const visible = matchesTipeUser && matchesJenis && matchesArah && matchesSearch;
-                row.style.display = visible ? '' : 'none';
-                if (visible) visibleCount++;
+        const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => { loadPage(n); document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+        pager.render({{ $items->currentPage() }}, {{ max(1, $items->lastPage()) }});
+
+        async function loadPage(page = currentPage) {
+            const seq = ++requestSeq;
+            const term = (searchInput?.value || '').trim();
+            const params = new URLSearchParams({ page: String(page) });
+            let filtered = !!term;
+            FILTERS.forEach((id) => {
+                const v = document.getElementById(id)?.value || 'semua';
+                if (v !== 'semua') { params.set(id.replace('filter-', '').replace(/-/g, '_'), v); filtered = true; }
             });
+            if (term) params.set('q', term);
 
-            let noResultRow = document.getElementById('noResultRow');
-            if (visibleCount === 0 && rows.length > 0) {
-                if (!noResultRow) {
-                    noResultRow = document.createElement('tr');
-                    noResultRow.id = 'noResultRow';
-                    const colCount = tableBody.closest('table')?.querySelectorAll('thead th').length || 9;
-                    noResultRow.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding: 32px; color: var(--ink-faint);">Tidak ada data yang cocok dengan filter.</td>`;
-                    tableBody.appendChild(noResultRow);
+            tableBody.classList.add('is-fetching');
+            try {
+                const res = await fetch('/kerja-sama?' + params, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (seq !== requestSeq) return;
+
+                tableBody.querySelectorAll('tr[data-id]').forEach((r) => r.remove());
+                tableBody.insertAdjacentHTML('afterbegin', data.items.map(buildRowHTML).join(''));
+                currentPage = data.meta.page;
+                emptyRow.hidden = data.meta.total !== 0;
+                if (data.meta.total === 0) {
+                    emptyRow.firstElementChild.textContent = filtered ? 'Tidak ada data yang cocok dengan filter.' : emptyDefault;
                 }
-                noResultRow.style.display = '';
-            } else if (noResultRow) {
-                noResultRow.style.display = 'none';
+                footerRange.textContent = data.meta.from + '–' + data.meta.to;
+                footerTotalCount.textContent = data.meta.total;
+                pager.render(data.meta.page, data.meta.last);
+            } catch (err) {
+                if (seq !== requestSeq) return;
+                console.error('[Kerja Sama] Gagal memuat halaman:', err);
+                window.Toast?.show?.({ type: 'error', title: 'Gagal memuat data', message: 'Tidak bisa memuat halaman ini. Coba lagi.' });
+            } finally {
+                if (seq === requestSeq) tableBody.classList.remove('is-fetching');
             }
         }
+
+        // Update massal: muat ulang halaman aktif supaya data & kolom turunan konsisten dengan server.
+        SIDA.bulkUpdateApply = () => loadPage(currentPage);
+
+        // Dipanggil listener filter di bawah (dropdown/reset) -> server, mulai dari halaman 1
+        function applyFilters() { loadPage(1); }
 
         // Listener filter — set nilai manual supaya tidak bergantung script.js
         document.querySelectorAll('#filter-tipe-user, #filter-jenis, #filter-arah').forEach((input) => {
@@ -912,7 +946,7 @@
         let searchDebounce;
         document.getElementById('filter-search')?.addEventListener('input', () => {
             clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(applyFilters, 150);
+            searchDebounce = setTimeout(applyFilters, 300);
         });
 
         // ----------------------------------------------------------------
@@ -1118,11 +1152,6 @@
             removeRow
         } = SIDA.table.create(tableBody, buildRowHTML);
 
-        // Update massal: baris dirender ulang dengan template tabel ini (badge jenis/arah, atribut filter) lalu filter diterapkan lagi.
-        SIDA.bulkUpdateApply = (rows) => {
-            rows.forEach(updateRow);
-            applyFilters();
-        };
 
         // ----------------------------------------------------------------
         // SUBMIT
@@ -1187,10 +1216,8 @@
                     modalError.hidden = false;
                     return;
                 }
-                if (id) updateRow(result.data);
-                else insertRow(result.data);
-                applyFilters();
                 closeModal();
+                await loadPage(id ? currentPage : 1); // data baru tampil di halaman 1 (terbaru dulu)
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
@@ -1214,7 +1241,7 @@
                     }
                 });
                 const result = await res.json();
-                if (res.ok && result.success) removeRow(result.id);
+                if (res.ok && result.success) loadPage(currentPage);
                 else alert(result.message || 'Gagal menghapus data.');
             } catch (err) {
                 alert('Gagal terhubung ke server.');

@@ -6,11 +6,15 @@ use App\Models\HakAkses;
 use App\Models\User;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class HakAksesController extends Controller
 {
     use NotifiesOwner;
+
+    /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
+    private const PER_PAGE = 50;
 
     /**
      * Halaman utama Hak Akses (server-rendered untuk load pertama).
@@ -44,6 +48,28 @@ class HakAksesController extends Controller
             'readonly' => $rows->filter(fn ($r) => $r['status'] === 'read')->count(),
         ];
 
+        // Filter & halaman diproses di server (status dihitung dari level menu, jadi disaring dari koleksi).
+        // Statistik di atas tetap menghitung SEMUA pengguna.
+        $role   = $request->query('role');
+        $status = $request->query('status');
+        $term   = mb_strtolower(trim((string) $request->query('q', '')));
+
+        $filtered = $rows->filter(function ($r) use ($role, $status, $term) {
+            if ($role && $role !== 'semua' && $r['user']->role !== $role) return false;
+            if ($status && $status !== 'semua' && $r['status'] !== $status) return false;
+            if ($term !== '' && !str_contains(mb_strtolower($r['user']->name . ' ' . $r['user']->nim_nidn), $term)) return false;
+            return true;
+        })->values();
+
+        $last = max(1, (int) ceil($filtered->count() / self::PER_PAGE));
+        $page = min(max(1, (int) $request->query('page', 1)), $last);
+        $pager = new LengthAwarePaginator(
+            $filtered->forPage($page, self::PER_PAGE)->values(),
+            $filtered->count(), self::PER_PAGE, $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+        $rows = $pager->getCollection();
+
         // Menu yang diatur (untuk membangun daftar dropdown di modal)
         $menus = collect(HakAkses::MENUS)->map(function ($m, $key) {
             return ['key' => $key, 'label' => $m['label'], 'icon' => $m['icon']];
@@ -53,7 +79,7 @@ class HakAksesController extends Controller
         // menu hak_akses sendiri minimal "biasa" (superadmin otomatis lolos).
         $canManage = $request->user()->canAccessMenu('hak_akses', 'biasa');
 
-        return view('hak-akses', compact('rows', 'stats', 'menus', 'canManage'));
+        return view('hak-akses', compact('rows', 'pager', 'stats', 'menus', 'canManage'));
     }
 
     public function update(Request $request, User $user)

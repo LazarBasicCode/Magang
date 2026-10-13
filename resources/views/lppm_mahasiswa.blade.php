@@ -16,6 +16,7 @@
             } catch (e) {}
         })();
     </script>
+    <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
@@ -407,7 +408,7 @@
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
-                                @forelse($items as $item)
+                                @foreach($items as $item)
                                 @php
                                 $nama = optional($item->mahasiswa->user)->name ?? 'Tanpa Nama';
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
@@ -456,13 +457,12 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @empty
-                                <tr id="emptyRow">
+                                @endforeach
+                                <tr id="emptyRow" {{ $items->total() === 0 ? '' : 'hidden' }}>
                                     <td colspan="8" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data. Klik "Tambah Data Publikasi" untuk mulai mengisi.
                                     </td>
                                 </tr>
-                                @endforelse
                             </tbody>
 
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
@@ -476,9 +476,13 @@
 
                     <div class="table-footer">
                         <div class="footer-summary">
-                            Menampilkan <strong>{{ $items->firstItem() ?? 0 }}-{{ $items->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $items->total() }}</strong> data publikasi LPPM mahasiswa
+                            Menampilkan <strong id="footerRange">{{ $items->firstItem() ?? 0 }}&ndash;{{ $items->lastItem() ?? 0 }}</strong>
+                            dari <strong id="footerTotalCount">{{ $items->total() }}</strong> data publikasi LPPM mahasiswa
                         </div>
+                        <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
+                        @if($items->hasPages())
+                        <noscript>{{ $items->links() }}</noscript>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -626,6 +630,7 @@
     @endif
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script>
         // ================================================================
         // Bagian ini KHUSUS halaman LPPM Mahasiswa:
@@ -714,23 +719,75 @@
         }
         const { insertRow, updateRow, removeRow } = SIDA.table.create(tableBody, buildRowHTML);
 
-        // Update massal: baris dirender ulang dengan template tabel ini (badge jenis & kolom turunan ikut konsisten).
-        SIDA.bulkUpdateApply = (rows) => { rows.forEach(updateRow); applyFilters(); };
+        // ================================================================
+        // FILTER, PENCARIAN & PAGINASI — diproses di SERVER (50 baris/halaman)
+        // GET /lppm/mahasiswa?jenis=&q=&page= (JSON) -> isi tabel diganti.
+        // Baris digambar buildRowHTML. Tombol halaman digambar public/js/pager.js.
+        // ================================================================
+        const searchInput = document.getElementById('filter-search');
+        const jenisInput = document.getElementById('filter-jenis');
+        const emptyRow = document.getElementById('emptyRow');
+        const footerRange = document.getElementById('footerRange');
+        const footerTotalCount = document.getElementById('footerTotalCount');
+        const initPage = {{ $items->currentPage() }};
+        let currentPage = initPage;
+        let requestSeq = 0;
+        let searchTimer = null;
 
-        // ---- Live filter (khusus halaman ini: 1 dropdown + search) ----
-        const applyFilters = SIDA.filter.setup({
-            tableBody,
-            dropdownFilterIds: ['filter-jenis'],
-            searchInputId: 'filter-search',
-            matches: (row) => {
-                const jenisVal = document.getElementById('filter-jenis')?.value || 'semua';
-                const searchVal = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-                const matchesJenis = jenisVal === 'semua' || row.dataset.jenis === jenisVal;
-                const matchesSearch = !searchVal || row.textContent.toLowerCase().includes(searchVal);
-                return matchesJenis && matchesSearch;
-            },
-            emptyMessage: 'Tidak ada data yang cocok dengan filter.',
+        const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => { loadPage(n); document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+        pager.render({{ $items->currentPage() }}, {{ max(1, $items->lastPage()) }});
+
+        async function loadPage(page = currentPage) {
+            const seq = ++requestSeq;
+            const term = (searchInput?.value || '').trim();
+            const jenis = jenisInput?.value || 'semua';
+            const params = new URLSearchParams({ page: String(page) });
+            if (jenis !== 'semua') params.set('jenis', jenis);
+            if (term) params.set('q', term);
+
+            tableBody.classList.add('is-fetching');
+            try {
+                const res = await fetch('/lppm/mahasiswa?' + params, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (seq !== requestSeq) return;
+
+                tableBody.querySelectorAll('tr[data-id]').forEach((r) => r.remove());
+                tableBody.insertAdjacentHTML('afterbegin', data.items.map(buildRowHTML).join(''));
+                currentPage = data.meta.page;
+                emptyRow.hidden = data.meta.total !== 0;
+                if (data.meta.total === 0) {
+                    emptyRow.firstElementChild.textContent = (term || jenis !== 'semua')
+                        ? 'Tidak ada data yang cocok dengan filter.'
+                        : 'Belum ada data. Klik "Tambah Data Publikasi" untuk mulai mengisi.';
+                }
+                footerRange.textContent = data.meta.from + '–' + data.meta.to;
+                footerTotalCount.textContent = data.meta.total;
+                pager.render(data.meta.page, data.meta.last);
+            } catch (err) {
+                if (seq !== requestSeq) return;
+                console.error('[LPPM Mahasiswa] Gagal memuat halaman:', err);
+                window.Toast?.show?.({ type: 'error', title: 'Gagal memuat data', message: 'Tidak bisa memuat halaman ini. Coba lagi.' });
+            } finally {
+                if (seq === requestSeq) tableBody.classList.remove('is-fetching');
+            }
+        }
+
+        // Cari (tunda 300ms), pilih jenis, reset -> selalu kembali ke halaman 1
+        searchInput?.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadPage(1), 300); });
+        // setTimeout 0: tunggu script.js selesai mengisi nilai dropdown tersembunyi
+        document.querySelectorAll('.filter-card .dropdown-option').forEach((opt) => opt.addEventListener('click', () => setTimeout(() => loadPage(1), 0)));
+        document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            SIDA.dropdown.select(jenisInput.closest('[data-dropdown]'), 'semua');
+            loadPage(1);
         });
+
+        // Update massal: muat ulang halaman aktif supaya data & kolom turunan konsisten dengan server.
+        SIDA.bulkUpdateApply = () => loadPage(currentPage);
 
         // ---- Modal: mekanisme buka/tutup/drag dari script.js ----
         const { open: openModalBase, close: closeModal } = SIDA.modal.attach({
@@ -813,10 +870,8 @@
                     modalError.hidden = false;
                     return;
                 }
-                if (id) updateRow(result.data);
-                else insertRow(result.data);
-                applyFilters();
                 closeModal();
+                await loadPage(id ? currentPage : 1); // data baru tampil di halaman 1 (terbaru dulu)
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
@@ -838,7 +893,7 @@
                     }
                 });
                 const result = await res.json();
-                if (res.ok && result.success) removeRow(result.id);
+                if (res.ok && result.success) loadPage(currentPage);
                 else alert(result.message || 'Gagal menghapus data.');
             } catch (err) {
                 alert('Gagal terhubung ke server.');

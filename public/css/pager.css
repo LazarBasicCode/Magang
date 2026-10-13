@@ -26,7 +26,7 @@
 .pager-nav { padding: 0 14px; min-width: 34px; }
 
 /* Tabel meredup sebentar selama halaman baru diambil dari server */
-#userTableBody.is-fetching { opacity: .55; pointer-events: none; transition: opacity .15s; }
+tbody.is-fetching { opacity: .55; pointer-events: none; transition: opacity .15s; }
 
 @media (max-width: 640px) {
     .table-footer { padding: 14px 12px; }

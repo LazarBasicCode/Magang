@@ -23,14 +23,20 @@
 
 <body>
     <!-- Definisi dark mode -->
-    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
+    <script>
+        try {
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        } catch (e) {}
+    </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
             <symbol id="sida-mark" viewBox="0 0 48 48">
-                <clipPath id="sidaClip"><circle cx="24" cy="24" r="22.5"/></clipPath>
-                <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)"/>
-                <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/>
+                <clipPath id="sidaClip">
+                    <circle cx="24" cy="24" r="22.5" />
+                </clipPath>
+                <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)" />
+                <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5" />
             </symbol>
         </defs>
     </svg>
@@ -38,7 +44,9 @@
     <!-- ============ SIDEBAR ============ -->
     <aside class="app-sidebar">
         <div class="sidebar-brand">
-            <svg class="sidebar-brand-mark" aria-hidden="true"><use href="#sida-mark"/></svg>
+            <svg class="sidebar-brand-mark" aria-hidden="true">
+                <use href="#sida-mark" />
+            </svg>
             <div class="sidebar-brand-text">
                 <span class="sidebar-brand-title">SIDA</span>
                 <span class="sidebar-brand-sub">Institut Asia Malang</span>
@@ -73,6 +81,11 @@
                 <a href="{{ url('/kerja-sama') }}" class="nav-link">
                     <span class="material-symbols-outlined">handshake</span>
                     <span>Kerja Sama</span>
+                </a>
+
+                <a href="{{ url('/profil') }}" class="nav-link">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span>Profil Saya</span>
                 </a>
             </div>
         </nav>
@@ -188,230 +201,230 @@
 
                 <!-- WELCOME + STAT: satu panel gabungan -->
                 @php
-                    $jamSekarang = (int) now()->format('G');
-                    if ($jamSekarang >= 4 && $jamSekarang < 11) {
-                        $sapaan = 'Selamat Pagi';
-                    } elseif ($jamSekarang >= 11 && $jamSekarang < 15) {
-                        $sapaan = 'Selamat Siang';
-                    } elseif ($jamSekarang >= 15 && $jamSekarang < 18) {
-                        $sapaan = 'Selamat Sore';
-                    } else {
-                        $sapaan = 'Selamat Malam';
-                    }
-                @endphp
-                <div class="dash-panel reveal">
-                    <!-- Efek bintang (kanan-atas -> kiri-bawah), styling di css/dash-stars.css -->
-                    <div class="dash-stars" aria-hidden="true">
-                        <div class="dash-stars-rot">
-                            <div class="ds ds1"></div>
-                            <div class="ds ds2"></div>
-                            <div class="ds ds3"></div>
-                        </div>
-                    </div>
-
-                    <div class="dash-welcome">
-                        <div class="dash-welcome-main">
-                            <p class="dash-welcome-brand">SIDA</p>
-                            <p class="dash-welcome-title">{{ $sapaan }}, {{ auth()->user()->name }} 👋</p>
-                            <p class="dash-welcome-sub">Ringkasan kegiatanmu di Sistem Informasi Data Akademik &middot; 2026</p>
-                        </div>
-                        <div class="dash-welcome-clock">
-                            <div class="dash-welcome-clock-time" id="dashWelcomeClock">{{ now()->format('H:i') }}</div>
-                            <div class="dash-welcome-clock-date">{{ now()->translatedFormat('l, d F Y') }}</div>
-                        </div>
-                    </div>
-
-                    <div class="dash-panel-divider"></div>
-
-                    <script>
-                        (function () {
-                            var clockEl = document.getElementById('dashWelcomeClock');
-                            if (!clockEl) return;
-                            function tick() {
-                                var now = new Date();
-                                var hh = String(now.getHours()).padStart(2, '0');
-                                var mm = String(now.getMinutes()).padStart(2, '0');
-                                clockEl.textContent = hh + ':' + mm;
+                $jamSekarang = (int) now()->format('G');
+                if ($jamSekarang >= 4 && $jamSekarang < 11) {
+                    $sapaan='Selamat Pagi' ;
+                    } elseif ($jamSekarang>= 11 && $jamSekarang < 15) {
+                        $sapaan='Selamat Siang' ;
+                        } elseif ($jamSekarang>= 15 && $jamSekarang < 18) {
+                            $sapaan='Selamat Sore' ;
+                            } else {
+                            $sapaan='Selamat Malam' ;
                             }
-                            tick();
-                            setInterval(tick, 1000 * 30);
-                        })();
-                    </script>
+                            @endphp
+                            <div class="dash-panel reveal">
+                            <!-- Efek bintang (kanan-atas -> kiri-bawah), styling di css/dash-stars.css -->
+                            <div class="dash-stars" aria-hidden="true">
+                                <div class="dash-stars-rot">
+                                    <div class="ds ds1"></div>
+                                    <div class="ds ds2"></div>
+                                    <div class="ds ds3"></div>
+                                </div>
+                            </div>
 
-                    <!-- HERO STAT CARDS: menempel di dalam dash-panel, tanpa shadow sendiri -->
-                    <div class="stat-hero-grid">
-                        <div class="stat-hero-card grad-1"></div>
-                        <div class="stat-hero-card grad-2">
-                            <span class="material-symbols-outlined stat-hero-icon">local_fire_department</span>
-                            <p class="stat-hero-label">Total Kegiatan</p>
-                            <div class="stat-hero-value">{{ $stats['total'] }} <span class="stat-hero-unit">kegiatan</span></div>
+                            <div class="dash-welcome">
+                                <div class="dash-welcome-main">
+                                    <p class="dash-welcome-brand">SIDA</p>
+                                    <p class="dash-welcome-title">{{ $sapaan }}, {{ auth()->user()->name }} 👋</p>
+                                    <p class="dash-welcome-sub">Ringkasan kegiatanmu di Sistem Informasi Data Akademik &middot; 2026</p>
+                                </div>
+                                <div class="dash-welcome-clock">
+                                    <div class="dash-welcome-clock-time" id="dashWelcomeClock">{{ now()->format('H:i') }}</div>
+                                    <div class="dash-welcome-clock-date">{{ now()->translatedFormat('l, d F Y') }}</div>
+                                </div>
+                            </div>
+
+                            <div class="dash-panel-divider"></div>
+
+                            <script>
+                                (function() {
+                                    var clockEl = document.getElementById('dashWelcomeClock');
+                                    if (!clockEl) return;
+
+                                    function tick() {
+                                        var now = new Date();
+                                        var hh = String(now.getHours()).padStart(2, '0');
+                                        var mm = String(now.getMinutes()).padStart(2, '0');
+                                        clockEl.textContent = hh + ':' + mm;
+                                    }
+                                    tick();
+                                    setInterval(tick, 1000 * 30);
+                                })();
+                            </script>
+
+                            <!-- HERO STAT CARDS: menempel di dalam dash-panel, tanpa shadow sendiri -->
+                            <div class="stat-hero-grid">
+                                <div class="stat-hero-card grad-1"></div>
+                                <div class="stat-hero-card grad-2">
+                                    <span class="material-symbols-outlined stat-hero-icon">local_fire_department</span>
+                                    <p class="stat-hero-label">Total Kegiatan</p>
+                                    <div class="stat-hero-value">{{ $stats['total'] }} <span class="stat-hero-unit">kegiatan</span></div>
+                                </div>
+                                <div class="stat-hero-card grad-3">
+                                    <span class="material-symbols-outlined stat-hero-icon">trending_up</span>
+                                    <p class="stat-hero-label">Rata-rata per Bulan</p>
+                                    <div class="stat-hero-value">{{ $stats['avg_per_month'] }} <span class="stat-hero-unit">kegiatan/bln</span></div>
+                                </div>
+                                <div class="stat-hero-card grad-4">
+                                    <span class="material-symbols-outlined stat-hero-icon">public</span>
+                                    <p class="stat-hero-label">Capaian Internasional</p>
+                                    <div class="stat-hero-value">{{ $stats['internasional_pct'] }}<span class="stat-hero-unit">%</span></div>
+                                </div>
+                            </div>
+            </div>
+
+            <!-- SUMMARY STAT CARDS -->
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">Kemahasiswaan</span>
+                        <span class="stat-value">{{ $stats['kemahasiswaan'] }}</span>
+                    </div>
+                    <div class="stat-icon info">
+                        <span class="material-symbols-outlined">school</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">LPPM Mahasiswa</span>
+                        <span class="stat-value">{{ $stats['lppm_mahasiswa'] }}</span>
+                    </div>
+                    <div class="stat-icon success">
+                        <span class="material-symbols-outlined">person</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">Rekognisi</span>
+                        <span class="stat-value">{{ $stats['rekognisi'] }}</span>
+                    </div>
+                    <div class="stat-icon warning">
+                        <span class="material-symbols-outlined">workspace_premium</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">Kerja Sama</span>
+                        <span class="stat-value">{{ $stats['kerja_sama'] }}</span>
+                    </div>
+                    <div class="stat-icon primary">
+                        <span class="material-symbols-outlined">handshake</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD GRID -->
+            <div class="dash-grid">
+
+                <!-- DONUT: kategori -->
+                <div class="dash-card donut-card reveal">
+                    <h2 class="dash-card-title">Distribusi Kegiatan per Kategori</h2>
+                    <p class="dash-card-sub">Sebaran kegiatanmu di 4 menu</p>
+                    <div class="donut-widget" data-donut data-caption="Kegiatan" data-chart='@json($kategoriDonut)'>
+                        <div class="donut-svg-holder">
+                            <svg viewBox="0 0 200 200"></svg>
+                            <div class="donut-center-label">
+                                <span class="donut-center-value">0</span>
+                                <span class="donut-center-caption">Kegiatan</span>
+                            </div>
                         </div>
-                        <div class="stat-hero-card grad-3">
-                            <span class="material-symbols-outlined stat-hero-icon">trending_up</span>
-                            <p class="stat-hero-label">Rata-rata per Bulan</p>
-                            <div class="stat-hero-value">{{ $stats['avg_per_month'] }} <span class="stat-hero-unit">kegiatan/bln</span></div>
-                        </div>
-                        <div class="stat-hero-card grad-4">
-                            <span class="material-symbols-outlined stat-hero-icon">public</span>
-                            <p class="stat-hero-label">Capaian Internasional</p>
-                            <div class="stat-hero-value">{{ $stats['internasional_pct'] }}<span class="stat-hero-unit">%</span></div>
-                        </div>
+                        <div class="donut-legend"></div>
                     </div>
                 </div>
 
-                <!-- SUMMARY STAT CARDS -->
-                <div class="stat-grid">
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">Kemahasiswaan</span>
-                            <span class="stat-value">{{ $stats['kemahasiswaan'] }}</span>
+                <!-- DONUT: tingkat -->
+                <div class="dash-card donut-card reveal" style="transition-delay:80ms">
+                    <h2 class="dash-card-title">Distribusi Tingkat Capaian</h2>
+                    <p class="dash-card-sub">Berdasarkan data Kemahasiswaan</p>
+                    <div class="donut-widget" data-donut data-caption="Capaian" data-chart='@json($tingkatDonut)'>
+                        <div class="donut-svg-holder">
+                            <svg viewBox="0 0 200 200"></svg>
+                            <div class="donut-center-label">
+                                <span class="donut-center-value">0</span>
+                                <span class="donut-center-caption">Capaian</span>
+                            </div>
                         </div>
-                        <div class="stat-icon info">
-                            <span class="material-symbols-outlined">school</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">LPPM Mahasiswa</span>
-                            <span class="stat-value">{{ $stats['lppm_mahasiswa'] }}</span>
-                        </div>
-                        <div class="stat-icon success">
-                            <span class="material-symbols-outlined">person</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">Rekognisi</span>
-                            <span class="stat-value">{{ $stats['rekognisi'] }}</span>
-                        </div>
-                        <div class="stat-icon warning">
-                            <span class="material-symbols-outlined">workspace_premium</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">Kerja Sama</span>
-                            <span class="stat-value">{{ $stats['kerja_sama'] }}</span>
-                        </div>
-                        <div class="stat-icon primary">
-                            <span class="material-symbols-outlined">handshake</span>
-                        </div>
+                        <div class="donut-legend"></div>
                     </div>
                 </div>
 
-                <!-- DASHBOARD GRID -->
-                <div class="dash-grid">
+                <!-- KURVA TREN: per periode (harian/mingguan/bulanan/tahunan) -->
+                <div class="dash-card trend-card reveal">
+                    <div class="trend-card-top">
+                        <div>
+                            <h2 class="dash-card-title">Kurva Tren Kegiatan</h2>
+                            <p class="dash-card-sub">Akademik vs Eksternal &middot; bandingkan keseimbangan portofoliomu dari waktu ke waktu</p>
+                        </div>
+                        <span class="trend-hint">
+                            <span class="material-symbols-outlined">info</span>
+                            Arahkan kursor ke titik untuk detail
+                        </span>
+                    </div>
+                    <div class="period-switcher" id="trendPeriodSwitcher" role="tablist">
+                        <button type="button" class="period-btn" data-period="harian">Harian</button>
+                        <button type="button" class="period-btn" data-period="mingguan">Mingguan</button>
+                        <button type="button" class="period-btn is-active" data-period="bulanan">Bulanan</button>
+                        <button type="button" class="period-btn" data-period="tahunan">Tahunan</button>
+                    </div>
+                    <div class="trend-legend-row" id="trendLegend"></div>
+                    <div class="trend-chart-holder" data-trendchart data-active-period="bulanan" data-chart-sets='@json($trendDatasets)'></div>
+                </div>
 
-                    <!-- DONUT: kategori -->
-                    <div class="dash-card donut-card reveal">
-                        <h2 class="dash-card-title">Distribusi Kegiatan per Kategori</h2>
-                        <p class="dash-card-sub">Sebaran kegiatanmu di 4 menu</p>
-                        <div class="donut-widget" data-donut data-caption="Kegiatan" data-chart='@json($kategoriDonut)'>
-                            <div class="donut-svg-holder">
-                                <svg viewBox="0 0 200 200"></svg>
-                                <div class="donut-center-label">
-                                    <span class="donut-center-value">0</span>
-                                    <span class="donut-center-caption">Kegiatan</span>
+                <!-- BAR CHART + AKTIVITAS TERBARU: digabung 1 kartu, bersebelahan -->
+                <div class="dash-card trend-card reveal">
+                    <div class="periode-recent-split">
+                        <div class="periode-recent-col periode-recent-col-chart">
+                            <div class="trend-card-top">
+                                <div>
+                                    <h2 class="dash-card-title">Kegiatan per Periode</h2>
+                                    <p class="dash-card-sub">Gabungan 4 kategori</p>
                                 </div>
+                                <span class="trend-hint">
+                                    <span class="material-symbols-outlined">info</span>
+                                    Arahkan kursor ke batang untuk detail
+                                </span>
                             </div>
-                            <div class="donut-legend"></div>
-                        </div>
-                    </div>
-
-                    <!-- DONUT: tingkat -->
-                    <div class="dash-card donut-card reveal" style="transition-delay:80ms">
-                        <h2 class="dash-card-title">Distribusi Tingkat Capaian</h2>
-                        <p class="dash-card-sub">Berdasarkan data Kemahasiswaan</p>
-                        <div class="donut-widget" data-donut data-caption="Capaian" data-chart='@json($tingkatDonut)'>
-                            <div class="donut-svg-holder">
-                                <svg viewBox="0 0 200 200"></svg>
-                                <div class="donut-center-label">
-                                    <span class="donut-center-value">0</span>
-                                    <span class="donut-center-caption">Capaian</span>
-                                </div>
+                            <div class="period-switcher" id="periodSwitcher" role="tablist">
+                                <button type="button" class="period-btn" data-period="harian">Harian</button>
+                                <button type="button" class="period-btn" data-period="mingguan">Mingguan</button>
+                                <button type="button" class="period-btn is-active" data-period="bulanan">Bulanan</button>
+                                <button type="button" class="period-btn" data-period="tahunan">Tahunan</button>
                             </div>
-                            <div class="donut-legend"></div>
+                            <div class="bar-chart-holder" data-barchart data-active-period="bulanan" data-chart-sets='@json($barDatasets)'></div>
                         </div>
-                    </div>
 
-                    <!-- KURVA TREN: per periode (harian/mingguan/bulanan/tahunan) -->
-                    <div class="dash-card trend-card reveal">
-                        <div class="trend-card-top">
-                            <div>
-                                <h2 class="dash-card-title">Kurva Tren Kegiatan</h2>
-                                <p class="dash-card-sub">Akademik vs Eksternal &middot; bandingkan keseimbangan portofoliomu dari waktu ke waktu</p>
-                            </div>
-                            <span class="trend-hint">
-                                <span class="material-symbols-outlined">info</span>
-                                Arahkan kursor ke titik untuk detail
-                            </span>
-                        </div>
-                        <div class="period-switcher" id="trendPeriodSwitcher" role="tablist">
-                            <button type="button" class="period-btn" data-period="harian">Harian</button>
-                            <button type="button" class="period-btn" data-period="mingguan">Mingguan</button>
-                            <button type="button" class="period-btn is-active" data-period="bulanan">Bulanan</button>
-                            <button type="button" class="period-btn" data-period="tahunan">Tahunan</button>
-                        </div>
-                        <div class="trend-legend-row" id="trendLegend"></div>
-                        <div class="trend-chart-holder" data-trendchart data-active-period="bulanan" data-chart-sets='@json($trendDatasets)'></div>
-                    </div>
+                        <div class="periode-recent-divider"></div>
 
-                    <!-- BAR CHART + AKTIVITAS TERBARU: digabung 1 kartu, bersebelahan -->
-                    <div class="dash-card trend-card reveal">
-                        <div class="periode-recent-split">
-                            <div class="periode-recent-col periode-recent-col-chart">
-                                <div class="trend-card-top">
-                                    <div>
-                                        <h2 class="dash-card-title">Kegiatan per Periode</h2>
-                                        <p class="dash-card-sub">Gabungan 4 kategori</p>
+                        <div class="periode-recent-col periode-recent-col-recent">
+                            <h2 class="dash-card-title">Aktivitas Terbaru</h2>
+                            <p class="dash-card-sub">Kegiatan terakhir yang kamu tambahkan</p>
+                            <div class="recent-list">
+                                @forelse($recent as $item)
+                                <div class="recent-item">
+                                    <div class="recent-item-icon">
+                                        <span class="material-symbols-outlined">{{ $item['icon'] }}</span>
                                     </div>
-                                    <span class="trend-hint">
-                                        <span class="material-symbols-outlined">info</span>
-                                        Arahkan kursor ke batang untuk detail
-                                    </span>
+                                    <div class="recent-item-text">
+                                        <span class="recent-item-title">{{ $item['title'] ?? '(tanpa judul)' }}</span>
+                                        <span class="recent-item-meta">{{ $item['menu'] }} &middot; {{ $item['date']?->translatedFormat('d M Y') }}</span>
+                                    </div>
                                 </div>
-                                <div class="period-switcher" id="periodSwitcher" role="tablist">
-                                    <button type="button" class="period-btn" data-period="harian">Harian</button>
-                                    <button type="button" class="period-btn" data-period="mingguan">Mingguan</button>
-                                    <button type="button" class="period-btn is-active" data-period="bulanan">Bulanan</button>
-                                    <button type="button" class="period-btn" data-period="tahunan">Tahunan</button>
-                                </div>
-                                <div class="bar-chart-holder" data-barchart data-active-period="bulanan" data-chart-sets='@json($barDatasets)'></div>
-                            </div>
-
-                            <div class="periode-recent-divider"></div>
-
-                            <div class="periode-recent-col periode-recent-col-recent">
-                                <h2 class="dash-card-title">Aktivitas Terbaru</h2>
-                                <p class="dash-card-sub">Kegiatan terakhir yang kamu tambahkan</p>
-                                <div class="recent-list">
-                                    @forelse($recent as $item)
-                                        <div class="recent-item">
-                                            <div class="recent-item-icon">
-                                                <span class="material-symbols-outlined">{{ $item['icon'] }}</span>
-                                            </div>
-                                            <div class="recent-item-text">
-                                                <span class="recent-item-title">{{ $item['title'] ?? '(tanpa judul)' }}</span>
-                                                <span class="recent-item-meta">{{ $item['menu'] }} &middot; {{ $item['date']?->translatedFormat('d M Y') }}</span>
-                                            </div>
-                                        </div>
-                                    @empty
-                                        <div class="recent-empty">Belum ada aktivitas yang tercatat.</div>
-                                    @endforelse
-                                </div>
+                                @empty
+                                <div class="recent-empty">Belum ada aktivitas yang tercatat.</div>
+                                @endforelse
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
+    </div>
+    </main>
     </div>
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="chart-tooltip" id="chartTooltip"></div>
 
     <script>
-        
         // ================================================================
         // SCROLL REVEAL: fade + blur + scale saat elemen masuk viewport,
         // dan diulang lagi setiap kali elemen keluar lalu masuk ulang.
@@ -422,7 +435,10 @@
                 entries.forEach((entry) => {
                     entry.target.classList.toggle('is-visible', entry.isIntersecting);
                 });
-            }, { threshold: 0.10, rootMargin: '0px 0px 0px 0px' });
+            }, {
+                threshold: 0.10,
+                rootMargin: '0px 0px 0px 0px'
+            });
             revealEls.forEach((el) => revealObserver.observe(el));
         } else {
             revealEls.forEach((el) => el.classList.add('is-visible'));
@@ -432,12 +448,14 @@
         // TOOLTIP BERSAMA (dipakai donut, kurva, dan bar chart)
         // ================================================================
         const chartTooltip = document.getElementById('chartTooltip');
+
         function showChartTooltip(x, y, text) {
             chartTooltip.textContent = text;
             chartTooltip.style.left = x + 'px';
             chartTooltip.style.top = y + 'px';
             chartTooltip.classList.add('is-active');
         }
+
         function hideChartTooltip() {
             chartTooltip.classList.remove('is-active');
         }
@@ -447,7 +465,10 @@
         // ================================================================
         function polarToCartesian(cx, cy, r, angleDeg) {
             const a = (angleDeg - 90) * Math.PI / 180;
-            return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+            return {
+                x: cx + r * Math.cos(a),
+                y: cy + r * Math.sin(a)
+            };
         }
 
         function sliceLargePath(cx, cy, rOuter, rInner, startAngle, endAngle) {
@@ -468,7 +489,11 @@
 
         function renderDonut(widget) {
             let data = [];
-            try { data = JSON.parse(widget.dataset.chart || '[]'); } catch (_) { data = []; }
+            try {
+                data = JSON.parse(widget.dataset.chart || '[]');
+            } catch (_) {
+                data = [];
+            }
 
             const svg = widget.querySelector('svg');
             const centerValue = widget.querySelector('.donut-center-value');
@@ -492,7 +517,10 @@
                 return;
             }
 
-            const cx = 100, cy = 100, rOuter = 90, rInner = 55;
+            const cx = 100,
+                cy = 100,
+                rOuter = 90,
+                rInner = 55;
             let cursor = 0;
             const ns = 'http://www.w3.org/2000/svg';
 
@@ -518,8 +546,13 @@
                         path.classList.add('is-active');
                     };
                     path.addEventListener('mouseenter', showTip);
-                    path.addEventListener('touchstart', showTip, { passive: true });
-                    path.addEventListener('mouseleave', () => { hideChartTooltip(); path.classList.remove('is-active'); });
+                    path.addEventListener('touchstart', showTip, {
+                        passive: true
+                    });
+                    path.addEventListener('mouseleave', () => {
+                        hideChartTooltip();
+                        path.classList.remove('is-active');
+                    });
 
                     svg.appendChild(path);
                     cursor += pct;
@@ -545,11 +578,18 @@
         // ================================================================
         function renderTrendChart(holder, periodOverride) {
             let allSets = {};
-            try { allSets = JSON.parse(holder.dataset.chartSets || '{}'); } catch (_) { allSets = {}; }
+            try {
+                allSets = JSON.parse(holder.dataset.chartSets || '{}');
+            } catch (_) {
+                allSets = {};
+            }
 
             const period = periodOverride || holder.dataset.activePeriod || 'bulanan';
             holder.dataset.activePeriod = period;
-            const dataset = allSets[period] || { labels: [], series: [] };
+            const dataset = allSets[period] || {
+                labels: [],
+                series: []
+            };
             const labels = dataset.labels || [];
             const series = dataset.series || [];
 
@@ -577,7 +617,10 @@
             const rectNow = holder.getBoundingClientRect();
             const W = Math.max(280, Math.round(rectNow.width)) || 640;
             const H = Math.max(160, Math.round(rectNow.height)) || 220;
-            const padL = 28, padR = 12, padT = 20, padB = 30;
+            const padL = 28,
+                padR = 12,
+                padT = 20,
+                padB = 30;
             const plotW = W - padL - padR;
             const plotH = H - padT - padB;
 
@@ -597,13 +640,16 @@
             [0, 0.25, 0.5, 0.75, 1].forEach((f) => {
                 const y = padT + plotH * (1 - f);
                 const line = document.createElementNS(ns, 'line');
-                line.setAttribute('x1', padL); line.setAttribute('x2', W - padR);
-                line.setAttribute('y1', y); line.setAttribute('y2', y);
+                line.setAttribute('x1', padL);
+                line.setAttribute('x2', W - padR);
+                line.setAttribute('y1', y);
+                line.setAttribute('y2', y);
                 line.setAttribute('class', 'trend-grid-line');
                 svg.appendChild(line);
 
                 const text = document.createElementNS(ns, 'text');
-                text.setAttribute('x', 2); text.setAttribute('y', y + 3);
+                text.setAttribute('x', 2);
+                text.setAttribute('y', y + 3);
                 text.setAttribute('class', 'trend-axis-label');
                 text.textContent = Math.round(niceMax * f);
                 svg.appendChild(text);
@@ -629,7 +675,8 @@
 
                 let d = '';
                 data.forEach((v, i) => {
-                    const x = xAt(i), y = yAt(v);
+                    const x = xAt(i),
+                        y = yAt(v);
                     d += (i === 0 ? 'M' : 'L') + x + ' ' + y + ' ';
                 });
 
@@ -642,7 +689,8 @@
 
                 // Marker kotak (bukan lingkaran) di tiap titik + tooltip
                 data.forEach((v, i) => {
-                    const x = xAt(i), y = yAt(v);
+                    const x = xAt(i),
+                        y = yAt(v);
                     const size = 7;
                     const marker = document.createElementNS(ns, 'rect');
                     marker.setAttribute('x', x - size / 2);
@@ -653,13 +701,19 @@
                     marker.setAttribute('class', 'trend-point');
                     const showTip = () => {
                         const rBound = holder.getBoundingClientRect();
-                        const scaleX = rBound.width / W, scaleY = rBound.height / H;
+                        const scaleX = rBound.width / W,
+                            scaleY = rBound.height / H;
                         showChartTooltip(rBound.left + x * scaleX, rBound.top + y * scaleY, `${s.label} · ${labels[i]}: ${v}`);
                         marker.classList.add('is-active');
                     };
                     marker.addEventListener('mouseenter', showTip);
-                    marker.addEventListener('touchstart', showTip, { passive: true });
-                    marker.addEventListener('mouseleave', () => { hideChartTooltip(); marker.classList.remove('is-active'); });
+                    marker.addEventListener('touchstart', showTip, {
+                        passive: true
+                    });
+                    marker.addEventListener('mouseleave', () => {
+                        hideChartTooltip();
+                        marker.classList.remove('is-active');
+                    });
                     svg.appendChild(marker);
                 });
             });
@@ -691,7 +745,11 @@
         // ================================================================
         function renderBarChart(holder, periodOverride) {
             let allSets = {};
-            try { allSets = JSON.parse(holder.dataset.chartSets || '{}'); } catch (_) { allSets = {}; }
+            try {
+                allSets = JSON.parse(holder.dataset.chartSets || '{}');
+            } catch (_) {
+                allSets = {};
+            }
 
             const period = periodOverride || holder.dataset.activePeriod || 'bulanan';
             holder.dataset.activePeriod = period;
@@ -709,7 +767,10 @@
             const rectNow = holder.getBoundingClientRect();
             const W = Math.max(280, Math.round(rectNow.width)) || 640;
             const H = Math.max(160, Math.round(rectNow.height)) || 220;
-            const padL = 28, padR = 12, padT = 20, padB = 30;
+            const padL = 28,
+                padR = 12,
+                padT = 20,
+                padB = 30;
             const plotW = W - padL - padR;
             const plotH = H - padT - padB;
 
@@ -725,8 +786,10 @@
             const defs = document.createElementNS(ns, 'defs');
             const gradient = document.createElementNS(ns, 'linearGradient');
             gradient.setAttribute('id', 'barGradient');
-            gradient.setAttribute('x1', '0'); gradient.setAttribute('y1', '1');
-            gradient.setAttribute('x2', '0'); gradient.setAttribute('y2', '0');
+            gradient.setAttribute('x1', '0');
+            gradient.setAttribute('y1', '1');
+            gradient.setAttribute('x2', '0');
+            gradient.setAttribute('y2', '0');
             gradient.innerHTML = `
                 <stop offset="0%" stop-color="var(--chart-1)" />
                 <stop offset="100%" stop-color="var(--chart-2)" />
@@ -738,13 +801,16 @@
             [0, 0.25, 0.5, 0.75, 1].forEach((f) => {
                 const y = padT + plotH * (1 - f);
                 const line = document.createElementNS(ns, 'line');
-                line.setAttribute('x1', padL); line.setAttribute('x2', W - padR);
-                line.setAttribute('y1', y); line.setAttribute('y2', y);
+                line.setAttribute('x1', padL);
+                line.setAttribute('x2', W - padR);
+                line.setAttribute('y1', y);
+                line.setAttribute('y2', y);
                 line.setAttribute('class', 'trend-grid-line');
                 svg.appendChild(line);
 
                 const text = document.createElementNS(ns, 'text');
-                text.setAttribute('x', 2); text.setAttribute('y', y + 3);
+                text.setAttribute('x', 2);
+                text.setAttribute('y', y + 3);
                 text.setAttribute('class', 'trend-axis-label');
                 text.textContent = Math.round(niceMax * f);
                 svg.appendChild(text);
@@ -758,8 +824,10 @@
             data.forEach((d, i) => {
                 const cx = padL + slot * (i + 0.5);
                 const vLine = document.createElementNS(ns, 'line');
-                vLine.setAttribute('x1', cx); vLine.setAttribute('x2', cx);
-                vLine.setAttribute('y1', padT); vLine.setAttribute('y2', padT + plotH);
+                vLine.setAttribute('x1', cx);
+                vLine.setAttribute('x2', cx);
+                vLine.setAttribute('y1', padT);
+                vLine.setAttribute('y2', padT + plotH);
                 vLine.setAttribute('class', 'trend-grid-line-v');
                 svg.appendChild(vLine);
             });
@@ -780,13 +848,19 @@
                 rect.setAttribute('class', 'bar-rect');
                 const showTip = () => {
                     const rBound = holder.getBoundingClientRect();
-                    const scaleX = rBound.width / W, scaleY = rBound.height / H;
+                    const scaleX = rBound.width / W,
+                        scaleY = rBound.height / H;
                     showChartTooltip(rBound.left + cx * scaleX, rBound.top + y * scaleY, `${d.label}: ${value} kegiatan`);
                     rect.classList.add('is-active');
                 };
                 rect.addEventListener('mouseenter', showTip);
-                rect.addEventListener('touchstart', showTip, { passive: true });
-                rect.addEventListener('mouseleave', () => { hideChartTooltip(); rect.classList.remove('is-active'); });
+                rect.addEventListener('touchstart', showTip, {
+                    passive: true
+                });
+                rect.addEventListener('mouseleave', () => {
+                    hideChartTooltip();
+                    rect.classList.remove('is-active');
+                });
                 svg.appendChild(rect);
 
                 const valueLabel = document.createElementNS(ns, 'text');

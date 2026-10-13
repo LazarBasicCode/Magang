@@ -17,6 +17,7 @@ use App\Http\Controllers\CetakLaporanController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ProfilController;
 
 // ---- Route khusus TAMU (belum login) ----
 // Middleware 'guest' mengalihkan user yang sudah login ke /dashboard, jadi
@@ -207,4 +208,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     Route::post('/notifications/{userNotification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+
+    // ---- Profile Menu (Mahasiswa & Coming Soon Dosen ----
+    Route::get('/profil', [ProfilController::class, 'show'])->name('profil');
 });

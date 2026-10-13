@@ -23,21 +23,29 @@
 
 <body>
     <!-- Definisi dark mode -->
-    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
+    <script>
+        try {
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        } catch (e) {}
+    </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
             <symbol id="sida-mark" viewBox="0 0 48 48">
-                <clipPath id="sidaClip"><circle cx="24" cy="24" r="22.5"/></clipPath>
-                <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)"/>
-                <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/>
+                <clipPath id="sidaClip">
+                    <circle cx="24" cy="24" r="22.5" />
+                </clipPath>
+                <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)" />
+                <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5" />
             </symbol>
         </defs>
     </svg>
 
     <aside class="app-sidebar">
         <div class="sidebar-brand">
-            <svg class="sidebar-brand-mark" aria-hidden="true"><use href="#sida-mark"/></svg>
+            <svg class="sidebar-brand-mark" aria-hidden="true">
+                <use href="#sida-mark" />
+            </svg>
             <div class="sidebar-brand-text">
                 <span class="sidebar-brand-title">SIDA</span>
                 <span class="sidebar-brand-sub">Institut Asia Malang</span>
@@ -83,6 +91,10 @@
                 <a href="{{ url('/hak-akses') }}" class="nav-link">
                     <span class="material-symbols-outlined">shield_person</span>
                     <span>Hak Akses</span>
+                </a>
+                <a href="{{ url('/profil') }}" class="nav-link">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span>Profil Saya</span>
                 </a>
             </div>
         </nav>

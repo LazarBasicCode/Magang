@@ -21,7 +21,11 @@
 
 <body>
     <!-- Definisi dark mode -->
-    <script> try { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); } catch (e) {} </script>
+    <script>
+        try {
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        } catch (e) {}
+    </script>
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
@@ -129,6 +133,10 @@
                     <span>Laporan</span>
                 </a>
                 @endif
+                <a href="{{ url('/profil') }}" class="nav-link">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span>Profil Saya</span>
+                </a>
             </div>
         </nav>
 
@@ -441,18 +449,18 @@
                     </div>
 
                     @if($showBulk)
-                        {{-- Bar aksi data terpilih (Export Excel / Cetak PDF / Batal pilih); muncul saat ada baris dicentang --}}
-                        @include('partials.row-select-bar')
+                    {{-- Bar aksi data terpilih (Export Excel / Cetak PDF / Batal pilih); muncul saat ada baris dicentang --}}
+                    @include('partials.row-select-bar')
                     @endif
 
                     <div class="table-scroll is-scrollable" id="tableScroll">
                         <table class="data-table"
                             @if($showBulk)
-                                data-selectable="kemahasiswaan"
-                                data-select-export="{{ route('pilihan.export', 'kemahasiswaan') }}"
-                                data-select-print="{{ route('pilihan.cetak', 'kemahasiswaan') }}"
-                                @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'kemahasiswaan') }}" @endif
-                                @if($bulkWrite) data-select-update="{{ route('pilihan.ubah', 'kemahasiswaan') }}" @endif
+                            data-selectable="kemahasiswaan"
+                            data-select-export="{{ route('pilihan.export', 'kemahasiswaan') }}"
+                            data-select-print="{{ route('pilihan.cetak', 'kemahasiswaan') }}"
+                            @if($bulkWrite) data-select-delete="{{ route('pilihan.hapus', 'kemahasiswaan') }}" @endif
+                            @if($bulkWrite) data-select-update="{{ route('pilihan.ubah', 'kemahasiswaan') }}" @endif
                             @endif>
                             <thead>
                                 <tr>
@@ -677,19 +685,19 @@
     @endif
 
     @if($showBulk && $bulkWrite)
-        {{-- Modal Update Massal (data terpilih). Kolom NIM, Mahasiswa, Tahun & Bukti sengaja tidak ada: khas per baris. --}}
-        @include('partials.bulk-update-modal', [
-            'updateLabel'  => 'Kemahasiswaan',
-            'updateFields' => [
-                ['name' => 'nama_kegiatan', 'label' => 'Nama Kegiatan', 'type' => 'text', 'placeholder' => 'Kosongkan = nama kegiatan tidak diubah', 'col' => 2, 'target' => '.activity-title'],
-                ['name' => 'jenis',   'label' => 'Jenis Kegiatan',  'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
-                    'options' => ['kemahasiswaan' => 'Kemahasiswaan', 'inbis' => 'Inbis (Inkubator Bisnis)']],
-                ['name' => 'tab',     'label' => 'Kategori Tab',    'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
-                    'options' => ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']],
-                ['name' => 'tingkat', 'label' => 'Tingkat Capaian', 'type' => 'select', 'col' => 5, 'target' => '.plain-text',
-                    'options' => ['lokal' => 'Lokal (Kota/Wilayah)', 'nasional' => 'Nasional (RI)', 'internasional' => 'Internasional (Global)']],
-            ],
-        ])
+    {{-- Modal Update Massal (data terpilih). Kolom NIM, Mahasiswa, Tahun & Bukti sengaja tidak ada: khas per baris. --}}
+    @include('partials.bulk-update-modal', [
+    'updateLabel' => 'Kemahasiswaan',
+    'updateFields' => [
+    ['name' => 'nama_kegiatan', 'label' => 'Nama Kegiatan', 'type' => 'text', 'placeholder' => 'Kosongkan = nama kegiatan tidak diubah', 'col' => 2, 'target' => '.activity-title'],
+    ['name' => 'jenis', 'label' => 'Jenis Kegiatan', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
+    'options' => ['kemahasiswaan' => 'Kemahasiswaan', 'inbis' => 'Inbis (Inkubator Bisnis)']],
+    ['name' => 'tab', 'label' => 'Kategori Tab', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
+    'options' => ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']],
+    ['name' => 'tingkat', 'label' => 'Tingkat Capaian', 'type' => 'select', 'col' => 5, 'target' => '.plain-text',
+    'options' => ['lokal' => 'Lokal (Kota/Wilayah)', 'nasional' => 'Nasional (RI)', 'internasional' => 'Internasional (Global)']],
+    ],
+    ])
     @endif
 
     <script src="{{ asset('js/script.js') }}"></script>
@@ -770,33 +778,61 @@
         // GET /kemahasiswaan?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
         // Tombol halaman digambar public/js/pager.js.
         // ================================================================
-        const FILTERS = ['filter-jenis','filter-tab','filter-tingkat','filter-tahun'];
+        const FILTERS = ['filter-jenis', 'filter-tab', 'filter-tingkat', 'filter-tahun'];
         const searchInput = document.getElementById('filter-search');
         const emptyRow = document.getElementById('emptyRow');
         const footerRange = document.getElementById('footerRange');
         const footerTotalCount = document.getElementById('footerTotalCount');
-        let currentPage = {{ $kegiatan->currentPage() }};
+        let currentPage = {
+            {
+                $kegiatan - > currentPage()
+            }
+        };
         let requestSeq = 0;
         let searchTimer = null;
 
-        const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => { loadPage(n); document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
-        pager.render({{ $kegiatan->currentPage() }}, {{ max(1, $kegiatan->lastPage()) }});
+        const pager = Pager.create(document.getElementById('pager'), {
+            onGo: (n) => {
+                loadPage(n);
+                document.querySelector('.table-card')?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+        pager.render({
+            {
+                $kegiatan - > currentPage()
+            }
+        }, {
+            {
+                max(1, $kegiatan - > lastPage())
+            }
+        });
 
         async function loadPage(page = currentPage) {
             const seq = ++requestSeq;
             const term = (searchInput?.value || '').trim();
-            const params = new URLSearchParams({ page: String(page) });
+            const params = new URLSearchParams({
+                page: String(page)
+            });
             let filtered = !!term;
             FILTERS.forEach((id) => {
                 const v = document.getElementById(id)?.value || 'semua';
-                if (v !== 'semua') { params.set(id.replace('filter-', ''), v); filtered = true; }
+                if (v !== 'semua') {
+                    params.set(id.replace('filter-', ''), v);
+                    filtered = true;
+                }
             });
             if (term) params.set('q', term);
 
             tableBody.classList.add('is-fetching');
             try {
                 const res = await fetch('/kemahasiswaan?' + params, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     credentials: 'same-origin',
                 });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -808,9 +844,9 @@
                 currentPage = data.meta.page;
                 emptyRow.hidden = data.meta.total !== 0;
                 if (data.meta.total === 0) {
-                    emptyRow.firstElementChild.textContent = filtered
-                        ? 'Tidak ada data yang cocok dengan filter.'
-                        : 'Belum ada data kegiatan. Klik "Tambah Kegiatan" untuk mulai mengisi.';
+                    emptyRow.firstElementChild.textContent = filtered ?
+                        'Tidak ada data yang cocok dengan filter.' :
+                        'Belum ada data kegiatan. Klik "Tambah Kegiatan" untuk mulai mengisi.';
                 }
                 footerRange.textContent = data.meta.from + '–' + data.meta.to;
                 footerTotalCount.textContent = data.meta.total;
@@ -818,14 +854,21 @@
             } catch (err) {
                 if (seq !== requestSeq) return;
                 console.error('[Kemahasiswaan] Gagal memuat halaman:', err);
-                window.Toast?.show?.({ type: 'error', title: 'Gagal memuat data', message: 'Tidak bisa memuat halaman ini. Coba lagi.' });
+                window.Toast?.show?.({
+                    type: 'error',
+                    title: 'Gagal memuat data',
+                    message: 'Tidak bisa memuat halaman ini. Coba lagi.'
+                });
             } finally {
                 if (seq === requestSeq) tableBody.classList.remove('is-fetching');
             }
         }
 
         // Cari (tunda 300ms), pilih dropdown, reset -> kembali ke halaman 1
-        searchInput?.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadPage(1), 300); });
+        searchInput?.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadPage(1), 300);
+        });
         // setTimeout 0: tunggu script.js selesai mengisi nilai dropdown tersembunyi
         document.querySelectorAll('.filter-card .dropdown-option').forEach((opt) => opt.addEventListener('click', () => setTimeout(() => loadPage(1), 0)));
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
@@ -963,11 +1006,11 @@
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)
-        <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
-        <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
+    <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
+    <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>
     @endif
     @if($showBulk && $bulkWrite)
-        <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
+    <script src="{{ asset('js/bulk-update.js') }}?v={{ @filemtime(public_path('js/bulk-update.js')) }}"></script>
     @endif
 </body>
 

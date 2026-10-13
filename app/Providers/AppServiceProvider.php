@@ -53,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
             'hak-akses',
             'laporan',
             'backup',
+            'profil',
         ], function ($view) {
             $view->with('__user', auth()->user());
         });

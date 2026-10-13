@@ -135,6 +135,10 @@
                     <span>Laporan</span>
                 </a>
                 @endif
+                <a href="{{ url('/profil') }}" class="nav-link">
+                    <span class="material-symbols-outlined">account_circle</span>
+                    <span>Profil Saya</span>
+                </a>
             </div>
         </nav>
 

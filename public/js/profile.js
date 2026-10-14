@@ -12,33 +12,20 @@
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     // ---------- 1. Ikon cat: warna sementara (hilang saat halaman dimuat ulang) ----------
-    const PALETTES = [
-        { name: 'Indigo',  top: null },   // bawaan tema
-        { name: 'Zamrud',  top: '#10b981', teal: 'rgba(132,204,22,.85)',  primary: '#0f9d6e', dark: '#0b7d57' },
-        { name: 'Senja',   top: '#f97316', teal: 'rgba(236,72,153,.85)',  primary: '#ea580c', dark: '#c2410c' },
-        { name: 'Mawar',   top: '#e11d48', teal: 'rgba(244,114,182,.85)', primary: '#e11d48', dark: '#be123c' },
-        { name: 'Samudra', top: '#0ea5e9', teal: 'rgba(99,102,241,.85)',  primary: '#0284c7', dark: '#0369a1' },
-    ];
+    // Nilai warna ada di profile.css ("DAFTAR WARNA"). Tambah tema: tambah nama di sini + satu blok [data-pal] di CSS.
+    const PALETTES = ['indigo', 'zamrud', 'senja', 'mawar', 'samudra'];   // 'indigo' = bawaan tema (tanpa data-pal)
     const page = $('pageWrap');
     const palBtn = $('pfPaletteBtn');
     const swatches = $('pfSwatches');
 
-    function applyPalette(i) {
-        const p = PALETTES[i];
-        ['--pf-top', '--pf-teal', '--primary', '--primary-dark'].forEach((k) => page.style.removeProperty(k));
-        if (p.top) {
-            page.style.setProperty('--pf-top', p.top);
-            page.style.setProperty('--pf-teal', p.teal);
-            page.style.setProperty('--primary', p.primary);
-            page.style.setProperty('--primary-dark', p.dark);
-        }
-        swatches.querySelectorAll('.pf-swatch').forEach((s, n) => s.classList.toggle('is-on', n === i));
+    function applyPalette(name) {
+        if (name === PALETTES[0]) page.removeAttribute('data-pal'); else page.setAttribute('data-pal', name);
+        swatches.querySelectorAll('.pf-swatch').forEach((s) => s.classList.toggle('is-on', s.dataset.pal === name));
     }
 
     if (page && palBtn && swatches) {
-        const base = getComputedStyle(page).getPropertyValue('--primary').trim() || '#5b5fef';
-        swatches.innerHTML = PALETTES.map((p, i) =>
-            `<button type="button" class="pf-swatch${i === 0 ? ' is-on' : ''}" data-i="${i}" style="--sw:${p.top || base}" title="${p.name}" aria-label="Warna ${p.name}"></button>`
+        swatches.innerHTML = PALETTES.map((n, i) =>
+            `<button type="button" class="pf-swatch${i === 0 ? ' is-on' : ''}" data-pal="${n}" title="${n[0].toUpperCase() + n.slice(1)}" aria-label="Warna ${n}"></button>`
         ).join('');
         palBtn.addEventListener('click', () => {
             swatches.hidden = !swatches.hidden;
@@ -46,7 +33,7 @@
         });
         swatches.addEventListener('click', (e) => {
             const b = e.target.closest('.pf-swatch');
-            if (b) applyPalette(Number(b.dataset.i));
+            if (b) applyPalette(b.dataset.pal);
         });
     }
 
@@ -89,7 +76,10 @@
         </div>`;
     }
 
-    function render(pageNo = 1) {
+    const skeleton = () => '<div class="pf-sk-item"><span class="pf-sk pf-sk-ico"></span><span class="pf-sk-lines"><span class="pf-sk"></span><span class="pf-sk"></span></span></div>'.repeat(3);
+    let busy = 0;
+
+    function draw(pageNo) {
         const rows = filtered();
         const last = Math.max(1, Math.ceil(rows.length / data.perPage));
         pageNo = Math.min(Math.max(1, pageNo), last);
@@ -111,7 +101,38 @@
         pager.render(pageNo, last);
     }
 
+    // Skeleton sebentar sebagai umpan balik saat ganti filter/halaman; galat apa pun ditampilkan, bukan dibiarkan kosong.
+    function render(pageNo = 1, instant = false) {
+        const token = ++busy;
+        list.setAttribute('aria-busy', 'true');
+        if (!instant) list.innerHTML = skeleton();
+        setTimeout(() => {
+            if (token !== busy) return;
+            try {
+                draw(pageNo);
+            } catch (err) {
+                console.error('[Profil] Gagal menampilkan riwayat:', err);
+                list.innerHTML = '<div class="pf-empty">Riwayat gagal ditampilkan (' + esc(err.message) + '). Muat ulang halaman.</div>';
+            }
+            list.setAttribute('aria-busy', 'false');
+        }, instant ? 0 : 180);
+    }
+
     // Dropdown kustom SIDA: script.js mengisi input tersembunyi saat opsi diklik, jadi nilainya dibaca setelahnya.
     document.querySelectorAll('.pf-dd .dropdown-option').forEach((o) => o.addEventListener('click', () => setTimeout(() => render(1), 0)));
-    render(1);
+    render(1, true);
+
+    // ---------- 4. Notifikasi: klik membuka popup ----------
+    const dlg = $('pfNotifDialog');
+    if (dlg && typeof dlg.showModal === 'function') {
+        document.querySelectorAll('.pf-note-item').forEach((btn) => btn.addEventListener('click', () => {
+            $('pfNotifTitle').textContent = btn.dataset.judul || 'Notifikasi';
+            $('pfNotifTime').textContent = btn.dataset.waktu || '';
+            $('pfNotifBody').textContent = btn.dataset.pesan || 'Tidak ada detail tambahan untuk notifikasi ini.';
+            $('pfNotifState').textContent = btn.dataset.baca === '1' ? 'Sudah dibaca' : 'Belum dibaca';
+            dlg.showModal();
+        }));
+        ['pfNotifClose', 'pfNotifOk'].forEach((id) => $(id)?.addEventListener('click', () => dlg.close()));
+        dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });   // klik area gelap = tutup
+    }
 })();

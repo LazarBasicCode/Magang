@@ -783,11 +783,7 @@
         const emptyRow = document.getElementById('emptyRow');
         const footerRange = document.getElementById('footerRange');
         const footerTotalCount = document.getElementById('footerTotalCount');
-        let currentPage = {
-            {
-                $kegiatan - > currentPage()
-            }
-        };
+        let currentPage = {{ $kegiatan->currentPage() }};
         let requestSeq = 0;
         let searchTimer = null;
 
@@ -800,15 +796,7 @@
                 });
             }
         });
-        pager.render({
-            {
-                $kegiatan - > currentPage()
-            }
-        }, {
-            {
-                max(1, $kegiatan - > lastPage())
-            }
-        });
+        pager.render({{ $kegiatan->currentPage() }}, {{ max(1, $kegiatan->lastPage()) }});
 
         async function loadPage(page = currentPage) {
             const seq = ++requestSeq;

@@ -1,82 +1,111 @@
-/* Halaman Profil v3 — prefix .pf-
+/* Halaman Profil — prefix .pf-
    Prinsip: tanpa border keras, hero menyatu dengan latar (--canvas), bentuk organik & berukuran tidak seragam.
-   Warna aksen halaman bisa diganti sementara lewat ikon cat (JS menimpa --pf-top, --pf-teal, --primary pada #pageWrap). */
+   Warna aksen halaman bisa diganti sementara lewat ikon cat (JS memasang data-pal pada #pageWrap; nilai warna ada di "DAFTAR WARNA" di bawah). */
 
-:root {
-    --pf-top: #5b5fef;                    /* warna paling tajam, bagian atas hero */
-    --pf-teal: rgba(23, 190, 214, .92);   /* sorot pojok kanan atas */
+/* =====================================================================
+   DAFTAR WARNA — ubah / tambah tema di sini saja.
+   --pf-top  : warna utama (hero + aksen)      --pf-glow : warna sorot pojok kanan atas
+   --primary / --primary-dark : aksen tombol, cincin, batang, dll. (hanya di dalam halaman profil)
+   Tema baru = salin satu blok [data-pal="..."] + tambahkan namanya di PALETTES (profile.js).
+   Kotak pilihan warna (ikon cat) otomatis mengambil --pf-top dari blok yang sama.
+   ===================================================================== */
+
+.app-main {
+    padding-top: calc(var(--header-h) + 4px);
 }
-body.dark-mode {
-    --pf-top: #2d4fc4;
-    --pf-teal: rgba(30, 205, 220, .65);
+
+:root {                                   /* bawaan (indigo) — terang */
+    --pf-top: #316ef2;  --pf-glow: #2b80ff;
+    --pf-a1: 90%;       --pf-a2: 90%;     /* kepekatan sorot kiri-atas / kanan-atas */
 }
+body.dark-mode {                          /* bawaan (indigo) — gelap */
+    --pf-top: #3939db;  --pf-glow: #1eb3dc;
+    --pf-a1: 80%;       --pf-a2: 80%;
+}
+.pf-swatch[data-pal="indigo"] { --pf-top: #316ef2; }
+body.dark-mode .pf-swatch[data-pal="indigo"] { --pf-top: #3939db; }
+.pf-page[data-pal="zamrud"],  .pf-swatch[data-pal="zamrud"]  { --pf-top: #10b981; --pf-glow: #a3e635; --primary: #0f9d6e; --primary-dark: #0b7d57; }
+.pf-page[data-pal="senja"],   .pf-swatch[data-pal="senja"]   { --pf-top: #f97316; --pf-glow: #ec4899; --primary: #ea580c; --primary-dark: #c2410c; }
+.pf-page[data-pal="mawar"],   .pf-swatch[data-pal="mawar"]   { --pf-top: #ff0037; --pf-glow: #e73db1; --primary: #e11d48; --primary-dark: #be123c; }
+.pf-page[data-pal="samudra"], .pf-swatch[data-pal="samudra"] { --pf-top: #0a9fde; --pf-glow: #63ecf1; --primary: #029cc7; --primary-dark: #056ea7; }
 
 .pf-page {
-    --pf-mid: color-mix(in srgb, var(--pf-top) 34%, transparent);
     --pf-soft: color-mix(in srgb, var(--primary) 13%, transparent);
     display: flex; flex-direction: column; gap: 26px; padding: 14px 0 36px;
 }
 
 /* ================= HERO: tanpa border, memudar ke warna latar ================= */
 .pf-hero {
+    --av: 176px; --ring: 10px;
     position: relative; overflow: hidden; border-radius: 30px; container-type: inline-size;
-    padding: 46px 48px 40px;
-    /* Gradasi halus: banyak titik warna yang dicampur ke --canvas, jadi memudar pelan sampai benar-benar menyatu dengan latar */
-    background:
-        radial-gradient(75% 85% at 100% 0%, color-mix(in srgb, var(--pf-teal) 62%, transparent) 0%, transparent 72%),
-        linear-gradient(180deg,
-            color-mix(in srgb, var(--pf-top) 74%, var(--canvas)) 0%,
-            color-mix(in srgb, var(--pf-top) 58%, var(--canvas)) 14%,
-            color-mix(in srgb, var(--pf-top) 42%, var(--canvas)) 30%,
-            color-mix(in srgb, var(--pf-top) 27%, var(--canvas)) 47%,
-            color-mix(in srgb, var(--pf-top) 15%, var(--canvas)) 64%,
-            color-mix(in srgb, var(--pf-top) 6%, var(--canvas)) 82%,
-            var(--canvas) 100%);
+    padding: 46px 48px 40px; isolation: isolate;
 }
-.pf-hero::before { /* pola heksagon samar di sisi kanan */
-    content: ""; position: absolute; inset: 0; pointer-events: none;
+.pf-hero::before { /* warna palet, memudar ke bawah (isi hero tidak ikut pudar) */
+    content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--pf-top) 50%, transparent) 0%,
+        color-mix(in srgb, var(--pf-glow) 50%, transparent) 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 35%, rgba(0,0,0,.55) 65%, rgba(0,0,0,.20) 80%, rgba(0,0,0,.01) 95%, transparent 100%);
+            mask-image: linear-gradient(180deg, #000 0%, #000 35%, rgba(0,0,0,.55) 65%, rgba(0,0,0,.20) 80%, rgba(0,0,0,.01) 95%, transparent 100%);
+}
+.pf-hero::after { /* pola heksagon tipis, hanya di pojok kanan atas */
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'><path d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 32L0 82V50' fill='none' stroke='white' stroke-opacity='.20' stroke-width='1.2'/></svg>");
     background-size: 56px 98px;
-    -webkit-mask-image: radial-gradient(60% 70% at 100% 10%, #000, transparent 75%); mask-image: radial-gradient(60% 70% at 100% 10%, #000, transparent 75%);
+    -webkit-mask-image: radial-gradient(60% 80% at 98% 4%, #000 0%, rgba(0,0,0,.5) 42%, transparent 80%);
+            mask-image: radial-gradient(60% 80% at 98% 4%, #000 0%, rgba(0,0,0,.5) 42%, transparent 80%);
 }
-.pf-hero > * { position: relative; }
+.pf-hero-inner { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "avatar text"; align-items: center; gap: 28px 44px; }
+.pf-hero-text { grid-area: text; min-width: 0; }
 
+/* Avatar: warna ikut palet; cincin kaca = ::before dilubangi mask + backdrop-filter (memburamkan hero di belakangnya) */
 .pf-avatar {
-    grid-area: avatar; width: 176px; height: 176px; border-radius: 50%; display: grid; place-items: center;
-    font-size: 64px; font-weight: 800; border: 8px solid rgba(255, 255, 255, .92);
-    box-shadow: 0 18px 40px rgba(20, 24, 70, .30);
+    grid-area: avatar; position: relative; width: var(--av); height: var(--av); margin: var(--ring);
+    border-radius: 50%; border: 0; display: grid; place-items: center; font-size: 64px; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, var(--pf-top), var(--pf-glow));
+    box-shadow: 0 8px 28px color-mix(in srgb, var(--pf-top) 40%, transparent);
 }
-body.dark-mode .pf-avatar { border-color: rgba(255, 255, 255, .2); }
-.pf-name { margin: 0 0 6px; font-size: 40px; font-weight: 800; letter-spacing: -.025em; line-height: 1.08; color: var(--ink); overflow-wrap: anywhere; }
+.pf-avatar::before {
+    content: ""; position: absolute; inset: calc(var(--ring) * -1); border-radius: 50%; pointer-events: none;
+    background: rgba(255, 255, 255, .24); border: 1px solid rgba(255, 255, 255, .55);
+    -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + .5px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + .5px));
+}
+body.dark-mode .pf-avatar::before { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .3); }
+
+.pf-hero-total { display: flex; align-items: center; gap: 16px; margin-top: 24px; }
+.pf-total-num { font-size: 54px; font-weight: 800; line-height: .95; letter-spacing: -.04em; color: var(--ink); }
+.pf-total-label { padding-left: 16px; border-left: 2px solid color-mix(in srgb, var(--ink-faint) 55%, transparent); font-size: 13px; font-weight: 600; color: var(--ink-muted); line-height: 1.4; }
+
+/* Chip & badge status: satu keluarga kapsul, tinggi sama */
+.pf-hero .badge { height: 32px; padding: 0 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; backdrop-filter: blur(8px); }
+
+.pf-name { margin: 0 0 6px; font-size: 38px; font-weight: 800; letter-spacing: -.025em; line-height: 1.08; color: var(--ink); overflow-wrap: anywhere; }
 .pf-role { margin: 0; font-size: 15px; font-weight: 700; color: color-mix(in srgb, var(--ink) 74%, transparent); }
-.pf-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.pf-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .pf-chip {
-    display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px;
     background: color-mix(in srgb, var(--card) 72%, transparent); color: var(--ink-muted);
     font-size: 12.5px; font-weight: 600; backdrop-filter: blur(8px);
 }
 .pf-chip .material-symbols-outlined { font-size: 16px; }
 .pf-chip.is-locked .material-symbols-outlined:last-child { color: var(--ink-faint); }
 
-.pf-hero-total { display: flex; align-items: center; gap: 16px; margin-top: 28px; }
-.pf-hero-inner { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "avatar text"; align-items: center; gap: 28px 44px; }
-.pf-hero-text { grid-area: text; min-width: 0; }
-.pf-total-num { font-size: 58px; font-weight: 800; line-height: .95; letter-spacing: -.04em; color: var(--ink); }
-.pf-total-label { padding-left: 16px; border-left: 2px solid color-mix(in srgb, var(--ink-faint) 55%, transparent); font-size: 13px; font-weight: 600; color: var(--ink-muted); line-height: 1.4; }
 
 /* Ikon cat: ganti warna sementara */
-.pf-palette { position: absolute; top: 20px; right: 22px; z-index: 3; display: flex; align-items: center; gap: 8px; flex-direction: row-reverse; }
+.pf-hero > .pf-palette { position: absolute; top: 20px; right: 22px; z-index: 3; display: flex; align-items: center; gap: 8px; flex-direction: row-reverse; }
 .pf-palette-btn {
     width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
     background: color-mix(in srgb, var(--card) 88%, transparent); color: var(--ink); backdrop-filter: blur(8px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, .18); transition: transform .2s, color .2s;
 }
-.pf-palette-btn:hover { color: var(--primary); transform: rotate(-12deg) scale(1.05); }
+.pf-palette-btn:hover { color: var(--ink); transform: rotate(-12deg) scale(1.05); }
 .pf-swatches { display: flex; gap: 8px; padding: 6px 8px; border-radius: 999px; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(8px); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
 .pf-swatches[hidden] { display: none; }
-.pf-swatch { width: 26px; height: 26px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; background: var(--sw); outline: 1px solid rgba(0, 0, 0, .12); transition: transform .15s; }
+.pf-swatch { width: 26px; height: 26px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; background: var(--pf-top); outline: 1px solid rgba(0, 0, 0, .12); transition: transform .15s; }
 .pf-swatch:hover { transform: scale(1.12); }
-.pf-swatch.is-on { border-color: var(--card); outline: 2px solid var(--sw); }
+.pf-swatch.is-on { border-color: var(--card); outline: 2px solid var(--pf-top); }
 
 /* ================= LAYOUT ================= */
 .pf-layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 30px; align-items: start; }
@@ -87,7 +116,16 @@ body.dark-mode .pf-avatar { border-color: rgba(255, 255, 255, .2); }
 .pf-panel { background: var(--card); border-radius: 26px; padding: 24px 26px; box-shadow: var(--shadow-card); min-width: 0; }
 
 /* ================= ASIDE PENGATURAN ================= */
-.pf-aside { position: sticky; top: calc(var(--header-h) + 34px); display: flex; flex-direction: column; gap: 14px; }
+.pf-aside {
+    position: sticky; top: calc(var(--header-h) + 34px); display: flex; flex-direction: column; gap: 14px;
+    max-height: calc(100vh - var(--header-h) - 34px);   /* sampai dasar layar, tidak berhenti di atasnya */
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; -ms-overflow-style: none;
+    padding: 2px 8px 34px 2px; margin: -2px -8px 0 -2px;
+    -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), transparent);
+            mask-image: linear-gradient(180deg, #000 calc(100% - 34px), transparent);
+}
+.pf-aside .pf-sec-title { margin: 0; }                                  /* jarak sudah diatur oleh gap */
+.pf-aside .pf-sec-title:not(:first-child) { margin-top: 20px; }         /* jeda antar kelompok */
 
 .pf-complete { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 26px 22px; border-radius: 28px; background: var(--pf-soft); }
 .pf-ring { --p: 0; width: 100px; height: 100px; border-radius: 50%; flex: none; display: grid; place-items: center; background: conic-gradient(var(--primary) calc(var(--p) * 1%), color-mix(in srgb, var(--primary) 18%, transparent) 0); }
@@ -111,6 +149,8 @@ body.dark-mode .pf-avatar { border-color: rgba(255, 255, 255, .2); }
 .pf-set.is-soon { cursor: not-allowed; opacity: .58; box-shadow: none; background: color-mix(in srgb, var(--card) 55%, transparent); }
 .pf-set.is-soon:hover { transform: none; background: color-mix(in srgb, var(--card) 55%, transparent); }
 .pf-soon { font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 99px; background: var(--neutral-bg); color: var(--neutral); flex: none; }
+
+.pf-aside::-webkit-scrollbar { display: none; }
 
 /* ================= KONTEN ================= */
 /* Identitas */
@@ -147,19 +187,18 @@ body.dark-mode .pf-avatar { border-color: rgba(255, 255, 255, .2); }
 .pf-ybar-track i { display: block; width: 100%; border-radius: 99px; background: linear-gradient(180deg, var(--chart-2), var(--primary)); }
 
 /* Notifikasi */
-.pf-notes { flex: 1; min-height: 0; list-style: none; margin: 0; padding: 0 8px 0 0; display: flex; flex-direction: column; overflow-y: auto; }
-
-/* For Firefox (Chrome memakai ::-webkit-scrollbar global dari style.css) */
-@supports not selector(::-webkit-scrollbar) {
-    .pf-notes { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
-}
-.pf-note-item { flex: none; display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px dashed color-mix(in srgb, var(--ink-faint) 40%, transparent); }
+.pf-notes { flex: 1; min-height: 0; list-style: none; margin: 0; padding: 4px 8px 4px 8px; display: flex; flex-direction: column; overflow-y: auto; }
+.pf-note-li { flex: none; border-bottom: 1px dashed color-mix(in srgb, var(--ink-faint) 40%, transparent); }
+.pf-note-li:last-child { border-bottom: 0; }
+.pf-note-item { width: 100%; display: flex; gap: 14px; align-items: flex-start; padding: 12px 10px; border: 0; border-radius: 14px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color .15s; }
+.pf-note-item:hover { background: var(--pf-soft); }
+.pf-note-item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 .pf-note-item:last-child { border-bottom: 0; }
-.pf-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none; background: var(--ink-faint); opacity: .5; }
+.pf-dot { width: 9px; height: 9px; border-radius: 50%; margin: 6px 0 0 4px; flex: none; background: var(--ink-faint); opacity: .5; }
 .pf-note-item.is-unread .pf-dot { background: var(--primary); opacity: 1; box-shadow: 0 0 0 4px var(--pf-soft); }
 .pf-note-body { min-width: 0; flex: 1; }
-.pf-note-title { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--ink); }
-.pf-note-sub { margin: 2px 0 0; font-size: 12px; color: var(--ink-muted); }
+.pf-note-title { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.pf-note-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-muted); }
 .pf-time { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
 .pf-empty { padding: 22px 8px; text-align: center; color: var(--ink-faint); font-size: 13px; }
 
@@ -200,16 +239,76 @@ body.dark-mode .pf-avatar { border-color: rgba(255, 255, 255, .2); }
 .pf-btn .material-symbols-outlined { font-size: 16px; }
 .pf-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 13px; color: var(--ink-muted); }
 
+/* Popup notifikasi */
+.pf-dialog { border: 0; border-radius: 28px; padding: 26px; width: min(460px, calc(100vw - 32px)); background: var(--card); color: var(--ink); box-shadow: 0 30px 80px rgba(10, 14, 30, .45); }
+.pf-dialog::backdrop { background: rgba(10, 14, 30, .55); backdrop-filter: blur(3px); }
+.pf-dialog[open] { animation: pf-pop .18s ease-out; }
+@keyframes pf-pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.pf-dialog-head { display: flex; gap: 14px; align-items: flex-start; }
+.pf-dialog-head > div { flex: 1; min-width: 0; }
+.pf-dialog-ico { width: 44px; height: 44px; border-radius: 15px; display: grid; place-items: center; flex: none; background: var(--pf-soft); color: var(--primary); }
+.pf-dialog h3 { margin: 2px 0 2px; font-size: 17px; font-weight: 800; line-height: 1.3; }
+.pf-dialog-head p { margin: 0; font-size: 12px; color: var(--ink-faint); }
+.pf-dialog-x { width: 34px; height: 34px; border: 0; border-radius: 50%; display: grid; place-items: center; background: transparent; color: var(--ink-muted); cursor: pointer; }
+.pf-dialog-x:hover { background: var(--pf-soft); color: var(--primary); }
+.pf-dialog-body { margin: 18px 0 0; font-size: 14px; line-height: 1.65; color: var(--ink-muted); white-space: pre-line; overflow-wrap: anywhere; max-height: 40vh; overflow-y: auto; }
+.pf-dialog-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; }
+
+/* Skeleton loading */
+.pf-sk { display: block; height: 12px; border-radius: 99px; background-image: linear-gradient(90deg, var(--sk-base) 25%, var(--sk-shine) 37%, var(--sk-base) 63%); background-size: 400% 100%; background-position: 100% 50%; animation: skShimmer 1.5s ease-in-out infinite; }
+.pf-sk-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; margin-bottom: 10px; border-radius: 22px; background: var(--card); box-shadow: var(--shadow-card); }
+.pf-sk-ico { width: 40px; height: 40px; border-radius: 14px; flex: none; }
+.pf-sk-lines { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+.pf-sk-lines .pf-sk:first-child { width: 62%; }
+.pf-sk-lines .pf-sk:last-child { width: 38%; height: 10px; }
+@media (prefers-reduced-motion: reduce) { .pf-sk, .pf-dialog[open] { animation: none; } }
+
+/* Skeleton bawaan SIDA (style.css §16): aktif selama #pageWrap.is-loading, dilepas oleh script.js */
+.pf-page.is-loading .pf-avatar,
+.pf-page.is-loading .pf-name,
+.pf-page.is-loading .pf-role,
+.pf-page.is-loading .pf-chip,
+.pf-page.is-loading .pf-total-num,
+.pf-page.is-loading .pf-total-label,
+.pf-page.is-loading .pf-sec-title,
+.pf-page.is-loading .pf-panel,
+.pf-page.is-loading .pf-cat,
+.pf-page.is-loading .pf-up,
+.pf-page.is-loading .pf-set,
+.pf-page.is-loading .pf-complete {
+    color: transparent !important; text-shadow: none !important; border-color: transparent !important; box-shadow: none !important;
+    background-color: transparent;
+    background-image: linear-gradient(90deg, var(--sk-base) 25%, var(--sk-shine) 37%, var(--sk-base) 63%);
+    background-repeat: no-repeat; background-size: 400% 100%; background-position: 100% 50%;
+    animation: skShimmer 1.5s ease-in-out infinite; pointer-events: none; user-select: none;
+}
+.pf-page.is-loading .pf-avatar > *,
+.pf-page.is-loading .pf-chip > *,
+.pf-page.is-loading .pf-sec-title > *,
+.pf-page.is-loading .pf-panel > *,
+.pf-page.is-loading .pf-cat > *,
+.pf-page.is-loading .pf-up > *,
+.pf-page.is-loading .pf-set > *,
+.pf-page.is-loading .pf-complete > * { visibility: hidden; }
+.pf-page.is-loading .pf-name { display: block; width: min(300px, 80%); height: 38px; border-radius: 12px; }
+.pf-page.is-loading .pf-role { width: 190px; height: 18px; border-radius: 8px; }
+.pf-page.is-loading .pf-chip { width: 130px; height: 32px; }
+.pf-page.is-loading .pf-page.is-loading .pf-page.is-loading .pf-sec-title { width: 190px; height: 22px; border-radius: 8px; }
+.pf-page.is-loading .pf-up { min-height: 150px; }
+@media (prefers-reduced-motion: reduce) { .pf-page.is-loading * { animation: none !important; } }
+
 /* ================= RESPONSIF ================= */
-/* Hero memakai container query: layout mengikuti lebar hero sendiri (bukan lebar layar) */
+/* Hero memakai container query: layout mengikuti lebar hero sendiri */
 @container (max-width: 700px) {
+    .pf-hero { --av: 132px; --ring: 8px; }
     .pf-hero-inner { grid-template-columns: 1fr; grid-template-areas: "avatar" "text"; gap: 22px; }
-    .pf-avatar { width: 132px; height: 132px; font-size: 48px; border-width: 6px; }
+    .pf-avatar { font-size: 48px; }
     .pf-name { font-size: 32px; }
 }
 @container (max-width: 520px) {
-    .pf-hero-inner { justify-items: center; text-align: center; padding-top: 38px; gap: 18px; }
-    .pf-avatar { width: 108px; height: 108px; font-size: 38px; }
+    .pf-hero { --av: 108px; --ring: 7px; }
+    .pf-hero-inner { justify-items: center; text-align: center; padding-top: 30px; gap: 18px; }
+    .pf-avatar { font-size: 38px; }
     .pf-name { font-size: 27px; }
     .pf-meta { justify-content: center; }
     .pf-hero-total { justify-content: center; gap: 10px; margin-top: 20px; padding: 10px 20px; border-radius: 999px; background: color-mix(in srgb, var(--card) 72%, transparent); backdrop-filter: blur(8px); }
@@ -220,7 +319,7 @@ body.dark-mode .pf-avatar { border-color: rgba(255, 255, 255, .2); }
 
 @media (max-width: 1100px) {
     .pf-layout { grid-template-columns: 1fr; gap: 24px; }
-    .pf-aside { position: static; }
+    .pf-aside { position: static; max-height: none; overflow: visible; padding-bottom: 8px; -webkit-mask-image: none; mask-image: none; }
     .pf-complete { flex-direction: row; text-align: left; padding: 18px 20px; gap: 18px; }
     .pf-ring { width: 68px; height: 68px; }
     .pf-ring span { width: 52px; height: 52px; font-size: 14px; }

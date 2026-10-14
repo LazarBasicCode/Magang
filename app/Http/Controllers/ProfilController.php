@@ -71,7 +71,7 @@ class ProfilController extends Controller
                     'bukti'   => $row->bukti_kegiatan ?? null,
                     'url'     => $canOpen ? url($url) : null,   // tombol "Edit" membuka menu asal
                     'dibuat'  => optional($row->created_at)->toIso8601String(),
-                    'relatif' => optional($row->created_at)->diffForHumans(),
+                    'relatif' => $row->created_at?->locale('id')->diffForHumans(),
                 ]);
             }
         }
@@ -89,7 +89,8 @@ class ProfilController extends Controller
                 'judul'   => $n->title ?? $d['title'] ?? $this->label($n->type ?? 'notifikasi'),
                 'pesan'   => $n->message ?? $n->body ?? $d['message'] ?? $d['pesan'] ?? '',
                 'baca'    => !empty($n->read_at),
-                'relatif' => optional($n->created_at)->diffForHumans(),
+                'relatif' => $n->created_at?->locale('id')->diffForHumans(),
+                'waktu'   => $n->created_at?->locale('id')->translatedFormat('j F Y, H:i'),
             ];
         }), collect(), false);
 

@@ -1,6 +1,6 @@
 /* ==========================================================
    SIDA NOTIFICATIONS
-   Toast: bottom-right, 5s, layered, subtle blur + scale motion.
+   Toast: bottom-right, 5s, geser tipis + fade.
    Dropdown: attached to every existing notification bell.
    ========================================================== */
 
@@ -39,10 +39,10 @@
         linear-gradient(90deg, transparent 23%, var(--toast-grid) 24%, var(--toast-grid) 25%, transparent 26%,
         transparent 73%, var(--toast-grid) 74%, var(--toast-grid) 75%, transparent 76%, transparent);
     background-size: 46px 46px;
-    box-shadow: 0 14px 34px rgba(15, 23, 42, .18), 0 3px 9px rgba(15, 23, 42, .08);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .12);
     pointer-events: auto;
     isolation: isolate;
-    animation: sidaToastIn 620ms cubic-bezier(.22, 1, .36, 1) both;
+    animation: sidaToastIn 260ms cubic-bezier(.22, 1, .36, 1) both;
 }
 
 .sida-toast--success {
@@ -146,55 +146,28 @@
 }
 
 .sida-toast.is-repositioning {
-    animation: sidaToastReposition 260ms ease-out both;
+    animation: sidaToastReposition 200ms ease-out both;
 }
 
 .sida-toast.is-leaving {
-    animation: sidaToastOut 230ms cubic-bezier(.55, .05, .675, .19) forwards;
+    animation: sidaToastOut 180ms ease-in forwards;
 }
 
 @keyframes sidaToastIn {
-    0% {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translate3d(38px, -18px, 0) scale(.78);
-    }
-    55% {
-        opacity: 1;
-        filter: blur(2px);
-        transform: translate3d(-4px, 4px, 0) scale(1.035);
-    }
-    100% {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate3d(0, 0, 0) scale(1);
-    }
+    from { opacity: 0; transform: translate3d(16px, 0, 0); }
+    to   { opacity: 1; transform: none; }
 }
 @keyframes sidaToastProgress {
     from { transform: scaleX(1); }
     to { transform: scaleX(0); }
 }
 @keyframes sidaToastReposition {
-    0% { filter: blur(4px); transform: translateY(-10px); }
-    100% { filter: blur(0); transform: translateY(0); }
+    from { transform: translateY(-6px); }
+    to   { transform: none; }
 }
 @keyframes sidaToastOut {
-    0% {
-        opacity: 1;
-        filter: blur(0);
-        transform: translate3d(0, 0, 0) scale(1);
-        max-height: 120px;
-        margin-top: 0;
-        margin-bottom: 0;
-    }
-    100% {
-        opacity: 0;
-        filter: blur(4px);
-        transform: translate3d(30px, 6px, 0) scale(.92);
-        max-height: 0;
-        margin-top: -4px;
-        margin-bottom: -4px;
-    }
+    from { opacity: 1; max-height: 120px; margin-top: 0; margin-bottom: 0; }
+    to   { opacity: 0; transform: translate3d(16px, 0, 0); max-height: 0; margin-top: -4px; margin-bottom: -4px; }
 }
 
 /* ---------- Bell + notification dropdown ----------
@@ -222,15 +195,16 @@
     display: flex; flex-direction: column;
     background: var(--card); border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
-    box-shadow: 0 10px 30px rgba(39, 46, 74, .2);
+    box-shadow: 0 6px 18px rgba(39, 46, 74, .12);
     opacity: 0; visibility: hidden; pointer-events: none;
-    transform: translateY(-6px) scale(.98);
+    transform: translateY(-4px);
     transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
 }
 .notif-dropdown.is-open .notif-panel {
     opacity: 1; visibility: visible; pointer-events: auto;
-    transform: translateY(0) scale(1);
+    transform: none;
 }
+body.dark-mode .notif-panel { box-shadow: 0 6px 18px rgba(0, 0, 0, .28); }
 
 .notif-panel-header {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -315,8 +289,8 @@
 .notifm-box {
     position: relative; width: min(420px, 100%); padding: 28px 24px 22px;
     background: var(--card); color: var(--ink); border: 1px solid var(--border);
-    border-radius: 16px; box-shadow: 0 24px 60px rgba(15, 23, 42, .3);
-    text-align: center; transform: translateY(10px) scale(.97);
+    border-radius: 16px; box-shadow: 0 12px 32px rgba(15, 23, 42, .2);
+    text-align: center; transform: translateY(6px);
     transition: transform .22s cubic-bezier(.22, 1, .36, 1);
 }
 .notifm-overlay.is-open .notifm-box { transform: none; }

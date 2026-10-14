@@ -44,6 +44,41 @@
         $(btn.dataset.pfClick)?.click();
     }));
 
+    // ---------- 2b. Kontak cadangan: email sekunder + telepon (UI saja, belum ada endpoint) ----------
+    const cOv = $('pfContactOverlay');
+    if (cOv) {
+        const cForm = $('pfContactForm');
+        const setErr = (id, msg) => {
+            const f = $(id).closest('.pa-field');
+            f.classList.toggle('has-error', !!msg);
+            f.querySelector('.pa-error').textContent = msg || '';
+            return !msg;
+        };
+        const clearErr = () => ['pfContactEmail', 'pfContactPhone'].forEach((i) => setErr(i, ''));
+        const cOpen = () => { cForm.reset(); clearErr(); cOv.classList.add('is-open'); cOv.setAttribute('aria-hidden', 'false'); $('pfContactEmail').focus(); };
+        const cClose = () => { cOv.classList.remove('is-open'); cOv.setAttribute('aria-hidden', 'true'); };
+
+        document.querySelectorAll('[data-pf-modal="pfContactOverlay"]').forEach((b) => b.addEventListener('click', cOpen));
+        ['pfContactClose', 'pfContactCancel'].forEach((id) => $(id)?.addEventListener('click', cClose));
+        cOv.addEventListener('click', (e) => { if (e.target === cOv) cClose(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cClose(); });
+        ['pfContactEmail', 'pfContactPhone'].forEach((id) => $(id).addEventListener('input', () => setErr(id, '')));
+
+        cForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const mail = $('pfContactEmail').value.trim();
+            const tel = $('pfContactPhone').value.replace(/[\s-]/g, '');
+            let ok = true;
+            if (!mail && !tel) ok = setErr('pfContactEmail', 'Isi minimal salah satu: email atau nomor telepon.');
+            if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) ok = setErr('pfContactEmail', 'Format email tidak valid.') && ok;
+            else if (mail && mail.toLowerCase() === (cForm.dataset.email || '').toLowerCase()) ok = setErr('pfContactEmail', 'Harus berbeda dari email utama.') && ok;
+            if (tel && !/^(\+62|62|0)8\d{7,12}$/.test(tel)) ok = setErr('pfContactPhone', 'Gunakan nomor seluler Indonesia, mis. 0812 3456 7890.') && ok;
+            if (!ok) return;
+            cClose();
+            window.Toast?.show?.({ type: 'info', title: 'Belum tersimpan', message: 'Tampilan ini belum tersambung ke server.' });
+        });
+    }
+
     // ---------- 3. Riwayat: garis waktu + filter + halaman ----------
     const list = $('pfList');
     if (!list) return;
@@ -122,17 +157,16 @@
     document.querySelectorAll('.pf-dd .dropdown-option').forEach((o) => o.addEventListener('click', () => setTimeout(() => render(1), 0)));
     render(1, true);
 
-    // ---------- 4. Notifikasi: klik membuka popup ----------
-    const dlg = $('pfNotifDialog');
-    if (dlg && typeof dlg.showModal === 'function') {
-        document.querySelectorAll('.pf-note-item').forEach((btn) => btn.addEventListener('click', () => {
-            $('pfNotifTitle').textContent = btn.dataset.judul || 'Notifikasi';
-            $('pfNotifTime').textContent = btn.dataset.waktu || '';
-            $('pfNotifBody').textContent = btn.dataset.pesan || 'Tidak ada detail tambahan untuk notifikasi ini.';
-            $('pfNotifState').textContent = btn.dataset.baca === '1' ? 'Sudah dibaca' : 'Belum dibaca';
-            dlg.showModal();
-        }));
-        ['pfNotifClose', 'pfNotifOk'].forEach((id) => $(id)?.addEventListener('click', () => dlg.close()));
-        dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });   // klik area gelap = tutup
-    }
+    // ---------- 4. Notifikasi: klik membuka modal detail bawaan (window.SIDANotif dari notifications.js) ----------
+    document.querySelectorAll('.pf-note-item').forEach((btn) => btn.addEventListener('click', async () => {
+        const N = window.SIDANotif;
+        const id = btn.dataset.id;
+        let ok = N ? N.open(id) : false;
+        if (N && !ok) { await N.poll(); ok = N.open(id); }          // cache belum terisi: muat dulu
+        if (!ok) {                                                  // cadangan: tampilkan sebagai toast
+            window.Toast?.show?.({ type: 'info', title: btn.dataset.judul || 'Notifikasi', message: btn.dataset.pesan || '' });
+            return;
+        }
+        if (btn.classList.contains('is-unread')) { btn.classList.remove('is-unread'); N.markRead(id); }
+    }));
 })();

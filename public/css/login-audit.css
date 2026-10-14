@@ -1,0 +1,51 @@
+/* Halaman Audit Percobaan Login — hanya bagian yang khusus halaman ini.
+   Kerangka (sidebar, header, kartu, tabel, tab, badge, modal) memakai css/style.css seperti halaman lain. */
+
+#auditTableBody.is-fetching { opacity: .55; pointer-events: none; transition: opacity .15s; }
+
+.audit-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
+.audit-faint { color: var(--ink-faint); }
+.audit-sm { font-size: 11.5px; }
+.audit-strong { font-weight: 700; }
+.audit-wrap { white-space: normal; word-break: break-word; font-weight: 500; }
+.audit-ua { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); }
+
+/* ---- Modal detail ---- */
+.audit-card { width: min(520px, calc(100vw - 32px)); }
+.audit-card .modal-body { gap: 16px; }
+.audit-state { text-align: center; padding: 24px 12px; color: var(--ink-faint); font-size: 13px; }
+.audit-status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.audit-section { font-size: 12px; font-weight: 800; color: var(--ink); margin-bottom: 8px; }
+
+.audit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.audit-field {
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--canvas); min-width: 0;
+}
+.audit-field.span-2 { grid-column: 1 / -1; }
+.audit-k { font-size: 11px; color: var(--ink-faint); font-weight: 600; margin-bottom: 3px; }
+.audit-v { font-size: 13px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+
+.audit-note {
+    display: flex; gap: 10px; padding: 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.5;
+    border: 1px solid var(--warning-border, var(--border)); background: var(--warning-soft, var(--canvas)); color: var(--ink);
+}
+.audit-note .material-symbols-outlined { font-size: 18px; color: var(--warning, #d97706); flex-shrink: 0; }
+
+.audit-ipstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.audit-ipstats > div {
+    text-align: center; padding: 10px 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas);
+}
+.audit-ipstats b { display: block; font-size: 18px; font-weight: 800; }
+.audit-ipstats span { font-size: 11px; color: var(--ink-faint); font-weight: 600; }
+.audit-ipstats .is-ok { color: var(--success, #16a34a); }
+.audit-ipstats .is-err { color: var(--danger, #d12c0f); }
+.audit-ipstats .is-lock { color: var(--warning, #d97706); }
+
+.audit-mini-list { display: flex; flex-direction: column; gap: 6px; }
+.audit-mini-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 12.5px;
+}
+
+@media (max-width: 480px) { .audit-grid { grid-template-columns: 1fr; } }

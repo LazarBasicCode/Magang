@@ -41,70 +41,7 @@
         </defs>
     </svg>
 
-    <aside class="app-sidebar">
-        <div class="sidebar-brand">
-            <svg class="sidebar-brand-mark" aria-hidden="true">
-                <use href="#sida-mark" />
-            </svg>
-            <div class="sidebar-brand-text">
-                <span class="sidebar-brand-title">SIDA</span>
-                <span class="sidebar-brand-sub">Institut Asia Malang</span>
-            </div>
-            <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Tutup Menu">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-
-        <nav class="sidebar-nav">
-            <div class="nav-group">
-                <a href="{{ url('/dashboard') }}" aria-current="page" class="nav-link is-active">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span>Dashboard</span>
-                </a>
-                <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
-                    <span class="material-symbols-outlined">school</span>
-                    <span>Kemahasiswaan</span>
-                </a>
-                <div class="nav-heading">LPPM</div>
-                <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
-                    <span class="material-symbols-outlined">person</span>
-                    <span>Mahasiswa</span>
-                </a>
-                <a href="{{ url('/lppm/dosen') }}" class="nav-link">
-                    <span class="material-symbols-outlined">co_present</span>
-                    <span>Dosen</span>
-                </a>
-                <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
-                    <span class="material-symbols-outlined">workspace_premium</span>
-                    <span>Rekognisi</span>
-                </a>
-                <div class="nav-heading">Kemitraan</div>
-                <a href="{{ url('/kerja-sama') }}" class="nav-link">
-                    <span class="material-symbols-outlined">handshake</span>
-                    <span>Kerja Sama</span>
-                </a>
-                <div class="nav-heading">Administrasi</div>
-                <a href="{{ url('/data-master/users') }}" class="nav-link">
-                    <span class="material-symbols-outlined">manage_accounts</span>
-                    <span>Data Master</span>
-                </a>
-                <a href="{{ url('/hak-akses') }}" class="nav-link">
-                    <span class="material-symbols-outlined">shield_person</span>
-                    <span>Hak Akses</span>
-                </a>
-                <a href="{{ url('/profil') }}" class="nav-link">
-                    <span class="material-symbols-outlined">account_circle</span>
-                    <span>Profil Saya</span>
-                </a>
-            </div>
-        </nav>
-
-        <div class="sidebar-help">
-            <div class="help-card">
-                <p class="help-card-text">© Prodi IT - Institut Asia Malang</p>
-            </div>
-        </div>
-    </aside>
+    @include('partials.sidebar', ['active' => 'dashboard'])
 
     <div class="app-content">
         <header class="app-header">

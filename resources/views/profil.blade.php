@@ -38,111 +38,7 @@
         </defs>
     </svg>
 
-    <!-- ============ SIDEBAR ============ -->
-    <aside class="app-sidebar">
-        <div class="sidebar-brand">
-            <svg class="sidebar-brand-mark" aria-hidden="true"><use href="#sida-mark"/></svg>
-            <div class="sidebar-brand-text">
-                <span class="sidebar-brand-title">SIDA</span>
-                <span class="sidebar-brand-sub">Institut Asia Malang</span>
-            </div>
-            <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Tutup Menu">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-
-        <nav class="sidebar-nav">
-            <div class="nav-group">
-                <a href="{{ url('/dashboard') }}" class="nav-link">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span>Dashboard</span>
-                </a>
-                @if($__user->canAccessMenu('kemahasiswaan'))
-                <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
-                    <span class="material-symbols-outlined">school</span>
-                    <span>Kemahasiswaan</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('lppm_mahasiswa') || $__user->canAccessMenu('lppm_dosen') || $__user->canAccessMenu('rekognisi'))
-                <div class="nav-heading">LPPM</div>
-                @endif
-                @if($__user->canAccessMenu('lppm_mahasiswa'))
-                <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
-                    <span class="material-symbols-outlined">person</span>
-                    <span>Mahasiswa</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('lppm_dosen'))
-                <a href="{{ url('/lppm/dosen') }}" class="nav-link">
-                    <span class="material-symbols-outlined">co_present</span>
-                    <span>Dosen</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('rekognisi'))
-                <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
-                    <span class="material-symbols-outlined">workspace_premium</span>
-                    <span>Rekognisi</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('kerja_sama'))
-                <div class="nav-heading">Kemitraan</div>
-                @endif
-                @if($__user->canAccessMenu('kerja_sama'))
-                <a href="{{ url('/kerja-sama') }}" class="nav-link">
-                    <span class="material-symbols-outlined">handshake</span>
-                    <span>Kerja Sama</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
-                <div class="nav-heading">Administrasi</div>
-                @endif
-                @if($__user->canAccessMenu('data_master'))
-                <a href="{{ url('/data-master/users') }}" class="nav-link">
-                    <span class="material-symbols-outlined">manage_accounts</span>
-                    <span>Data Master</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('hak_akses'))
-                <a href="{{ url('/hak-akses') }}" class="nav-link">
-                    <span class="material-symbols-outlined">admin_panel_settings</span>
-                    <span>Hak Akses</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('log'))
-                <a href="{{ url('/login-audit') }}" class="nav-link">
-                    <span class="material-symbols-outlined">history</span>
-                    <span>Log Aktivitas</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('backup'))
-                <a href="{{ url('/backup') }}" class="nav-link">
-                    <span class="material-symbols-outlined">backup</span>
-                    <span>Backup &amp; Restore</span>
-                </a>
-                @endif
-                @if($__user->role === 'superadmin')
-                <a href="{{ url('/laporan') }}" class="nav-link">
-                    <span class="material-symbols-outlined">assignment</span>
-                    <span>Laporan</span>
-                </a>
-                @endif
-                <a href="{{ url('/profil') }}" aria-current="page" class="nav-link is-active">
-                    <span class="material-symbols-outlined">account_circle</span>
-                    <span>Profil Saya</span>
-                </a>
-            </div>
-        </nav>
-
-        <div class="sidebar-help">
-            <div class="help-card">
-                <p class="help-card-text">© Prodi IT - Institut Asia Malang</p>
-            </div>
-        </div>
-    </aside>
+    @include('partials.sidebar', ['active' => 'profil'])
 
     <!-- ============ MAIN ============ -->
     <div class="app-content">
@@ -231,7 +127,7 @@
                                         </button>
                                         <button type="button" class="header-profile-menu-item" id="btnEmailPemulihan">
                                             <span class="material-symbols-outlined">mark_email_unread</span>
-                                            <span>Email Pemulihan</span>
+                                            <span>Ganti Email</span>
                                         </button>
                                         <div class="header-profile-menu-divider"></div>
                                         <form method="POST" action="{{ url('/logout') }}" id="logoutForm">
@@ -333,8 +229,8 @@
                             <div class="pf-ring" style="--p: {{ $pct }}"><span>{{ $pct }}%</span></div>
                             <div class="pf-complete-text">
                                 @if(!$checks['email'])
-                                    <small>Tambahkan email pemulihan agar akun mudah dipulihkan.</small>
-                                    <button type="button" class="pf-btn" data-pf-click="btnEmailPemulihan" data-pf-open="1">Tambah email</button>
+                                    <small>Email pemulihan belum diatur. Atur sekarang agar akun mudah dipulihkan.</small>
+                                    <button type="button" class="pf-btn" data-pf-click="btnEmailPemulihan" data-pf-open="1">Ganti email</button>
                                 @else
                                     <small>{{ $pct === 100 ? 'Profil Anda sudah lengkap.' : 'Hubungi admin untuk melengkapi data induk.' }}</small>
                                 @endif
@@ -350,7 +246,12 @@
                             </button></li>
                             <li><button type="button" class="pf-set" data-pf-click="btnEmailPemulihan" data-pf-open="1">
                                 <span class="pf-set-ico"><span class="material-symbols-outlined">alternate_email</span></span>
-                                <span class="pf-set-text"><b>Email Pemulihan</b><small>Dipakai saat lupa password dan untuk menerima notifikasi.</small></span>
+                                <span class="pf-set-text"><b>Ganti Email</b><small>Ubah email utama yang dipakai untuk pemulihan dan notifikasi.</small></span>
+                                <span class="material-symbols-outlined pf-go">chevron_right</span>
+                            </button></li>
+                            <li><button type="button" class="pf-set" data-pf-modal="pfContactOverlay">
+                                <span class="pf-set-ico"><span class="material-symbols-outlined">contact_phone</span></span>
+                                <span class="pf-set-text"><b>Kontak Cadangan</b><small>Tambah email sekunder dan nomor telepon untuk pemulihan akun.</small></span>
                                 <span class="material-symbols-outlined pf-go">chevron_right</span>
                             </button></li>
                             <li><button type="button" class="pf-set" data-pf-click="btnShowAccessInfo" data-pf-open="1">
@@ -431,7 +332,7 @@
                                     <ul class="pf-notes">
                                         @forelse($notifs as $n)
                                             <li class="pf-note-li">
-                                                <button type="button" class="pf-note-item {{ $n['baca'] ? '' : 'is-unread' }}"
+                                                <button type="button" class="pf-note-item {{ $n['baca'] ? '' : 'is-unread' }}" data-id="{{ $n['id'] }}"
                                                     data-judul="{{ $n['judul'] }}" data-pesan="{{ $n['pesan'] }}"
                                                     data-waktu="{{ $n['waktu'] ?? $n['relatif'] }}" data-baca="{{ $n['baca'] ? '1' : '0' }}">
                                                     <span class="pf-dot"></span>
@@ -519,18 +420,36 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <dialog class="pf-dialog" id="pfNotifDialog" aria-labelledby="pfNotifTitle">
-        <div class="pf-dialog-head">
-            <span class="pf-dialog-ico"><span class="material-symbols-outlined">notifications</span></span>
-            <div>
-                <h3 id="pfNotifTitle"></h3>
-                <p id="pfNotifTime"></p>
+    {{-- Kontak cadangan (UI saja, belum ada endpoint di baliknya) --}}
+    <div class="pa-overlay" id="pfContactOverlay" aria-hidden="true">
+        <div class="pa-modal" role="dialog" aria-modal="true" aria-labelledby="pfContactTitle">
+            <div class="pa-head">
+                <span class="material-symbols-outlined">contact_phone</span>
+                <span class="pa-title" id="pfContactTitle">Kontak Cadangan</span>
+                <button type="button" class="pa-close" id="pfContactClose" aria-label="Tutup"><span class="material-symbols-outlined">close</span></button>
             </div>
-            <button type="button" class="pf-dialog-x" id="pfNotifClose" aria-label="Tutup"><span class="material-symbols-outlined">close</span></button>
+            <form id="pfContactForm" data-email="{{ $user->email }}" novalidate>
+                <div class="pa-body">
+                    <div class="pa-field">
+                        <label for="pfContactEmail">Email sekunder</label>
+                        <div class="pa-input-wrap"><input type="email" id="pfContactEmail" placeholder="nama@contoh.com" autocomplete="email"></div>
+                        <p class="pa-hint">Cadangan jika email utama tidak bisa diakses.</p>
+                        <p class="pa-error"></p>
+                    </div>
+                    <div class="pa-field">
+                        <label for="pfContactPhone">Nomor telepon</label>
+                        <div class="pa-input-wrap"><input type="tel" id="pfContactPhone" placeholder="0812 3456 7890" autocomplete="tel"></div>
+                        <p class="pa-hint">Nomor seluler Indonesia untuk verifikasi pemulihan.</p>
+                        <p class="pa-error"></p>
+                    </div>
+                </div>
+                <div class="pa-foot">
+                    <button type="button" class="pa-btn pa-btn-ghost" id="pfContactCancel">Batal</button>
+                    <button type="submit" class="pa-btn pa-btn-primary">Simpan</button>
+                </div>
+            </form>
         </div>
-        <p class="pf-dialog-body" id="pfNotifBody"></p>
-        <div class="pf-dialog-foot"><span class="pf-chip" id="pfNotifState"></span><button type="button" class="pf-btn" id="pfNotifOk">Tutup</button></div>
-    </dialog>
+    </div>
 
     <script>
         window.PROFIL = {

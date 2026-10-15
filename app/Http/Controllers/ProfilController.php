@@ -86,6 +86,7 @@ class ProfilController extends Controller
         $notifs = rescue(fn () => UserNotification::where('user_id', $user->id)->latest()->limit(10)->get()->map(function ($n) {
             $d = is_array($n->data ?? null) ? $n->data : [];
             return [
+                'id'      => $n->id,
                 'judul'   => $n->title ?? $d['title'] ?? $this->label($n->type ?? 'notifikasi'),
                 'pesan'   => $n->message ?? $n->body ?? $d['message'] ?? $d['pesan'] ?? '',
                 'baca'    => !empty($n->read_at),

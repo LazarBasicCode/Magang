@@ -763,7 +763,7 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     },
-
+                    body: JSON.stringify(payload),
                 });
                 const result = await res.json();
                 if (!res.ok) {

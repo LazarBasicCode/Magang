@@ -163,8 +163,8 @@
                 <!-- PAGE TITLE -->
                 <div class="title-bar">
                     <div>
-                        <h1 class="page-title">Audit Percobaan Login</h1>
-                        <p class="page-subtitle">Riwayat setiap percobaan login ke SIDA &mdash; berhasil, gagal, maupun yang diblokir rate limit</p>
+                        <h1 class="page-title">Log Aktivitas</h1>
+                        <p class="page-subtitle">Riwayat percobaan login ke SIDA{{ $__user->role === 'superadmin' ? ' dan log aplikasi Laravel' : '' }}</p>
                     </div>
                 </div>
 
@@ -232,7 +232,7 @@
                 <div class="table-card">
                     <div class="table-card-header">
                         <div>
-                            <h2 class="table-card-title">Riwayat Percobaan Login</h2>
+                            <h2 class="table-card-title">Percobaan Login</h2>
                             <p class="table-card-subtitle">Klik ikon detail untuk melihat akun, perangkat, dan riwayat IP</p>
                         </div>
                     </div>
@@ -272,6 +272,11 @@
                         <nav class="pager" id="pager" aria-label="Navigasi halaman" hidden></nav>
                     </div>
                 </div>
+
+                {{-- Log aplikasi Laravel (storage/logs): hanya superadmin --}}
+                @if($__user->role === 'superadmin')
+                    @include('partials.app-log-viewer')
+                @endif
             </div>
         </main>
     </div>
@@ -295,6 +300,9 @@
 
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
+    @if($__user->role === 'superadmin')
+        <script src="{{ asset('js/app-log.js') }}?v={{ @filemtime(public_path('js/app-log.js')) }}"></script>
+    @endif
     <script>
         // ================================================================
         // Halaman Audit Percobaan Login: filter status, pencarian & paginasi diproses di SERVER

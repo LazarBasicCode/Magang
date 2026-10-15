@@ -15,6 +15,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\BulkSelectionController;
 use App\Http\Controllers\CetakLaporanController;
+use App\Http\Controllers\AppLogController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccountController;
@@ -211,6 +212,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/login-audit', [LoginAuditController::class, 'index'])->name('login-audit.index');
     Route::get('/login-audit/data', [LoginAuditController::class, 'data'])->name('login-audit.data');
+    // Log aplikasi Laravel (superadmin). HARUS di atas route {attempt}, kalau tidak 'app-logs' dianggap ID.
+    Route::get('/login-audit/app-logs', [AppLogController::class, 'index'])->name('app-logs.index');
     Route::get('/login-audit/{attempt}', [LoginAuditController::class, 'show'])->name('login-audit.show');
 
     // ---- Notifikasi (untuk semua user yang login, bukan cuma admin) ----

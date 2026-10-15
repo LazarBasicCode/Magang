@@ -654,6 +654,7 @@ $__accessRows = $__user->accessBreakdown();
             panel.style.width = rect.width + 'px';
             panel.style.right = 'auto';
             panel.style.zIndex = 9999;
+            panel.style.overscrollBehavior = 'contain'; // gulir mentok di ujung daftar tidak menggulir modal/halaman di belakangnya
             document.body.appendChild(panel);
         }
 
@@ -670,6 +671,7 @@ $__accessRows = $__user->accessBreakdown();
             panel.style.width = '';
             panel.style.right = '';
             panel.style.zIndex = '';
+            panel.style.overscrollBehavior = '';
             entry.parent.appendChild(panel);
         }
 
@@ -724,7 +726,11 @@ $__accessRows = $__user->accessBreakdown();
         }, true);
         // Tutup dropdown yang lagi terbuka kalau halaman di-scroll, supaya
         // panel yang di-portal tidak "nyangkut" di posisi lama.
-        window.addEventListener('scroll', () => {
+        // PENGECUALIAN: scroll DI DALAM panel dropdown itu sendiri (daftar panjang, mis. Dosen Wali) tidak
+        // boleh menutupnya. Event scroll fase-capture ikut menangkap scroll panel, jadi tanpa pengecualian
+        // ini panel langsung menutup begitu di-scroll sehingga daftar tidak pernah bisa digulir.
+        window.addEventListener('scroll', (e) => {
+            if (e.target instanceof Element && e.target.closest('.dropdown-panel')) return;
             dropdowns.forEach((d) => {
                 if (d.classList.contains('is-open')) {
                     d.classList.remove('is-open');

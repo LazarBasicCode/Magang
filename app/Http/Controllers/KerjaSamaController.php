@@ -8,6 +8,7 @@ use App\Models\KerjaSama;
 use App\Models\User;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
+use App\Support\Approval;
 use Illuminate\Http\Request;
 
 class KerjaSamaController extends Controller
@@ -126,8 +127,13 @@ class KerjaSamaController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
+        // Kerja sama milik mahasiswa yang diisi mahasiswa sendiri -> antrean persetujuan dosen wali.
+        $owner = ($data['tipe_user'] ?? null) === 'mahasiswa' ? User::find($data['user_id'])?->mahasiswa : null;
+        $data += Approval::attributesFor($request->user(), $owner, true);
+
         $item = KerjaSama::create($data)->load('user');
 
+        Approval::afterSubmit('kerja-sama', $item, $request->user(), null);
         $this->notifyKerjaSama($request, $item, 'ditambahkan');
 
         return response()->json([
@@ -146,9 +152,14 @@ class KerjaSamaController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
+        // Edit oleh mahasiswa mengembalikan data ke antrean persetujuan (admin/dosen tidak mengubah status).
+        $previous = $kerjaSama->approval_status;
+        $data += Approval::attributesFor($request->user(), $kerjaSama->user?->mahasiswa, false);
+
         $kerjaSama->update($data);
         $kerjaSama->load('user');
 
+        Approval::afterSubmit('kerja-sama', $kerjaSama, $request->user(), $previous);
         $this->notifyKerjaSama($request, $kerjaSama, 'diperbarui');
 
         return response()->json([
@@ -494,6 +505,10 @@ class KerjaSamaController extends Controller
             'tanggal_mulai'    => optional($item->tanggal_mulai)->format('Y-m-d'),
             'tanggal_selesai'  => optional($item->tanggal_selesai)->format('Y-m-d'),
             'bukti_kegiatan'   => $item->bukti_kegiatan,
+            'approval_status' => $item->approval_status,
+            'approval_label'  => $item->approvalLabel(),
+            'approval_badge'  => $item->approvalBadge(),
+            'approval_note'   => $item->approval_note,
         ];
     }
 }

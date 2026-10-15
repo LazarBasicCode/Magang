@@ -29,11 +29,11 @@ class ReportData
         // Koleksi Eloquent memanggil getKey() pada setiap isi saat unique(), jadi bila salah satu tabel
         // kosong (map() tetap mengembalikan koleksi Eloquent) lalu digabung dengan angka, terjadi error
         // "Call to a member function getKey() on int". Koleksi biasa tidak punya masalah itu.
-        $kem = Kemahasiswaan::with('mahasiswa.user')->get()->toBase();
-        $lm  = LppmMahasiswa::with('mahasiswa.user')->get()->toBase();
+        $kem = Kemahasiswaan::with('mahasiswa.user')->approved()->get()->toBase();
+        $lm  = LppmMahasiswa::with('mahasiswa.user')->approved()->get()->toBase();
         $ld  = LppmDosen::with('dosen.user')->get()->toBase();
-        $rek = Rekognisi::with('user')->get()->toBase();
-        $ks  = KerjaSama::with('user')->get()->toBase();
+        $rek = Rekognisi::with('user')->approved()->get()->toBase();
+        $ks  = KerjaSama::with('user')->approved()->get()->toBase();
 
         // Daftar tahun yang tersedia untuk filter
         $years = $kem->concat($lm)->concat($ld)->concat($rek)->concat($ks)

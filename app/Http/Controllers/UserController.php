@@ -70,7 +70,12 @@ class UserController extends Controller
             ]);
         }
 
-        return view('data-master-users', compact('users', 'stats', 'view', 'term'));
+        // Pilihan Dosen Wali (dropdown di form mahasiswa): semua dosen, urut nama.
+        $dosenWaliOptions = Dosen::with('user:id,name')->get()
+            ->map(fn ($d) => ['id' => $d->id, 'name' => $d->user?->name ?? $d->nidn, 'nidn' => $d->nidn])
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+        return view('data-master-users', compact('users', 'stats', 'view', 'term', 'dosenWaliOptions'));
     }
 
     /** Query daftar pengguna untuk satu tab + kata kunci pencarian (terbaru dulu). */
@@ -79,7 +84,7 @@ class UserController extends Controller
         // has_logged_in: sudah pernah login = ada catatan login SUKSES (login_attempts) ATAU punya sesi aktif
         // (akun lama yang login sebelum pencatatan login ada). Dipakai gembok animasi "belum pernah login"
         // di samping nama (partials/user-rows.blade.php + public/css/never-login.css).
-        $query = User::with(['mahasiswa', 'dosen'])
+        $query = User::with(['mahasiswa.dosenWali.user', 'dosen'])
             ->selectRaw(
                 'users.*, (EXISTS (SELECT 1 FROM login_attempts WHERE login_attempts.user_id = users.id AND login_attempts.status = ?)'
                 . ' OR EXISTS (SELECT 1 FROM sessions WHERE sessions.user_id = users.id)) AS has_logged_in',
@@ -875,6 +880,8 @@ class UserController extends Controller
         return $request->validate([
             'angkatan'   => $angkatanRule,
             'status'     => $statusRule,
+            // Dosen wali: penerima pertama pengajuan prestasi mahasiswa (lihat App\Support\Approval). Opsional.
+            'dosen_wali_id' => $role === 'mahasiswa' ? ['nullable', 'integer', 'exists:dosen,id'] : ['nullable'],
             'name'       => ['required', 'string', 'max:255'],
             'role'       => ['required', 'in:superadmin,admin,dosen,mahasiswa'],
             'password'   => [$isUpdate ? 'nullable' : 'required', 'string', 'min:6'],
@@ -897,6 +904,7 @@ class UserController extends Controller
             'angkatan.between'  => 'Angkatan harus di antara 1990 dan ' . $maxYear . '.',
             'status.required'   => 'Status wajib dipilih.',
             'status.in'         => 'Status yang dipilih tidak valid.',
+            'dosen_wali_id.exists' => 'Dosen wali yang dipilih tidak ditemukan.',
         ]);
     }
 
@@ -924,6 +932,10 @@ class UserController extends Controller
             if ($profile !== null) {
                 $attrs['angkatan'] = $profile['angkatan'] ?? null;
                 $attrs['status']   = $profile['status'] ?? 'aktif';
+                // Hanya disentuh bila dikirim (form). Impor/pembuatan massal tidak menimpa dosen wali yang sudah diatur.
+                if (array_key_exists('dosen_wali_id', $profile)) {
+                    $attrs['dosen_wali_id'] = $profile['dosen_wali_id'] ?: null;
+                }
             }
             $calon = Mahasiswa::tanpaAkun()->where('nim', $identifier)->first();
             if ($calon && !Mahasiswa::where('user_id', $user->id)->exists()) {
@@ -964,6 +976,7 @@ class UserController extends Controller
             'identifier'   => $user->nim_nidn,
             'email'        => $user->email,
             'angkatan'     => $user->role === 'mahasiswa' ? $user->mahasiswa?->angkatan : null,
+            'dosen_wali_id' => $user->role === 'mahasiswa' ? $user->mahasiswa?->dosen_wali_id : null,
             'status'       => $profile?->status,
             'status_label' => $profile?->statusLabel(),
             'status_badge' => $profile?->statusBadge(),

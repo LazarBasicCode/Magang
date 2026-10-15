@@ -36,12 +36,15 @@ class CetakLaporanController extends Controller
         $col   = $year['column'] ?? 'id';
         $ids   = SelectedIds::from($request); // data terpilih (dari BulkSelectionController); kosong = semua data
 
+        // Laporan hanya memuat data yang sudah disetujui (menu tanpa alur persetujuan, mis. LPPM Dosen, tidak difilter).
+        $approvedOnly = in_array(\App\Models\Concerns\HasApproval::class, class_uses_recursive($model), true);
+
         $years = collect();
         $tahun = null;
 
         if ($year && !$ids) {
             $isDate = !empty($year['date']);
-            $years  = $model::query()->pluck($col)
+            $years  = $model::query()->when($approvedOnly, fn ($q) => $q->approved())->pluck($col)
                 ->map(fn ($v) => $isDate ? ($v ? \Carbon\Carbon::parse($v)->year : null) : (int) $v)
                 ->filter()->unique()->sortDesc()->values();
 
@@ -50,6 +53,7 @@ class CetakLaporanController extends Controller
         }
 
         $items = $model::with($cfg['with'])
+            ->when($approvedOnly, fn ($q) => $q->approved())
             ->when($ids, fn ($q) => $q->whereKey($ids))
             ->when($tahun && $year, fn ($q) => !empty($year['date'])
                 ? $q->whereYear($col, $tahun)

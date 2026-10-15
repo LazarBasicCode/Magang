@@ -72,7 +72,7 @@ class AdminDashboardData
     // =====================================================================
     private static function kemahasiswaan(): array
     {
-        $items = Kemahasiswaan::with('mahasiswa.user')->get();
+        $items = Kemahasiswaan::with('mahasiswa.user')->approved()->get();
         $total = $items->count();
         $mhsTotal = Mahasiswa::count();
         $terlibat = $items->pluck('mahasiswa_id')->unique()->count();
@@ -148,7 +148,7 @@ class AdminDashboardData
     // =====================================================================
     private static function lppmMahasiswa(): array
     {
-        $items = LppmMahasiswa::with('mahasiswa.user')->get();
+        $items = LppmMahasiswa::with('mahasiswa.user')->approved()->get();
         $total = $items->count();
         $mhsTotal = Mahasiswa::count();
         $terlibat = $items->pluck('mahasiswa_id')->unique()->count();
@@ -292,7 +292,7 @@ class AdminDashboardData
     // =====================================================================
     private static function rekognisi(): array
     {
-        $items = Rekognisi::with('user')->get();
+        $items = Rekognisi::with('user')->approved()->get();
         $total = $items->count();
         $owner = fn ($i) => $i->user?->name;
         $intl = $items->where('jenis', 'internasional')->count();
@@ -366,7 +366,7 @@ class AdminDashboardData
     // =====================================================================
     private static function kerjaSama(): array
     {
-        $items = KerjaSama::with('user')->get();
+        $items = KerjaSama::with('user')->approved()->get();
         $total = $items->count();
         $owner = fn ($i) => $i->user?->name;
         $intlJenis = ['conference_internasional', 'pengabdian_internasional', 'research_internasional'];
@@ -446,11 +446,11 @@ class AdminDashboardData
     // =====================================================================
     private static function sida(User $viewer): array
     {
-        $kem = Kemahasiswaan::with('mahasiswa.user')->get();
-        $lm = LppmMahasiswa::with('mahasiswa.user')->get();
+        $kem = Kemahasiswaan::with('mahasiswa.user')->approved()->get();
+        $lm = LppmMahasiswa::with('mahasiswa.user')->approved()->get();
         $ld = LppmDosen::with('dosen.user')->get();
-        $rek = Rekognisi::with('user')->get();
-        $ks = KerjaSama::with('user')->get();
+        $rek = Rekognisi::with('user')->approved()->get();
+        $ks = KerjaSama::with('user')->approved()->get();
 
         $all = $kem->concat($lm)->concat($ld)->concat($rek)->concat($ks);
         $total = $all->count();

@@ -42,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
             'kemahasiswaan',
             'kemahasiswaan-dashboard',
             'dashboard-admin',
+            'persetujuan',
             'dashboard-mahasiswa',
             'dashboard-dosen',
             'dashboard-generic',
@@ -55,6 +56,11 @@ class AppServiceProvider extends ServiceProvider
             'backup',
             'login-audit',
             'profil',
+            // Jaring pengaman untuk partial sidebar: view-view di atas meng-include
+            // 'partials.sidebar' dan sudah membawa $__user, tapi dengan mendaftarkan
+            // nama partial ini juga, $__user tetap terjamin walau suatu saat
+            // dipanggil dari tempat lain.
+            'partials.sidebar',
         ], function ($view) {
             $view->with('__user', auth()->user());
         });

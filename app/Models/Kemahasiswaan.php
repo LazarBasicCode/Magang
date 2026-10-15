@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasApproval;
 use Illuminate\Database\Eloquent\Model;
 
 class Kemahasiswaan extends Model
 {
+    use HasApproval;
+
     protected $table = 'kemahasiswaan';
 
     protected $fillable = [
@@ -16,6 +19,8 @@ class Kemahasiswaan extends Model
         'tahun',
         'nama_kegiatan',
         'bukti_kegiatan',
+        'approval_status',
+        'approval_note',
     ];
 
     public function mahasiswa()

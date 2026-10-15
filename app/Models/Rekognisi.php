@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasApproval;
 use Illuminate\Database\Eloquent\Model;
 
 class Rekognisi extends Model
 {
+    use HasApproval;
+
     protected $table = 'rekognisi';
 
     protected $fillable = [
@@ -18,6 +21,8 @@ class Rekognisi extends Model
         'tanggal_selesai',
         'bukti_kegiatan',
         'bukti_tambahan',
+        'approval_status',
+        'approval_note',
     ];
 
     // Casting agar Laravel otomatis membacanya sebagai format tanggal (Date)

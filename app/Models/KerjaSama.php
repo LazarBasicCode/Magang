@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasApproval;
 use Illuminate\Database\Eloquent\Model;
 
 class KerjaSama extends Model
 {
+    use HasApproval;
+
     protected $table = 'kerja_sama';
 
     protected $fillable = [
@@ -19,6 +22,8 @@ class KerjaSama extends Model
         'tanggal_mulai',
         'tanggal_selesai',
         'bukti_kegiatan',
+        'approval_status',
+        'approval_note',
     ];
 
     protected $casts = [

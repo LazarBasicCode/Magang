@@ -6,6 +6,7 @@ use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
 use App\Http\Controllers\Concerns\HandlesBulkData;
 use App\Http\Controllers\Concerns\NotifiesOwner;
+use App\Support\Approval;
 use Illuminate\Http\Request;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
@@ -96,8 +97,12 @@ class LppmMahasiswaController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnMahasiswa($request, $data);
 
+        // Mahasiswa yang mengisi sendiri -> masuk antrean persetujuan dosen wali (lihat App\Support\Approval).
+        $data += Approval::attributesFor($request->user(), Mahasiswa::find($data['mahasiswa_id']), true);
+
         $item = LppmMahasiswa::create($data)->load('mahasiswa.user');
 
+        Approval::afterSubmit('lppm-mahasiswa', $item, $request->user(), null);
         $this->notifyPublikasi($request, $item, 'ditambahkan');
 
         return response()->json(['success' => true, 'data' => $this->format($item)]);
@@ -115,9 +120,14 @@ class LppmMahasiswaController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnMahasiswa($request, $data);
 
+        // Edit oleh mahasiswa mengembalikan data ke antrean persetujuan (admin/dosen tidak mengubah status).
+        $previous = $lppmMahasiswa->approval_status;
+        $data += Approval::attributesFor($request->user(), $lppmMahasiswa->mahasiswa, false);
+
         $lppmMahasiswa->update($data);
         $lppmMahasiswa->load('mahasiswa.user');
 
+        Approval::afterSubmit('lppm-mahasiswa', $lppmMahasiswa, $request->user(), $previous);
         $this->notifyPublikasi($request, $lppmMahasiswa, 'diperbarui');
 
         return response()->json(['success' => true, 'data' => $this->format($lppmMahasiswa)]);
@@ -467,6 +477,10 @@ class LppmMahasiswaController extends Controller
             'link_doi'       => $item->link_doi,
             'bukti_kegiatan' => $item->bukti_kegiatan,
             'tahun'          => $item->tahun,
+            'approval_status' => $item->approval_status,
+            'approval_label'  => $item->approvalLabel(),
+            'approval_badge'  => $item->approvalBadge(),
+            'approval_note'   => $item->approval_note,
         ];
     }
 }

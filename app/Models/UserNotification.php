@@ -51,6 +51,9 @@ class UserNotification extends Model
     {
         $defaults = match ($type) {
             'data_updated'      => ['color' => 'warning', 'icon' => 'edit_note'],
+            'approval_request'  => ['color' => 'warning', 'icon' => 'fact_check'],
+            'approval_approved' => ['color' => 'success', 'icon' => 'task_alt'],
+            'approval_rejected' => ['color' => 'danger', 'icon' => 'cancel'],
             'concurrent_login'  => ['color' => 'danger', 'icon' => 'gpp_maybe'],
             'account_deleted'   => ['color' => 'danger', 'icon' => 'person_remove'],
             'password_changed'  => ['color' => 'warning', 'icon' => 'lock_reset'],

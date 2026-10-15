@@ -38,14 +38,14 @@ class DashboardController extends Controller
         $mahasiswa = $user->mahasiswa;
 
         $kemahasiswaan = $mahasiswa
-            ? Kemahasiswaan::where('mahasiswa_id', $mahasiswa->id)->get()
+            ? Kemahasiswaan::approved()->where('mahasiswa_id', $mahasiswa->id)->get()
             : collect();
         $lppmMahasiswa = $mahasiswa
-            ? LppmMahasiswa::where('mahasiswa_id', $mahasiswa->id)->get()
+            ? LppmMahasiswa::approved()->where('mahasiswa_id', $mahasiswa->id)->get()
             : collect();
-        $rekognisi = Rekognisi::where('user_id', $user->id)
+        $rekognisi = Rekognisi::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'mahasiswa')->get();
-        $kerjaSama = KerjaSama::where('user_id', $user->id)
+        $kerjaSama = KerjaSama::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'mahasiswa')->get();
 
         $totalKegiatan = $kemahasiswaan->count() + $lppmMahasiswa->count()
@@ -325,9 +325,9 @@ class DashboardController extends Controller
         $lppm = $dosen
             ? LppmDosen::where('dosen_id', $dosen->id)->get()
             : collect();
-        $rekognisi = Rekognisi::where('user_id', $user->id)
+        $rekognisi = Rekognisi::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'dosen')->get();
-        $kerjaSama = KerjaSama::where('user_id', $user->id)
+        $kerjaSama = KerjaSama::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'dosen')->get();
 
         $total = $lppm->count() + $rekognisi->count() + $kerjaSama->count();

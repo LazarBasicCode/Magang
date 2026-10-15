@@ -36,6 +36,9 @@
 
     const TYPE_LABELS = {
         data_updated: 'Perubahan Data',
+        approval_request: 'Persetujuan',
+        approval_approved: 'Persetujuan',
+        approval_rejected: 'Persetujuan',
         concurrent_login: 'Keamanan Akun',
         password_changed: 'Keamanan Akun',
         account_deleted: 'Akun Dihapus',
@@ -175,9 +178,10 @@
         setTimeout(() => modalOverlay.classList.remove('is-closing'), 220);
     }
 
+    // Mengembalikan true bila modal terbuka (false = notifikasi belum ada di cache poll terakhir).
     function openDetailModal(id) {
         const n = lastNotifications.find((item) => String(item.id) === String(id));
-        if (!n) return;
+        if (!n) return false;
 
         const overlay = buildModal();
         const iconWrap = overlay.querySelector('#notifmIcon');
@@ -201,6 +205,17 @@
         overlay.classList.remove('is-closing');
         void overlay.offsetHeight;
         overlay.classList.add('is-open');
+        return true;
+    }
+
+    async function markRead(id) {
+        try {
+            await fetch(`/notifications/${id}/read`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+            });
+        } catch (e) { /* diam */ }
+        poll();   // segarkan lonceng (titik merah & daftar)
     }
 
     // ---------------- Wiring umum ----------------
@@ -275,6 +290,9 @@
             },
         }).catch(() => {});
     });
+
+    // Dipakai halaman lain (mis. Profil: "Notifikasi Terbaru") supaya memakai modal detail yang sama.
+    window.SIDANotif = { open: openDetailModal, poll, markRead };
 
     poll();
     setInterval(poll, POLL_INTERVAL);

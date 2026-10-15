@@ -37,111 +37,7 @@
         </defs>
     </svg>
 
-    <!-- ============ SIDEBAR ============ -->
-    <aside class="app-sidebar">
-        <div class="sidebar-brand">
-            <svg class="sidebar-brand-mark" aria-hidden="true"><use href="#sida-mark"/></svg>
-            <div class="sidebar-brand-text">
-                <span class="sidebar-brand-title">SIDA</span>
-                <span class="sidebar-brand-sub">Institut Asia Malang</span>
-            </div>
-            <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Tutup Menu">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-
-        <nav class="sidebar-nav">
-            <div class="nav-group">
-                <a href="{{ url('/dashboard') }}" class="nav-link">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span>Dashboard</span>
-                </a>
-                @if($__user->canAccessMenu('kemahasiswaan'))
-                <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
-                    <span class="material-symbols-outlined">school</span>
-                    <span>Kemahasiswaan</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('lppm_mahasiswa') || $__user->canAccessMenu('lppm_dosen') || $__user->canAccessMenu('rekognisi'))
-                <div class="nav-heading">LPPM</div>
-                @endif
-                @if($__user->canAccessMenu('lppm_mahasiswa'))
-                <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
-                    <span class="material-symbols-outlined">person</span>
-                    <span>Mahasiswa</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('lppm_dosen'))
-                <a href="{{ url('/lppm/dosen') }}" class="nav-link">
-                    <span class="material-symbols-outlined">co_present</span>
-                    <span>Dosen</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('rekognisi'))
-                <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
-                    <span class="material-symbols-outlined">workspace_premium</span>
-                    <span>Rekognisi</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('kerja_sama'))
-                <div class="nav-heading">Kemitraan</div>
-                @endif
-                @if($__user->canAccessMenu('kerja_sama'))
-                <a href="{{ url('/kerja-sama') }}" aria-current="page" class="nav-link is-active">
-                    <span class="material-symbols-outlined">handshake</span>
-                    <span>Kerja Sama</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
-                <div class="nav-heading">Administrasi</div>
-                @endif
-                @if($__user->canAccessMenu('data_master'))
-                <a href="{{ url('/data-master/users') }}" class="nav-link">
-                    <span class="material-symbols-outlined">manage_accounts</span>
-                    <span>Data Master</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('hak_akses'))
-                <a href="{{ url('/hak-akses') }}" class="nav-link">
-                    <span class="material-symbols-outlined">admin_panel_settings</span>
-                    <span>Hak Akses</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('log'))
-                <a href="{{ url('/login-audit') }}" class="nav-link">
-                    <span class="material-symbols-outlined">history</span>
-                    <span>Log Aktivitas</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('backup'))
-                <a href="{{ url('/backup') }}" class="nav-link">
-                    <span class="material-symbols-outlined">backup</span>
-                    <span>Backup &amp; Restore</span>
-                </a>
-                @endif
-                @if($__user->role === 'superadmin')
-                <a href="{{ url('/laporan') }}" class="nav-link">
-                    <span class="material-symbols-outlined">assignment</span>
-                    <span>Laporan</span>
-                </a>
-                @endif
-                <a href="{{ url('/profil') }}" class="nav-link">
-                    <span class="material-symbols-outlined">account_circle</span>
-                    <span>Profil Saya</span>
-                </a>
-            </div>
-        </nav>
-
-        <div class="sidebar-help">
-            <div class="help-card">
-                <p class="help-card-text">© Prodi IT - Institut Asia Malang</p>
-            </div>
-        </div>
-    </aside>
+    @include('partials.sidebar', ['active' => 'kerja_sama'])
 
     <!-- ============ MAIN ============ -->
     <div class="app-content">
@@ -496,6 +392,7 @@
                                     </td>
                                     <td>
                                         <span class="activity-title" title="{{ $item->judul_kegiatan }}">{{ $item->judul_kegiatan }}</span>
+                                        @include('partials.approval-chip', ['item' => $item])
                                     </td>
                                     <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
                                     <td class="center"><span class="badge badge-neutral">{{ ucfirst($item->tipe_user) }}</span></td>
@@ -770,6 +667,7 @@
         ])
     @endif
 
+    <script src="{{ asset('js/approval-chip.js') }}?v={{ @filemtime(public_path('js/approval-chip.js')) }}"></script>
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script>
@@ -1121,7 +1019,7 @@
                         <div class="student-name"><span class="name">${esc(item.nama)}</span></div>
                     </div>
                 </td>
-                <td><span class="activity-title" title="${esc(item.judul_kegiatan)}">${esc(item.judul_kegiatan)}</span></td>
+                <td><span class="activity-title" title="${esc(item.judul_kegiatan)}">${esc(item.judul_kegiatan)}</span>${window.apprChip ? window.apprChip(item) : ''}</td>
                 <td class="center"><span class="badge ${jb.cls}">${esc(jb.label)}</span></td>
                 <td class="center"><span class="badge badge-neutral">${esc(ucfirst(item.tipe_user))}</span></td>
                 <td class="center">${arahHTML}</td>

@@ -8,7 +8,7 @@ class Mahasiswa extends Model
 {
     protected $table = 'mahasiswa';
 
-    protected $fillable = ['user_id', 'nim', 'angkatan', 'status'];
+    protected $fillable = ['user_id', 'nim', 'angkatan', 'status', 'dosen_wali_id'];
 
     /** Status akademik: nilai di DB => label tampilan. Urutan = urutan di dropdown. */
     public const STATUS = [
@@ -43,6 +43,12 @@ class Mahasiswa extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Dosen wali: penerima pertama pengajuan prestasi mahasiswa ini (diatur di Data Master). */
+    public function dosenWali()
+    {
+        return $this->belongsTo(Dosen::class, 'dosen_wali_id');
     }
 
     /** Mahasiswa yang baru berupa NIM (mis. dari impor LPPM) dan belum punya akun. */

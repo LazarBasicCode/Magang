@@ -9,6 +9,7 @@ use App\Http\Controllers\LppmRekognisiController;
 use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HakAksesController;
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\LaporanController;
@@ -45,6 +46,14 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 // Rute yang dilindungi (Hanya bisa diakses jika sudah login)
 Route::middleware(['auth'])->group(function () {
+
+    // ---- Persetujuan pengajuan mahasiswa (mahasiswa -> dosen wali -> superadmin) ----
+    // Tidak lewat menu.access: aksesnya ditentukan role (dosen wali / superadmin) di ApprovalController.
+    Route::get('/persetujuan', [ApprovalController::class, 'index'])->name('persetujuan.index');
+    Route::post('/persetujuan/{menu}/{id}/{aksi}', [ApprovalController::class, 'act'])
+        ->whereNumber('id')->name('persetujuan.aksi');
+    Route::get('/persetujuan/{menu}/{id}/riwayat', [ApprovalController::class, 'history'])
+        ->whereNumber('id')->name('persetujuan.riwayat');
     // ---- Pengaturan akun sendiri (menu profil kanan atas) ----
     Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
     Route::post('/account/recovery-email', [AccountController::class, 'updateRecoveryEmail'])->name('account.recovery-email');

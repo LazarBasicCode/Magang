@@ -43,111 +43,7 @@
         </defs>
     </svg>
 
-    <!-- ============ SIDEBAR ============ -->
-    <aside class="app-sidebar">
-        <div class="sidebar-brand">
-            <svg class="sidebar-brand-mark" aria-hidden="true"><use href="#sida-mark"/></svg>
-            <div class="sidebar-brand-text">
-                <span class="sidebar-brand-title">SIDA</span>
-                <span class="sidebar-brand-sub">Institut Asia Malang</span>
-            </div>
-            <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Tutup Menu">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-
-        <nav class="sidebar-nav">
-            <div class="nav-group">
-                <a href="{{ url('/dashboard') }}" class="nav-link">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span>Dashboard</span>
-                </a>
-
-                @if($__user->canAccessMenu('kemahasiswaan'))
-                <a href="{{ url('/kemahasiswaan') }}" class="nav-link">
-                    <span class="material-symbols-outlined">school</span>
-                    <span>Kemahasiswaan</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('lppm_mahasiswa') || $__user->canAccessMenu('lppm_dosen') || $__user->canAccessMenu('rekognisi'))
-                <div class="nav-heading">LPPM</div>
-                @endif
-                @if($__user->canAccessMenu('lppm_mahasiswa'))
-                <a href="{{ url('/lppm/mahasiswa') }}" class="nav-link">
-                    <span class="material-symbols-outlined">person</span>
-                    <span>Mahasiswa</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('lppm_dosen'))
-                <a href="{{ url('/lppm/dosen') }}" class="nav-link">
-                    <span class="material-symbols-outlined">co_present</span>
-                    <span>Dosen</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('rekognisi'))
-                <a href="{{ url('/lppm/rekognisi') }}" class="nav-link">
-                    <span class="material-symbols-outlined">workspace_premium</span>
-                    <span>Rekognisi</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('kerja_sama'))
-                <div class="nav-heading">Kemitraan</div>
-                @endif
-                @if($__user->canAccessMenu('kerja_sama'))
-                <a href="{{ url('/kerja-sama') }}" class="nav-link">
-                    <span class="material-symbols-outlined">handshake</span>
-                    <span>Kerja Sama</span>
-                </a>
-                @endif
-
-                @if($__user->canAccessMenu('data_master') || $__user->canAccessMenu('hak_akses'))
-                <div class="nav-heading">Administrasi</div>
-                @endif
-                @if($__user->canAccessMenu('data_master'))
-                <a href="{{ url('/data-master/users') }}" aria-current="page" class="nav-link is-active">
-                    <span class="material-symbols-outlined">manage_accounts</span>
-                    <span>Data Master</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('hak_akses'))
-                <a href="{{ url('/hak-akses') }}" class="nav-link">
-                    <span class="material-symbols-outlined">admin_panel_settings</span>
-                    <span>Hak Akses</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('log'))
-                <a href="{{ url('/login-audit') }}" class="nav-link">
-                    <span class="material-symbols-outlined">history</span>
-                    <span>Log Aktivitas</span>
-                </a>
-                @endif
-                @if($__user->canAccessMenu('backup'))
-                <a href="{{ url('/backup') }}" class="nav-link">
-                    <span class="material-symbols-outlined">backup</span>
-                    <span>Backup &amp; Restore</span>
-                </a>
-                @endif
-                @if($__user->role === 'superadmin')
-                <a href="{{ url('/laporan') }}" class="nav-link">
-                    <span class="material-symbols-outlined">assignment</span>
-                    <span>Laporan</span>
-                </a>
-                @endif
-                <a href="{{ url('/profil') }}" class="nav-link">
-                    <span class="material-symbols-outlined">account_circle</span>
-                    <span>Profil Saya</span>
-                </a>
-            </div>
-        </nav>
-
-        <div class="sidebar-help">
-            <div class="help-card">
-                <p class="help-card-text">© Prodi IT - Institut Asia Malang</p>
-            </div>
-        </div>
-    </aside>
+    @include('partials.sidebar', ['active' => 'data_master'])
 
     <!-- ============ MAIN ============ -->
     <div class="app-content">
@@ -403,6 +299,7 @@ $__accessRows = $__user->accessBreakdown();
                                     {{-- Label kolom ini berganti per tab (NIM / NIDN / Username), diisi JS lewat data-text --}}
                                     <th class="center th-dyn" id="thIdentifier" data-text="NIM" aria-label="NIM"></th>
                                     <th class="center" data-v="mahasiswa">Angkatan</th>
+                                    <th data-v="mahasiswa">Dosen Wali</th>
                                     <th class="center" data-v="mahasiswa dosen">Status</th>
                                     <th class="center">Email</th>
                                     <th class="center">Aksi</th>
@@ -411,7 +308,7 @@ $__accessRows = $__user->accessBreakdown();
                             <tbody id="userTableBody">
                                 @include('partials.user-rows', ['users' => $users])
                                 <tr id="noResultsRow" {{ $users->total() === 0 ? '' : 'hidden' }}>
-                                    <td colspan="8" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         {{ $users->total() === 0 ? ($term !== '' ? 'Tidak ada data yang cocok dengan pencarian.' : 'Belum ada data pada kelompok ini.') : '' }}
                                     </td>
                                 </tr>
@@ -420,7 +317,7 @@ $__accessRows = $__user->accessBreakdown();
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
                             <tbody class="sk-body" aria-hidden="true">
                                 @for($i = 0; $i < 7; $i++)
-                                <tr><td colspan="8"><span class="sk-bar"></span></td></tr>
+                                <tr><td colspan="9"><span class="sk-bar"></span></td></tr>
                                 @endfor
                             </tbody>
                         </table>
@@ -490,6 +387,27 @@ $__accessRows = $__user->accessBreakdown();
                     <div class="field-control">
                         <input id="form-identifier" type="text" placeholder="Contoh: 222011005">
                     </div>
+                </div>
+            </div>
+
+            {{-- Dosen Wali: hanya untuk mahasiswa. Dosen wali = penerima pertama pengajuan prestasi mahasiswa ini. --}}
+            <div class="field-row" id="row-wali">
+                <div class="field" id="field-dosen-wali">
+                    <label class="field-label">Dosen Wali</label>
+                    <div class="dropdown" data-dropdown id="dd-dosen-wali">
+                        <input type="hidden" id="form-dosen-wali" value="" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">— Belum ditentukan —</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel" style="max-height:260px;overflow-y:auto">
+                            <button type="button" class="dropdown-option is-selected" data-value="">— Belum ditentukan —</button>
+                            @foreach($dosenWaliOptions as $dw)
+                            <button type="button" class="dropdown-option" data-value="{{ $dw['id'] }}">{{ $dw['name'] }}@if($dw['nidn']) &middot; NIDN {{ $dw['nidn'] }}@endif</button>
+                            @endforeach
+                        </div>
+                    </div>
+                    <p class="field-hint" style="margin:6px 0 0;font-size:12px;color:var(--ink-faint)">Pengajuan prestasi mahasiswa ini masuk ke dosen wali dulu sebelum ke Superadmin. Kosong = langsung ke Superadmin.</p>
                 </div>
             </div>
 
@@ -693,6 +611,9 @@ $__accessRows = $__user->accessBreakdown();
         const ddStatusMhs = document.getElementById('dd-status-mahasiswa');
         const ddStatusDosen = document.getElementById('dd-status-dosen');
         const inputAngkatan = document.getElementById('form-angkatan');
+        const rowWali = document.getElementById('row-wali');
+        const ddWali = document.getElementById('dd-dosen-wali');
+        const inputWali = document.getElementById('form-dosen-wali');
         const inputStatusMhs = document.getElementById('form-status-mahasiswa');
         const inputStatusDosen = document.getElementById('form-status-dosen');
 
@@ -1008,6 +929,7 @@ $__accessRows = $__user->accessBreakdown();
             setVisible(fieldAngkatan, isMhs);
             setVisible(fieldStatusMhs, isMhs);
             setVisible(fieldStatusDosen, isDosen);
+            setVisible(rowWali, isMhs);
         }
 
         // Nilai status yang sedang dipilih untuk role tertentu ('' kalau role tidak punya status).
@@ -1049,6 +971,7 @@ $__accessRows = $__user->accessBreakdown();
             syncProfileFields(role);
             inputIdentifier.value = data.identifier || '';
             inputAngkatan.value = data.angkatan || '';
+            SIDA.dropdown.select(ddWali, role === 'mahasiswa' && data.dosen_wali_id ? String(data.dosen_wali_id) : '');
             // Status: edit -> nilai tersimpan; tambah / role berbeda -> default 'aktif'
             SIDA.dropdown.select(ddStatusMhs, role === 'mahasiswa' && data.status ? data.status : 'aktif');
             SIDA.dropdown.select(ddStatusDosen, role === 'dosen' && data.status ? data.status : 'aktif');
@@ -1112,6 +1035,7 @@ $__accessRows = $__user->accessBreakdown();
             };
             // Angkatan & status hanya dikirim untuk role yang memilikinya.
             payload.angkatan = payload.role === 'mahasiswa' ? inputAngkatan.value.trim() : null;
+            payload.dosen_wali_id = payload.role === 'mahasiswa' ? (inputWali.value || null) : null;
             payload.status = currentStatus(payload.role) || null;
 
             if (!payload.name) {

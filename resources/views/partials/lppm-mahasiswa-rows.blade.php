@@ -25,7 +25,8 @@
                                             <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                         </div>
                                     </td>
-                                    <td><span class="activity-title" title="{{ $item->judul }}">{{ $item->judul }}</span></td>
+                                    <td><span class="activity-title" title="{{ $item->judul }}">{{ $item->judul }}</span>
+                                        @include('partials.approval-chip', ['item' => $item])</td>
                                     <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
                                     <td class="center"><span class="badge badge-primary">{{ $item->peringkat ?: '-' }}</span></td>
                                     <td class="center"><span class="year-chip">{{ $item->tahun }}</span></td>

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasApproval;
 use Illuminate\Database\Eloquent\Model;
 
 class LppmMahasiswa extends Model
 {
+    use HasApproval;
+
     protected $table = 'lppm_mahasiswa';
 
     protected $fillable = [
@@ -18,6 +21,8 @@ class LppmMahasiswa extends Model
         'link_doi',
         'bukti_kegiatan',
         'tahun',
+        'approval_status',
+        'approval_note',
     ];
 
     public function mahasiswa()

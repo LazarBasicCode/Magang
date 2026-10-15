@@ -8,6 +8,7 @@ use App\Models\Rekognisi;
 use App\Models\User;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
+use App\Support\Approval;
 use Illuminate\Http\Request;
 
 class LppmRekognisiController extends Controller
@@ -106,8 +107,13 @@ class LppmRekognisiController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
+        // Rekognisi milik mahasiswa yang diisi mahasiswa sendiri -> antrean persetujuan dosen wali.
+        $owner = ($data['tipe_user'] ?? null) === 'mahasiswa' ? User::find($data['user_id'])?->mahasiswa : null;
+        $data += Approval::attributesFor($request->user(), $owner, true);
+
         $item = Rekognisi::create($data)->load('user');
 
+        Approval::afterSubmit('rekognisi', $item, $request->user(), null);
         $this->notifyRekognisi($request, $item, 'ditambahkan');
 
         return response()->json(['success' => true, 'data' => $this->format($item)]);
@@ -123,9 +129,14 @@ class LppmRekognisiController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
+        // Edit oleh mahasiswa mengembalikan data ke antrean persetujuan (admin/dosen tidak mengubah status).
+        $previous = $rekognisi->approval_status;
+        $data += Approval::attributesFor($request->user(), $rekognisi->user?->mahasiswa, false);
+
         $rekognisi->update($data);
         $rekognisi->load('user');
 
+        Approval::afterSubmit('rekognisi', $rekognisi, $request->user(), $previous);
         $this->notifyRekognisi($request, $rekognisi, 'diperbarui');
 
         return response()->json(['success' => true, 'data' => $this->format($rekognisi)]);
@@ -415,6 +426,10 @@ class LppmRekognisiController extends Controller
             'tanggal_selesai' => optional($item->tanggal_selesai)->format('Y-m-d'),
             'bukti_kegiatan'  => $item->bukti_kegiatan,
             'bukti_tambahan'  => $item->bukti_tambahan,
+            'approval_status' => $item->approval_status,
+            'approval_label'  => $item->approvalLabel(),
+            'approval_badge'  => $item->approvalBadge(),
+            'approval_note'   => $item->approval_note,
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
 use App\Http\Controllers\Concerns\HandlesBulkData;
+use App\Http\Controllers\Concerns\MahasiswaView;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use App\Support\Approval;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 class LppmMahasiswaController extends Controller
 {
     use NotifiesOwner;
+    use MahasiswaView;
     use HandlesBulkData;
 
     /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
@@ -31,9 +33,10 @@ class LppmMahasiswaController extends Controller
         $mahasiswa = $user->mahasiswa;
 
         $jenis = $request->query('jenis');
+        $status = $request->query('status');
         $term  = trim((string) $request->query('q', ''));
 
-        $listQuery = function () use ($ownScope, $mahasiswa, $jenis, $term) {
+        $listQuery = function () use ($ownScope, $mahasiswa, $jenis, $term, $status) {
             $query = LppmMahasiswa::with('mahasiswa.user')->latest()->orderByDesc('id');
             if ($ownScope) {
                 $query->where('mahasiswa_id', $mahasiswa->id ?? 0);
@@ -41,6 +44,7 @@ class LppmMahasiswaController extends Controller
             if ($jenis && $jenis !== 'semua') {
                 $query->where('jenis', $jenis);
             }
+            $this->applyStatusFilter($query, $status);
             if ($term !== '') {
                 $like = '%' . addcslashes($term, '%_\\') . '%';
                 $query->where(function ($w) use ($like) {
@@ -60,17 +64,34 @@ class LppmMahasiswaController extends Controller
             $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();
         }
 
-        // Request AJAX (tombol halaman / filter / cari): balas JSON baris + meta halaman.
+        $payload = [
+            'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
+            'meta' => [
+                'page'  => $items->currentPage(),
+                'last'  => max(1, $items->lastPage()),
+                'total' => $items->total(),
+                'from'  => $items->firstItem() ?? 0,
+                'to'    => $items->lastItem() ?? 0,
+            ],
+        ];
+
+        $studentView = $this->isMahasiswaView($request, $ownScope);
+        if ($studentView) {
+            // Ringkasan per status (kartu filter di tampilan mahasiswa).
+            $payload['summary'] = $this->statusSummary(LppmMahasiswa::where('mahasiswa_id', $mahasiswa->id ?? 0));
+        }
+
+        // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
-                'meta' => [
-                    'page'  => $items->currentPage(),
-                    'last'  => max(1, $items->lastPage()),
-                    'total' => $items->total(),
-                    'from'  => $items->firstItem() ?? 0,
-                    'to'    => $items->lastItem() ?? 0,
-                ],
+            return response()->json($payload);
+        }
+
+        // Role mahasiswa: tampilan sederhana "Prestasi/Publikasi Saya".
+        if ($studentView) {
+            return view('mahasiswa.lppm', [
+                'initial'   => $payload,
+                'summary'   => $payload['summary'],
+                'mahasiswa' => $mahasiswa?->load('user'),
             ]);
         }
 
@@ -481,6 +502,7 @@ class LppmMahasiswaController extends Controller
             'approval_label'  => $item->approvalLabel(),
             'approval_badge'  => $item->approvalBadge(),
             'approval_note'   => $item->approval_note,
+            'diajukan'        => optional($item->created_at)->format('d M Y'),
         ];
     }
 }

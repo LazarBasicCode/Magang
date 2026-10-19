@@ -1,0 +1,260 @@
+/* ==========================================================================
+   Tampilan khusus MAHASISWA (Prestasi Saya / Publikasi Saya).
+   Dipakai: resources/views/mahasiswa/*.blade.php + public/js/mahasiswa-view.js
+   Semua kelas berawalan "mv-" supaya tidak bentrok dengan tampilan admin.
+   ========================================================================== */
+
+/* ---------- Kartu ringkasan = sekaligus filter status ---------- */
+.mv-tiles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.mv-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    text-align: left;
+    font: inherit;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    transition: border-color .15s, transform .15s;
+}
+.mv-tile:hover { transform: translateY(-1px); border-color: var(--primary-border); }
+.mv-tile.is-active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); }
+.mv-tile-icon {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+.mv-tile.is-ok .mv-tile-icon { background: var(--success-bg); color: var(--success); }
+.mv-tile.is-wait .mv-tile-icon { background: var(--warning-bg); color: var(--warning); }
+.mv-tile.is-bad .mv-tile-icon { background: var(--danger-bg); color: var(--danger); }
+.mv-tile-num { display: block; font-size: 22px; font-weight: 800; line-height: 1.1; }
+.mv-tile-label { display: block; font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+/* ---------- Pencarian ---------- */
+.mv-search {
+    position: relative;
+    max-width: 420px;
+    margin-bottom: 14px;
+}
+.mv-search .material-symbols-outlined {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: var(--ink-faint);
+    pointer-events: none;
+}
+.mv-search input {
+    width: 100%;
+    height: 42px;
+    padding: 0 14px 0 40px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    outline: none;
+}
+.mv-search input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+/* ---------- Daftar ---------- */
+.mv-table td { vertical-align: middle; }
+.mv-row { cursor: pointer; }
+.mv-title { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.mv-meta { margin-top: 3px; font-size: 12.5px; color: var(--ink-muted); }
+.mv-more {
+    width: 34px;
+    height: 34px;
+    display: inline-grid;
+    place-items: center;
+    color: var(--ink-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.mv-more:hover { background: var(--primary-soft); color: var(--primary); }
+
+.mv-empty {
+    padding: 44px 20px;
+    text-align: center;
+    color: var(--ink-muted);
+}
+.mv-empty .material-symbols-outlined { font-size: 44px; color: var(--ink-faint); }
+.mv-empty strong { display: block; margin: 6px 0 4px; color: var(--ink); font-size: 15px; }
+.mv-empty p { margin: 0; font-size: 13px; }
+
+/* ---------- Progres verifikasi (mini di daftar) ---------- */
+.mv-prog-mini { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+.mv-dots { display: flex; align-items: center; }
+.mv-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border-strong);
+}
+.mv-dot + .mv-dot { margin-left: 18px; position: relative; }
+.mv-dot + .mv-dot::before {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 4px;
+    width: 18px;
+    height: 2px;
+    background: var(--border-strong);
+}
+.mv-dot.is-done { background: var(--success); }
+.mv-dot.is-done + .mv-dot::before { background: var(--success); }
+.mv-dot.is-current { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-bg); }
+.mv-dot.is-current + .mv-dot::before { background: var(--border-strong); }
+.mv-prog-text { font-size: 12.5px; font-weight: 600; }
+.mv-prog-text.is-wait { color: var(--warning); }
+.mv-prog-text.is-ok { color: var(--success); }
+.mv-prog-text.is-bad { color: var(--danger); }
+
+/* ---------- Progres verifikasi (lengkap di modal detail) ---------- */
+.mv-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 4px 0 6px;
+}
+.mv-step { position: relative; text-align: center; font-size: 11.5px; color: var(--ink-muted); }
+.mv-step::before {
+    content: "";
+    position: absolute;
+    top: 15px;
+    left: -50%;
+    width: 100%;
+    height: 2px;
+    background: var(--border-strong);
+}
+.mv-step:first-child::before { display: none; }
+.mv-step.is-done::before, .mv-step.is-current::before { background: var(--success); }
+.mv-step-circle {
+    position: relative;
+    z-index: 1;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto 6px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2px solid var(--border-strong);
+    color: var(--ink-faint);
+}
+.mv-step-circle .material-symbols-outlined { font-size: 17px; }
+.mv-step.is-done .mv-step-circle { background: var(--success); border-color: var(--success); color: #fff; }
+.mv-step.is-current .mv-step-circle { border-color: var(--warning); color: var(--warning); background: var(--warning-bg); }
+.mv-step.is-done, .mv-step.is-current { color: var(--ink); font-weight: 600; }
+.mv-step.is-reject .mv-step-circle { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+.mv-step.is-reject { color: var(--danger); font-weight: 600; }
+
+/* ---------- Modal detail & form ---------- */
+.mv-detail, #mvFormModal { width: min(540px, calc(100vw - 32px)); }
+.mv-status-box {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--canvas);
+}
+.mv-status-title { font-size: 13px; font-weight: 700; margin: 0 0 10px; }
+.mv-status-title.is-wait { color: var(--warning); }
+.mv-status-title.is-ok { color: var(--success); }
+.mv-status-title.is-bad { color: var(--danger); }
+.mv-reject-note {
+    margin-top: 10px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    color: var(--danger);
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    border-radius: 8px;
+}
+.mv-detail-name { margin: 0; font-size: 17px; font-weight: 800; line-height: 1.3; color: var(--ink); }
+.mv-dl { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; margin: 0; font-size: 13.5px; }
+.mv-dl dt { color: var(--ink-muted); }
+.mv-dl dd { margin: 0; color: var(--ink); font-weight: 600; word-break: break-word; }
+.mv-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.mv-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-soft);
+    border-radius: 10px;
+    text-decoration: none;
+}
+.mv-link-btn .material-symbols-outlined { font-size: 18px; }
+.mv-hint { margin: 0; font-size: 12px; color: var(--ink-muted); }
+.mv-btn-danger {
+    margin-right: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--danger);
+    background: transparent;
+    border: 1px solid var(--danger-border);
+    border-radius: 10px;
+    cursor: pointer;
+}
+.mv-btn-danger:hover { background: var(--danger-bg); }
+.mv-btn-danger .material-symbols-outlined { font-size: 18px; }
+
+/* ---------- Form: nama sudah terpilih otomatis ---------- */
+.mv-owner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-border);
+    border-radius: 12px;
+}
+.mv-owner .material-symbols-outlined { color: var(--primary); }
+.mv-owner small { display: block; color: var(--ink-muted); font-size: 11.5px; }
+.mv-help { margin: 4px 0 0; font-size: 11.5px; color: var(--ink-muted); }
+
+@media (max-width: 640px) {
+    /* Baris jadi kartu ringkas: judul + progres, tombol ⋮ di kanan atas (tanpa label kolom) */
+    .data-table.mv-table tbody tr { position: relative; padding: 12px 52px 12px 14px; }
+    .data-table.mv-table td,
+    .data-table.mv-table td:first-child,
+    .data-table.mv-table td:last-child { display: block; padding: 0; border: 0; }
+    .data-table.mv-table td::before { content: none; }
+    .data-table.mv-table td + td { margin-top: 10px; }
+    .data-table.mv-table td:last-child { position: absolute; top: 8px; right: 8px; margin: 0; }
+}
+
+@media (max-width: 760px) {
+    .mv-tiles { grid-template-columns: repeat(2, 1fr); }
+    .mv-search { max-width: none; }
+    .mv-dl { grid-template-columns: 1fr; gap: 2px 0; }
+    .mv-dl dd { margin-bottom: 8px; }
+    .mv-step { font-size: 10.5px; }
+}

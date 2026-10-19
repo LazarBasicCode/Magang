@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Kemahasiswaan;
 use App\Models\Mahasiswa;
 use App\Http\Controllers\Concerns\HandlesBulkData;
+use App\Http\Controllers\Concerns\MahasiswaView;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use App\Support\Approval;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ use Illuminate\Validation\Rule;
 class KemahasiswaanController extends Controller
 {
     use NotifiesOwner;
+    use MahasiswaView;
     use HandlesBulkData;
 
     /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
@@ -35,17 +37,19 @@ class KemahasiswaanController extends Controller
         $mahasiswa = $user->mahasiswa;
 
         $jenis = $request->query('jenis');
+        $status = $request->query('status');
         $tab = $request->query('tab');
         $tingkat = $request->query('tingkat');
         $tahun = $request->query('tahun');
         $term = trim((string) $request->query('q', ''));
 
-        $listQuery = function () use ($ownScope, $mahasiswa, $jenis, $tab, $tingkat, $tahun, $term) {
+        $listQuery = function () use ($ownScope, $mahasiswa, $jenis, $tab, $tingkat, $tahun, $term, $status) {
             $query = Kemahasiswaan::with('mahasiswa.user')->latest()->orderByDesc('id');
             if ($ownScope) {
                 $query->where('mahasiswa_id', $mahasiswa->id ?? 0);
             }
             if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
+            $this->applyStatusFilter($query, $status);
             if ($tab && $tab !== 'semua') $query->where('tab', $tab);
             if ($tingkat && $tingkat !== 'semua') $query->where('tingkat', $tingkat);
             if ($tahun && $tahun !== 'semua') $query->where('tahun', $tahun);
@@ -66,18 +70,34 @@ class KemahasiswaanController extends Controller
             $kegiatan = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $kegiatan->lastPage())->withQueryString();
         }
 
+        $payload = [
+            'items' => $kegiatan->getCollection()->map(fn ($i) => $this->format($i))->values(),
+            'meta'  => [
+                'page'  => $kegiatan->currentPage(),
+                'last'  => max(1, $kegiatan->lastPage()),
+                'total' => $kegiatan->total(),
+                'from'  => $kegiatan->firstItem() ?? 0,
+                'to'    => $kegiatan->lastItem() ?? 0,
+            ],
+        ];
+
+        $studentView = $this->isMahasiswaView($request, $ownScope);
+        if ($studentView) {
+            // Ringkasan per status (kartu filter di tampilan mahasiswa).
+            $payload['summary'] = $this->statusSummary(Kemahasiswaan::where('mahasiswa_id', $mahasiswa->id ?? 0));
+        }
+
         // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
-        // Baris digambar JS (buildRowHTML) di blade, jadi tidak perlu partial.
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'items' => $kegiatan->getCollection()->map(fn ($i) => $this->format($i))->values(),
-                'meta'  => [
-                    'page'  => $kegiatan->currentPage(),
-                    'last'  => max(1, $kegiatan->lastPage()),
-                    'total' => $kegiatan->total(),
-                    'from'  => $kegiatan->firstItem() ?? 0,
-                    'to'    => $kegiatan->lastItem() ?? 0,
-                ],
+            return response()->json($payload);
+        }
+
+        // Role mahasiswa: tampilan sederhana "Prestasi/Publikasi Saya".
+        if ($studentView) {
+            return view('mahasiswa.kemahasiswaan', [
+                'initial'   => $payload,
+                'summary'   => $payload['summary'],
+                'mahasiswa' => $mahasiswa?->load('user'),
             ]);
         }
 
@@ -441,6 +461,7 @@ class KemahasiswaanController extends Controller
             'approval_label'  => $item->approvalLabel(),
             'approval_badge'  => $item->approvalBadge(),
             'approval_note'   => $item->approval_note,
+            'diajukan'        => optional($item->created_at)->format('d M Y'),
         ];
     }
 }

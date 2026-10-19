@@ -61,6 +61,8 @@ class AppServiceProvider extends ServiceProvider
             // nama partial ini juga, $__user tetap terjamin walau suatu saat
             // dipanggil dari tempat lain.
             'partials.sidebar',
+            // Sama untuk partial header (profil dropdown memakai $__user).
+            'partials.header',
         ], function ($view) {
             $view->with('__user', auth()->user());
         });

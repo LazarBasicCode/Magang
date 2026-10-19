@@ -1,0 +1,47 @@
+/* Modal Tambah / Edit Pengguna (Data Master) — tata letak dua kolom yang selalu terisi penuh.
+   Urutan tampil:
+     Mahasiswa : Nama                    (penuh)
+                 Role | Status Mahasiswa
+                 NIM  | Angkatan
+                 Dosen Wali              (penuh)
+     Dosen     : Nama                    (penuh)
+                 Role | Status Dosen
+                 NIDN                    (penuh, selebar input Nama)
+     Admin     : Nama                    (penuh)
+                 Role | Username
+   Email & Password selalu penuh di bawah.
+   Baris pembungkus (.field-row) dibuat "display: contents" supaya isinya ikut grid form ini, dan
+   urutannya diatur lewat `order`. Role aktif dibaca dari atribut data-role pada #userForm (diisi JS). */
+
+#userForm {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-content: start;
+}
+#userForm .field-row { display: contents; }   /* JS menyembunyikan lewat style.display = 'none', tetap bekerja */
+#userForm > .field,
+#userForm #row-wali > .field,
+#userForm > .modal-error,
+#userForm > .modal-footer { grid-column: 1 / -1; }
+#userForm .field { min-width: 0; }
+
+/* urutan */
+#userForm > .field:has(#form-name)          { order: 0; }   /* Nama */
+#userForm .field:has(> #dd-role)            { order: 1; }   /* Role */
+#userForm #field-status-mahasiswa,
+#userForm #field-status-dosen               { order: 2; }
+#userForm #field-identifier                 { order: 3; }   /* NIM / NIDN / Username */
+#userForm #field-angkatan                   { order: 4; }
+#userForm #row-wali > .field                { order: 5; }
+#userForm > .field:has(#form-email)         { order: 6; }
+#userForm > .field:has(#form-password)      { order: 7; }
+#userForm > .modal-error                    { order: 8; }
+#userForm > .modal-footer                   { order: 9; }
+
+/* Dosen: NIDN penuh di bawah Role | Status */
+#userForm[data-role="dosen"] #field-identifier { grid-column: 1 / -1; }
+
+@media (max-width: 480px) {
+    #userForm { grid-template-columns: 1fr; }
+}

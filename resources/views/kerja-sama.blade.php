@@ -395,27 +395,30 @@
                 </div>
             </div>
 
-            <div class="field-row">
-                <div class="field">
-                    <label class="field-label">Jenis Kerja Sama</label>
-                    <div class="dropdown" data-dropdown id="dd-jenis">
-                        <input type="hidden" id="form-jenis" value="conference_internasional" />
-                        <button type="button" class="dropdown-trigger">
-                            <span class="dropdown-value">Conference Internasional</span>
-                            <span class="material-symbols-outlined caret">expand_more</span>
-                        </button>
-                        <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="conference_internasional">Conference Internasional</button>
-                            <button type="button" class="dropdown-option" data-value="pkl">PKL (Output)</button>
-                            <button type="button" class="dropdown-option" data-value="sharing_session">Sharing Session</button>
-                            <button type="button" class="dropdown-option" data-value="keynote_session">Keynote Speaker</button>
-                            <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
-                            <button type="button" class="dropdown-option" data-value="pengabdian_internasional">Pengabdian Internasional</button>
-                            <button type="button" class="dropdown-option" data-value="research_internasional">Research Internasional</button>
-                            <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
-                        </div>
+            {{-- Jenis Kerja Sama: selebar dropdown Mahasiswa/Dosen. Di bawahnya: "Lainnya" & "Arah" (selalu ada, terkunci sampai relevan). --}}
+            <div class="field">
+                <label class="field-label">Jenis Kerja Sama</label>
+                <div class="dropdown" data-dropdown id="dd-jenis">
+                    <input type="hidden" id="form-jenis" value="conference_internasional" />
+                    <button type="button" class="dropdown-trigger">
+                        <span class="dropdown-value">Conference Internasional</span>
+                        <span class="material-symbols-outlined caret">expand_more</span>
+                    </button>
+                    <div class="dropdown-panel">
+                        <button type="button" class="dropdown-option is-selected" data-value="conference_internasional">Conference Internasional</button>
+                        <button type="button" class="dropdown-option" data-value="pkl">PKL (Output)</button>
+                        <button type="button" class="dropdown-option" data-value="sharing_session">Sharing Session</button>
+                        <button type="button" class="dropdown-option" data-value="keynote_session">Keynote Speaker</button>
+                        <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
+                        <button type="button" class="dropdown-option" data-value="pengabdian_internasional">Pengabdian Internasional</button>
+                        <button type="button" class="dropdown-option" data-value="research_internasional">Research Internasional</button>
+                        <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
                     </div>
                 </div>
+            </div>
+
+            {{-- Mahasiswa tidak punya Guest Lecture -> Arah menghilang & "Lainnya" melebar penuh (animasi: public/css/lock-swap.css, .field-row-swap) --}}
+            <div class="field-row field-row-swap" id="rowLainnyaArah">
                 <div class="field" id="field-lainnya">
                     <label class="field-label" for="form-jenis_lainnya">Jenis Kerja Sama Lainnya</label>
                     {{-- Selalu tampil: terkunci kecuali Jenis = Lainnya (animasi: public/js/lock-swap.js) --}}
@@ -426,22 +429,33 @@
                         <div class="field-locked lock-swap-locked" aria-live="polite">
                             <div class="field-locked-inner">
                                 <span class="material-symbols-outlined lock-ic">lock</span>
-                                <span class="field-locked-value">Tulis jenis kerja sama...</span>
+                                <span class="field-locked-value">Tulis jenis kerja sama..."</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="field" id="field-arah">
+                <div class="field field-collapsible" id="field-arah">
                     <label class="field-label">Arah (khusus Guest Lecture)</label>
-                    <div class="dropdown" data-dropdown id="dd-arah">
-                        <input type="hidden" id="form-arah" value="inbound" />
-                        <button type="button" class="dropdown-trigger">
-                            <span class="dropdown-value">Inbound</span>
-                            <span class="material-symbols-outlined caret">expand_more</span>
-                        </button>
-                        <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="inbound">Inbound</button>
-                            <button type="button" class="dropdown-option" data-value="outbound">Outbound</button>
+                    {{-- Selalu tampil: terkunci kecuali Jenis = Guest Lecture (animasi: public/js/lock-swap.js) --}}
+                    <div class="lock-swap is-locked" id="arahSwap">
+                        <div class="lock-swap-input">
+                            <div class="dropdown" data-dropdown id="dd-arah">
+                                <input type="hidden" id="form-arah" value="inbound" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Inbound</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="inbound">Inbound</button>
+                                    <button type="button" class="dropdown-option" data-value="outbound">Outbound</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field-locked lock-swap-locked" aria-live="polite">
+                            <div class="field-locked-inner">
+                                <span class="material-symbols-outlined lock-ic">lock</span>
+                                <span class="field-locked-value">Kusus Guest Lecture</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -595,7 +609,6 @@
         const modalCancelBtn = document.getElementById('modalCancelBtn');
         const btnTambah = document.getElementById('btnTambahKerjaSama');
         const dragHandle = document.getElementById('modalDragHandle');
-        const fieldArah = document.getElementById('field-arah');
         const ddUser = document.getElementById('dd-user');
 
         // Datepicker (Tanggal Mulai & Selesai) sudah ada di script.js: SIDA.datepicker
@@ -763,8 +776,9 @@
             dragHandle: dragHandle,
         });
 
-        // Kolom "Jenis Lainnya" selalu tampil, tapi terkunci kecuali jenis = Lainnya.
+        // Kolom "Jenis Lainnya" & "Arah" selalu tampil, tapi terkunci kecuali jenisnya cocok.
         const lainnyaLock = LockSwap.create(document.getElementById('lainnyaSwap'));
+        const arahLock = LockSwap.create(document.getElementById('arahSwap'), { focus: false });
 
         function updateConditionalFields(jenis, animate = false) {
             const isLainnya = jenis === 'lainnya';
@@ -772,8 +786,7 @@
             if (!isLainnya) document.getElementById('form-jenis_lainnya').value = '';
 
             const isGuestLecture = jenis === 'guest_lecture';
-            fieldArah.classList.toggle('hidden', !isGuestLecture);
-            fieldArah.style.display = isGuestLecture ? '' : 'none';
+            arahLock.setLocked(!isGuestLecture, animate);
             if (!isGuestLecture) {
                 SIDA.dropdown.select(document.getElementById('dd-arah'), 'inbound', 'Inbound');
             }
@@ -782,11 +795,27 @@
             opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value, true));
         });
 
+        // Mahasiswa tidak punya jenis Guest Lecture: kolom Arah dihilangkan dan "Lainnya" melebar penuh ke samping.
+        // animate=false -> langsung (saat modal dibuka); true -> dengan animasi (saat user dipilih).
+        const rowLainnyaArah = document.getElementById('rowLainnyaArah');
+        function syncArahForRole(animate) {
+            const solo = document.getElementById('form-tipe_user').value === 'mahasiswa';
+            if (rowLainnyaArah.classList.contains('is-solo') === solo) return;
+            if (!animate) rowLainnyaArah.classList.add('is-instant');
+            rowLainnyaArah.classList.toggle('is-solo', solo);
+            document.getElementById('field-arah').setAttribute('aria-hidden', String(solo));
+            if (!animate) {
+                void rowLainnyaArah.offsetWidth; // terapkan tanpa transisi
+                rowLainnyaArah.classList.remove('is-instant');
+            }
+        }
+
         // Saat memilih mahasiswa/dosen → set tipe_user + sync jenis modal
         document.querySelectorAll('#dd-user .dropdown-option').forEach((opt) => {
             opt.addEventListener('click', () => {
                 document.getElementById('form-tipe_user').value = opt.dataset.role || '';
                 syncFormJenisOptions();
+                syncArahForRole(true);
             });
         });
 
@@ -824,6 +853,7 @@
 
             SIDA.dropdown.select(ddUser, data.user_id || '', 'Pilih mahasiswa/dosen...');
             document.getElementById('form-tipe_user').value = data.tipe_user || '';
+            syncArahForRole(false);
 
             // Edit: kunci nama user. Tambah: dropdown normal.
             const selectedOpt = ddUser.querySelector('.dropdown-option.is-selected');

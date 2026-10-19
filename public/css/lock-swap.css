@@ -61,3 +61,55 @@
     .lock-swap.is-locked .lock-swap-input, .lock-swap.is-unlocked .lock-swap-locked { transition: none; }
     .lock-swap.is-unlocking .lock-ic, .lock-swap.is-snap .lock-ic, .lock-swap.is-snap .lock-swap-locked { animation: none; }
 }
+
+
+/* ---------------------------------------------------------------------
+   Baris dua kolom yang bisa "solo": kolom ke-2 (.field-collapsible) menghilang
+   dan kolom ke-1 melebar penuh ke samping. Dipicu class .is-solo pada baris
+   (contoh: Kerja Sama -> mahasiswa tidak punya Arah, jadi "Lainnya" melebar).
+   .is-instant = ubah tanpa animasi (mis. saat modal dibuka).
+   --------------------------------------------------------------------- */
+.field-row-swap {
+    column-gap: 14px;
+    transition: grid-template-columns .5s cubic-bezier(.22, 1, .36, 1), column-gap .5s cubic-bezier(.22, 1, .36, 1);
+}
+.field-row-swap > .field-collapsible {
+    min-width: 0;
+    transition: opacity .3s ease .12s, transform .45s cubic-bezier(.22, 1, .36, 1) .12s, filter .3s ease .12s, visibility 0s;
+}
+.field-row-swap.is-solo {
+    grid-template-columns: 1fr 0fr;
+    column-gap: 0;
+}
+.field-row-swap.is-solo > .field-collapsible {
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(16px) scale(.97);
+    filter: blur(4px);
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .22s ease, transform .4s cubic-bezier(.22, 1, .36, 1), filter .22s ease, visibility 0s linear .4s;
+}
+/* PENYEBAB CELAH BESAR: kolom ke-2 yang menyempit ke 0 membuat teksnya pecah per kata
+   (label jadi 4 baris) dan menaikkan tinggi baris. Teks dilarang membungkus, jadi tinggi
+   baris selalu sama dengan kolom ke-1 dan jaraknya normal seperti field lain. */
+.field-row-swap { align-items: start; }
+.field-row-swap > .field-collapsible { white-space: nowrap; }
+.field-row-swap .field-label { overflow: hidden; text-overflow: ellipsis; }
+.field-row-swap .lock-swap-locked .field-locked-inner { min-width: 0; }
+.field-row-swap .lock-swap-locked .field-locked-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.field-row-swap.is-instant,
+.field-row-swap.is-instant > .field-collapsible { transition: none !important; }
+
+/* Layar sempit: .field-row sudah 1 kolom (style.css), kolom ke-2 cukup disembunyikan. */
+@media (max-width: 480px) {
+    .field-row-swap,
+    .field-row-swap.is-solo { grid-template-columns: 1fr; column-gap: 14px; }
+    .field-row-swap.is-solo > .field-collapsible { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .field-row-swap, .field-row-swap > .field-collapsible,
+    .field-row-swap.is-solo > .field-collapsible { transition: none; }
+}

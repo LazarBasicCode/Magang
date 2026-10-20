@@ -22,7 +22,7 @@ $angkatan = $item->role === 'mahasiswa' ? optional($item->mahasiswa)->angkatan :
     <td><span class="nim-code">USR-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</span></td>
     <td>
         <div class="student-cell">
-            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+            @include('partials.avatar', ['initials' => $initials, 'color' => $avatarColor, 'url' => $item->avatar_url])
             <div class="student-name">
                 <div class="name-line">
                     <span class="name">{{ $item->name }}</span>

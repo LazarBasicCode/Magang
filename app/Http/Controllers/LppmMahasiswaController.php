@@ -490,6 +490,7 @@ class LppmMahasiswaController extends Controller
             'mahasiswa_id'   => $item->mahasiswa_id,
             'nim'            => $item->mahasiswa->nim ?? '-',
             'nama'           => optional($item->mahasiswa->user)->name ?? 'Tanpa Nama',
+            'avatar_url'      => optional(optional($item->mahasiswa)->user)->avatar_url,
             'jenis'          => $item->jenis,
             'judul'          => $item->judul,
             'penulis'        => $item->penulis,

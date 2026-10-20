@@ -485,6 +485,7 @@ class LppmDosenController extends Controller
             'dosen_id'       => $item->dosen_id,
             'nidn'           => $item->dosen->nidn ?? '-',
             'nama'           => optional($item->dosen->user)->name ?? 'Tanpa Nama',
+            'avatar_url'      => optional(optional($item->dosen)->user)->avatar_url,
             'jenis'          => $item->jenis,
             'judul'          => $item->judul,
             'penulis'        => $item->penulis,

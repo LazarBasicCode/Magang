@@ -14,6 +14,13 @@ return [
     |
     */
 
+    // Foto profil: gambar dikecilkan di browser, lalu diteruskan Laravel ke ImgBB (https://api.imgbb.com/) untuk dijadikan link.
+    // Kunci API disimpan di .env (AVATAR_IMGBB_KEY) dan tidak pernah dikirim ke browser. Lihat AvatarController.
+    'avatar' => [
+        'key' => env('AVATAR_IMGBB_KEY'),
+        'url' => env('AVATAR_IMGBB_URL', 'https://api.imgbb.com/1/upload'),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

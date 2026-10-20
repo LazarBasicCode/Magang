@@ -1,0 +1,108 @@
+/* =====================================================================
+   FOTO PROFIL — foto di dalam avatar + modal unggah (public/js/avatar-upload.js)
+   ===================================================================== */
+
+/* ---------- Foto di dalam semua avatar bulat ---------- */
+.avatar, .header-profile-avatar, .header-profile-panel-avatar, .pf-avatar { position: relative; overflow: hidden; }
+.av-img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    background: var(--card, #fff);          /* menutup inisial di bawahnya begitu foto termuat */
+    animation: av-fade .25s ease both;
+}
+@keyframes av-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Avatar yang bisa diklik untuk ganti foto ---------- */
+.av-edit { position: relative; display: inline-grid; cursor: pointer; border-radius: 50%; outline: none; }
+.av-edit:focus-visible { box-shadow: 0 0 0 3px var(--primary-soft, #e2e2fd), 0 0 0 5px var(--primary, #5b5fef); }
+.av-edit-badge {
+    position: absolute; right: -2px; bottom: -2px;
+    display: grid; place-items: center;
+    width: 22px; height: 22px; font-size: 14px;
+    border-radius: 50%;
+    background: var(--primary, #5b5fef); color: #fff;
+    border: 2px solid var(--card, #fff);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+    transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+    pointer-events: none;
+}
+.av-edit:hover .av-edit-badge, .av-edit:focus-visible .av-edit-badge { transform: scale(1.18) rotate(-8deg); }
+.av-edit.is-big .av-edit-badge { width: 34px; height: 34px; font-size: 19px; right: 4px; bottom: 4px; border-width: 3px; }
+
+/* ---------- Modal ---------- */
+.av-modal { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; }
+.av-modal[hidden] { display: none; }
+.av-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, .5); backdrop-filter: blur(6px); animation: av-fade .2s ease both; }
+.av-card {
+    position: relative; width: min(440px, 100%);
+    padding: 26px 26px 20px;
+    border-radius: 20px;
+    background: var(--card, #fff); color: var(--ink, #12204a);
+    box-shadow: 0 24px 60px rgba(10, 18, 45, .35);
+    animation: av-pop .3s cubic-bezier(.34, 1.4, .64, 1) both;
+}
+@keyframes av-pop { from { opacity: 0; transform: translateY(14px) scale(.95); } to { opacity: 1; transform: none; } }
+.av-x {
+    position: absolute; top: 12px; right: 12px; width: 34px; height: 34px;
+    display: grid; place-items: center; border: 0; border-radius: 50%;
+    background: transparent; color: var(--ink-muted, #6b7280); cursor: pointer;
+}
+.av-x:hover { background: var(--primary-soft, #e2e2fd); color: var(--ink, #12204a); }
+.av-title { margin: 0 0 4px; font-size: 18px; font-weight: 700; }
+.av-sub { margin: 0 0 18px; font-size: 13px; color: var(--ink-muted, #6b7280); }
+
+.av-stage { display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: center; }
+.av-preview {
+    position: relative; width: 112px; height: 112px; border-radius: 50%; overflow: hidden;
+    display: grid; place-items: center;
+    font-size: 36px; font-weight: 700;
+    box-shadow: 0 0 0 4px var(--primary-soft, #e2e2fd), 0 8px 20px rgba(0, 0, 0, .15);
+}
+.av-preview .avatar, .av-preview .header-profile-avatar, .av-preview .header-profile-panel-avatar, .av-preview .pf-avatar {
+    width: 100%; height: 100%; border-radius: 50%; font-size: inherit;
+}
+.av-preview img.av-img { animation: av-fade .3s ease both; }
+
+.av-drop {
+    display: grid; gap: 2px; justify-items: center; text-align: center;
+    padding: 18px 12px; border: 2px dashed var(--border-strong, #ced3e4); border-radius: 14px;
+    font-size: 12.5px; color: var(--ink-muted, #6b7280); cursor: pointer;
+    transition: border-color .15s, background-color .15s, transform .15s;
+}
+.av-drop strong { color: var(--ink, #12204a); font-size: 13.5px; }
+.av-drop small { margin-top: 4px; font-size: 11px; opacity: .8; }
+.av-drop-icon { font-size: 30px; color: var(--primary, #5b5fef); transition: transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+.av-drop:hover, .av-drop:focus-visible, .av-drop.is-over { border-color: var(--primary, #5b5fef); background: var(--primary-soft, #e2e2fd); outline: none; }
+.av-drop.is-over { transform: scale(1.02); }
+.av-drop.is-over .av-drop-icon, .av-drop:hover .av-drop-icon { transform: translateY(-3px) scale(1.12); }
+
+.av-info { margin: 14px 0 0; font-size: 12px; color: var(--ink-muted, #6b7280); }
+.av-error { margin: 12px 0 0; padding: 9px 12px; border-radius: 10px; font-size: 13px; background: var(--danger-bg, #ffd9d0); color: var(--danger, #d12c0f); }
+
+.av-actions { display: flex; align-items: center; gap: 8px; margin-top: 20px; }
+.av-spacer { flex: 1; }
+.av-btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px;
+    border: 1px solid var(--border-strong, #ced3e4); border-radius: 10px;
+    background: var(--card, #fff); color: var(--ink, #12204a);
+    font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: background-color .15s, border-color .15s, color .15s, transform .1s, opacity .15s;
+}
+.av-btn .material-symbols-outlined { font-size: 18px; }
+.av-btn:hover { background: var(--primary-soft, #e2e2fd); }
+.av-btn:active { transform: translateY(1px); }
+.av-btn.is-primary { background: var(--primary, #5b5fef); border-color: var(--primary, #5b5fef); color: #fff; }
+.av-btn.is-primary:hover { background: var(--primary-dark, #4547d1); }
+.av-btn.is-danger { color: var(--danger, #d12c0f); border-color: var(--danger-border, #ffab97); }
+.av-btn.is-danger:hover { background: var(--danger, #d12c0f); border-color: var(--danger, #d12c0f); color: #fff; }
+.av-btn:disabled { opacity: .5; cursor: not-allowed; pointer-events: none; }
+
+.av-spin { display: none; width: 14px; height: 14px; border: 2px solid rgba(255, 255, 255, .45); border-top-color: #fff; border-radius: 50%; animation: av-rot .7s linear infinite; }
+.av-card.is-busy .av-spin { display: inline-block; }
+.av-card.is-busy .av-btn:not(.is-primary), .av-card.is-busy .av-x, .av-card.is-busy .av-drop { pointer-events: none; opacity: .55; }
+@keyframes av-rot { to { transform: rotate(360deg); } }
+
+@media (max-width: 480px) { .av-stage { grid-template-columns: 1fr; justify-items: center; } .av-drop { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .av-card, .av-backdrop, .av-img, .av-edit-badge, .av-drop, .av-drop-icon { animation: none !important; transition: none !important; } }

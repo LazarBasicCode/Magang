@@ -95,7 +95,7 @@ $__roleLabel = !empty($isProfil) ? ucfirst($__user->role) : $__user->accessLabel
                 <div class="header-profile-dropdown" id="profileDropdown">
                     <button type="button" class="header-profile-trigger" id="profileToggleBtn"
                         aria-haspopup="true" aria-expanded="false">
-                        <div class="header-profile-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                        @include('partials.avatar', ['class' => 'header-profile-avatar', 'initials' => $__initials, 'color' => $__avatarColor, 'url' => $__user->avatar_url, 'self' => true])
                         <div class="header-profile-text">
                             <span class="header-profile-name">{{ $__user->name }}</span>
                             <span class="header-profile-role">{{ $__roleLabel }}</span>
@@ -107,7 +107,11 @@ $__roleLabel = !empty($isProfil) ? ucfirst($__user->role) : $__user->accessLabel
                         {{-- ---- View 1: menu utama ---- --}}
                         <div class="header-profile-view is-active" id="profileViewMain">
                             <div class="header-profile-panel-header">
-                                <div class="header-profile-panel-avatar {{ $__avatarColor }}">{{ $__initials }}</div>
+                                {{-- Klik avatar = ganti foto profil (modal: partials/avatar-modal.blade.php) --}}
+                                <span class="av-edit" data-avatar-edit role="button" tabindex="0" title="Ganti foto profil" aria-label="Ganti foto profil">
+                                    @include('partials.avatar', ['class' => 'header-profile-panel-avatar', 'initials' => $__initials, 'color' => $__avatarColor, 'url' => $__user->avatar_url, 'self' => true])
+                                    <span class="av-edit-badge material-symbols-outlined" aria-hidden="true">photo_camera</span>
+                                </span>
                                 <div>
                                     <span class="header-profile-panel-name">{{ $__user->name }}</span>
                                     <span class="header-profile-panel-role">{{ $__roleLabel }}</span>
@@ -120,6 +124,10 @@ $__roleLabel = !empty($isProfil) ? ucfirst($__user->role) : $__user->accessLabel
     <span>Profil Saya</span>
 </a>
 @endif
+<button type="button" class="header-profile-menu-item" data-avatar-edit>
+                                    <span class="material-symbols-outlined">add_a_photo</span>
+                                    <span>Ganti Foto Profil</span>
+                                </button>
 <button type="button" class="header-profile-menu-item" id="btnShowAccessInfo">
                                     <span class="material-symbols-outlined">shield_person</span>
                                     <span>Informasi Akses</span>
@@ -170,3 +178,6 @@ $__roleLabel = !empty($isProfil) ? ucfirst($__user->role) : $__user->accessLabel
         </div>
     </div>
 </header>
+
+
+@include('partials.avatar-modal')

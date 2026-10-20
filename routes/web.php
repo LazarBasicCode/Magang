@@ -19,6 +19,7 @@ use App\Http\Controllers\AppLogController;
 use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\ProfilController;
 
 // ---- Route khusus TAMU (belum login) ----
@@ -58,6 +59,9 @@ Route::middleware(['auth'])->group(function () {
     // ---- Pengaturan akun sendiri (menu profil kanan atas) ----
     Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
     Route::post('/account/recovery-email', [AccountController::class, 'updateRecoveryEmail'])->name('account.recovery-email');
+    // Foto profil: unggah (dibatasi 10x/menit agar kuota layanan gambar tidak habis) & hapus.
+    Route::post('/account/avatar', [AvatarController::class, 'update'])->middleware('throttle:10,1')->name('account.avatar');
+    Route::delete('/account/avatar', [AvatarController::class, 'destroy'])->name('account.avatar.remove');
 
     // ---- Dashboard ----
     // Terbuka untuk semua user yang login (tidak diatur lewat Hak Akses).

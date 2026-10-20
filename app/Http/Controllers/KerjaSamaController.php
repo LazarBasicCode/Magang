@@ -496,6 +496,7 @@ class KerjaSamaController extends Controller
             'user_id'          => $item->user_id,
             'nim_nidn'         => $item->user->nim_nidn ?? '-',
             'nama'             => $item->user->name ?? 'Tanpa Nama',
+            'avatar_url'      => optional($item->user)->avatar_url,
             'tipe_user'        => $item->tipe_user,
             'jenis'            => $item->jenis,
             'jenis_lainnya'    => $item->jenis_lainnya,

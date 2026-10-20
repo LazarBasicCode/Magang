@@ -418,6 +418,7 @@ class LppmRekognisiController extends Controller
             'tipe_user'       => $item->tipe_user,
             'nim_nidn'        => optional($item->user)->nim_nidn ?? '-',
             'nama'            => optional($item->user)->name ?? 'Tanpa Nama',
+            'avatar_url'      => optional($item->user)->avatar_url,
             'jenis'           => $item->jenis,
             'mitra'           => $item->mitra,
             'jabatan'         => $item->jabatan,          // nilai tersimpan (dipakai form edit untuk memulihkan isian)

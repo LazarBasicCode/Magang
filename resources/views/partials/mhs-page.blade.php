@@ -20,7 +20,7 @@
         </div>
 
         @unless($canAdd)
-        <div class="modal-error" style="margin-bottom:14px">Profil mahasiswa belum terhubung ke akunmu. Hubungi admin prodi.</div>
+        <div class="modal-error">Profil mahasiswa belum terhubung ke akunmu. Hubungi admin prodi.</div>
         @endunless
 
         {{-- Kartu ringkasan = filter status --}}

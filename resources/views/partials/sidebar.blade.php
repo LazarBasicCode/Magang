@@ -39,8 +39,8 @@
                 <span>Dashboard</span>
             </a>
 
-            {{-- Persetujuan pengajuan mahasiswa: hanya dosen (wali) & superadmin. Lencana = jumlah yang menunggu tindakan. --}}
-            @if(in_array($__user->role, ['dosen', 'superadmin'], true))
+            {{-- Persetujuan pengajuan mahasiswa: hanya Prodi (superadmin). Lencana = jumlah yang menunggu tindakan. --}}
+            @if(in_array($__user->role, \App\Support\Approval::PRODI_ROLES, true))
             @php $__approvalPending = \App\Support\Approval::pendingCount($__user); @endphp
             <a href="{{ url('/persetujuan') }}"@if($navActive('persetujuan')) aria-current="page" class="nav-link is-active"@else class="nav-link"@endif>
                 <span class="material-symbols-outlined">fact_check</span>

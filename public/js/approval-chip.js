@@ -8,7 +8,7 @@ window.apprChip = function (item) {
     if (!status || status === 'disetujui') return '';
 
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const icons = { menunggu_dosen: 'hourglass_top', menunggu_superadmin: 'pending_actions', ditolak: 'cancel' };
+    const icons = { diajukan: 'send', menunggu_prodi: 'hourglass_top', ditolak: 'cancel' };
 
     let html = '<span class="appr-chip is-' + esc(status) + '" title="' + esc(item.approval_note) + '">'
         + '<span class="material-symbols-outlined">' + (icons[status] || 'info') + '</span>' + esc(item.approval_label) + '</span>';

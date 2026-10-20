@@ -54,6 +54,7 @@ class UserNotification extends Model
             'approval_request'  => ['color' => 'warning', 'icon' => 'fact_check'],
             'approval_approved' => ['color' => 'success', 'icon' => 'task_alt'],
             'approval_rejected' => ['color' => 'danger', 'icon' => 'cancel'],
+            'approval_comment'  => ['color' => 'info', 'icon' => 'chat'],
             'concurrent_login'  => ['color' => 'danger', 'icon' => 'gpp_maybe'],
             'account_deleted'   => ['color' => 'danger', 'icon' => 'person_remove'],
             'password_changed'  => ['color' => 'warning', 'icon' => 'lock_reset'],

@@ -143,6 +143,7 @@
 
         MhsView.init({
             endpoint: '/kemahasiswaan',
+            approvalMenu: 'kemahasiswaan',
             initial: @json($initial),
             addTitle: 'Tambah Prestasi',
             editTitle: 'Edit Prestasi',

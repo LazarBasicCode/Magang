@@ -22,7 +22,7 @@ trait MahasiswaView
     {
         match ($status) {
             'disetujui' => $query->where('approval_status', 'disetujui'),
-            'diproses'  => $query->whereIn('approval_status', ['menunggu_dosen', 'menunggu_superadmin']),
+            'diproses'  => $query->whereIn('approval_status', ['diajukan', 'menunggu_prodi']),
             'ditolak'   => $query->where('approval_status', 'ditolak'),
             default     => null,
         };
@@ -34,7 +34,7 @@ trait MahasiswaView
         $by = $query->selectRaw("COALESCE(approval_status, 'disetujui') as s, COUNT(*) as c")
             ->groupBy('s')->pluck('c', 's');
 
-        $diproses = (int) ($by['menunggu_dosen'] ?? 0) + (int) ($by['menunggu_superadmin'] ?? 0);
+        $diproses = (int) ($by['diajukan'] ?? 0) + (int) ($by['menunggu_prodi'] ?? 0);
 
         return [
             'total'     => (int) $by->sum(),

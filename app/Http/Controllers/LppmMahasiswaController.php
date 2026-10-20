@@ -118,7 +118,7 @@ class LppmMahasiswaController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnMahasiswa($request, $data);
 
-        // Mahasiswa yang mengisi sendiri -> masuk antrean persetujuan dosen wali (lihat App\Support\Approval).
+        // Mahasiswa yang mengisi sendiri -> masuk antrean verifikasi Prodi (lihat App\Support\Approval).
         $data += Approval::attributesFor($request->user(), Mahasiswa::find($data['mahasiswa_id']), true);
 
         $item = LppmMahasiswa::create($data)->load('mahasiswa.user');

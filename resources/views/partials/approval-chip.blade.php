@@ -5,7 +5,7 @@
 --}}
 @php
     $apprStatus = $item->approval_status ?? 'disetujui';
-    $apprIcons = ['menunggu_dosen' => 'hourglass_top', 'menunggu_superadmin' => 'pending_actions', 'ditolak' => 'cancel'];
+    $apprIcons = ['diajukan' => 'send', 'menunggu_prodi' => 'hourglass_top', 'ditolak' => 'cancel'];
 @endphp
 @if($apprStatus !== 'disetujui')
     <span class="appr-chip is-{{ $apprStatus }}" title="{{ $item->approval_note }}"><span class="material-symbols-outlined">{{ $apprIcons[$apprStatus] ?? 'info' }}</span>{{ $item->approvalLabel() }}</span>

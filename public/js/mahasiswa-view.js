@@ -13,21 +13,29 @@
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const $ = (id) => document.getElementById(id);
 
-    // Langkah verifikasi yang ditampilkan ke mahasiswa.
-    const STEPS = ['Dikirim', 'Dosen Wali', 'Superadmin', 'Disetujui'];
+    // Langkah verifikasi yang ditampilkan ke mahasiswa: Diajukan -> Prodi -> Terverifikasi.
+    const STEPS = ['Diajukan', 'Prodi', 'Terverifikasi'];
 
     // status server -> { states tiap langkah, tone teks }
     function progressOf(status) {
         switch (status) {
-            case 'menunggu_dosen':      return { states: ['done', 'current', 'todo', 'todo'], tone: 'wait' };
-            case 'menunggu_superadmin': return { states: ['done', 'done', 'current', 'todo'], tone: 'wait' };
-            case 'ditolak':             return { states: ['done', 'todo', 'todo', 'reject'], tone: 'bad' };
-            default:                    return { states: ['done', 'done', 'done', 'done'], tone: 'ok' };
+            case 'diajukan':       return { states: ['current', 'todo', 'todo'], tone: 'wait' };
+            case 'menunggu_prodi': return { states: ['done', 'current', 'todo'], tone: 'wait' };
+            case 'ditolak':        return { states: ['done', 'done', 'reject'], tone: 'bad' };
+            default:               return { states: ['done', 'done', 'done'], tone: 'ok' };
         }
     }
 
+    // Kolom status di tabel: terverifikasi / ditolak = ikon + teks saja; diproses = titik progres.
     function miniProgress(item) {
-        const p = progressOf(item.approval_status);
+        const st = item.approval_status || 'disetujui';
+        if (st === 'disetujui') {
+            return '<span class="mv-state is-ok"><span class="material-symbols-outlined">check_circle</span>Terverifikasi</span>';
+        }
+        if (st === 'ditolak') {
+            return '<span class="mv-state is-bad"><span class="material-symbols-outlined">cancel</span>Ditolak</span>';
+        }
+        const p = progressOf(st);
         const dots = p.states.map((s) => `<span class="mv-dot ${s === 'done' ? 'is-done' : s === 'current' ? 'is-current' : ''}"></span>`).join('');
         return `<div class="mv-prog-mini"><div class="mv-dots">${dots}</div><span class="mv-prog-text is-${p.tone}">${esc(item.approval_label)}</span></div>`;
     }
@@ -154,6 +162,22 @@
                 <p class="mv-hint">${hint}</p>`;
             $('mvDetailEditLabel').textContent = item.approval_status === 'ditolak' ? 'Perbaiki' : 'Edit';
             detailModal.open();
+            loadComments(item);
+        }
+
+        // Komentar dari Prodi (hanya baca). Perlu cfg.approvalMenu = slug menu di Approval::menus().
+        async function loadComments(item) {
+            if (!cfg.approvalMenu) return;
+            try {
+                const res = await fetch(`/persetujuan/${cfg.approvalMenu}/${item.id}/komentar`, { headers: { 'Accept': 'application/json' } });
+                const json = await res.json();
+                if (!res.ok || !json.success || !json.data.length || state.current !== item) return;
+                $('mvDetailBody').insertAdjacentHTML('beforeend', `
+                    <div class="mv-comments">
+                        <h5 class="mv-comments-title"><span class="material-symbols-outlined">chat</span>Komentar Prodi (${json.data.length})</h5>
+                        ${json.data.map((c) => `<div class="mv-comment"><div class="mv-comment-meta"><b>${esc(c.author)}</b><time>${esc(c.at)}</time></div><p>${esc(c.body)}</p></div>`).join('')}
+                    </div>`);
+            } catch (_) { /* komentar bersifat tambahan; abaikan bila gagal */ }
         }
 
         list.addEventListener('click', (e) => {

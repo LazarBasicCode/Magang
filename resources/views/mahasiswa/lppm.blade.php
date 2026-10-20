@@ -153,6 +153,7 @@
 
         MhsView.init({
             endpoint: '/lppm/mahasiswa',
+            approvalMenu: 'lppm-mahasiswa',
             initial: @json($initial),
             addTitle: 'Tambah Publikasi',
             editTitle: 'Edit Publikasi',

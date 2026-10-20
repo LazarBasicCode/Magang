@@ -39,6 +39,7 @@
         approval_request: 'Persetujuan',
         approval_approved: 'Persetujuan',
         approval_rejected: 'Persetujuan',
+        approval_comment: 'Persetujuan',
         concurrent_login: 'Keamanan Akun',
         password_changed: 'Keamanan Akun',
         account_deleted: 'Akun Dihapus',

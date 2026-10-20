@@ -49,8 +49,15 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::middleware(['auth'])->group(function () {
 
     // ---- Persetujuan pengajuan mahasiswa (mahasiswa -> dosen wali -> superadmin) ----
-    // Tidak lewat menu.access: aksesnya ditentukan role (dosen wali / superadmin) di ApprovalController.
+    // Tidak lewat menu.access: aksesnya ditentukan role di ApprovalController (Prodi; komentar juga bisa dibaca mahasiswa pemilik).
     Route::get('/persetujuan', [ApprovalController::class, 'index'])->name('persetujuan.index');
+    Route::post('/persetujuan/massal', [ApprovalController::class, 'bulk'])->name('persetujuan.massal');
+    Route::get('/persetujuan/{menu}/{id}/komentar', [ApprovalController::class, 'comments'])
+        ->whereNumber('id')->name('persetujuan.komentar');
+    Route::post('/persetujuan/{menu}/{id}/komentar', [ApprovalController::class, 'addComment'])
+        ->whereNumber('id')->name('persetujuan.komentar.tambah');
+    Route::post('/persetujuan/{menu}/{id}/mulai', [ApprovalController::class, 'start'])
+        ->whereNumber('id')->name('persetujuan.mulai');
     Route::post('/persetujuan/{menu}/{id}/{aksi}', [ApprovalController::class, 'act'])
         ->whereNumber('id')->name('persetujuan.aksi');
     Route::get('/persetujuan/{menu}/{id}/riwayat', [ApprovalController::class, 'history'])

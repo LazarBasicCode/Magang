@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\ApprovalComment;
 use App\Models\ApprovalLog;
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
@@ -17,29 +18,35 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Alur persetujuan pengajuan MAHASISWA:
+ * Alur verifikasi pengajuan MAHASISWA (tanpa dosen):
  *
- *   mahasiswa mengisi  ->  menunggu_dosen  --(dosen wali: teruskan)-->  menunggu_superadmin  --(superadmin: setujui)-->  disetujui
- *                              |                                              |
- *                              +--(dosen wali / superadmin: tolak + catatan)--+--> ditolak --(mahasiswa edit)--> menunggu_dosen
+ *   mahasiswa mengirim -> Diajukan (diajukan)
+ *   Prodi membuka pengajuan (modal Periksa) -> Diproses Prodi (menunggu_prodi)  [otomatis, sekali]
+ *   Prodi memutuskan  -> Terverifikasi (disetujui)  |  Ditolak (ditolak, wajib catatan)
+ *   Ditolak --(mahasiswa edit & simpan)--> Diajukan lagi
  *
+ * - "Prodi" = superadmin (admin prodi). Ganti PRODI_ROLES bila peran lain ikut memverifikasi.
  * - Data yang diisi admin / superadmin / dosen langsung 'disetujui'.
- * - Mahasiswa tanpa dosen wali melewati langkah dosen (langsung menunggu_superadmin).
- * - Superadmin boleh memutuskan di kedua tahap (mis. dosen wali tidak aktif).
- * - Hanya 'disetujui' yang dihitung di dashboard, laporan & cetak (scope ->approved()).
+ * - Nilai DB 'disetujui' tetap dipakai (label tampilan: "Terverifikasi") supaya scope ->approved(),
+ *   dashboard, laporan & cetak tidak perlu diubah.
  */
 class Approval
 {
-    public const MENUNGGU_DOSEN = 'menunggu_dosen';
-    public const MENUNGGU_SUPERADMIN = 'menunggu_superadmin';
+    public const DIAJUKAN = 'diajukan';
+    public const MENUNGGU_PRODI = 'menunggu_prodi';
     public const DISETUJUI = 'disetujui';
     public const DITOLAK = 'ditolak';
 
+    /** Peran yang bertindak sebagai "Prodi" (memverifikasi pengajuan). */
+    public const PRODI_ROLES = ['superadmin'];
+
+    public const PER_PAGE = 15;
+
     public const STATUS = [
-        self::MENUNGGU_DOSEN      => ['label' => 'Menunggu Dosen', 'badge' => 'badge-warning', 'icon' => 'hourglass_top'],
-        self::MENUNGGU_SUPERADMIN => ['label' => 'Menunggu Superadmin', 'badge' => 'badge-info', 'icon' => 'pending_actions'],
-        self::DISETUJUI           => ['label' => 'Disetujui', 'badge' => 'badge-success', 'icon' => 'task_alt'],
-        self::DITOLAK             => ['label' => 'Ditolak', 'badge' => 'badge-danger', 'icon' => 'cancel'],
+        self::DIAJUKAN       => ['label' => 'Diajukan', 'badge' => 'badge-info', 'icon' => 'send'],
+        self::MENUNGGU_PRODI => ['label' => 'Diproses Prodi', 'badge' => 'badge-warning', 'icon' => 'hourglass_top'],
+        self::DISETUJUI      => ['label' => 'Terverifikasi', 'badge' => 'badge-success', 'icon' => 'check_circle'],
+        self::DITOLAK        => ['label' => 'Ditolak', 'badge' => 'badge-danger', 'icon' => 'cancel'],
     ];
 
     /** @var array<int,int>|null cache jumlah antrean per user dalam satu request */
@@ -70,7 +77,6 @@ class Approval
                     'Tingkat' => $pretty($i->tingkat),
                     'Tahun'   => $i->tahun,
                 ],
-                'scope'     => fn (Builder $q, int $dosenId) => $q->whereHas('mahasiswa', fn ($m) => $m->where('dosen_wali_id', $dosenId)),
             ],
             'lppm-mahasiswa' => [
                 'model'     => LppmMahasiswa::class,
@@ -88,7 +94,6 @@ class Approval
                     'Tahun'      => $i->tahun,
                     'Link DOI'   => $i->link_doi,
                 ], fn ($v) => $v !== null && $v !== ''),
-                'scope'     => fn (Builder $q, int $dosenId) => $q->whereHas('mahasiswa', fn ($m) => $m->where('dosen_wali_id', $dosenId)),
             ],
             'rekognisi' => [
                 'model'     => Rekognisi::class,
@@ -105,8 +110,6 @@ class Approval
                     'Jabatan' => $i->jabatan,
                     'Periode' => optional($i->tanggal_mulai)->format('d/m/Y') . ' – ' . optional($i->tanggal_selesai)->format('d/m/Y'),
                 ], fn ($v) => $v !== null && $v !== ''),
-                'scope'     => fn (Builder $q, int $dosenId) => $q->where('tipe_user', 'mahasiswa')
-                    ->whereHas('user.mahasiswa', fn ($m) => $m->where('dosen_wali_id', $dosenId)),
             ],
             'kerja-sama' => [
                 'model'     => KerjaSama::class,
@@ -123,8 +126,6 @@ class Approval
                     'Mitra'   => $i->mitra,
                     'Periode' => optional($i->tanggal_mulai)->format('d/m/Y') . ' – ' . optional($i->tanggal_selesai)->format('d/m/Y'),
                 ], fn ($v) => $v !== null && $v !== ''),
-                'scope'     => fn (Builder $q, int $dosenId) => $q->where('tipe_user', 'mahasiswa')
-                    ->whereHas('user.mahasiswa', fn ($m) => $m->where('dosen_wali_id', $dosenId)),
             ],
         ];
     }
@@ -142,13 +143,13 @@ class Approval
     // =====================================================================
 
     /** Status awal pengajuan: mahasiswa -> antre; selain mahasiswa -> langsung disetujui. */
-    public static function initialStatus(User $actor, ?Mahasiswa $mahasiswa): string
+    public static function initialStatus(User $actor, ?Mahasiswa $mahasiswa = null): string
     {
         if ($actor->role !== 'mahasiswa') {
             return self::DISETUJUI;
         }
 
-        return $mahasiswa?->dosen_wali_id ? self::MENUNGGU_DOSEN : self::MENUNGGU_SUPERADMIN;
+        return self::DIAJUKAN;
     }
 
     /** Atribut yang ditambahkan ke data create/update. Kosong bila pelaku bukan mahasiswa (status tidak disentuh saat edit). */
@@ -183,7 +184,7 @@ class Approval
         self::log($menu, $item, $isResubmit ? 'diajukan_ulang' : 'diajukan', $previousStatus, $status, $actor, null);
 
         $verb = $isResubmit ? 'mengajukan ulang' : 'mengajukan';
-        $desc = "{$actor->name} {$verb} {$cfg['label']}: \"{$title}\". Menunggu keputusan Anda.";
+        $desc = "{$actor->name} {$verb} {$cfg['label']}: \"{$title}\". Menunggu verifikasi Prodi.";
 
         foreach (self::recipientsFor($item, $cfg, $status) as $userId) {
             UserNotification::send($userId, 'approval_request', [
@@ -219,48 +220,163 @@ class Approval
                 throw ValidationException::withMessages(['note' => 'Alasan penolakan wajib diisi (minimal 5 karakter) supaya mahasiswa tahu apa yang perlu diperbaiki.']);
             }
 
+            if ($aksi === 'batal' && !ApprovalLog::where('menu', $menu)->where('item_id', $item->getKey())->whereIn('action', ['disetujui', 'ditolak'])->exists()) {
+                throw ValidationException::withMessages(['aksi' => 'Data ini tidak melewati alur persetujuan, jadi verifikasinya tidak bisa dibatalkan di sini.']);
+            }
+
             $to = match ($aksi) {
-                'teruskan' => self::MENUNGGU_SUPERADMIN,
-                'setujui'  => self::DISETUJUI,
-                'tolak'    => self::DITOLAK,
+                'setujui' => self::DISETUJUI,
+                'tolak'   => self::DITOLAK,
+                'batal'   => self::MENUNGGU_PRODI, // kembali ke antrean Prodi
             };
 
             $item->forceFill([
                 'approval_status' => $to,
-                'approval_note'   => $note ?: null,
+                'approval_note'   => $aksi === 'batal' ? null : ($note ?: null),
             ])->save();
 
-            $action = ['teruskan' => 'diteruskan', 'setujui' => 'disetujui', 'tolak' => 'ditolak'][$aksi];
+            $action = ['setujui' => 'disetujui', 'tolak' => 'ditolak', 'batal' => 'dibatalkan'][$aksi];
             self::log($menu, $item, $action, $from, $to, $actor, $note);
             self::notifyAfterAction($menu, $item, $cfg, $actor, $aksi, $note);
             unset(self::$pendingCache[$actor->id]);
 
             return [$to, [
-                'teruskan' => 'Pengajuan diteruskan ke Superadmin.',
-                'setujui'  => 'Pengajuan disetujui.',
+                'setujui'  => 'Pengajuan diverifikasi.',
                 'tolak'    => 'Pengajuan ditolak dan mahasiswa diberi tahu.',
+                'batal'    => 'Verifikasi dibatalkan. Pengajuan kembali ke antrean Prodi.',
             ][$aksi]];
+        });
+    }
+
+    /**
+     * Verifikasi banyak pengajuan sekaligus. Tiap item diproses sendiri (satu gagal tidak menggagalkan yang lain).
+     *
+     * @param  array<int,array{menu:string,id:int}>  $items
+     * @return array{ok:int,failed:int}
+     */
+    public static function bulkApprove(User $actor, array $items, ?string $note): array
+    {
+        $ok = 0;
+        $failed = 0;
+        foreach (array_slice($items, 0, 100) as $it) {
+            try {
+                self::act($actor, (string) ($it['menu'] ?? ''), (int) ($it['id'] ?? 0), 'setujui', $note);
+                $ok++;
+            } catch (\Throwable $e) {
+                $failed++;
+            }
+        }
+
+        return ['ok' => $ok, 'failed' => $failed];
+    }
+
+    // =====================================================================
+    // Komentar
+    // =====================================================================
+
+    /** Boleh melihat komentar: Prodi, atau mahasiswa pemilik pengajuan. */
+    public static function canViewComments(User $user, string $menu, int $id): bool
+    {
+        if (in_array($user->role, self::PRODI_ROLES, true)) {
+            return true;
+        }
+        $cfg = self::config($menu);
+        $item = $cfg['model']::with($cfg['with'])->find($id);
+
+        return $item && (int) ($cfg['mahasiswa']($item)?->user_id) === $user->id;
+    }
+
+    /** @return Collection<int,array<string,mixed>> */
+    public static function comments(string $menu, int $id, User $viewer): Collection
+    {
+        return ApprovalComment::with('author:id,name,role')->where('menu', $menu)->where('item_id', $id)
+            ->orderBy('id')->get()->map(fn ($c) => self::commentRow($c, $viewer))->values();
+    }
+
+    /** Prodi menambah komentar (status apa pun). Pemilik diberi notifikasi. */
+    public static function addComment(User $actor, string $menu, int $id, string $body): array
+    {
+        abort_unless(in_array($actor->role, self::PRODI_ROLES, true), 403);
+        $cfg = self::config($menu);
+        $item = $cfg['model']::with($cfg['with'])->findOrFail($id);
+
+        $comment = ApprovalComment::create(['menu' => $menu, 'item_id' => $id, 'user_id' => $actor->id, 'body' => trim($body)]);
+        $comment->setRelation('author', $actor);
+
+        $ownerId = $cfg['mahasiswa']($item)?->user_id;
+        if ($ownerId && (int) $ownerId !== $actor->id) {
+            UserNotification::send((int) $ownerId, 'approval_comment', [
+                'title'       => 'Komentar baru dari Prodi',
+                'description' => '"' . $cfg['title']($item) . '" (' . $cfg['label'] . '): ' . mb_strimwidth(trim($body), 0, 120, '…'),
+                'data'        => ['menu' => $menu, 'item_id' => $id, 'actor_id' => $actor->id],
+            ]);
+        }
+
+        return self::commentRow($comment, $actor);
+    }
+
+    private static function commentRow(ApprovalComment $c, User $viewer): array
+    {
+        return [
+            'id'     => $c->id,
+            'body'   => $c->body,
+            'author' => $c->author?->name ?? 'Pengguna dihapus',
+            'role'   => $c->author?->role,
+            'at'     => $c->created_at?->translatedFormat('d M Y, H:i'),
+            'mine'   => (int) $c->user_id === $viewer->id,
+        ];
+    }
+
+    /**
+     * Prodi membuka pengajuan: 'diajukan' -> 'menunggu_prodi' (otomatis, hanya sekali).
+     * Status lain dibiarkan. Dipanggil saat modal Periksa dibuka.
+     *
+     * @return array{0:string,1:bool} [status sekarang, apakah baru berpindah]
+     */
+    public static function startReview(User $actor, string $menu, int $id): array
+    {
+        $cfg = self::config($menu);
+        abort_unless(in_array($actor->role, self::PRODI_ROLES, true), 403);
+
+        return DB::transaction(function () use ($actor, $menu, $cfg, $id) {
+            /** @var Model $item */
+            $item = $cfg['model']::with($cfg['with'])->lockForUpdate()->findOrFail($id);
+            $from = $item->approval_status;
+
+            if ($from !== self::DIAJUKAN) {
+                return [$from, false];
+            }
+
+            $item->forceFill(['approval_status' => self::MENUNGGU_PRODI])->save();
+            self::log($menu, $item, 'diproses', $from, self::MENUNGGU_PRODI, $actor, null);
+
+            if ($ownerId = $cfg['mahasiswa']($item)?->user_id) {
+                UserNotification::send((int) $ownerId, 'approval_request', [
+                    'title'       => 'Pengajuan sedang diperiksa Prodi',
+                    'description' => "\"" . $cfg['title']($item) . "\" ({$cfg['label']}) sedang diperiksa Prodi.",
+                    'data'        => ['menu' => $menu, 'item_id' => $item->getKey(), 'actor_id' => $actor->id],
+                ]);
+            }
+            unset(self::$pendingCache[$actor->id]);
+
+            return [self::MENUNGGU_PRODI, true];
         });
     }
 
     /** Aksi yang boleh dilakukan $actor pada $item saat ini. */
     public static function allowedActions(User $actor, Model $item, array $cfg): array
     {
-        $status = $item->approval_status;
+        $isProdi = in_array($actor->role, self::PRODI_ROLES, true);
 
-        if ($actor->role === 'superadmin') {
-            return in_array($status, [self::MENUNGGU_DOSEN, self::MENUNGGU_SUPERADMIN], true) ? ['setujui', 'tolak'] : [];
+        if (!$isProdi) {
+            return [];
         }
 
-        if ($actor->role === 'dosen' && $status === self::MENUNGGU_DOSEN) {
-            $mahasiswa = $cfg['mahasiswa']($item);
-            $dosenId = $actor->dosen?->id;
-            if ($dosenId && $mahasiswa && (int) $mahasiswa->dosen_wali_id === (int) $dosenId) {
-                return ['teruskan', 'tolak'];
-            }
-        }
-
-        return [];
+        return match ($item->approval_status) {
+            self::DIAJUKAN, self::MENUNGGU_PRODI => ['setujui', 'tolak'],
+            self::DISETUJUI                      => ['batal'], // batalkan verifikasi (hanya data yang lewat alur, dicek di act())
+            default                              => [],
+        };
     }
 
     // =====================================================================
@@ -268,77 +384,95 @@ class Approval
     // =====================================================================
 
     /**
-     * Baris antrean yang relevan untuk $user.
+     * Satu halaman daftar pengajuan untuk $user (filter + cari + urut + paginasi).
      *
-     * @param  string  $tab   'perlu' (butuh tindakan saya) | 'proses' (sedang di tahap lain) | 'riwayat' (sudah diputuskan)
-     * @return Collection<int,array<string,mixed>>
+     * @param  string  $tab  'perlu' (menunggu verifikasi Prodi) | 'riwayat' (sudah diputuskan)
+     * @return array{items:array<int,array<string,mixed>>,meta:array<string,int>}
      */
-    public static function queue(User $user, string $tab, ?string $menuFilter = null, int $limit = 200): Collection
+    public static function listing(User $user, string $tab, string $menuFilter = 'semua', ?string $tahun = null, ?string $q = null, int $page = 1, int $perPage = self::PER_PAGE): array
     {
-        $dosenId = $user->role === 'dosen' ? $user->dosen?->id : null;
-        if ($user->role === 'dosen' && !$dosenId) {
-            return collect();
+        $empty = ['items' => [], 'meta' => ['page' => 1, 'last' => 1, 'total' => 0, 'from' => 0, 'to' => 0, 'per_page' => $perPage]];
+        if (!in_array($user->role, self::PRODI_ROLES, true)) {
+            return $empty;
         }
 
-        $statuses = match (true) {
-            $tab === 'perlu' && $user->role === 'superadmin'  => [self::MENUNGGU_SUPERADMIN],
-            $tab === 'perlu'                                   => [self::MENUNGGU_DOSEN],
-            $tab === 'proses' && $user->role === 'superadmin' => [self::MENUNGGU_DOSEN],
-            $tab === 'proses'                                  => [self::MENUNGGU_SUPERADMIN],
-            default                                            => [self::DISETUJUI, self::DITOLAK],
-        };
+        $statuses = $tab === 'perlu' ? [self::DIAJUKAN, self::MENUNGGU_PRODI] : [self::DISETUJUI, self::DITOLAK];
 
         $rows = collect();
         foreach (self::menus() as $slug => $cfg) {
-            if ($menuFilter && $menuFilter !== 'semua' && $menuFilter !== $slug) {
+            if ($menuFilter !== 'semua' && $menuFilter !== $slug) {
                 continue;
             }
-
-            /** @var Builder $query */
-            $query = $cfg['model']::with($cfg['with'])->whereIn('approval_status', $statuses);
-            if ($dosenId) {
-                $cfg['scope']($query, $dosenId);
-            }
-            if ($tab === 'riwayat') {
-                // Hanya data yang benar-benar melewati alur persetujuan (punya catatan keputusan).
-                // Data lama / input admin yang otomatis 'disetujui' tidak ikut.
-                $query->whereIn(
-                    (new $cfg['model'])->getQualifiedKeyName(),
-                    ApprovalLog::where('menu', $slug)->whereIn('action', ['disetujui', 'ditolak'])->select('item_id')
-                );
-            }
-
-            foreach ($query->latest('updated_at')->limit($limit)->get() as $item) {
+            foreach (self::baseQuery($slug, $cfg, $statuses)->get() as $item) {
                 $rows->push(self::row($slug, $cfg, $item, $user));
             }
         }
 
-        return $rows->sortByDesc('updated_ts')->take($limit)->values();
+        if ($tahun && $tahun !== 'semua') {
+            $rows = $rows->filter(fn ($r) => (string) $r['tahun'] === $tahun);
+        }
+        if ($q !== null && trim($q) !== '') {
+            $needle = mb_strtolower(trim($q));
+            $rows = $rows->filter(fn ($r) => str_contains(mb_strtolower($r['name'] . ' ' . $r['nim'] . ' ' . $r['title']), $needle));
+        }
+
+        // Antrean: yang paling lama menunggu di atas. Riwayat: keputusan terbaru di atas.
+        $rows = $tab === 'perlu' ? $rows->sortBy('submitted_ts') : $rows->sortByDesc('updated_ts');
+
+        $total = $rows->count();
+        $last = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, $page), $last);
+        $items = $rows->slice(($page - 1) * $perPage, $perPage)->values();
+
+        // Jumlah komentar per pengajuan (satu query per menu)
+        foreach ($items->groupBy('menu') as $slug => $group) {
+            $counts = ApprovalComment::where('menu', $slug)->whereIn('item_id', $group->pluck('id'))
+                ->selectRaw('item_id, COUNT(*) as c')->groupBy('item_id')->pluck('c', 'item_id');
+            $items = $items->map(fn ($r) => $r['menu'] === $slug ? $r + ['comments' => (int) ($counts[$r['id']] ?? 0)] : $r);
+        }
+        $items = $items->map(fn ($r) => $r + ['comments' => 0])->values();
+
+        return [
+            'items' => $items->all(),
+            'meta'  => [
+                'page' => $page, 'last' => $last, 'total' => $total, 'per_page' => $perPage,
+                'from' => $total ? ($page - 1) * $perPage + 1 : 0,
+                'to'   => min($page * $perPage, $total),
+            ],
+        ];
+    }
+
+    /** Query dasar satu menu. Status keputusan hanya untuk data yang benar-benar melewati alur (punya log keputusan). */
+    private static function baseQuery(string $slug, array $cfg, array $statuses): Builder
+    {
+        /** @var Builder $query */
+        $query = $cfg['model']::with($cfg['with'])->whereIn('approval_status', $statuses);
+
+        if (array_intersect($statuses, [self::DISETUJUI, self::DITOLAK])) {
+            // Data lama / input admin yang otomatis 'disetujui' tidak ikut.
+            $query->where(function (Builder $w) use ($slug, $cfg, $statuses) {
+                $w->whereIn('approval_status', array_diff($statuses, [self::DISETUJUI, self::DITOLAK]))
+                    ->orWhereIn(
+                        (new $cfg['model'])->getQualifiedKeyName(),
+                        ApprovalLog::where('menu', $slug)->whereIn('action', ['disetujui', 'ditolak'])->select('item_id')
+                    );
+            });
+        }
+
+        return $query;
     }
 
     /** Jumlah pengajuan yang menunggu tindakan $user (untuk lencana di sidebar). */
     public static function pendingCount(User $user): int
     {
-        if (!in_array($user->role, ['dosen', 'superadmin'], true)) {
+        if (!in_array($user->role, self::PRODI_ROLES, true)) {
             return 0;
         }
 
-        return self::$pendingCache[$user->id] ??= (function () use ($user) {
-            $dosenId = $user->role === 'dosen' ? $user->dosen?->id : null;
-            if ($user->role === 'dosen' && !$dosenId) {
-                return 0;
-            }
-
+        return self::$pendingCache[$user->id] ??= (function () {
             $total = 0;
             foreach (self::menus() as $cfg) {
-                $query = $cfg['model']::query()->where(
-                    'approval_status',
-                    $user->role === 'superadmin' ? self::MENUNGGU_SUPERADMIN : self::MENUNGGU_DOSEN
-                );
-                if ($dosenId) {
-                    $cfg['scope']($query, $dosenId);
-                }
-                $total += $query->count();
+                $total += $cfg['model']::query()->whereIn('approval_status', [self::DIAJUKAN, self::MENUNGGU_PRODI])->count();
             }
 
             return $total;
@@ -348,10 +482,18 @@ class Approval
     /** Jumlah per status (untuk kartu ringkasan). */
     public static function counts(User $user): array
     {
-        return [
-            'perlu'   => self::queue($user, 'perlu')->count(),
-            'proses'  => self::queue($user, 'proses')->count(),
-            'riwayat' => self::queue($user, 'riwayat')->count(),
+        $c = [self::DIAJUKAN => 0, self::MENUNGGU_PRODI => 0, self::DISETUJUI => 0, self::DITOLAK => 0];
+        if (in_array($user->role, self::PRODI_ROLES, true)) {
+            foreach (self::menus() as $slug => $cfg) {
+                foreach (array_keys($c) as $st) {
+                    $c[$st] += self::baseQuery($slug, $cfg, [$st])->count();
+                }
+            }
+        }
+
+        return $c + [
+            'perlu'   => $c[self::DIAJUKAN] + $c[self::MENUNGGU_PRODI],
+            'riwayat' => $c[self::DISETUJUI] + $c[self::DITOLAK],
         ];
     }
 
@@ -385,11 +527,13 @@ class Approval
             'status_label' => self::STATUS[$status]['label'] ?? $status,
             'badge'      => self::STATUS[$status]['badge'] ?? 'badge-neutral',
             'note'       => $item->approval_note,
+            'tahun'      => $item->tahun ?? optional($item->created_at)->year,
             'submitted'  => optional($item->created_at)->translatedFormat('d M Y, H:i'),
+            'submitted_ts' => optional($item->created_at)->timestamp ?? 0,
+            'waiting'    => $item->created_at ? (int) $item->created_at->diffInDays(now(), true) : 0,
             'updated'    => optional($item->updated_at)->translatedFormat('d M Y, H:i'),
             'updated_ts' => optional($item->updated_at)->timestamp ?? 0,
             'actions'    => self::allowedActions($viewer, $item, $cfg),
-            'wali'       => $mahasiswa?->dosenWali?->user?->name,
         ];
     }
 
@@ -409,12 +553,6 @@ class Approval
     /** user_id penerima notifikasi pengajuan baru, sesuai tahap saat ini. */
     private static function recipientsFor(Model $item, array $cfg, string $status): array
     {
-        if ($status === self::MENUNGGU_DOSEN) {
-            $wali = $cfg['mahasiswa']($item)?->dosenWali?->user_id;
-
-            return $wali ? [(int) $wali] : self::superadminIds();
-        }
-
         return self::superadminIds();
     }
 
@@ -430,21 +568,15 @@ class Approval
         $base = ['menu' => $menu, 'item_id' => $item->getKey(), 'actor_id' => $actor->id];
         $by = "{$actor->name} ({$actor->role})";
 
-        if ($aksi === 'teruskan') {
-            foreach (self::superadminIds() as $id) {
-                UserNotification::send($id, 'approval_request', [
-                    'title'       => 'Pengajuan diteruskan dosen wali',
-                    'description' => "{$by} meneruskan {$cfg['label']} \"{$title}\" untuk persetujuan Anda."
-                        . ($note ? " Catatan: {$note}" : ''),
-                    'data'        => $base,
-                ]);
-            }
-            if ($ownerId) {
-                UserNotification::send($ownerId, 'approval_request', [
-                    'title'       => 'Pengajuan diteruskan ke Superadmin',
-                    'description' => "\"{$title}\" sudah diperiksa dosen wali dan kini menunggu persetujuan Superadmin.",
-                    'data'        => $base,
-                ]);
+        if ($aksi === 'batal') {
+            foreach (array_filter([$ownerId]) as $id) {
+                if ((int) $id !== $actor->id) {
+                    UserNotification::send((int) $id, 'approval_request', [
+                        'title'       => 'Verifikasi dibatalkan',
+                        'description' => "Verifikasi \"{$title}\" ({$cfg['label']}) dibatalkan oleh {$by} dan diperiksa ulang." . ($note ? " Alasan: {$note}" : ''),
+                        'data'        => $base,
+                    ]);
+                }
             }
 
             return;
@@ -453,13 +585,11 @@ class Approval
         $approved = $aksi === 'setujui';
         $type = $approved ? 'approval_approved' : 'approval_rejected';
         $text = $approved
-            ? "\"{$title}\" ({$cfg['label']}) disetujui oleh {$by} dan kini tampil di laporan."
+            ? "\"{$title}\" ({$cfg['label']}) diverifikasi oleh {$by} dan kini tampil di laporan."
             : "\"{$title}\" ({$cfg['label']}) ditolak oleh {$by}. Alasan: {$note}. Perbaiki lalu simpan ulang untuk mengajukan lagi.";
 
         $targets = array_filter(array_unique([
             $ownerId,
-            // Dosen wali ikut diberi tahu kalau keputusan diambil superadmin.
-            $actor->role === 'superadmin' ? $cfg['mahasiswa']($item)?->dosenWali?->user_id : null,
         ]));
 
         foreach ($targets as $id) {
@@ -467,7 +597,7 @@ class Approval
                 continue;
             }
             UserNotification::send((int) $id, $type, [
-                'title'       => $approved ? 'Pengajuan disetujui' : 'Pengajuan ditolak',
+                'title'       => $approved ? 'Pengajuan terverifikasi' : 'Pengajuan ditolak',
                 'description' => $text,
                 'data'        => $base,
             ]);

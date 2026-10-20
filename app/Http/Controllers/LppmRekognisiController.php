@@ -107,7 +107,7 @@ class LppmRekognisiController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
-        // Rekognisi milik mahasiswa yang diisi mahasiswa sendiri -> antrean persetujuan dosen wali.
+        // Rekognisi milik mahasiswa yang diisi mahasiswa sendiri -> antrean verifikasi Prodi.
         $owner = ($data['tipe_user'] ?? null) === 'mahasiswa' ? User::find($data['user_id'])?->mahasiswa : null;
         $data += Approval::attributesFor($request->user(), $owner, true);
 

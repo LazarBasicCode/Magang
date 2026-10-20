@@ -20,6 +20,8 @@
             } catch (e) {}
         })();
     </script>
+    <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/row-select.css') }}?v={{ @filemtime(public_path('css/row-select.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
     <title>Persetujuan &middot; SIDA</title>
@@ -46,147 +48,161 @@
         @include('partials.header', ['active' => 'persetujuan'])
 
         <main class="app-main">
-            <div class="page-wrap">
+            <div class="page-wrap" id="apprPage" data-tab="{{ $tab }}">
 
-                @php
-                    $isSuper = auth()->user()->role === 'superadmin';
-                    $tabs = [
-                        'perlu'   => ['Perlu Tindakan Saya', 'pending_actions'],
-                        'proses'  => [$isSuper ? 'Belum Diproses Dosen Wali' : 'Sudah Diteruskan', 'hourglass_top'],
-                        'riwayat' => ['Riwayat Keputusan', 'history'],
-                    ];
-                    $hints = [
-                        'perlu'   => $isSuper
-                            ? 'Pengajuan yang sudah diperiksa dosen wali. Setujui agar tampil di dashboard & laporan, atau tolak dengan alasan.'
-                            : 'Pengajuan dari mahasiswa waliku. Periksa bukti & kelengkapannya, lalu teruskan ke Superadmin atau tolak dengan alasan.',
-                        'proses'  => $isSuper
-                            ? 'Pengajuan yang masih menunggu dosen wali. Kamu tetap bisa memutuskannya langsung bila perlu (mis. dosen wali berhalangan).'
-                            : 'Pengajuan yang sudah kamu teruskan dan sedang menunggu keputusan Superadmin.',
-                        'riwayat' => 'Pengajuan yang sudah diputuskan (disetujui / ditolak).',
-                    ];
-                @endphp
-
+                <!-- PAGE TITLE -->
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Persetujuan Pengajuan</h1>
-                        <p class="page-subtitle">Alur ACC prestasi mahasiswa: mahasiswa &rarr; dosen wali &rarr; superadmin &middot; hanya data yang disetujui tampil di laporan</p>
+                        <p class="page-subtitle">Verifikasi prestasi &amp; publikasi mahasiswa &middot; diajukan &rarr; diproses Prodi &rarr; terverifikasi &middot; hanya data terverifikasi yang tampil di laporan</p>
                     </div>
                 </div>
 
+                <!-- SUMMARY STAT CARDS -->
                 <div class="stat-grid">
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">{{ $tabs['perlu'][0] }}</span>
-                            <span class="stat-value" id="cntPerlu">{{ $counts['perlu'] }}</span>
+                            <span class="stat-label">Baru Diajukan</span>
+                            <span class="stat-value" id="cntDiajukan">{{ $counts['diajukan'] }}</span>
                         </div>
-                        <div class="stat-icon warning"><span class="material-symbols-outlined">pending_actions</span></div>
+                        <div class="stat-icon primary"><span class="material-symbols-outlined">send</span></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">{{ $tabs['proses'][0] }}</span>
-                            <span class="stat-value" id="cntProses">{{ $counts['proses'] }}</span>
+                            <span class="stat-label">Sedang Diproses</span>
+                            <span class="stat-value" id="cntProses">{{ $counts['menunggu_prodi'] }}</span>
                         </div>
-                        <div class="stat-icon info"><span class="material-symbols-outlined">hourglass_top</span></div>
+                        <div class="stat-icon warning"><span class="material-symbols-outlined">hourglass_top</span></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-info">
-                            <span class="stat-label">{{ $tabs['riwayat'][0] }}</span>
-                            <span class="stat-value" id="cntRiwayat">{{ $counts['riwayat'] }}</span>
+                            <span class="stat-label">Terverifikasi</span>
+                            <span class="stat-value" id="cntOk">{{ $counts['disetujui'] }}</span>
                         </div>
                         <div class="stat-icon success"><span class="material-symbols-outlined">task_alt</span></div>
                     </div>
-                </div>
-
-                <div class="appr-tabs" style="margin-top:20px;">
-                    @foreach($tabs as $key => [$label, $icon])
-                        <a href="{{ route('persetujuan.index', ['tab' => $key, 'menu' => $menu]) }}" class="appr-tab {{ $tab === $key ? 'is-active' : '' }}">
-                            <span class="material-symbols-outlined" style="font-size:18px">{{ $icon }}</span>
-                            <span>{{ $label }}</span>
-                            <span class="appr-tab-count">{{ $counts[$key] }}</span>
-                        </a>
-                    @endforeach
-
-                    <form class="appr-filter" method="GET" action="{{ route('persetujuan.index') }}">
-                        <input type="hidden" name="tab" value="{{ $tab }}">
-                        <label for="apprMenuFilter">Menu</label>
-                        <select id="apprMenuFilter" name="menu" onchange="this.form.submit()">
-                            <option value="semua" @selected($menu === 'semua')>Semua menu</option>
-                            @foreach($menus as $slug => $label)
-                                <option value="{{ $slug }}" @selected($menu === $slug)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </form>
-                </div>
-
-                <p class="page-subtitle" style="margin:0 0 14px;">{{ $hints[$tab] }}</p>
-
-                <div class="appr-list" id="apprList">
-                    @forelse($rows as $r)
-                        <article class="appr-card" data-menu="{{ $r['menu'] }}" data-id="{{ $r['id'] }}" data-title="{{ $r['title'] }}">
-                            <div class="appr-card-main">
-                                <div class="appr-card-top">
-                                    <span class="appr-menu"><span class="material-symbols-outlined">{{ $r['icon'] }}</span>{{ $r['menu_label'] }}</span>
-                                    <span class="appr-chip is-{{ $r['status'] }}">{{ $r['status_label'] }}</span>
-                                </div>
-                                <h3 class="appr-title">{{ $r['title'] ?: '(tanpa judul)' }}</h3>
-                                <p class="appr-who">
-                                    {{ $r['name'] }}@if($r['nim']) &middot; NIM {{ $r['nim'] }}@endif
-                                    @if($r['wali']) &middot; Dosen wali: {{ $r['wali'] }}@elseif($isSuper) &middot; <i>belum punya dosen wali</i>@endif
-                                </p>
-
-                                @if($r['detail'])
-                                    <div class="appr-details">
-                                        @foreach($r['detail'] as $k => $v)
-                                            <span class="appr-detail">{{ $k }}: <b>{{ $v }}</b></span>
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                @if($r['bukti'] && \Illuminate\Support\Str::startsWith($r['bukti'], ['http://', 'https://']))
-                                    <a class="appr-bukti" href="{{ $r['bukti'] }}" target="_blank" rel="noopener noreferrer">
-                                        <span class="material-symbols-outlined">open_in_new</span>Lihat bukti kegiatan
-                                    </a>
-                                @endif
-
-                                @if($r['note'])
-                                    <div class="appr-card-note"><b>Catatan:</b> {{ $r['note'] }}</div>
-                                @endif
-                            </div>
-
-                            <div class="appr-side">
-                                <div class="appr-meta">
-                                    Diajukan {{ $r['submitted'] }}<br>
-                                    Diperbarui {{ $r['updated'] }}
-                                </div>
-                                <div class="appr-actions">
-                                    <button type="button" class="appr-btn js-appr-history" title="Lihat riwayat status">
-                                        <span class="material-symbols-outlined">history</span>Riwayat
-                                    </button>
-                                    @if(in_array('teruskan', $r['actions'], true))
-                                        <button type="button" class="appr-btn is-forward js-appr-act" data-aksi="teruskan">
-                                            <span class="material-symbols-outlined">forward_to_inbox</span>Teruskan
-                                        </button>
-                                    @endif
-                                    @if(in_array('setujui', $r['actions'], true))
-                                        <button type="button" class="appr-btn is-ok js-appr-act" data-aksi="setujui">
-                                            <span class="material-symbols-outlined">check_circle</span>Setujui
-                                        </button>
-                                    @endif
-                                    @if(in_array('tolak', $r['actions'], true))
-                                        <button type="button" class="appr-btn is-bad js-appr-act" data-aksi="tolak">
-                                            <span class="material-symbols-outlined">cancel</span>Tolak
-                                        </button>
-                                    @endif
-                                </div>
-                            </div>
-                        </article>
-                    @empty
-                        <div class="appr-empty">
-                            <span class="material-symbols-outlined">task_alt</span>
-                            <p style="margin:8px 0 0;font-weight:700;color:var(--ink)">Tidak ada pengajuan di sini</p>
-                            <p style="margin:4px 0 0;font-size:13px;">{{ $tab === 'perlu' ? 'Semua pengajuan sudah ditangani. 🎉' : 'Belum ada data untuk ditampilkan.' }}</p>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <span class="stat-label">Ditolak</span>
+                            <span class="stat-value" id="cntTolak">{{ $counts['ditolak'] }}</span>
                         </div>
-                    @endforelse
+                        <div class="stat-icon danger"><span class="material-symbols-outlined">cancel</span></div>
+                    </div>
+                </div>
+
+                <!-- FILTER BAR -->
+                <div class="filter-card">
+                    <div class="filter-grid">
+                        <div class="field">
+                            <label class="field-label">Menu</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-menu" value="{{ $menu }}" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">{{ $menu === 'semua' ? 'Semua Menu' : ($menus[$menu] ?? 'Semua Menu') }}</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option {{ $menu === 'semua' ? 'is-selected' : '' }}" data-value="semua">Semua Menu</button>
+                                    @foreach($menus as $slug => $label)
+                                    <button type="button" class="dropdown-option {{ $menu === $slug ? 'is-selected' : '' }}" data-value="{{ $slug }}">{{ $label }}</button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            @php $tsYear = now()->year; @endphp
+                            <label class="field-label">Tahun</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-tahun" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Tahun</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Tahun</button>
+                                    @foreach([0, 1, 2] as $off)
+                                    <button type="button" class="dropdown-option" data-value="{{ $tsYear - $off }}">{{ $off === 0 ? 'TS' : 'TS-' . $off }} ({{ $tsYear - $off }})</button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <div class="filter-search-row">
+                            <div class="field field-search-wide">
+                                <label class="field-label" for="filter-search">Pencarian Cepat</label>
+                                <div class="field-control">
+                                    <span class="material-symbols-outlined icon-search">search</span>
+                                    <input id="filter-search" type="text" placeholder="Cari nama, NIM, atau judul pengajuan..." autocomplete="off" />
+                                </div>
+                            </div>
+                            <div class="field field-reset">
+                                <button type="button" id="btn-reset-filter" class="btn-rst" title="Reset Filter">
+                                    <span class="material-symbols-outlined">restart_alt</span>
+                                    <span class="btn-rst-text">Reset Filter</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE CARD -->
+                <div class="table-card">
+                    <div class="appr-tabs" role="tablist" aria-label="Status pengajuan">
+                        <button type="button" class="appr-tab {{ $tab === 'perlu' ? 'is-active' : '' }}" data-tab="perlu" role="tab">
+                            <span class="material-symbols-outlined">pending_actions</span>
+                            <span>Menunggu Verifikasi</span>
+                            <span class="appr-tab-count" id="tabCntPerlu">{{ $counts['perlu'] }}</span>
+                        </button>
+                        <button type="button" class="appr-tab {{ $tab === 'riwayat' ? 'is-active' : '' }}" data-tab="riwayat" role="tab">
+                            <span class="material-symbols-outlined">history</span>
+                            <span>Riwayat Keputusan</span>
+                            <span class="appr-tab-count" id="tabCntRiwayat">{{ $counts['riwayat'] }}</span>
+                        </button>
+                    </div>
+                    <p class="appr-tabhint" id="apprHint"></p>
+
+                    {{-- Bar aksi data terpilih (verifikasi massal) --}}
+                    <div class="sel-bar" id="apprSelBar" role="region" aria-label="Aksi data terpilih" aria-hidden="true">
+                        <div class="sel-bar-info" aria-live="polite">
+                            <strong id="apprSelCount">0</strong><span>pengajuan dipilih</span>
+                        </div>
+                        <div class="sel-bar-actions">
+                            <button type="button" class="sel-btn" id="apprSelApprove">
+                                <span class="material-symbols-outlined">check_circle</span><span>Verifikasi terpilih</span>
+                            </button>
+                            <button type="button" class="sel-btn is-ghost" id="apprSelClear">
+                                <span class="material-symbols-outlined">close</span><span>Batal pilih</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-scroll is-scrollable">
+                        <table class="data-table appr-table" id="apprTable">
+                            <thead>
+                                <tr>
+                                    <th class="sel-col sel-head" id="apprHeadSel"></th>
+                                    <th>Pengajuan</th>
+                                    <th>Pengaju</th>
+                                    <th class="center">Status</th>
+                                    <th id="apprTimeHead">Diajukan</th>
+                                    <th class="center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="apprBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="appr-empty" id="apprEmpty" hidden>
+                        <span class="material-symbols-outlined">task_alt</span>
+                        <p class="appr-empty-title">Tidak ada pengajuan di sini</p>
+                        <p class="appr-empty-desc" id="apprEmptyDesc"></p>
+                    </div>
+
+                    <div class="table-footer">
+                        <div class="footer-summary">
+                            Menampilkan <strong id="footerRange">0&ndash;0</strong> dari <strong id="footerTotal">0</strong> pengajuan
+                        </div>
+                        <nav class="pager" id="apprPager" aria-label="Navigasi halaman" hidden></nav>
+                    </div>
                 </div>
             </div>
         </main>
@@ -194,7 +210,54 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    {{-- Modal catatan (teruskan / setujui / tolak) --}}
+    {{-- Modal Periksa: Detail | Komentar | Riwayat. Membuka pengajuan baru = otomatis "Diproses Prodi". --}}
+    <div class="modal-backdrop" id="apprRevBackdrop"></div>
+    <div class="modal-card" id="apprRevModal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-drag-handle" id="apprRevDrag">
+            <div>
+                <h3 class="modal-title" id="apprRevTitle">Periksa Pengajuan</h3>
+                <p class="modal-subtitle" id="apprRevSub">Cek bukti &amp; kelengkapan, lalu verifikasi atau tolak</p>
+            </div>
+            <button type="button" class="modal-close-btn" id="apprRevClose" aria-label="Tutup">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="appr-rev-head" id="apprRevHead"></div>
+
+            <div class="appr-mtabs" role="tablist">
+                <button type="button" class="appr-mtab is-active" data-pane="detail">Detail</button>
+                <button type="button" class="appr-mtab" data-pane="komentar">Komentar <span class="appr-mtab-count" id="apprMtabComments">0</span></button>
+                <button type="button" class="appr-mtab" data-pane="riwayat">Riwayat</button>
+            </div>
+
+            <div class="appr-pane" data-pane="detail" id="apprPaneDetail"></div>
+
+            <div class="appr-pane" data-pane="komentar" id="apprPaneKomentar" hidden>
+                <ul class="appr-comments" id="apprCommentList"></ul>
+                <form class="appr-comment-form" id="apprCommentForm" novalidate>
+                    <textarea id="apprCommentBody" class="appr-note-input" maxlength="1000" rows="2" placeholder="Tulis komentar untuk mahasiswa, mis. bukti perlu dilengkapi..."></textarea>
+                    <span class="appr-comment-err" id="apprCommentErr" hidden></span>
+                </form>
+            </div>
+
+            <div class="appr-pane" data-pane="riwayat" id="apprPaneRiwayat" hidden>
+                <ul class="appr-timeline" id="apprHistList"></ul>
+            </div>
+
+        </div>
+        <div class="appr-rev-footer" id="apprRevFooter">
+                <button type="button" class="appr-btn-cancelver" id="apprRevUndo" hidden>
+                    <span class="material-symbols-outlined">undo</span><span>Batalkan Verifikasi</span>
+                </button>
+                <button type="button" class="btn-ghost" id="apprRevCancel">Tutup</button>
+                <button type="submit" form="apprCommentForm" class="btn-apply" id="apprCommentSend" hidden><span class="material-symbols-outlined">send</span><span>Kirim</span></button>
+                <button type="button" class="btn-apply is-danger" id="apprRevReject" hidden><span class="material-symbols-outlined">cancel</span><span>Tolak</span></button>
+                <button type="button" class="btn-apply" id="apprRevApprove" hidden><span class="material-symbols-outlined">check_circle</span><span>Verifikasi</span></button>
+        </div>
+    </div>
+
+    {{-- Modal catatan (verifikasi / tolak / batalkan / verifikasi massal) --}}
     <div class="modal-backdrop" id="apprBackdrop"></div>
     <div class="modal-card" id="apprModal" role="dialog" aria-modal="true" aria-hidden="true">
         <div class="modal-drag-handle" id="apprDragHandle">
@@ -217,24 +280,11 @@
         </form>
     </div>
 
-    {{-- Modal riwayat --}}
-    <div class="modal-backdrop" id="apprHistBackdrop"></div>
-    <div class="modal-card" id="apprHistModal" role="dialog" aria-modal="true" aria-hidden="true">
-        <div class="modal-drag-handle" id="apprHistDrag">
-            <div>
-                <h3 class="modal-title">Riwayat Status</h3>
-                <p class="modal-subtitle" id="apprHistSub"></p>
-            </div>
-            <button type="button" class="modal-close-btn" id="apprHistClose" aria-label="Tutup">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-        <div class="modal-body"><ul class="appr-timeline" id="apprHistList"></ul></div>
-    </div>
-
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
+    <script>window.__APPR_INITIAL = @json($initial);</script>
     <script src="{{ asset('js/approval.js') }}?v={{ @filemtime(public_path('js/approval.js')) }}"
         data-url-base="{{ url('/persetujuan') }}"></script>
 </body>

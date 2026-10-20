@@ -4,43 +4,58 @@
    Semua kelas berawalan "mv-" supaya tidak bentrok dengan tampilan admin.
    ========================================================================== */
 
-/* ---------- Kartu ringkasan = sekaligus filter status ---------- */
+/* ---------- Kartu ringkasan = sekaligus filter status (gaya stat-card: gradien, garis warna bawah, turun saat hover) ---------- */
 .mv-tiles {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
 }
 .mv-tile {
+    --hint: var(--chart-1);
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 16px;
+    padding: 16px 18px;
     text-align: left;
     font: inherit;
     color: var(--ink);
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: var(--shadow-card);
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: border-color .15s, transform .15s;
+    box-shadow: var(--shadow-card), 0 5px 0 0 var(--hint), 0 0 0 0 transparent;
+    transition: transform .12s ease, box-shadow .18s ease, border-color .15s;
 }
-.mv-tile:hover { transform: translateY(-1px); border-color: var(--primary-border); }
-.mv-tile.is-active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); }
+.mv-tile:hover {
+    transform: translateY(5px);
+    box-shadow: var(--shadow-card), 0 0 0 0 var(--hint);
+}
+.mv-tile.is-ok { --hint: var(--chart-3); }
+.mv-tile.is-wait { --hint: var(--chart-4); }
+.mv-tile.is-bad { --hint: var(--chart-5); }
+.mv-tile.is-active { border-color: var(--hint); outline: 2px solid var(--primary-soft); outline-offset: 0; }
+body.dark-mode .mv-tile {
+    background-color: var(--card);
+    background-image: linear-gradient(180deg, rgba(77, 106, 235, 0.096) 0%, rgba(255, 255, 255, 0) 45%);
+}
 .mv-tile-icon {
     flex: none;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
-    border-radius: 10px;
+    border-radius: var(--radius);
     background: var(--primary-soft);
     color: var(--primary);
+    border: 1px solid var(--primary-border);
+    transition: transform .32s cubic-bezier(.34, 1.56, .64, 1);
 }
-.mv-tile.is-ok .mv-tile-icon { background: var(--success-bg); color: var(--success); }
-.mv-tile.is-wait .mv-tile-icon { background: var(--warning-bg); color: var(--warning); }
-.mv-tile.is-bad .mv-tile-icon { background: var(--danger-bg); color: var(--danger); }
+.mv-tile:hover .mv-tile-icon { transform: scale(1.1) rotate(-4deg); }
+.mv-tile.is-ok .mv-tile-icon { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+.mv-tile.is-wait .mv-tile-icon { background: var(--warning-bg); color: var(--warning); border-color: var(--warning-border); }
+.mv-tile.is-bad .mv-tile-icon { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
 .mv-tile-num { display: block; font-size: 22px; font-weight: 800; line-height: 1.1; }
 .mv-tile-label { display: block; font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
 
@@ -48,7 +63,6 @@
 .mv-search {
     position: relative;
     max-width: 420px;
-    margin-bottom: 14px;
 }
 .mv-search .material-symbols-outlined {
     position: absolute;
@@ -100,7 +114,19 @@
 .mv-empty strong { display: block; margin: 6px 0 4px; color: var(--ink); font-size: 15px; }
 .mv-empty p { margin: 0; font-size: 13px; }
 
-/* ---------- Progres verifikasi (mini di daftar) ---------- */
+/* ---------- Status akhir di tabel: ikon + teks saja (Terverifikasi / Ditolak) ---------- */
+.mv-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+}
+.mv-state .material-symbols-outlined { font-size: 20px; font-variation-settings: 'FILL' 1; }
+.mv-state.is-ok { color: var(--success); }
+.mv-state.is-bad { color: var(--danger); }
+
+/* ---------- Progres verifikasi (mini di daftar, hanya saat masih diproses) ---------- */
 .mv-prog-mini { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
 .mv-dots { display: flex; align-items: center; }
 .mv-dot {
@@ -131,7 +157,7 @@
 /* ---------- Progres verifikasi (lengkap di modal detail) ---------- */
 .mv-steps {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr); /* Diajukan - Prodi - Terverifikasi */
     margin: 4px 0 6px;
 }
 .mv-step { position: relative; text-align: center; font-size: 11.5px; color: var(--ink-muted); }
@@ -224,6 +250,15 @@
 .mv-btn-danger:hover { background: var(--danger-bg); }
 .mv-btn-danger .material-symbols-outlined { font-size: 18px; }
 
+/* ---------- Komentar Prodi di modal detail (hanya baca) ---------- */
+.mv-comments { display: flex; flex-direction: column; gap: 8px; }
+.mv-comments-title { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; font-weight: 700; color: var(--ink); }
+.mv-comments-title .material-symbols-outlined { font-size: 18px; color: var(--primary); }
+.mv-comment { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas); }
+.mv-comment-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-muted); }
+.mv-comment-meta b { color: var(--ink); }
+.mv-comment p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+
 /* ---------- Form: nama sudah terpilih otomatis ---------- */
 .mv-owner {
     display: flex;
@@ -252,7 +287,7 @@
 }
 
 @media (max-width: 760px) {
-    .mv-tiles { grid-template-columns: repeat(2, 1fr); }
+    .mv-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .mv-search { max-width: none; }
     .mv-dl { grid-template-columns: 1fr; gap: 2px 0; }
     .mv-dl dd { margin-bottom: 8px; }

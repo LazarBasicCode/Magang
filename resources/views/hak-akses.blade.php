@@ -196,7 +196,7 @@
                                 <tr data-id="{{ $u->id }}" data-role="{{ $u->role }}" data-status="{{ $row['status'] }}">
                                     <td>
                                         <div class="student-cell">
-                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            @include('partials.avatar', ['initials' => $initials, 'color' => $avatarColor, 'url' => $u->avatar_url])
                                             <div class="student-name"><span class="name">{{ $u->name }}</span></div>
                                         </div>
                                     </td>

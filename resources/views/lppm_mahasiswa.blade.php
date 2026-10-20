@@ -203,7 +203,7 @@
                                     <td><span class="nim-code">{{ $item->mahasiswa->nim ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
-                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            @include('partials.avatar', ['initials' => $initials, 'color' => $avatarColor, 'url' => optional(optional($item->mahasiswa)->user)->avatar_url])
                                             <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                         </div>
                                     </td>
@@ -469,7 +469,7 @@
                 <td><span class="nim-code">${esc(item.nim)}</span></td>
                 <td>
                     <div class="student-cell">
-                        <div class="avatar ${avatarColor(item.mahasiswa_id)}">${esc(initials(item.nama))}</div>
+                        ${SIDA.util.avatarHtml(item.nama, item.mahasiswa_id, item.avatar_url)}
                         <div class="student-name"><span class="name">${esc(item.nama)}</span></div>
                     </div>
                 </td>

@@ -74,6 +74,15 @@
             ];
             return colors[Number(id) % colors.length];
         },
+
+        // HTML avatar (inisial + foto dari link bila ada) — padanan JS dari partials/avatar.blade.php.
+        avatarHtml(name, id, url, cls = "avatar") {
+            const u = SIDA.util;
+            const img = url
+                ? `<img class="av-img" src="${u.esc(url)}" alt="" width="96" height="96" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`
+                : "";
+            return `<div class="${cls} ${u.avatarColor(id)}">${u.esc(u.initials(name))}${img}</div>`;
+        },
     };
 
     // ---------------------------------------------------------------

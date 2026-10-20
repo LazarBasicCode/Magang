@@ -21,7 +21,7 @@
                                     <td><span class="nim-code">{{ $item->mahasiswa->nim ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
-                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            @include('partials.avatar', ['initials' => $initials, 'color' => $avatarColor, 'url' => optional(optional($item->mahasiswa)->user)->avatar_url])
                                             <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                         </div>
                                     </td>

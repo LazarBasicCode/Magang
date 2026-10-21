@@ -1,6 +1,7 @@
 /**
  * JS grafik dashboard (donut, kurva tren, bar chart) + scroll reveal.
- * Dipakai dashboard-admin.blade.php. Sidebar/tema/profil ditangani script.js.
+ * Dipakai semua dashboard bergrafik (admin, dosen, mahasiswa) lewat layouts/dashboard.
+ * Sidebar/tema/profil ditangani script.js.
  */
 // ================================================================
 // SCROLL REVEAL: fade + blur + scale saat elemen masuk viewport,
@@ -428,3 +429,17 @@ window.addEventListener('resize', () => {
         if (barHolder) renderBarChart(barHolder);
     }, 150);
 });
+
+// ================================================================
+// JAM di panel sapaan (partials/dashboard/welcome.blade.php)
+// ================================================================
+(function () {
+    const clockEl = document.getElementById('dashWelcomeClock');
+    if (!clockEl) return;
+    const tick = () => {
+        const d = new Date();
+        clockEl.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    };
+    tick();
+    setInterval(tick, 30 * 1000);
+})();

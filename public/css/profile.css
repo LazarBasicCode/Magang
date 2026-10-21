@@ -58,21 +58,26 @@ body.dark-mode .pf-swatch[data-pal="indigo"] { --pf-top: #3939db; }
 .pf-hero-inner { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "avatar text"; align-items: center; gap: 28px 44px; }
 .pf-hero-text { grid-area: text; min-width: 0; }
 
-/* Avatar: warna ikut palet; cincin kaca = ::before dilubangi mask + backdrop-filter (memburamkan hero di belakangnya) */
+/* Avatar: hanya lingkaran foto/inisial (tanpa border, tanpa bayangan).
+   "Border" kaca = elemen terpisah .pf-glass DI BAWAH avatar (z-index lebih rendah): lingkaran transparan yang memburamkan
+   hero di belakangnya, tampak sebagai pinggiran transparan. Sengaja bukan ::before avatar: avatar ber-overflow:hidden
+   (avatar-upload.css, untuk memotong foto), jadi pseudo-element yang menonjol keluar akan ikut terpotong.
+   .av-edit (pembungkus) = avatar + margin --ring di tiap sisi; .pf-glass berukuran persis itu. */
 .pf-avatar {
-    grid-area: avatar; position: relative; width: var(--av); height: var(--av); margin: var(--ring);
-    border-radius: 50%; border: 0; display: grid; place-items: center; font-size: 64px; font-weight: 800; color: #fff;
+    grid-area: avatar; position: relative; z-index: 1; width: var(--av); height: var(--av); margin: var(--ring);
+    border-radius: 50%; border: 0; box-shadow: none; display: grid; place-items: center; font-size: 64px; font-weight: 800; color: #fff;
     background: linear-gradient(135deg, var(--pf-top), var(--pf-glow));
-    box-shadow: 0 8px 28px color-mix(in srgb, var(--pf-top) 40%, transparent);
 }
-.pf-avatar::before {
-    content: ""; position: absolute; inset: calc(var(--ring) * -1); border-radius: 50%; pointer-events: none;
-    background: rgba(255, 255, 255, .24); border: 1px solid rgba(255, 255, 255, .55);
+.pf-hero .av-edit.is-big { width: max-content; }          /* jangan melebar mengikuti kolom grid (layout sempit = 1 kolom) */
+.pf-glass {
+    position: absolute; left: 0; top: 0; z-index: 0; border-radius: 50%; pointer-events: none;
+    width: calc(var(--av) + var(--ring) * 2); height: calc(var(--av) + var(--ring) * 2);   /* ukuran pasti, tidak bergantung lebar pembungkus */
+    background: rgba(255, 255, 255, .28);
     -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%);
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + .5px));
-            mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + .5px));
 }
-body.dark-mode .pf-avatar::before { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .3); }
+body.dark-mode .pf-glass { background: rgba(255, 255, 255, .14); }
+.pf-hero .av-edit-badge { z-index: 2; }                 /* ikon kamera tetap di atas avatar */
+.pf-page.is-loading .pf-glass { visibility: hidden; }    /* saat skeleton */
 
 .pf-hero-total { display: flex; align-items: center; gap: 16px; margin-top: 24px; }
 .pf-total-num { font-size: 54px; font-weight: 800; line-height: .95; letter-spacing: -.04em; color: var(--ink); }

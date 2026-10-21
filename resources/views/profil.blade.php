@@ -74,6 +74,7 @@
                     <div class="pf-hero-inner">
                         {{-- Klik foto = ganti foto profil (modal: partials/avatar-modal.blade.php, ada di header) --}}
                         <span class="av-edit is-big" data-avatar-edit role="button" tabindex="0" title="Ganti foto profil" aria-label="Ganti foto profil">
+                            <span class="pf-glass" aria-hidden="true"></span>
                             @include('partials.avatar', ['class' => 'avatar pf-avatar', 'initials' => $user->initials(), 'color' => $user->avatarColorClass(), 'url' => $user->avatar_url, 'self' => true])
                             <span class="av-edit-badge material-symbols-outlined" aria-hidden="true">photo_camera</span>
                         </span>

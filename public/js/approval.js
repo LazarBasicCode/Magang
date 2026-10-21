@@ -297,22 +297,60 @@
         cancelBtn: $('apprRevCancel'), dragHandle: $('apprRevDrag'),
     });
     const loaded = { komentar: null, riwayat: null }; // key item yang panelnya sudah dimuat
+    const cm = { items: [], shown: 0 };               // komentar (terbaru di atas) & jumlah yang ditampilkan
+    const CM_STEP = 4;
 
-    function headHTML(i) {
-        return `<span class="appr-menu"><span class="material-symbols-outlined">${esc(i.icon)}</span>${esc(i.menu_label)}</span>${chip(i)}`;
+    const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
+    const safeUrl = (u) => (u && /^https?:\/\//i.test(u) ? u : null);
+    const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return ''; } };
+    const empty = (icon, text) => `<li class="appr-empty-sm"><span class="material-symbols-outlined">${icon}</span>${text}</li>`;
+
+    // ---- header, ringkasan (kanan), detail (kiri)
+    function metaHTML(i) {
+        const late = (i.actions || []).includes('setujui') && i.waiting >= 1
+            ? `<span class="appr-wait ${i.waiting >= 3 ? 'is-late' : ''}">Menunggu ${i.waiting} hari</span>` : '';
+        return `<span class="appr-menu"><span class="material-symbols-outlined">${esc(i.icon)}</span>${esc(i.menu_label)}</span>${chip(i)}${late}`;
+    }
+    function asideHTML(i) {
+        const url = safeUrl(i.bukti);
+        const decided = i.status === 'disetujui' || i.status === 'ditolak';
+        return `<section>
+                <h4 class="appr-as-h">Pengaju</h4>
+                <div class="appr-who"><span class="appr-ava">${esc(initials(i.name))}</span>
+                    <div><b>${esc(i.name)}</b>${i.nim ? `<small>NIM ${esc(i.nim)}</small>` : ''}</div></div>
+            </section>
+            <section>
+                <h4 class="appr-as-h">Waktu</h4>
+                <dl class="appr-as-dl">
+                    <dt>Diajukan</dt><dd>${esc(i.submitted || '-')}</dd>
+                    ${decided ? `<dt>Diputuskan</dt><dd>${esc(i.updated || '-')}</dd>` : ''}
+                </dl>
+            </section>
+            <section>
+                <h4 class="appr-as-h">Bukti</h4>
+                ${url ? `<a class="appr-proof" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+                            <span class="material-symbols-outlined">open_in_new</span>
+                            <span>Lihat bukti kegiatan<small>${esc(hostOf(url))}</small></span></a>`
+                      : '<div class="appr-proof is-none"><span class="material-symbols-outlined">link_off</span><span>Tidak ada tautan bukti yang valid</span></div>'}
+            </section>`;
     }
     function detailHTML(i) {
-        const rows = [['Judul', i.title || '-'], ['Pengaju', i.name]];
-        if (i.nim) rows.push(['NIM', i.nim]);
-        Object.entries(i.detail || {}).forEach(([k, v]) => rows.push([k, v]));
-        if (i.submitted) rows.push(['Diajukan', i.submitted]);
-        const safe = i.bukti && /^https?:\/\//i.test(i.bukti) ? i.bukti : null;
-        return `<dl class="appr-dl">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-            ${safe ? `<a class="appr-bukti" href="${esc(safe)}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined">open_in_new</span>Lihat bukti kegiatan</a>` : '<p class="appr-rev-none">Tidak ada tautan bukti yang valid.</p>'}
-            ${i.note ? `<div class="appr-card-note"><b>Catatan keputusan:</b> ${esc(i.note)}</div>` : ''}`;
+        const fields = Object.entries(i.detail || {}).filter(([, v]) => v !== null && v !== '')
+            .map(([k, v]) => `<div class="appr-field${String(v).length > 38 ? ' is-wide' : ''}"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+        const bad = i.status === 'ditolak';
+        return `<h4 class="appr-sec-h">Rincian pengajuan</h4>
+            <dl class="appr-fields">${fields || '<div class="appr-field is-wide"><dd>Tidak ada rincian tambahan.</dd></div>'}</dl>
+            ${i.note ? `<div class="appr-callout ${bad ? 'is-bad' : 'is-info'}"><span class="material-symbols-outlined">${bad ? 'error' : 'sticky_note_2'}</span>
+                <div><b>${bad ? 'Alasan penolakan' : 'Catatan keputusan'}</b>${esc(i.note)}</div></div>` : ''}`;
+    }
+    function renderHead(i) {
+        $('apprRevIcon').innerHTML = `<span class="material-symbols-outlined">${esc(i.icon)}</span>`;
+        $('apprRevName').textContent = i.title || '(tanpa judul)';
+        $('apprRevHead').innerHTML = metaHTML(i);
+        $('apprRevAside').innerHTML = asideHTML(i);
     }
 
-    // Footer satu baris. Kiri: Batalkan Verifikasi. Kanan: Tutup + (tab Komentar ? Kirim : Tolak/Verifikasi).
+    // ---- footer satu baris. Kiri: Batalkan Verifikasi. Kanan: Tutup + (tab Komentar ? Kirim : Tolak/Verifikasi).
     function syncFooter(i) {
         const a = i.actions || [];
         const komentar = state.pane === 'komentar';
@@ -321,13 +359,13 @@
         $('apprRevApprove').hidden = komentar || !pending;
         $('apprRevReject').hidden = komentar || !a.includes('tolak');
         $('apprRevUndo').hidden = !a.includes('batal');
-        $('apprRevTitle').textContent = pending ? 'Periksa Pengajuan' : 'Detail Pengajuan';
-        $('apprRevSub').textContent = pending ? 'Cek bukti & kelengkapan, lalu verifikasi atau tolak' : 'Lihat detail, tambah komentar, atau tinjau riwayat';
+        $('apprRevTitle').textContent = pending ? 'Periksa pengajuan' : 'Detail pengajuan';
     }
     function setPane(name) {
         state.pane = name;
         document.querySelectorAll('#apprRevModal .appr-mtab').forEach((t) => t.classList.toggle('is-active', t.dataset.pane === name));
         document.querySelectorAll('#apprRevModal .appr-pane').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+        document.querySelector('.appr-rv-scroll').scrollTop = 0;
         const i = state.current;
         if (!i) return;
         syncFooter(i);
@@ -338,19 +376,21 @@
 
     function setCommentCount(i) {
         $('apprMtabComments').textContent = i.comments || 0;
-        const tr = body.querySelector(`tr[data-key="${CSS.escape(keyOf(i))}"] .js-comments`);
-        if (tr) {
-            tr.querySelector('.appr-badge')?.remove();
-            if (i.comments) tr.insertAdjacentHTML('beforeend', `<span class="appr-badge">${i.comments}</span>`);
+        const btn = body.querySelector(`tr[data-key="${CSS.escape(keyOf(i))}"] .js-comments`);
+        if (btn) {
+            btn.querySelector('.appr-badge')?.remove();
+            if (i.comments) btn.insertAdjacentHTML('beforeend', `<span class="appr-badge">${i.comments}</span>`);
         }
     }
 
     function openReview(item, pane) {
         state.current = item;
         loaded.komentar = loaded.riwayat = null;
-        $('apprRevHead').innerHTML = headHTML(item);
+        cm.items = []; cm.shown = 0;
+        renderHead(item);
         $('apprPaneDetail').innerHTML = detailHTML(item);
         $('apprCommentList').innerHTML = '';
+        $('apprCommentMore').hidden = true;
         $('apprHistList').innerHTML = '';
         $('apprCommentBody').value = '';
         $('apprCommentErr').hidden = true;
@@ -366,9 +406,9 @@
             const json = await res.json();
             if (!res.ok || !json.success || !json.changed) return;
             item.status = json.status; item.status_label = json.status_label;
-            if (state.current === item) $('apprRevHead').innerHTML = headHTML(item);
-            const tr = body.querySelector(`tr[data-key="${CSS.escape(keyOf(item))}"] .appr-chip`);
-            if (tr) tr.outerHTML = chip(item);
+            if (state.current === item) $('apprRevHead').innerHTML = metaHTML(item);
+            const rowChip = body.querySelector(`tr[data-key="${CSS.escape(keyOf(item))}"] .appr-chip`);
+            if (rowChip) rowChip.outerHTML = chip(item);
             setCounts(json.counts);
             setPending(json.pending);
             loaded.riwayat = null; // linimasa bertambah satu baris
@@ -379,26 +419,46 @@
     $('apprRevReject').addEventListener('click', () => { const i = state.current; revModal.close(); openNote({ aksi: 'tolak', item: i }); });
     $('apprRevUndo').addEventListener('click', () => { const i = state.current; revModal.close(); openNote({ aksi: 'batal', item: i }); });
 
-    // ---- komentar
+    // ---- komentar: kolom tulis di atas, daftar (terbaru dulu) di bawah, "Tampilkan lebih banyak" per 4
     const commentList = $('apprCommentList');
+    const moreBtn = $('apprCommentMore');
     function commentHTML(c) {
-        return `<li class="appr-comment${c.mine ? ' is-mine' : ''}">
-            <div class="appr-comment-meta"><b>${esc(c.author)}</b><span class="appr-role">${esc(ROLE[c.role] || c.role || '')}</span><time>${esc(c.at)}</time></div>
-            <p>${esc(c.body)}</p></li>`;
+        return `<li class="appr-cm${c.mine ? ' is-mine' : ''}">
+            <span class="appr-ava">${esc(initials(c.author))}</span>
+            <div class="appr-cm-bubble">
+                <div class="appr-cm-meta"><b>${esc(c.author)}</b>${c.role ? `<span class="appr-role">${esc(ROLE[c.role] || c.role)}</span>` : ''}<time>${esc(c.at)}</time></div>
+                <p>${esc(c.body)}</p>
+            </div></li>`;
     }
+    function renderComments() {
+        if (!cm.items.length) {
+            commentList.innerHTML = empty('chat_bubble', 'Belum ada komentar.<br>Komentar Prodi akan terlihat oleh mahasiswa.');
+            moreBtn.hidden = true;
+            return;
+        }
+        commentList.innerHTML = cm.items.slice(0, cm.shown).map(commentHTML).join('');
+        const rest = cm.items.length - cm.shown;
+        moreBtn.hidden = rest <= 0;
+        if (rest > 0) moreBtn.querySelector('span:last-child').textContent = `Tampilkan lebih banyak (${rest} lagi)`;
+    }
+    moreBtn.addEventListener('click', () => { cm.shown += CM_STEP; renderComments(); });
+
     async function loadComments(i) {
-        commentList.innerHTML = '<li class="appr-comment-empty">Memuat…</li>';
+        commentList.innerHTML = empty('hourglass_empty', 'Memuat…');
+        moreBtn.hidden = true;
         try {
             const res = await fetch(`${base}/${i.menu}/${i.id}/komentar`, { headers: { 'Accept': 'application/json' } });
             const json = await res.json();
             if (!res.ok || !json.success) throw new Error();
             if (state.current !== i) return;
-            commentList.innerHTML = json.data.length ? json.data.map(commentHTML).join('') : '<li class="appr-comment-empty">Belum ada komentar. Komentar Prodi akan terlihat oleh mahasiswa.</li>';
+            cm.items = json.data.slice().reverse(); // server: lama -> baru; tampilan: baru -> lama
+            cm.shown = CM_STEP;
+            renderComments();
             i.comments = json.data.length;
             setCommentCount(i);
             loaded.komentar = keyOf(i);
         } catch (_) {
-            commentList.innerHTML = '<li class="appr-comment-empty">Gagal memuat komentar.</li>';
+            commentList.innerHTML = empty('error', 'Gagal memuat komentar.');
         }
     }
     $('apprCommentForm').addEventListener('submit', async (e) => {
@@ -417,9 +477,9 @@
                 err.textContent = flat[0] || json.message || 'Gagal mengirim komentar.'; err.hidden = false;
                 return;
             }
-            commentList.querySelector('.appr-comment-empty')?.remove();
-            commentList.insertAdjacentHTML('beforeend', commentHTML(json.data));
-            commentList.lastElementChild?.scrollIntoView({ block: 'nearest' });
+            cm.items.unshift(json.data);
+            cm.shown = Math.max(cm.shown, CM_STEP);
+            renderComments();
             $('apprCommentBody').value = '';
             i.comments = (i.comments || 0) + 1;
             setCommentCount(i);
@@ -431,21 +491,24 @@
         }
     });
 
-    // ---- riwayat
+    // ---- riwayat (linimasa kronologis; entri terakhir ditandai)
     async function loadHistory(i) {
         const list = $('apprHistList');
-        list.innerHTML = '<li>Memuat…</li>';
+        list.innerHTML = empty('hourglass_empty', 'Memuat…');
         try {
             const res = await fetch(`${base}/${i.menu}/${i.id}/riwayat`, { headers: { 'Accept': 'application/json' } });
             const json = await res.json();
             if (!res.ok || !json.success) throw new Error();
             if (state.current !== i) return;
             list.innerHTML = json.data.length
-                ? json.data.map((l) => `<li><b>${esc(l.label)}</b> &middot; ${esc(l.actor)}${l.role ? ' (' + esc(ROLE[l.role] || l.role) + ')' : ''}<br><span>${esc(l.at)}</span>${l.note ? `<br>Catatan: ${esc(l.note)}` : ''}</li>`).join('')
-                : '<li>Belum ada riwayat tercatat (data lama sebelum fitur persetujuan).</li>';
+                ? json.data.map((l, n) => `<li class="appr-tl-item${n === json.data.length - 1 ? ' is-last' : ''}"><span class="appr-tl-dot"></span>
+                    <div class="appr-tl-body"><b>${esc(l.label)}</b>
+                    <small>${esc(l.actor)}${l.role ? ' &middot; ' + esc(ROLE[l.role] || l.role) : ''} &middot; ${esc(l.at)}</small>
+                    ${l.note ? `<p>${esc(l.note)}</p>` : ''}</div></li>`).join('')
+                : empty('history', 'Belum ada riwayat tercatat<br>(data lama sebelum fitur persetujuan).');
             loaded.riwayat = keyOf(i);
         } catch (_) {
-            list.innerHTML = '<li>Gagal memuat riwayat.</li>';
+            list.innerHTML = empty('error', 'Gagal memuat riwayat.');
         }
     }
 

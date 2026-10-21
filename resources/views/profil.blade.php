@@ -72,11 +72,9 @@
                     </div>
 
                     <div class="pf-hero-inner">
-                        {{-- Klik foto = ganti foto profil (modal: partials/avatar-modal.blade.php, ada di header) --}}
-                        <span class="av-edit is-big" data-avatar-edit role="button" tabindex="0" title="Ganti foto profil" aria-label="Ganti foto profil">
-                            @include('partials.avatar', ['class' => 'avatar pf-avatar', 'initials' => $user->initials(), 'color' => $user->avatarColorClass(), 'url' => $user->avatar_url, 'self' => true])
-                            <span class="av-edit-badge material-symbols-outlined" aria-hidden="true">photo_camera</span>
-                        </span>
+                        {{-- Klik foto = ganti foto profil (modal: partials/avatar-modal.blade.php, ada di header).
+                             Avatar-nya sendiri yang jadi tombol (edit=true), tanpa pembungkus, agar tetap anak langsung grid .pf-hero-inner. --}}
+                        @include('partials.avatar', ['class' => 'avatar pf-avatar', 'initials' => $user->initials(), 'color' => $user->avatarColorClass(), 'url' => $user->avatar_url, 'self' => true, 'edit' => true])
                         <div class="pf-hero-text">
                             <h1 class="pf-name">{{ $user->name }}</h1>
                             <p class="pf-role">

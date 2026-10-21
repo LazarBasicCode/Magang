@@ -275,7 +275,7 @@
                                     <td><span class="nim-code">{{ $item->user->nim_nidn ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
-                                            <div class="avatar {{ $avatarColor }}">{{ $initials }}</div>
+                                            @include('partials.avatar', ['initials' => $initials, 'color' => $avatarColor, 'url' => optional($item->user)->avatar_url])
                                             <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                         </div>
                                     </td>
@@ -429,7 +429,7 @@
                         <div class="field-locked lock-swap-locked" aria-live="polite">
                             <div class="field-locked-inner">
                                 <span class="material-symbols-outlined lock-ic">lock</span>
-                                <span class="field-locked-value">Hanya untuk jenis "Lainnya"</span>
+                                <span class="field-locked-value">Tulis jenis kerja sama..."</span>
                             </div>
                         </div>
                     </div>
@@ -454,7 +454,7 @@
                         <div class="field-locked lock-swap-locked" aria-live="polite">
                             <div class="field-locked-inner">
                                 <span class="material-symbols-outlined lock-ic">lock</span>
-                                <span class="field-locked-value">Hanya untuk Guest Lecture</span>
+                                <span class="field-locked-value">Kusus Guest Lecture</span>
                             </div>
                         </div>
                     </div>
@@ -946,7 +946,7 @@
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
                 <td>
                     <div class="student-cell">
-                        <div class="avatar ${avatarColor(item.user_id)}">${esc(initials(item.nama))}</div>
+                        ${SIDA.util.avatarHtml(item.nama, item.user_id, item.avatar_url)}
                         <div class="student-name"><span class="name">${esc(item.nama)}</span></div>
                     </div>
                 </td>

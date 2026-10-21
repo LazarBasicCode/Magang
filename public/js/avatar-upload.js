@@ -47,7 +47,16 @@
         lastFocus = document.activeElement;
         resetState();
         const first = selfAvatars()[0];
-        preview.innerHTML = first ? first.outerHTML.replace(' data-avatar-self', '') : '';
+        preview.replaceChildren();
+        if (first) {
+            // Salinan bersih: tanpa atribut tombol, tombol kamera, dan kelas khusus halaman (mis. .pf-avatar & cincin kaca)
+            const clone = first.cloneNode(true);
+            const color = (first.className.match(/\bc-\w+/) || [''])[0];
+            ['data-avatar-self', 'data-avatar-edit', 'role', 'tabindex', 'title', 'aria-label'].forEach((a) => clone.removeAttribute(a));
+            clone.className = ('avatar ' + color).trim();
+            clone.querySelector('.av-edit-badge')?.remove();
+            preview.appendChild(clone);
+        }
         btnRemove.hidden = !currentPhoto();
         modal.hidden = false;
         drop.focus({ preventScroll: true });
@@ -213,7 +222,7 @@
         }
     });
     document.addEventListener('keydown', (e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.av-edit[data-avatar-edit]')) {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-avatar-edit][role="button"]')) {
             e.preventDefault();
             open();
         }

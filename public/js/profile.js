@@ -44,7 +44,35 @@
         $(btn.dataset.pfClick)?.click();
     }));
 
-    // ---------- 2b. Kontak cadangan: email sekunder + telepon (UI saja, belum ada endpoint) ----------
+    // ---------- helper fetch + toast (dipakai Kontak Cadangan, Riwayat Login, Preferensi Notifikasi) ----------
+    const csrf = () => window.SIDA?.util?.csrfToken?.() || document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const toast = (type, title, message) => window.Toast?.show?.({ type, title, message });
+    async function api(url, method = 'GET', body = null) {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf() },
+            body: body ? JSON.stringify(body) : undefined,
+        });
+        let json = {};
+        try { json = await res.json(); } catch (_) { /* respons bukan JSON */ }
+        return { res, json };
+    }
+    const firstError = (json) => (json.errors ? Object.values(json.errors).flat()[0] : null) || json.message || 'Terjadi kesalahan. Coba lagi.';
+
+    // Modal sederhana (pa-overlay): buka lewat [data-pf-modal=id], tutup lewat tombol / klik latar / Esc.
+    function modal(id, closeIds, onOpen) {
+        const ov = $(id);
+        if (!ov) return null;
+        const open = () => { ov.classList.add('is-open'); ov.setAttribute('aria-hidden', 'false'); onOpen?.(); };
+        const close = () => { ov.classList.remove('is-open'); ov.setAttribute('aria-hidden', 'true'); };
+        document.querySelectorAll(`[data-pf-modal="${id}"]`).forEach((b) => b.addEventListener('click', open));
+        closeIds.forEach((c) => $(c)?.addEventListener('click', close));
+        ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+        return { open, close, ov };
+    }
+
+    // ---------- 2b. Kontak cadangan: email sekunder + telepon (POST /account/contact) ----------
     const cOv = $('pfContactOverlay');
     if (cOv) {
         const cForm = $('pfContactForm');
@@ -64,7 +92,7 @@
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cClose(); });
         ['pfContactEmail', 'pfContactPhone'].forEach((id) => $(id).addEventListener('input', () => setErr(id, '')));
 
-        cForm.addEventListener('submit', (e) => {
+        cForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const mail = $('pfContactEmail').value.trim();
             const tel = $('pfContactPhone').value.replace(/[\s-]/g, '');
@@ -74,8 +102,108 @@
             else if (mail && mail.toLowerCase() === (cForm.dataset.email || '').toLowerCase()) ok = setErr('pfContactEmail', 'Harus berbeda dari email utama.') && ok;
             if (tel && !/^(\+62|62|0)8\d{7,12}$/.test(tel)) ok = setErr('pfContactPhone', 'Gunakan nomor seluler Indonesia, mis. 0812 3456 7890.') && ok;
             if (!ok) return;
-            cClose();
-            window.Toast?.show?.({ type: 'info', title: 'Belum tersimpan', message: 'Tampilan ini belum tersambung ke server.' });
+
+            const btn = cForm.querySelector('[type="submit"]');
+            btn.disabled = true;
+            try {
+                const { res, json } = await api(cForm.dataset.url, 'POST', { secondary_email: mail || null, phone: tel || null });
+                if (res.ok) {
+                    // Simpan sebagai nilai awal supaya tombol reset/buka-ulang menampilkan data terbaru.
+                    $('pfContactEmail').defaultValue = json.secondary_email || '';
+                    $('pfContactPhone').defaultValue = json.phone || '';
+                    cClose();
+                    toast('success', 'Tersimpan', json.message);
+                } else if (res.status === 422 && json.errors) {
+                    if (json.errors.secondary_email) setErr('pfContactEmail', json.errors.secondary_email[0]);
+                    if (json.errors.phone) setErr('pfContactPhone', json.errors.phone[0]);
+                } else {
+                    toast('error', 'Gagal menyimpan', firstError(json));
+                }
+            } catch (_) {
+                toast('error', 'Gagal menyimpan', 'Tidak bisa terhubung ke server.');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    }
+
+    // ---------- 2c. Riwayat login: perangkat aktif + aktivitas masuk terakhir ----------
+    const STATUS = { success: ['Berhasil', 'is-ok'], failed: ['Gagal', 'is-bad'], locked: ['Terkunci', 'is-warn'] };
+    const loginBase = $('pfLoginOverlay')?.dataset.base || '/account';
+
+    async function loadLoginHistory() {
+        const sess = $('pfSessions'), att = $('pfAttempts'), revokeAll = $('pfRevokeOthers');
+        sess.innerHTML = att.innerHTML = '<li class="pf-dev-empty">Memuat…</li>';
+        revokeAll.hidden = true;
+        try {
+            const { res, json } = await api(`${loginBase}/login-history`);
+            if (!res.ok) throw new Error();
+
+            sess.innerHTML = json.sessions.length ? json.sessions.map((s) => `
+                <li class="pf-dev">
+                    <span class="material-symbols-outlined pf-dev-ico">${/Android|iOS/.test(s.device) ? 'smartphone' : 'computer'}</span>
+                    <span class="pf-dev-main"><b>${esc(s.device)}</b>${s.current ? '<span class="pf-tag is-ok">Perangkat ini</span>' : ''}
+                        <small>${esc(s.ip)} &middot; aktif ${esc(s.ago)}</small></span>
+                    ${s.current ? '' : `<button type="button" class="pa-btn pa-btn-ghost pf-dev-btn" data-revoke="${esc(s.ref)}">Keluarkan</button>`}
+                </li>`).join('') : '<li class="pf-dev-empty">Tidak ada sesi aktif yang tercatat.</li>';
+            revokeAll.hidden = json.sessions.filter((s) => !s.current).length === 0;
+
+            att.innerHTML = json.attempts.length ? json.attempts.map((a) => {
+                const [label, cls] = STATUS[a.status] || [a.status, ''];
+                return `<li class="pf-dev">
+                    <span class="material-symbols-outlined pf-dev-ico">login</span>
+                    <span class="pf-dev-main"><b>${esc(a.device)}</b><small>${esc(a.ip)} &middot; ${esc(a.at)}</small></span>
+                    <span class="pf-tag ${cls}">${esc(label)}</span></li>`;
+            }).join('') : '<li class="pf-dev-empty">Belum ada aktivitas masuk yang tercatat.</li>';
+        } catch (_) {
+            sess.innerHTML = att.innerHTML = '<li class="pf-dev-empty">Gagal memuat riwayat login.</li>';
+        }
+    }
+
+    if (modal('pfLoginOverlay', ['pfLoginClose'], loadLoginHistory)) {
+        $('pfSessions').addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-revoke]');
+            if (!btn) return;
+            btn.disabled = true;
+            const { res, json } = await api(`${loginBase}/sessions/${btn.dataset.revoke}/revoke`, 'POST');
+            toast(res.ok ? 'success' : 'error', res.ok ? 'Perangkat dikeluarkan' : 'Gagal', firstError(json));
+            loadLoginHistory();
+        });
+        $('pfRevokeOthers').addEventListener('click', async (e) => {
+            e.currentTarget.disabled = true;
+            const { res, json } = await api(`${loginBase}/sessions/revoke-others`, 'POST');
+            toast(res.ok ? 'success' : 'error', res.ok ? 'Selesai' : 'Gagal', firstError(json));
+            e.currentTarget.disabled = false;
+            loadLoginHistory();
+        });
+    }
+
+    // ---------- 2d. Preferensi notifikasi ----------
+    const pref = modal('pfPrefOverlay', ['pfPrefClose', 'pfPrefCancel'], () => $('pfPrefForm').reset());
+    if (pref) {
+        $('pfPrefForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const btn = form.querySelector('[type="submit"]');
+            const body = {};
+            form.querySelectorAll('input[name]').forEach((i) => { body[i.name] = i.checked; });
+
+            btn.disabled = true;
+            try {
+                const { res, json } = await api(form.dataset.url, 'POST', body);
+                if (res.ok) {
+                    // Jadikan pilihan tersimpan sebagai nilai awal form (supaya "Batal" tidak mengembalikan ke nilai lama).
+                    form.querySelectorAll('input[name]').forEach((i) => { i.defaultChecked = i.checked; });
+                    pref.close();
+                    toast('success', 'Tersimpan', json.message);
+                } else {
+                    toast('error', 'Gagal menyimpan', firstError(json));
+                }
+            } catch (_) {
+                toast('error', 'Gagal menyimpan', 'Tidak bisa terhubung ke server.');
+            } finally {
+                btn.disabled = false;
+            }
         });
     }
 

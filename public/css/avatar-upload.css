@@ -3,7 +3,9 @@
    ===================================================================== */
 
 /* ---------- Foto di dalam semua avatar bulat ---------- */
-.avatar, .header-profile-avatar, .header-profile-panel-avatar, .pf-avatar { position: relative; overflow: hidden; }
+/* TIDAK memakai overflow:hidden: .pf-avatar::before (cincin kaca) sengaja keluar dari kotak avatar dan akan terpotong.
+   Foto cukup memotong dirinya sendiri lewat border-radius: inherit di bawah. */
+.avatar, .header-profile-avatar, .header-profile-panel-avatar, .pf-avatar { position: relative; }
 .av-img {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
@@ -30,6 +32,21 @@
 }
 .av-edit:hover .av-edit-badge, .av-edit:focus-visible .av-edit-badge { transform: scale(1.18) rotate(-8deg); }
 .av-edit.is-big .av-edit-badge { width: 34px; height: 34px; font-size: 19px; right: 4px; bottom: 4px; border-width: 3px; }
+
+/* Avatar yang ITU SENDIRI tombolnya (profil): tombol kamera duduk di atas cincin kaca, sudut kanan-bawah (45°).
+   Geometri: pusat tombol di pertengahan cincin (jari-jari av/2 + ring/2) pada 45° -> jaraknya dari tepi kotak avatar
+   = 0.14645·av − 0.35355·ring; dikurangi setengah ukuran tombol untuk offset right/bottom.
+   --av & --ring berasal dari .pf-hero (ikut mengecil di layar kecil). */
+.av-editable { cursor: pointer; outline: none; }
+.av-editable .av-edit-badge {
+    --bs: 34px;
+    right: calc(var(--av, 96px) * .14645 - var(--ring, 0px) * .35355 - var(--bs) / 2);
+    bottom: calc(var(--av, 96px) * .14645 - var(--ring, 0px) * .35355 - var(--bs) / 2);
+    width: var(--bs); height: var(--bs); font-size: 19px; border-width: 3px; z-index: 2;
+    overflow: hidden; white-space: nowrap; line-height: 1;   /* bila font ikon gagal dimuat, teks tidak meluber keluar badge */
+}
+.av-editable:hover .av-edit-badge, .av-editable:focus-visible .av-edit-badge { transform: scale(1.15) rotate(-8deg); }
+.av-editable:focus-visible { box-shadow: 0 0 0 3px var(--primary-soft, #e2e2fd), 0 0 0 5px var(--primary, #5b5fef), 0 8px 28px color-mix(in srgb, var(--pf-top, #316ef2) 40%, transparent); }
 
 /* ---------- Modal ---------- */
 .av-modal { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; }

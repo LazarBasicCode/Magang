@@ -141,16 +141,16 @@
                                 <span class="pf-set-text"><b>Informasi Akses</b><small>Lihat daftar menu yang boleh Anda buka dan kelola.</small></span>
                                 <span class="material-symbols-outlined pf-go">chevron_right</span>
                             </button></li>
-                            <li><div class="pf-set is-soon" aria-disabled="true">
+                            <li><button type="button" class="pf-set" data-pf-modal="pfLoginOverlay">
                                 <span class="pf-set-ico"><span class="material-symbols-outlined">devices</span></span>
                                 <span class="pf-set-text"><b>Riwayat Login</b><small>Pantau perangkat dan waktu masuk akun Anda.</small></span>
-                                <span class="pf-soon">Segera</span>
-                            </div></li>
-                            <li><div class="pf-set is-soon" aria-disabled="true">
+                                <span class="material-symbols-outlined pf-go">chevron_right</span>
+                            </button></li>
+                            <li><button type="button" class="pf-set" data-pf-modal="pfPrefOverlay">
                                 <span class="pf-set-ico"><span class="material-symbols-outlined">notifications_active</span></span>
                                 <span class="pf-set-text"><b>Preferensi Notifikasi</b><small>Atur jenis pemberitahuan yang ingin diterima.</small></span>
-                                <span class="pf-soon">Segera</span>
-                            </div></li>
+                                <span class="material-symbols-outlined pf-go">chevron_right</span>
+                            </button></li>
                         </ul>
                     </aside>
 
@@ -302,7 +302,7 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    {{-- Kontak cadangan (UI saja, belum ada endpoint di baliknya) --}}
+    {{-- Kontak cadangan: email sekunder + telepon (disimpan lewat POST /account/contact) --}}
     <div class="pa-overlay" id="pfContactOverlay" aria-hidden="true">
         <div class="pa-modal" role="dialog" aria-modal="true" aria-labelledby="pfContactTitle">
             <div class="pa-head">
@@ -310,23 +310,73 @@
                 <span class="pa-title" id="pfContactTitle">Kontak Cadangan</span>
                 <button type="button" class="pa-close" id="pfContactClose" aria-label="Tutup"><span class="material-symbols-outlined">close</span></button>
             </div>
-            <form id="pfContactForm" data-email="{{ $user->email }}" novalidate>
+            <form id="pfContactForm" data-email="{{ $user->email }}" data-url="{{ route('account.contact') }}" novalidate>
                 <div class="pa-body">
                     <div class="pa-field">
                         <label for="pfContactEmail">Email sekunder</label>
-                        <div class="pa-input-wrap"><input type="email" id="pfContactEmail" placeholder="nama@contoh.com" autocomplete="email"></div>
+                        <div class="pa-input-wrap"><input type="email" id="pfContactEmail" placeholder="nama@contoh.com" autocomplete="email" value="{{ $user->secondary_email }}"></div>
                         <p class="pa-hint">Cadangan jika email utama tidak bisa diakses.</p>
                         <p class="pa-error"></p>
                     </div>
                     <div class="pa-field">
                         <label for="pfContactPhone">Nomor telepon</label>
-                        <div class="pa-input-wrap"><input type="tel" id="pfContactPhone" placeholder="0812 3456 7890" autocomplete="tel"></div>
+                        <div class="pa-input-wrap"><input type="tel" id="pfContactPhone" placeholder="0812 3456 7890" autocomplete="tel" value="{{ $user->phone }}"></div>
                         <p class="pa-hint">Nomor seluler Indonesia untuk verifikasi pemulihan.</p>
                         <p class="pa-error"></p>
                     </div>
                 </div>
                 <div class="pa-foot">
                     <button type="button" class="pa-btn pa-btn-ghost" id="pfContactCancel">Batal</button>
+                    <button type="submit" class="pa-btn pa-btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Riwayat login: perangkat aktif + aktivitas masuk terakhir (data dimuat dari /account/login-history) --}}
+    <div class="pa-overlay" id="pfLoginOverlay" aria-hidden="true" data-base="{{ url('/account') }}">
+        <div class="pa-modal pf-wide" role="dialog" aria-modal="true" aria-labelledby="pfLoginTitle">
+            <div class="pa-head">
+                <span class="material-symbols-outlined">devices</span>
+                <span class="pa-title" id="pfLoginTitle">Riwayat Login</span>
+                <button type="button" class="pa-close" id="pfLoginClose" aria-label="Tutup"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="pa-body">
+                <h3 class="pf-mini-title">Perangkat yang sedang login</h3>
+                <ul class="pf-dev-list" id="pfSessions"><li class="pf-dev-empty">Memuat…</li></ul>
+                <button type="button" class="pa-btn pa-btn-ghost pf-revoke-all" id="pfRevokeOthers" hidden>Keluar dari semua perangkat lain</button>
+                <h3 class="pf-mini-title">Aktivitas masuk terakhir</h3>
+                <ul class="pf-dev-list" id="pfAttempts"><li class="pf-dev-empty">Memuat…</li></ul>
+            </div>
+        </div>
+    </div>
+
+    {{-- Preferensi notifikasi: kategori yang bisa dimatikan; notifikasi keamanan selalu aktif --}}
+    @php $__prefs = \App\Support\NotificationPrefs::forUser($user); @endphp
+    <div class="pa-overlay" id="pfPrefOverlay" aria-hidden="true">
+        <div class="pa-modal pf-wide" role="dialog" aria-modal="true" aria-labelledby="pfPrefTitle">
+            <div class="pa-head">
+                <span class="material-symbols-outlined">notifications_active</span>
+                <span class="pa-title" id="pfPrefTitle">Preferensi Notifikasi</span>
+                <button type="button" class="pa-close" id="pfPrefClose" aria-label="Tutup"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <form id="pfPrefForm" data-url="{{ route('account.notification-preferences') }}" novalidate>
+                <div class="pa-body">
+                    @foreach(\App\Support\NotificationPrefs::CATEGORIES as $key => $cat)
+                        <label class="pf-pref">
+                            <span class="pf-pref-ico material-symbols-outlined">{{ $cat['icon'] }}</span>
+                            <span class="pf-pref-text"><b>{{ $cat['label'] }}</b><small>{{ $cat['desc'] }}</small></span>
+                            <span class="pf-sw"><input type="checkbox" name="{{ $key }}" @checked($__prefs[$key])><i></i></span>
+                        </label>
+                    @endforeach
+                    <label class="pf-pref is-locked" title="Tidak bisa dimatikan demi keamanan akun">
+                        <span class="pf-pref-ico material-symbols-outlined">{{ \App\Support\NotificationPrefs::LOCKED['icon'] }}</span>
+                        <span class="pf-pref-text"><b>{{ \App\Support\NotificationPrefs::LOCKED['label'] }}</b><small>{{ \App\Support\NotificationPrefs::LOCKED['desc'] }} Selalu aktif.</small></span>
+                        <span class="pf-sw"><input type="checkbox" checked disabled><i></i></span>
+                    </label>
+                </div>
+                <div class="pa-foot">
+                    <button type="button" class="pa-btn pa-btn-ghost" id="pfPrefCancel">Batal</button>
                     <button type="submit" class="pa-btn pa-btn-primary">Simpan</button>
                 </div>
             </form>

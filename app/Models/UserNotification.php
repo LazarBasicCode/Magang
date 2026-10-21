@@ -47,8 +47,13 @@ class UserNotification extends Model
      *       'description' => "Diubah oleh {$actor->name}",
      *   ]);
      */
-    public static function send(int $userId, string $type, array $attrs): self
+    public static function send(int $userId, string $type, array $attrs): ?self
     {
+        // Hormati preferensi notifikasi penerima (kategori keamanan tidak bisa dimatikan).
+        if (!\App\Support\NotificationPrefs::allows(User::find($userId), $type)) {
+            return null;
+        }
+
         $defaults = match ($type) {
             'data_updated'      => ['color' => 'warning', 'icon' => 'edit_note'],
             'approval_request'  => ['color' => 'warning', 'icon' => 'fact_check'],

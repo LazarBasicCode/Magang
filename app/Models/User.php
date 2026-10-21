@@ -20,6 +20,10 @@ class User extends Authenticatable
         'role',
     ];
 
+    protected $casts = [
+        'notification_prefs' => 'array',
+    ];
+
     /**
      * Kirim notifikasi reset password memakai template SIDA sendiri
      * (bukan template default Laravel), supaya tautannya mengarah ke

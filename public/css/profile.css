@@ -351,3 +351,39 @@ body.dark-mode .pf-avatar::before { background: rgba(255, 255, 255, .12); border
     .pf-actions .pf-btn { flex: 1; justify-content: center; }
     .pf-foot { justify-content: center; }
 }
+/* ==========================================================
+   Riwayat Login & Preferensi Notifikasi (modal di halaman Profil)
+   ========================================================== */
+.pa-modal.pf-wide { width: min(520px, calc(100vw - 32px)); }
+
+.pf-mini-title { margin: 16px 0 8px; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-faint); }
+.pa-body > .pf-mini-title:first-child { margin-top: 0; }
+
+.pf-dev-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; }
+.pf-dev { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas); }
+.pf-dev-empty { padding: 14px; text-align: center; font-size: 13px; color: var(--ink-muted); }
+.pf-dev-ico { flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: var(--primary-soft); color: var(--primary); font-size: 20px; }
+.pf-dev-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 13px; color: var(--ink); }
+.pf-dev-main small { flex-basis: 100%; font-size: 12px; color: var(--ink-muted); }
+.pf-dev-btn { flex-shrink: 0; padding: 6px 10px; font-size: 12px; }
+.pf-revoke-all { margin-top: 10px; width: 100%; justify-content: center; }
+
+.pf-tag { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); background: var(--card); color: var(--ink-muted); white-space: nowrap; }
+.pf-tag.is-ok { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+.pf-tag.is-bad { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+.pf-tag.is-warn { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning); }
+
+.pf-pref { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas); cursor: pointer; }
+.pf-pref.is-locked { cursor: not-allowed; opacity: .75; }
+.pf-pref-ico { flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: var(--primary-soft); color: var(--primary); font-size: 20px; }
+.pf-pref-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; color: var(--ink); }
+.pf-pref-text small { font-size: 12px; line-height: 1.4; color: var(--ink-muted); }
+
+/* Saklar */
+.pf-sw { position: relative; flex-shrink: 0; width: 42px; height: 24px; }
+.pf-sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
+.pf-sw i { position: absolute; inset: 0; border-radius: 999px; background: var(--border-strong); transition: background-color .15s ease; pointer-events: none; }
+.pf-sw i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .15s ease; }
+.pf-sw input:checked + i { background: var(--primary); }
+.pf-sw input:checked + i::after { transform: translateX(18px); }
+.pf-sw input:focus-visible + i { outline: 2px solid var(--primary); outline-offset: 2px; }

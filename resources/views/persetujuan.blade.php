@@ -20,6 +20,7 @@
             } catch (e) {}
         })();
     </script>
+    <link rel="stylesheet" href="{{ asset('css/approval.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/row-select.css') }}?v={{ @filemtime(public_path('css/row-select.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
@@ -210,50 +211,63 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    {{-- Modal Periksa: Detail | Komentar | Riwayat. Membuka pengajuan baru = otomatis "Diproses Prodi". --}}
+    {{-- Modal Periksa. Ukuran TETAP: judul | isi 2 kolom (kiri: tab + konten yang di-scroll, kanan: ringkasan) | footer.
+         Membuka pengajuan baru = otomatis "Diproses Prodi". --}}
     <div class="modal-backdrop" id="apprRevBackdrop"></div>
-    <div class="modal-card" id="apprRevModal" role="dialog" aria-modal="true" aria-hidden="true">
-        <div class="modal-drag-handle" id="apprRevDrag">
-            <div>
-                <h3 class="modal-title" id="apprRevTitle">Periksa Pengajuan</h3>
-                <p class="modal-subtitle" id="apprRevSub">Cek bukti &amp; kelengkapan, lalu verifikasi atau tolak</p>
+    <div class="modal-card" id="apprRevModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="apprRevName">
+        <div class="modal-drag-handle appr-rv-top" id="apprRevDrag">
+            <span class="appr-rv-icon" id="apprRevIcon" aria-hidden="true"></span>
+            <div class="appr-rv-titles">
+                <p class="appr-rv-kicker" id="apprRevTitle">Periksa pengajuan</p>
+                <h3 class="modal-title appr-rv-name" id="apprRevName"></h3>
+                <div class="appr-rv-meta" id="apprRevHead"></div>
             </div>
             <button type="button" class="modal-close-btn" id="apprRevClose" aria-label="Tutup">
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
-        <div class="modal-body">
-            <div class="appr-rev-head" id="apprRevHead"></div>
 
-            <div class="appr-mtabs" role="tablist">
-                <button type="button" class="appr-mtab is-active" data-pane="detail">Detail</button>
-                <button type="button" class="appr-mtab" data-pane="komentar">Komentar <span class="appr-mtab-count" id="apprMtabComments">0</span></button>
-                <button type="button" class="appr-mtab" data-pane="riwayat">Riwayat</button>
-            </div>
+        <div class="appr-rv-body">
+            <section class="appr-rv-main">
+                <div class="appr-mtabs" role="tablist">
+                    <button type="button" class="appr-mtab is-active" data-pane="detail" role="tab">Detail</button>
+                    <button type="button" class="appr-mtab" data-pane="komentar" role="tab">Komentar <span class="appr-mtab-count" id="apprMtabComments">0</span></button>
+                    <button type="button" class="appr-mtab" data-pane="riwayat" role="tab">Riwayat</button>
+                </div>
 
-            <div class="appr-pane" data-pane="detail" id="apprPaneDetail"></div>
+                <div class="appr-rv-scroll">
+                    <div class="appr-pane" data-pane="detail" id="apprPaneDetail"></div>
 
-            <div class="appr-pane" data-pane="komentar" id="apprPaneKomentar" hidden>
-                <ul class="appr-comments" id="apprCommentList"></ul>
-                <form class="appr-comment-form" id="apprCommentForm" novalidate>
-                    <textarea id="apprCommentBody" class="appr-note-input" maxlength="1000" rows="2" placeholder="Tulis komentar untuk mahasiswa, mis. bukti perlu dilengkapi..."></textarea>
-                    <span class="appr-comment-err" id="apprCommentErr" hidden></span>
-                </form>
-            </div>
+                    <div class="appr-pane" data-pane="komentar" id="apprPaneKomentar" hidden>
+                        <form class="appr-cm-form" id="apprCommentForm" novalidate>
+                            <label class="appr-sec-h" for="apprCommentBody">Tulis komentar untuk mahasiswa</label>
+                            <textarea id="apprCommentBody" class="appr-note-input" maxlength="1000" rows="3" placeholder="Mis. bukti perlu dilengkapi, atau tautan tidak bisa dibuka..."></textarea>
+                            <span class="appr-comment-err" id="apprCommentErr" hidden></span>
+                        </form>
+                        <h4 class="appr-sec-h">Komentar sebelumnya</h4>
+                        <ul class="appr-cm-list" id="apprCommentList"></ul>
+                        <button type="button" class="appr-more" id="apprCommentMore" hidden>
+                            <span class="material-symbols-outlined">expand_more</span><span>Tampilkan lebih banyak</span>
+                        </button>
+                    </div>
 
-            <div class="appr-pane" data-pane="riwayat" id="apprPaneRiwayat" hidden>
-                <ul class="appr-timeline" id="apprHistList"></ul>
-            </div>
+                    <div class="appr-pane" data-pane="riwayat" id="apprPaneRiwayat" hidden>
+                        <ol class="appr-tl" id="apprHistList"></ol>
+                    </div>
+                </div>
+            </section>
 
+            <aside class="appr-rv-aside" id="apprRevAside" aria-label="Ringkasan pengajuan"></aside>
         </div>
+
         <div class="appr-rev-footer" id="apprRevFooter">
-                <button type="button" class="appr-btn-cancelver" id="apprRevUndo" hidden>
-                    <span class="material-symbols-outlined">undo</span><span>Batalkan Verifikasi</span>
-                </button>
-                <button type="button" class="btn-ghost" id="apprRevCancel">Tutup</button>
-                <button type="submit" form="apprCommentForm" class="btn-apply" id="apprCommentSend" hidden><span class="material-symbols-outlined">send</span><span>Kirim</span></button>
-                <button type="button" class="btn-apply is-danger" id="apprRevReject" hidden><span class="material-symbols-outlined">cancel</span><span>Tolak</span></button>
-                <button type="button" class="btn-apply" id="apprRevApprove" hidden><span class="material-symbols-outlined">check_circle</span><span>Verifikasi</span></button>
+            <button type="button" class="appr-btn-cancelver" id="apprRevUndo" hidden>
+                <span class="material-symbols-outlined">undo</span><span>Batalkan Verifikasi</span>
+            </button>
+            <button type="button" class="btn-ghost" id="apprRevCancel">Tutup</button>
+            <button type="submit" form="apprCommentForm" class="btn-apply" id="apprCommentSend" hidden><span class="material-symbols-outlined">send</span><span>Kirim</span></button>
+            <button type="button" class="btn-apply is-danger" id="apprRevReject" hidden><span class="material-symbols-outlined">cancel</span><span>Tolak</span></button>
+            <button type="button" class="btn-apply" id="apprRevApprove" hidden><span class="material-symbols-outlined">check_circle</span><span>Verifikasi</span></button>
         </div>
     </div>
 

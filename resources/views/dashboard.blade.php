@@ -1,3 +1,13 @@
+{{--
+    SATU-SATUNYA halaman dashboard. Dipanggil DashboardController@index dengan
+    $role = admin | dosen | mahasiswa | generic.
+    Isi per role: partials/dashboard/{admin|dosen|mahasiswa|generic}.blade.php.
+    Admin, dosen, dan mahasiswa memakai kartu yang sama: partials/dashboard/content.
+--}}
+@php
+    $isAdmin   = $role === 'admin';
+    $pageTitle = $isAdmin ? 'Dashboard ' . $meta['title'] : 'Dashboard';
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 
@@ -18,48 +28,47 @@
     </script>
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
+    @if($isAdmin)
+        <link rel="stylesheet" href="{{ asset('css/laporan.css') }}?v={{ @filemtime(public_path('css/laporan.css')) }}">
+    @endif
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ @filemtime(public_path('css/dashboard.css')) }}">
-    <title>Dashboard &middot; SIDA</title>
+    <title>{{ $pageTitle ?? 'Dashboard' }} &middot; SIDA</title>
 </head>
 
 <body>
-    <!-- Definisi dark mode -->
     <script>
         try {
             if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         } catch (e) {}
     </script>
+
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">
         <defs>
             <symbol id="sida-mark" viewBox="0 0 48 48">
-                <clipPath id="sidaClip">
-                    <circle cx="24" cy="24" r="22.5" />
-                </clipPath>
+                <clipPath id="sidaClip"><circle cx="24" cy="24" r="22.5" /></clipPath>
                 <image href="{{ asset('img/logo-prodi.png') }}" x="1.5" y="1.5" width="45" height="45" preserveAspectRatio="xMidYMid slice" clip-path="url(#sidaClip)" />
                 <circle cx="24" cy="24" r="22.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5" />
             </symbol>
         </defs>
     </svg>
-
     @include('partials.sidebar', ['active' => 'dashboard'])
 
     <div class="app-content">
-        @include('partials.header', ['active' => 'dashboard'])
+        @include('partials.header', ['active' => 'dashboard'] + ($isAdmin ? ['crumbParent' => 'Dashboard', 'crumbCurrent' => $meta['title']] : []))
 
         <main class="app-main">
             <div class="page-wrap">
-                <div class="dash-welcome">
-                    <p class="dash-welcome-title">Halo, {{ $user->name }} 👋</p>
-                    <p class="dash-welcome-sub">Dashboard ringkasan untuk role "{{ $user->role }}" belum tersedia &mdash; silakan pilih menu di sidebar.</p>
-                </div>
+                @include('partials.dashboard.' . $role)
             </div>
         </main>
     </div>
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="chart-tooltip" id="chartTooltip"></div>
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/dashboard-charts.js') }}?v={{ @filemtime(public_path('js/dashboard-charts.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>

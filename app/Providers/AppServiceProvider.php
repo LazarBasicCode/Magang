@@ -41,11 +41,8 @@ class AppServiceProvider extends ServiceProvider
         View::composer([
             'kemahasiswaan',
             'kemahasiswaan-dashboard',
-            'dashboard-admin',
             'persetujuan',
-            'dashboard-mahasiswa',
-            'dashboard-dosen',
-            'dashboard-generic',
+            'dashboard',
             'lppm_dosen',
             'lppm_mahasiswa',
             'lppm_rekognisi',

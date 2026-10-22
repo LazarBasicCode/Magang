@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\ActivityDescriber;
+use App\Support\ActivityLog;
 use App\Support\SessionRevoker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -183,10 +185,46 @@ class AuthController extends Controller
         } catch (\Throwable $e) {
             report($e);
         }
+
+        $this->logActivity($request, $user, $status);
+    }
+
+    /**
+     * Catat percobaan login ke log aktivitas (lihat ActivityLog). Teks yang
+     * diketik di kolom username TIDAK ikut ditulis — orang kadang salah
+     * mengetik password di kolom itu — hanya nama akun bila memang ditemukan.
+     */
+    private function logActivity(Request $request, ?User $user, string $status): void
+    {
+        $device = ActivityDescriber::clean((string) $request->userAgent(), 120);
+
+        match ($status) {
+            'success' => ActivityLog::record('login', 'berhasil login', ['perangkat' => $device], 'info', $user),
+            'failed'  => ActivityLog::record(
+                'login.failed',
+                $user
+                    ? 'gagal login ke akun ' . ActivityLog::who($user)
+                    : 'gagal login (akun tidak ditemukan)',
+                ['akun_id' => $user?->id, 'perangkat' => $device],
+                'warning',
+                null
+            ),
+            'locked'  => ActivityLog::record(
+                'login.locked',
+                'ditolak login sementara karena terlalu banyak percobaan gagal',
+                ['perangkat' => $device],
+                'warning',
+                null
+            ),
+            default   => null,
+        };
     }
 
     public function logout(Request $request)
     {
+        // Dicatat SEBELUM logout: setelah itu user sudah tidak dikenali.
+        ActivityLog::record('logout', 'logout', [], 'info', $request->user());
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -232,6 +270,17 @@ class AuthController extends Controller
         }
 
         $status = Password::sendResetLink(['email' => $user->email]);
+
+        ActivityLog::record(
+            'password.reset_request',
+            'meminta tautan reset password untuk akun ' . ActivityLog::who($user),
+            [
+                'akun_id'  => $user->id,
+                'terkirim' => $status === Password::RESET_LINK_SENT ? 'ya' : 'tidak (permintaan terlalu sering)',
+            ],
+            'info',
+            null
+        );
 
         return response()->json([
             'success' => $status === Password::RESET_LINK_SENT,
@@ -279,6 +328,8 @@ class AuthController extends Controller
                 // ikut terputus). Perangkat yang terpental melihat pemberitahuan di
                 // halaman login — lihat SessionRevoker.
                 SessionRevoker::revoke($user, SessionRevoker::PASSWORD_RESET);
+
+                ActivityLog::record('password.reset', 'mengganti password lewat tautan reset', [], 'info', $user);
             }
         );
 

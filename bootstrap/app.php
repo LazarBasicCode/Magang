@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'menu.access' => \App\Http\Middleware\EnsureMenuAccess::class,
+            'log.activity' => \App\Http\Middleware\LogActivity::class,
         ]);
 
         // Pengguna yang SUDAH login dan mencoba membuka route khusus tamu

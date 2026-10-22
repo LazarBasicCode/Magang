@@ -548,6 +548,28 @@ class Approval
             'actor_id'    => $actor?->id,
             'note'        => $note ?: null,
         ]);
+
+        // Catat juga ke log aktivitas (siapa meminta/meneruskan/menyetujui/menolak apa).
+        // Dibungkus try/catch: log aktivitas tidak boleh menggagalkan proses persetujuan.
+        try {
+            $cfg = self::config($menu);
+            $owner = ($cfg['mahasiswa']($item))?->user?->name;
+
+            ActivityLog::approval(
+                $menu,
+                $cfg['label'],
+                (string) ($cfg['title']($item) ?? ''),
+                $item->getKey(),
+                $action,
+                $from,
+                $to,
+                $actor,
+                $note,
+                $owner
+            );
+        } catch (\Throwable $e) {
+            // abaikan
+        }
     }
 
     /** user_id penerima notifikasi pengajuan baru, sesuai tahap saat ini. */

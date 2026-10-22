@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -71,6 +72,26 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
+        ],
+
+        // Catatan aktivitas pengguna (siapa melakukan apa) — lihat App\Support\ActivityLog.
+        // Berkas terpisah dari laravel.log: storage/logs/activity-YYYY-MM-DD.log.
+        // Format dua baris per entri supaya viewer Log Aplikasi menampilkan kalimat
+        // aktivitas sebagai judul dan konteks JSON (id, IP, rute, dst.) sebagai detail.
+        'activity' => [
+            'driver' => 'daily',
+            'name' => 'activity',
+            'path' => storage_path('logs/activity.log'),
+            'level' => 'info',
+            'days' => env('LOG_ACTIVITY_DAYS', 90),
+            'replace_placeholders' => false,
+            'formatter' => LineFormatter::class,
+            'formatter_with' => [
+                'format' => "[%datetime%] %channel%.%level_name%: %message%\n%context%\n",
+                'dateFormat' => 'Y-m-d H:i:s',
+                'allowInlineLineBreaks' => false,
+                'ignoreEmptyContextAndExtra' => true,
+            ],
         ],
 
         'slack' => [

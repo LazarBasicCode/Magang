@@ -14,6 +14,7 @@
     ini ('partials.sidebar') juga didaftarkan di sana supaya tetap aman
     walau partial dipanggil dari luar konteks halaman utama.
 --}}
+<script>try{var p=localStorage.getItem('sida-pal');if(p&&p!=='indigo')document.documentElement.setAttribute('data-pal',p)}catch(e){}</script>
 @php
     $active = $active ?? null;
     $navActive = fn ($key) => $active === $key;

@@ -11,22 +11,27 @@
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    // ---------- 1. Ikon cat: warna sementara (hilang saat halaman dimuat ulang) ----------
+    // ---------- 1. Ikon cat: pilih palet warna (berlaku ke semua menu, disimpan di localStorage) ----------
     // Nilai warna ada di profile.css ("DAFTAR WARNA"). Tambah tema: tambah nama di sini + satu blok [data-pal] di CSS.
-    const PALETTES = ['indigo', 'zamrud', 'senja', 'mawar', 'samudra'];   // 'indigo' = bawaan tema (tanpa data-pal)
+    const PALETTES = ['indigo', 'zamrud', 'kuning', 'mawar', 'azure'];   // 'indigo' = biru bawaan (tanpa data-pal)
+    const LABEL = { indigo: 'Biru', zamrud: 'Hijau', kuning: 'Kuning', mawar: 'Merah', azure: 'Azure' };
     const page = $('pageWrap');
     const palBtn = $('pfPaletteBtn');
     const swatches = $('pfSwatches');
 
     function applyPalette(name) {
-        if (name === PALETTES[0]) page.removeAttribute('data-pal'); else page.setAttribute('data-pal', name);
+        const root = document.documentElement;
+        if (name === PALETTES[0]) root.removeAttribute('data-pal'); else root.setAttribute('data-pal', name);
+        try { localStorage.setItem('sida-pal', name); } catch (e) {}
         swatches.querySelectorAll('.pf-swatch').forEach((s) => s.classList.toggle('is-on', s.dataset.pal === name));
     }
 
     if (page && palBtn && swatches) {
         swatches.innerHTML = PALETTES.map((n, i) =>
-            `<button type="button" class="pf-swatch${i === 0 ? ' is-on' : ''}" data-pal="${n}" title="${n[0].toUpperCase() + n.slice(1)}" aria-label="Warna ${n}"></button>`
+            `<button type="button" class="pf-swatch${i === 0 ? ' is-on' : ''}" data-pal="${n}" title="${LABEL[n]}" aria-label="Warna ${LABEL[n]}"></button>`
         ).join('');
+        const cur = document.documentElement.getAttribute('data-pal') || PALETTES[0];
+        swatches.querySelectorAll('.pf-swatch').forEach((x) => x.classList.toggle('is-on', x.dataset.pal === cur));
         palBtn.addEventListener('click', () => {
             swatches.hidden = !swatches.hidden;
             palBtn.setAttribute('aria-expanded', String(!swatches.hidden));
@@ -159,6 +164,8 @@
             sess.innerHTML = att.innerHTML = '<li class="pf-dev-empty">Gagal memuat riwayat login.</li>';
         }
     }
+
+    modal('pfAccessOverlay', ['pfAccessClose']);
 
     if (modal('pfLoginOverlay', ['pfLoginClose'], loadLoginHistory)) {
         $('pfSessions').addEventListener('click', async (e) => {

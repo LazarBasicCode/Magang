@@ -74,8 +74,21 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Seperti 'daily' tetapi SATU berkas per BULAN (laravel-YYYY-MM.log). Pakai dengan LOG_STACK=monthly.
+        // "days" = jumlah berkas bulanan yang disimpan; bulan yang lebih lama dihapus otomatis saat bulan baru mulai.
+        'monthly' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_MONTHLY_MONTHS', 3),
+            'tap' => [\App\Logging\MonthlyRotation::class],
+            'replace_placeholders' => true,
+        ],
+
         // Catatan aktivitas pengguna (siapa melakukan apa) — lihat App\Support\ActivityLog.
-        // Berkas terpisah dari laravel.log: storage/logs/activity-YYYY-MM-DD.log.
+        // Berkas terpisah dari laravel.log: storage/logs/activity-YYYY-MM.log (SATU berkas per BULAN).
+        // Saat bulan baru dimulai berkas baru dibuat otomatis, dan berkas bulan lama di luar batas
+        // LOG_ACTIVITY_MONTHS (default 1 = hanya bulan berjalan) otomatis dihapus.
         // Format dua baris per entri supaya viewer Log Aplikasi menampilkan kalimat
         // aktivitas sebagai judul dan konteks JSON (id, IP, rute, dst.) sebagai detail.
         'activity' => [
@@ -83,7 +96,8 @@ return [
             'name' => 'activity',
             'path' => storage_path('logs/activity.log'),
             'level' => 'info',
-            'days' => env('LOG_ACTIVITY_DAYS', 90),
+            'days' => env('LOG_ACTIVITY_MONTHS', 1), // jumlah BERKAS BULANAN yang disimpan (bukan hari)
+            'tap' => [\App\Logging\MonthlyRotation::class],
             'replace_placeholders' => false,
             'formatter' => LineFormatter::class,
             'formatter_with' => [

@@ -38,7 +38,7 @@
 .alog-caret { transition: transform .2s ease; color: var(--ink-faint); }
 .alog-row.is-open .alog-caret { transform: rotate(180deg); }
 
-.alog-detail td { padding: 0 24px 14px !important; background: var(--canvas); border-top: 0 !important; }
+.alog-detail td { padding: 14px 24px 14px !important; background: var(--canvas); border-top: 0 !important; }
 .alog-detail pre {
     margin: 0; padding: 12px 14px; max-height: 320px; overflow: auto;
     border: 1px solid var(--border); border-radius: 10px; background: var(--card, #fff); color: var(--ink);
@@ -51,4 +51,99 @@
 @media (max-width: 640px) {
     .alog-table { table-layout: auto; }
     .alog-note { margin: 0 14px 10px; }
+}
+
+/* ==========================================================
+   Tampilan entri aktivitas ala Swagger
+   (dirender oleh public/js/app-log.js bila `details` berupa JSON)
+   ========================================================== */
+
+/* Warna per jenis aksi: hijau tambah, oranye ubah, merah hapus/gagal, biru akses */
+.alog-tone-success { --verb: var(--success);  --verb-bg: var(--success-bg);  --verb-bd: var(--success-border); }
+.alog-tone-warning { --verb: var(--warning);  --verb-bg: var(--warning-bg);  --verb-bd: var(--warning-border); }
+.alog-tone-danger  { --verb: var(--danger);   --verb-bg: var(--danger-bg);   --verb-bd: var(--danger-border); }
+.alog-tone-info    { --verb: var(--info);     --verb-bg: var(--info-bg);     --verb-bd: var(--info-border); }
+.alog-tone-primary { --verb: var(--primary);  --verb-bg: var(--primary-soft); --verb-bd: var(--primary-border); }
+.alog-tone-neutral { --verb: var(--ink-muted); --verb-bg: var(--canvas);     --verb-bd: var(--border-strong, var(--border)); }
+
+/* Baris & detail: garis aksen tebal di kiri + tint tipis, seperti blok operasi Swagger */
+.alog-act > td:first-child { box-shadow: inset 4px 0 0 var(--verb); }
+.alog-act.alog-row > td { background: color-mix(in srgb, var(--verb) 5%, transparent); }
+.alog-act.alog-row.has-details:hover > td { background: color-mix(in srgb, var(--verb) 10%, transparent); }
+.alog-act.alog-row.is-open > td { background: color-mix(in srgb, var(--verb) 9%, transparent); }
+
+/* Pil aksi (seperti badge GET / POST / DELETE) */
+.alog-msgwrap { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.alog-msgwrap .alog-msg { flex: 1; min-width: 0; }
+.alog-verb {
+    flex-shrink: 0; min-width: 76px; margin-top: 1px; padding: 4px 8px; text-align: center; white-space: nowrap;
+    border-radius: 6px; border: 1px solid var(--verb-bd, var(--border)); background: var(--verb-bg, var(--canvas)); color: var(--verb, var(--ink-muted));
+    font-size: 10.5px; font-weight: 800; letter-spacing: .05em; line-height: 1.2;
+}
+
+/* Panel detail */
+.alog-detail td { box-shadow: none; }
+.alog-panel { border: 1px solid var(--border); border-radius: 12px; background: var(--card, #fff); overflow: hidden; text-align: left; }
+.alog-panel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 0 10px 0 6px; border-bottom: 1px solid var(--border); background: var(--canvas);
+}
+.alog-ptabs { display: flex; gap: 2px; }
+.alog-ptab {
+    margin-bottom: -1px; padding: 11px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent;
+    color: var(--ink-muted); font-size: 12px; font-weight: 700; cursor: pointer; transition: color .15s ease, border-color .15s ease;
+}
+.alog-ptab:hover { color: var(--ink); }
+.alog-ptab.is-active { color: var(--verb, var(--primary)); border-bottom-color: var(--verb, var(--primary)); }
+
+.alog-copy {
+    display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
+    border: 1px solid var(--border-strong, var(--border)); border-radius: 7px; background: var(--card, #fff);
+    color: var(--ink-muted); font-size: 11.5px; font-weight: 700; cursor: pointer; transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.alog-copy .material-symbols-outlined { font-size: 15px; }
+.alog-copy:hover { color: var(--ink); border-color: var(--ink-faint); }
+.alog-copy.is-done { color: var(--success); border-color: var(--success-border); background: var(--success-bg); }
+
+.alog-pane { padding: 16px 18px; }
+.alog-pane[hidden] { display: none; }
+.alog-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 18px 28px; }
+.alog-sec { min-width: 0; }
+.alog-sec-title { margin: 0 0 9px; font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); }
+.alog-kv { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 12.5px; line-height: 1.45; }
+.alog-kv dt { color: var(--ink-muted); }
+.alog-kv dd { margin: 0; min-width: 0; color: var(--ink); word-break: break-word; }
+
+.alog-code {
+    padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--canvas);
+    font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; word-break: break-all;
+}
+.alog-chip {
+    display: inline-block; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-strong, var(--border));
+    background: var(--canvas); color: var(--ink-muted); font-size: 11px; font-weight: 700; line-height: 1.5;
+}
+.alog-chip--primary { color: var(--primary); background: var(--primary-soft); border-color: var(--primary-border); }
+.alog-chip--success { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
+.alog-chip--warning { color: var(--warning); background: var(--warning-bg); border-color: var(--warning-border); }
+.alog-chip--danger  { color: var(--danger);  background: var(--danger-bg);  border-color: var(--danger-border); }
+.alog-chip--info    { color: var(--info);    background: var(--info-bg);    border-color: var(--info-border); }
+.alog-flow { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.alog-flow .material-symbols-outlined { font-size: 16px; color: var(--ink-faint); }
+.alog-raw { margin-top: 4px; color: var(--ink-faint); font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; word-break: break-all; }
+
+/* Tab JSON */
+.alog-panel pre.alog-json {
+    margin: 0; padding: 0; max-height: 340px; overflow: auto; border: 0; border-radius: 0; background: transparent;
+    font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word;
+}
+.alog-json .j-k { color: var(--primary); }
+.alog-json .j-s { color: var(--success); }
+.alog-json .j-n { color: var(--warning); }
+.alog-json .j-l { color: var(--info); }
+
+@media (max-width: 640px) {
+    .alog-verb { min-width: 0; }
+    .alog-msgwrap { flex-direction: column; gap: 6px; }
+    .alog-pane { padding: 14px; }
+    .alog-kv { grid-template-columns: 100px minmax(0, 1fr); }
 }

@@ -59,6 +59,12 @@ Route::middleware(['auth', 'log.activity'])->group(function () {
     // ---- Pengaturan akun sendiri (menu profil kanan atas) ----
     Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
     Route::post('/account/recovery-email', [AccountController::class, 'updateRecoveryEmail'])->name('account.recovery-email');
+    // Halaman Profil: Kontak Cadangan, Riwayat Login (perangkat), Preferensi Notifikasi
+    Route::post('/account/contact', [AccountController::class, 'updateContact'])->name('account.contact');
+    Route::get('/account/login-history', [AccountController::class, 'loginHistory'])->name('account.login-history');
+    Route::post('/account/sessions/revoke-others', [AccountController::class, 'revokeOtherSessions'])->name('account.sessions.revoke-others');
+    Route::post('/account/sessions/{ref}/revoke', [AccountController::class, 'revokeSession'])->name('account.sessions.revoke');
+    Route::post('/account/notification-preferences', [AccountController::class, 'updateNotificationPreferences'])->name('account.notification-preferences');
     // Foto profil: unggah (dibatasi 10x/menit agar kuota layanan gambar tidak habis) & hapus.
     Route::post('/account/avatar', [AvatarController::class, 'update'])->middleware('throttle:10,1')->name('account.avatar');
     Route::delete('/account/avatar', [AvatarController::class, 'destroy'])->name('account.avatar.remove');

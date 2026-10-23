@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Support\ChangeTracker;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +18,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Pengumpul perubahan data per request (dibaca middleware LogActivity; lihat App\Support\ChangeTracker).
+        $this->app->singleton(ChangeTracker::class);
     }
 
     /**
@@ -23,6 +27,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Catat sebelum/sesudah setiap data yang dibuat, diubah, atau dihapus lewat model Eloquent,
+        // supaya Log Aktivitas bisa menampilkan input -> output. Mencatat tidak boleh merusak proses utama.
+        Event::listen(['eloquent.created: *', 'eloquent.updated: *', 'eloquent.deleted: *'], function (string $event, array $payload) {
+            try {
+                $model = $payload[0] ?? null;
+                if ($model instanceof Model) {
+                    // "eloquent.updated: App\Models\User" -> "update"
+                    $name = substr(explode(':', $event, 2)[0], strlen('eloquent.'));
+                    app(ChangeTracker::class)->track(match ($name) {
+                        'created' => 'create',
+                        'updated' => 'update',
+                        'deleted' => 'delete',
+                        default   => $name,
+                    }, $model);
+                }
+            } catch (\Throwable $e) {
+                // Sengaja diam: gagal mencatat tidak boleh menggagalkan aksi pengguna.
+            }
+        });
+
         // Jaring pengaman kasar per-IP untuk endpoint login: maksimal 20 kali
         // request (berhasil ataupun gagal) per menit dari satu alamat IP.
         // Ini mencegah flood/scan cepat lewat banyak username sekaligus.

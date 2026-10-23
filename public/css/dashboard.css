@@ -53,7 +53,7 @@ body.dark-mode {
     border-radius: var(--radius-lg);
     overflow: hidden;
     background:
-        radial-gradient(circle at 100% 0%, rgba(25, 12, 86, .72) 0, rgba(25, 12, 86, .42) 18%, transparent 43%), radial-gradient(circle at 0% 100%, rgba(31, 18, 112, .76) 0, rgba(31, 18, 112, .44) 20%, transparent 46%), linear-gradient(120deg, #060633 0%, #00086d 38%, #0042dd 58%, #550095 100%);
+        radial-gradient(circle at 100% 0%, rgba(var(--dr1), .72) 0, rgba(var(--dr1), .42) 18%, transparent 43%), radial-gradient(circle at 0% 100%, rgba(var(--dr2), .76) 0, rgba(var(--dr2), .44) 20%, transparent 46%), linear-gradient(120deg, var(--g1) 0%, var(--g2) 38%, var(--g3) 58%, var(--g4) 100%);
     background-size: 155% 155%, 155% 155%, 240% 240%;
     background-position: 100% 0%, 0% 100%, 0% 50%;
     animation: dash-gradient-shift 9s ease-in-out infinite alternate;
@@ -87,7 +87,7 @@ body.dark-mode {
 /* Bright mode: gradient lebih terang dengan basis ungu #5135cf */
 body:not(.dark-mode) .dash-panel {
     background:
-        radial-gradient(circle at 100% 0%, rgba(73, 49, 212, 0.38) 0, rgba(72, 44, 199, 0.16) 18%, transparent 43%), radial-gradient(circle at 0% 100%, rgba(102, 76, 231, 0.42) 0, rgba(105, 80, 230, 0.18) 20%, transparent 46%), linear-gradient(120deg, #12aff9 0%, #473aeb 38%, #1814ff 58%, #8304e3 100%);
+        radial-gradient(circle at 100% 0%, rgba(var(--hr1), 0.38) 0, rgba(var(--hr1), 0.16) 18%, transparent 43%), radial-gradient(circle at 0% 100%, rgba(var(--hr2), 0.42) 0, rgba(var(--hr2), 0.18) 20%, transparent 46%), linear-gradient(120deg, var(--h1) 0%, var(--h2) 38%, var(--h3) 58%, var(--h4) 100%);
     background-size: 155% 155%, 155% 155%, 240% 240%;
     background-position: 100% 0%, 0% 100%, 0% 50%;
     animation-name: dash-gradient-shift-bright;
@@ -301,7 +301,7 @@ body:not(.dark-mode) .dash-panel {
 }
 
 .stat-hero-card.grad-3 {
-    background: linear-gradient(45deg, rgba(160, 151, 255, 0.6) 0%, rgba(77, 11, 131, 0.2) 50%, rgba(38, 3, 83, 0.3) 100%);
+    background: linear-gradient(45deg, rgba(var(--s1), 0.6) 0%, rgba(var(--s2), 0.2) 50%, rgba(var(--s3), 0.3) 100%);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, .18);
@@ -646,8 +646,8 @@ body:not(.dark-mode) .dash-panel {
 body.dark-mode .donut-card {
     background-color: var(--card);
     background-image:
-        radial-gradient(120% 120% at 25% 0%, rgba(76, 141, 255, .18) 0%, transparent 60%),
-        linear-gradient(180deg, rgba(77, 106, 235, .10) 0%, transparent 45%);
+        radial-gradient(120% 120% at 25% 0%, rgba(var(--tint2), .18) 0%, transparent 60%),
+        linear-gradient(180deg, rgba(var(--tint), .10) 0%, transparent 45%);
 }
 
 /* --- Donut chart --- */

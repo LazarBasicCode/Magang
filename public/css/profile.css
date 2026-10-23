@@ -24,10 +24,10 @@ body.dark-mode {                          /* bawaan (indigo) — gelap */
 }
 .pf-swatch[data-pal="indigo"] { --pf-top: #316ef2; }
 body.dark-mode .pf-swatch[data-pal="indigo"] { --pf-top: #3939db; }
-.pf-page[data-pal="zamrud"],  .pf-swatch[data-pal="zamrud"]  { --pf-top: #10b981; --pf-glow: #a3e635; --primary: #0f9d6e; --primary-dark: #0b7d57; }
-.pf-page[data-pal="senja"],   .pf-swatch[data-pal="senja"]   { --pf-top: #f97316; --pf-glow: #ec4899; --primary: #ea580c; --primary-dark: #c2410c; }
-.pf-page[data-pal="mawar"],   .pf-swatch[data-pal="mawar"]   { --pf-top: #ff0037; --pf-glow: #e73db1; --primary: #e11d48; --primary-dark: #be123c; }
-.pf-page[data-pal="samudra"], .pf-swatch[data-pal="samudra"] { --pf-top: #0a9fde; --pf-glow: #63ecf1; --primary: #029cc7; --primary-dark: #056ea7; }
+html[data-pal="zamrud"] .pf-page, .pf-swatch[data-pal="zamrud"] { --pf-top: #0d9488; --pf-glow: #2dd4bf; }
+html[data-pal="kuning"] .pf-page, .pf-swatch[data-pal="kuning"] { --pf-top: #facc15; --pf-glow: #fb923c; }
+html[data-pal="mawar"] .pf-page, .pf-swatch[data-pal="mawar"] { --pf-top: #ff0037; --pf-glow: #e73db1; }
+html[data-pal="azure"] .pf-page, .pf-swatch[data-pal="azure"] { --pf-top: #0b7ea8; --pf-glow: #38bdf8; }
 
 .pf-page {
     --pf-soft: color-mix(in srgb, var(--primary) 13%, transparent);

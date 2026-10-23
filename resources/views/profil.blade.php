@@ -65,19 +65,14 @@
                 {{-- ===== Hero: tanpa border, menyatu dengan latar ===== --}}
                 <section class="pf-hero">
                     <div class="pf-palette">
-                        <button type="button" class="pf-palette-btn" id="pfPaletteBtn" aria-expanded="false" aria-label="Ubah warna tampilan (sementara)" title="Ubah warna (sementara)">
+                        <button type="button" class="pf-palette-btn" id="pfPaletteBtn" aria-expanded="false" aria-label="Ubah warna tampilan" title="Ubah warna tampilan">
                             <span class="material-symbols-outlined">format_paint</span>
                         </button>
                         <div class="pf-swatches" id="pfSwatches" hidden></div>
                     </div>
 
                     <div class="pf-hero-inner">
-                        {{-- Klik foto = ganti foto profil (modal: partials/avatar-modal.blade.php, ada di header) --}}
-                        <span class="av-edit is-big" data-avatar-edit role="button" tabindex="0" title="Ganti foto profil" aria-label="Ganti foto profil">
-                            <span class="pf-glass" aria-hidden="true"></span>
-                            @include('partials.avatar', ['class' => 'avatar pf-avatar', 'initials' => $user->initials(), 'color' => $user->avatarColorClass(), 'url' => $user->avatar_url, 'self' => true])
-                            <span class="av-edit-badge material-symbols-outlined" aria-hidden="true">photo_camera</span>
-                        </span>
+                        @include('partials.avatar', ['class' => 'avatar pf-avatar', 'initials' => $user->initials(), 'color' => $user->avatarColorClass(), 'url' => $user->avatar_url, 'self' => true, 'edit' => true])
                         <div class="pf-hero-text">
                             <h1 class="pf-name">{{ $user->name }}</h1>
                             <p class="pf-role">
@@ -136,7 +131,7 @@
                                 <span class="pf-set-text"><b>Kontak Cadangan</b><small>Tambah email sekunder dan nomor telepon untuk pemulihan akun.</small></span>
                                 <span class="material-symbols-outlined pf-go">chevron_right</span>
                             </button></li>
-                            <li><button type="button" class="pf-set" data-pf-click="btnShowAccessInfo" data-pf-open="1">
+                            <li><button type="button" class="pf-set" data-pf-modal="pfAccessOverlay">
                                 <span class="pf-set-ico"><span class="material-symbols-outlined">shield_person</span></span>
                                 <span class="pf-set-text"><b>Informasi Akses</b><small>Lihat daftar menu yang boleh Anda buka dan kelola.</small></span>
                                 <span class="material-symbols-outlined pf-go">chevron_right</span>
@@ -380,6 +375,28 @@
                     <button type="submit" class="pa-btn pa-btn-primary">Simpan</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    {{-- Informasi akses: daftar menu & level akses user --}}
+    <div class="pa-overlay" id="pfAccessOverlay" aria-hidden="true">
+        <div class="pa-modal pf-wide" role="dialog" aria-modal="true" aria-labelledby="pfAccessTitle">
+            <div class="pa-head">
+                <span class="material-symbols-outlined">shield_person</span>
+                <span class="pa-title" id="pfAccessTitle">Informasi Akses</span>
+                <button type="button" class="pa-close" id="pfAccessClose" aria-label="Tutup"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="pa-body">
+                <div class="access-info-list">
+                    @foreach($user->accessBreakdown() as $row)
+                        <div class="access-info-row {{ $row['level'] === 'none' ? 'is-zero' : '' }}">
+                            <span class="material-symbols-outlined">{{ $row['icon'] }}</span>
+                            <span class="access-info-row-label">{{ $row['label'] }}</span>
+                            <span class="access-chip {{ $row['level'] }}"><span class="access-dot {{ $row['level'] }}"></span>{{ $row['level_label'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
     </div>
 

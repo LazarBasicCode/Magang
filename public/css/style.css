@@ -40,6 +40,14 @@
     --shadow-card: 0 1px 3px rgba(88, 105, 146, 0.2), 0 1px 2px rgba(57, 72, 110, 0.06);
     --shadow-btn: 0 3px 8px rgba(91, 95, 239, 0.4);
 
+
+    /* Token palet: dipakai gradien/overlay agar ikut tema (nilai di sini = biru bawaan; override di blok PALET di akhir file) */
+    --tint: 77, 106, 235;  --tint2: 76, 141, 255;
+    --dr1: 25, 12, 86;  --dr2: 31, 18, 112;  --hr1: 73, 49, 212;  --hr2: 102, 76, 231;
+    --g1: #060633;  --g2: #00086d;  --g3: #0042dd;  --g4: #550095;
+    --h1: #12aff9;  --h2: #473aeb;  --h3: #1814ff;  --h4: #8304e3;
+    --s1: 160, 151, 255;  --s2: 77, 11, 131;  --s3: 38, 3, 83;
+
     --chart-1: #5b5fef;
     --chart-2: #1da8ce;
     --chart-3: #1abb4d;
@@ -100,11 +108,11 @@ body.dark-mode .filter-card,
 body.dark-mode .table-card,
 body.dark-mode .app-sidebar {
     background-color: var(--card);
-    background-image: linear-gradient(180deg, rgba(77, 106, 235, 0.096) 0%, rgba(255, 255, 255, 0) 45%);
+    background-image: linear-gradient(180deg, rgba(var(--tint), 0.096) 0%, rgba(255, 255, 255, 0) 45%);
 }
 
 body.dark-mode .modal-card {
-    background: rgba(37, 49, 78, 0.35);
+    background: color-mix(in srgb, var(--modal) 35%, transparent);
     backdrop-filter: blur(1.5rem);
     -webkit-backdrop-filter: blur(1.5rem);
     /* background-image: linear-gradient(180deg, rgba(77, 106, 235, 0.096) 0%, rgba(255, 255, 255, 0) 45%); */
@@ -119,7 +127,7 @@ body.dark-mode .notif-panel {
 }
 
 body.dark-mode .header-capsule {
-    background-color: rgba(37, 44, 67, 0.8);
+    background-color: color-mix(in srgb, var(--card) 80%, transparent);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
@@ -2227,7 +2235,7 @@ body.dark-mode .modal-card {
 /* Dark mode: pertahankan token yang sudah dibuat, hanya pastikan kontras tiap varian tetap jelas */
 body.dark-mode .badge-primary {
     background: var(--primary-soft);
-    color: #c3caff;
+    color: color-mix(in srgb, var(--primary) 30%, #fff);
     border-color: var(--primary-border);
 }
 
@@ -4654,3 +4662,36 @@ body.is-resizing-sidebar * {
 .appr-chip.is-menunggu_prodi { background: var(--warning-bg); color: var(--warning); border-color: var(--warning-border); }
 .appr-chip.is-disetujui { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
 .appr-chip.is-ditolak { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+/* ==========================================================
+   PALET WARNA GLOBAL — data-pal di <html> (diset profile.js, localStorage 'sida-pal').
+   Biru bawaan = tanpa atribut. Setiap palet: aksen + permukaan (terang & gelap) + token gradien (--tint, --g*, --h*, ...).
+   Tema baru = tambah satu pasang baris di sini + PALETTES di profile.js.
+   ========================================================== */
+html[data-pal="zamrud"] { --primary: #0d9488; --primary-dark: #0f766e; --primary-soft: #d5f2ee; --primary-border: #94dcd3; --chart-1: #0d9488; --shadow-btn: 0 3px 8px color-mix(in srgb, #0d9488 40%, transparent);
+    --canvas: #e6f1f0; --border: #d0e3e1; --border-strong: #bcd6d3; --modal: #e4efee;
+    --tint: 20, 184, 166; --tint2: 45, 212, 191; --dr1: 5, 40, 40; --dr2: 6, 60, 58; --hr1: 20, 150, 138; --hr2: 45, 190, 170;
+    --g1: #031a1a; --g2: #04302f; --g3: #0a6b66; --g4: #0e9488; --h1: #2dd4bf; --h2: #14b8a6; --h3: #0d9488; --h4: #0f766e;
+    --s1: 94, 234, 212; --s2: 8, 100, 96; --s3: 3, 50, 50; }
+html[data-pal="zamrud"] body.dark-mode { --primary: #14b8a6; --primary-dark: #0d9488; --primary-soft: #16403f; --primary-border: #1f5c58; --chart-1: #14b8a6;
+    --canvas: #0f2a2b; --card: #143536; --border: #1f4a4a; --border-strong: #245556; --modal: #143a3a; --ink-muted: #8fb8b5; --ink-faint: #5f8e8b; --neutral-bg: #1c3f40; --neutral-border: #1f4a4a; }
+html[data-pal="azure"] { --primary: #0b8fe0; --primary-dark: #0674b8; --primary-soft: #d8eefc; --primary-border: #9fd3f3; --chart-1: #0b8fe0; --shadow-btn: 0 3px 8px color-mix(in srgb, #0b8fe0 40%, transparent);
+    --canvas: #e6f0f7; --border: #d0e1ee; --border-strong: #bcd3e4; --modal: #e4eef5;
+    --tint: 34, 166, 214; --tint2: 56, 189, 248; --dr1: 6, 36, 64; --dr2: 8, 52, 88; --hr1: 14, 130, 200; --hr2: 40, 170, 225;
+    --g1: #04152a; --g2: #062b4d; --g3: #0a6a9e; --g4: #0b8fb8; --h1: #38bdf8; --h2: #0ea5e9; --h3: #0284c7; --h4: #0e7490;
+    --s1: 125, 211, 252; --s2: 7, 89, 133; --s3: 4, 47, 73; }
+html[data-pal="azure"] body.dark-mode { --primary: #22a6d6; --primary-dark: #1a8ab5; --primary-soft: #123f58; --primary-border: #1f5e7e; --chart-1: #22a6d6;
+    --canvas: #0c2536; --card: #12334a; --border: #1d4a66; --border-strong: #235773; --modal: #133a52; --ink-muted: #8fb4c9; --ink-faint: #5d8aa3; --neutral-bg: #1a3f57; --neutral-border: #1d4a66; }
+html[data-pal="mawar"] { --primary: #e11d48; --primary-dark: #be123c; --primary-soft: #ffe1e8; --primary-border: #fbb0c1; --chart-1: #e11d48; --shadow-btn: 0 3px 8px color-mix(in srgb, #e11d48 40%, transparent);
+    --canvas: #eeeeef; --border: #e0e0e3; --border-strong: #d0d0d5; --modal: #ececee;
+    --tint: 239, 74, 99; --tint2: 244, 114, 138; --dr1: 18, 18, 20; --dr2: 28, 28, 32; --hr1: 24, 24, 27; --hr2: 60, 60, 66;
+    --g1: #121214; --g2: #1f1f23; --g3: #4a1c26; --g4: #be123c; --h1: #3f3f46; --h2: #27272a; --h3: #9f1239; --h4: #e11d48;
+    --s1: 244, 114, 138; --s2: 60, 20, 30; --s3: 30, 10, 16; }
+html[data-pal="mawar"] body.dark-mode { --primary: #ef4a63; --primary-dark: #d33a52; --primary-soft: #3a2429; --primary-border: #5a2f38; --chart-1: #ef4a63;
+    --canvas: #1c1d21; --card: #25262b; --border: #35373e; --border-strong: #3e4048; --modal: #27282d; --ink-muted: #9a9ca5; --ink-faint: #6c6e78; --neutral-bg: #2f3138; --neutral-border: #35373e; }
+html[data-pal="kuning"] { --primary: #ca8a04; --primary-dark: #a16207; --primary-soft: #fdf3c7; --primary-border: #f3d77a; --chart-1: #ca8a04; --shadow-btn: 0 3px 8px color-mix(in srgb, #ca8a04 40%, transparent);
+    --canvas: #eeeeef; --border: #e0e0e3; --border-strong: #d0d0d5; --modal: #ececee;
+    --tint: 224, 168, 23; --tint2: 250, 204, 21; --dr1: 18, 18, 20; --dr2: 28, 28, 32; --hr1: 24, 24, 27; --hr2: 60, 60, 66;
+    --g1: #121214; --g2: #1f1f23; --g3: #4a3a0c; --g4: #b45309; --h1: #3f3f46; --h2: #27272a; --h3: #a16207; --h4: #eab308;
+    --s1: 250, 204, 21; --s2: 66, 52, 8; --s3: 30, 24, 4; }
+html[data-pal="kuning"] body.dark-mode { --primary: #e0a817; --primary-dark: #c4920f; --primary-soft: #3b3216; --primary-border: #5a4a1c; --chart-1: #e0a817;
+    --canvas: #1c1d21; --card: #25262b; --border: #35373e; --border-strong: #3e4048; --modal: #27282d; --ink-muted: #9a9ca5; --ink-faint: #6c6e78; --neutral-bg: #2f3138; --neutral-border: #35373e; }

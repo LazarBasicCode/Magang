@@ -16,37 +16,22 @@
 }
 @keyframes av-fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* ---------- Avatar yang bisa diklik untuk ganti foto ---------- */
-.av-edit { position: relative; display: inline-grid; cursor: pointer; border-radius: 50%; outline: none; }
-.av-edit:focus-visible { box-shadow: 0 0 0 3px var(--primary-soft, #e2e2fd), 0 0 0 5px var(--primary, #5b5fef); }
-.av-edit-badge {
-    position: absolute; right: -2px; bottom: -2px;
-    display: grid; place-items: center;
-    width: 22px; height: 22px; font-size: 14px;
-    border-radius: 50%;
-    background: var(--primary, #5b5fef); color: #fff;
-    border: 2px solid var(--card, #fff);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
-    transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
-    pointer-events: none;
-}
-.av-edit:hover .av-edit-badge, .av-edit:focus-visible .av-edit-badge { transform: scale(1.18) rotate(-8deg); }
-.av-edit.is-big .av-edit-badge { width: 34px; height: 34px; font-size: 19px; right: 4px; bottom: 4px; border-width: 3px; }
-
-/* Avatar yang ITU SENDIRI tombolnya (profil): tombol kamera duduk di atas cincin kaca, sudut kanan-bawah (45°).
-   Geometri: pusat tombol di pertengahan cincin (jari-jari av/2 + ring/2) pada 45° -> jaraknya dari tepi kotak avatar
-   = 0.14645·av − 0.35355·ring; dikurangi setengah ukuran tombol untuk offset right/bottom.
-   --av & --ring berasal dari .pf-hero (ikut mengecil di layar kecil). */
+/* ---------- Avatar yang bisa diklik untuk ganti foto: hover = gelap + ikon plus di tengah ---------- */
 .av-editable { cursor: pointer; outline: none; }
-.av-editable .av-edit-badge {
-    --bs: 34px;
-    right: calc(var(--av, 96px) * .14645 - var(--ring, 0px) * .35355 - var(--bs) / 2);
-    bottom: calc(var(--av, 96px) * .14645 - var(--ring, 0px) * .35355 - var(--bs) / 2);
-    width: var(--bs); height: var(--bs); font-size: 19px; border-width: 3px; z-index: 2;
-    overflow: hidden; white-space: nowrap; line-height: 1;   /* bila font ikon gagal dimuat, teks tidak meluber keluar badge */
+.av-editable::after {
+    content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 2.5v19M2.5 12h19'/%3E%3C/svg%3E") center / 25% no-repeat,
+        rgba(0, 0, 0, .5);
+    opacity: 0; transition: opacity .2s; pointer-events: none;
 }
-.av-editable:hover .av-edit-badge, .av-editable:focus-visible .av-edit-badge { transform: scale(1.15) rotate(-8deg); }
-.av-editable:focus-visible { box-shadow: 0 0 0 3px var(--primary-soft, #e2e2fd), 0 0 0 5px var(--primary, #5b5fef), 0 8px 28px color-mix(in srgb, var(--pf-top, #316ef2) 40%, transparent); }
+.header-profile-panel-avatar.av-editable::after {
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.8' stroke-linecap='round'%3E%3Cpath d='M12 3v18M3 12h18'/%3E%3C/svg%3E") center / 50% no-repeat,
+        rgba(0, 0, 0, .5);
+}
+.av-editable:hover::after, .av-editable:focus-visible::after { opacity: 1; }
+.av-editable:focus-visible { box-shadow: 0 0 0 3px var(--primary-soft, #e2e2fd), 0 0 0 5px var(--primary, #5b5fef); }
 
 /* ---------- Modal ---------- */
 .av-modal { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; }
@@ -122,4 +107,4 @@
 @keyframes av-rot { to { transform: rotate(360deg); } }
 
 @media (max-width: 480px) { .av-stage { grid-template-columns: 1fr; justify-items: center; } .av-drop { width: 100%; } }
-@media (prefers-reduced-motion: reduce) { .av-card, .av-backdrop, .av-img, .av-edit-badge, .av-drop, .av-drop-icon { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .av-card, .av-backdrop, .av-img, .av-drop, .av-drop-icon { animation: none !important; transition: none !important; } }

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Catatan aktivitas pengguna: SIAPA melakukan APA, KAPAN, dan dari IP mana.
  *
- * Ditulis ke channel "activity" (storage/logs/activity-YYYY-MM-DD.log, lihat
+ * Ditulis ke channel "activity" (storage/logs/activity-YYYY-MM.log, satu berkas per bulan, lihat
  * config/logging.php) — terpisah dari laravel.log supaya error aplikasi tidak
  * tertimbun catatan aktivitas. Berkas ini otomatis muncul di pemilih berkas
  * pada halaman Log Aplikasi (superadmin).

@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Support\ActivityDescriber;
 use App\Support\ActivityLog;
+use App\Support\ChangeTracker;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +23,8 @@ use Symfony\Component\HttpFoundation\Response;
  *  - Membuka halaman biasa (GET lain) TIDAK dicatat.
  *  - 403 (tidak punya hak akses), pada method apa pun -> warning.
  *  - Unggah Excel yang ditolak validasinya (422) -> warning.
- *  - Isi request (password, formulir, dsb.) tidak pernah ikut dicatat.
+ *  - Isi request (password, formulir, dsb.) tidak pernah ikut dicatat. Yang dicatat hanya perubahan data
+ *    (kolom, nilai lama -> baru) dari model Eloquent lewat ChangeTracker; kolom sensitif disamarkan.
  *
  * Pencatatan gagal tidak boleh mengganggu respons ke pengguna.
  */
@@ -30,6 +32,9 @@ class LogActivity
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Mulai dari nol: perubahan data yang tercatat hanya milik request ini.
+        app(ChangeTracker::class)->flush();
+
         $response = $next($request);
 
         try {
@@ -104,6 +109,9 @@ class LogActivity
 
             return;
         }
+
+        // Sebelum -> sesudah (input -> output) data yang dibuat/diubah/dihapus request ini, bila ada.
+        $context += app(ChangeTracker::class)->summary();
 
         ActivityLog::record($action, $text, $context);
     }

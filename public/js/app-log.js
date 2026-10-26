@@ -143,6 +143,76 @@
         }
     }
 
+    // ------------------------------------------------------------------
+    // "Perubahan Data": konteks `update` / `create` / `delete` dari ChangeTracker.
+    //   satu data  : { kolom: { input, output } }
+    //   banyak data: { "Mahasiswa#5": { kolom: { input, output } }, "…": "dan N data lainnya tidak dirinci" }
+    // Ditampilkan sebagai tabel Kolom | Input (sebelum) | Output (sesudah), seperti diff.
+    // ------------------------------------------------------------------
+    const CHANGE_KINDS = {
+        update: { title: 'Perubahan Data', sub: 'nilai lama → nilai baru', tone: 'warning' },
+        create: { title: 'Data Ditambahkan', sub: 'nilai yang disimpan', tone: 'success' },
+        delete: { title: 'Data Dihapus', sub: 'nilai sebelum dihapus', tone: 'danger' },
+    };
+
+    const isPair = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
+        && Object.keys(v).length > 0 && Object.keys(v).every((k) => k === 'input' || k === 'output');
+    const isFieldMap = (o) => o !== null && typeof o === 'object' && !Array.isArray(o)
+        && Object.keys(o).length > 0 && Object.values(o).every(isPair);
+
+    function diffCell(pair, side) {
+        if (!(side in pair)) return '<span class="alog-diff-none">—</span>';
+        const v = pair[side];
+        if (v === null || v === undefined || v === '') return '<em class="alog-diff-null">kosong</em>';
+        return esc(String(v));
+    }
+
+    function diffRows(fields) {
+        return Object.entries(fields).map(([col, pair]) => `
+            <tr>
+                <td class="alog-diff-col"><code class="alog-code">${esc(col)}</code></td>
+                <td class="alog-diff-old">${diffCell(pair, 'input')}</td>
+                <td class="alog-diff-new">${diffCell(pair, 'output')}</td>
+            </tr>`).join('');
+    }
+
+    /** Tabel diff untuk satu jenis perubahan, atau null bila bentuknya tidak dikenali (jatuh ke "Lainnya"). */
+    function changeHTML(kind, data) {
+        const meta = CHANGE_KINDS[kind];
+        let rows = '';
+        let cols = 0;
+        let records = 0;
+
+        if (isFieldMap(data)) {
+            rows = diffRows(data);
+            cols = Object.keys(data).length;
+            records = 1;
+        } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+            Object.entries(data).forEach(([key, val]) => {
+                if (isFieldMap(val)) {
+                    records++;
+                    cols += Object.keys(val).length;
+                    rows += `<tr class="alog-diff-group"><th colspan="3">${esc(key.replace('#', ' #'))}</th></tr>${diffRows(val)}`;
+                } else if (typeof val === 'string') { // catatan "dan N data lainnya tidak dirinci"
+                    rows += `<tr class="alog-diff-more"><td colspan="3">${esc(val)}</td></tr>`;
+                }
+            });
+        }
+        if (!rows || !meta) return null;
+
+        const badge = records > 1 ? `${records} data · ${cols} kolom` : `${cols} kolom`;
+        return `
+            <section class="alog-sec alog-sec--diff alog-tone-${meta.tone}">
+                <h4 class="alog-sec-title">${esc(meta.title)} <span class="alog-diff-sub">${esc(meta.sub)}</span> <span class="alog-diff-count">${esc(badge)}</span></h4>
+                <div class="alog-diff-wrap">
+                    <table class="alog-diff">
+                        <thead><tr><th>Kolom</th><th>Input <small>(sebelum)</small></th><th>Output <small>(sesudah)</small></th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </section>`;
+    }
+
     function summaryHTML(ctx) {
         const used = new Set();
         const blocks = [];
@@ -163,10 +233,20 @@
             if (rows.length) blocks.push([title, rows]);
         });
 
+        // Perubahan data (sebelum -> sesudah) ditaruh tepat setelah bagian Aktivitas & Pelaku.
+        const diffs = Object.keys(CHANGE_KINDS).map((kind) => {
+            if (!(kind in ctx)) return null;
+            const html = changeHTML(kind, ctx[kind]);
+            if (html) used.add(kind);
+            return html;
+        }).filter(Boolean);
+        const at = blocks.filter(([t]) => t === 'Aktivitas' || t === 'Pelaku').length;
+        diffs.forEach((html, i) => blocks.splice(at + i, 0, ['', null, html]));
+
         const rest = Object.keys(ctx).filter((k) => !used.has(k));
         if (rest.length) blocks.push(['Lainnya', rest.map((k) => [LABELS[k] || k, valueHTML(k, ctx[k])])]);
 
-        return blocks.map(([title, rows]) => `
+        return blocks.map(([title, rows, html]) => html ? html : `
             <section class="alog-sec">
                 <h4 class="alog-sec-title">${esc(title)}</h4>
                 <dl class="alog-kv">${rows.map(([l, v]) => `<dt>${esc(l)}</dt><dd>${v}</dd>`).join('')}</dl>

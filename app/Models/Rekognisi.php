@@ -15,10 +15,19 @@ class Rekognisi extends Model
         'user_id',
         'tipe_user',
         'mitra',
+        'judul',
+        'penulis',
+        'nama_jurnal',
+        'peringkat',
+        'jenis_hki',
+        'kategori_buku',
+        'link_doi',
         'jenis',
+        'skala',
         'jabatan',
         'tanggal_mulai',
         'tanggal_selesai',
+        'tahun',
         'bukti_kegiatan',
         'bukti_tambahan',
         'approval_status',
@@ -29,17 +38,18 @@ class Rekognisi extends Model
     protected $casts = [
         'tanggal_mulai'   => 'date',
         'tanggal_selesai' => 'date',
+        'tahun'           => 'integer',
     ];
 
     /**
-     * Jabatan yang BERLAKU: hanya untuk jenis alumni, selain itu null.
+    * Jabatan yang berlaku hanya untuk tipe user Alumni, selain itu null.
      * Kolom `jabatan` di database sengaja tidak dihapus saat jenis diganti ke non-alumni,
      * supaya kalau dikembalikan ke alumni isinya muncul lagi. Tampilan, export, cetak & dashboard
      * memakai accessor ini ($item->jabatan_efektif), bukan $item->jabatan langsung.
      */
     public function getJabatanEfektifAttribute(): ?string
     {
-        return $this->jenis === 'alumni' ? ($this->jabatan ?: null) : null;
+        return $this->tipe_user === 'alumni' ? ($this->jabatan ?: null) : null;
     }
 
     public function user()

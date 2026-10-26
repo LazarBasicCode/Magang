@@ -54,7 +54,7 @@ class ReportData
         $intl = fn ($k, $l, $d, $r, $s) => $k->where('tingkat', 'internasional')->count()
             + $l->whereIn('jenis', ['jurnal_internasional', 'conference_internasional'])->count()
             + $d->where('jenis', 'q_internasional')->count()
-            + $r->where('jenis', 'internasional')->count()
+            + $r->where('skala', 'internasional')->count()
             + $s->whereIn('jenis', $ksIntl)->count();
 
         $totalPeriode = $kemP->count() + $lmP->count() + $ldP->count() + $rekP->count() + $ksP->count();
@@ -65,7 +65,7 @@ class ReportData
             ['label' => 'Kemahasiswaan',  'icon' => 'school',            'all' => $kem->count(), 'periode' => $kemP->count(), 'intl' => $kemP->where('tingkat', 'internasional')->count()],
             ['label' => 'LPPM Mahasiswa', 'icon' => 'person',            'all' => $lm->count(),  'periode' => $lmP->count(),  'intl' => $lmP->whereIn('jenis', ['jurnal_internasional', 'conference_internasional'])->count()],
             ['label' => 'LPPM Dosen',     'icon' => 'co_present',        'all' => $ld->count(),  'periode' => $ldP->count(),  'intl' => $ldP->where('jenis', 'q_internasional')->count()],
-            ['label' => 'Rekognisi',      'icon' => 'workspace_premium', 'all' => $rek->count(), 'periode' => $rekP->count(), 'intl' => $rekP->where('jenis', 'internasional')->count()],
+            ['label' => 'Rekognisi',      'icon' => 'workspace_premium', 'all' => $rek->count(), 'periode' => $rekP->count(), 'intl' => $rekP->where('skala', 'internasional')->count()],
             ['label' => 'Kerja Sama',     'icon' => 'handshake',         'all' => $ks->count(),  'periode' => $ksP->count(),  'intl' => $ksP->whereIn('jenis', $ksIntl)->count()],
         ];
         foreach ($modules as &$m) {
@@ -96,7 +96,9 @@ class ReportData
             self::group('LPPM Mahasiswa · Jenis', $lmP, 'jenis', ['sinta_nasional' => 'Jurnal Sinta Nasional', 'jurnal_internasional' => 'Jurnal Internasional', 'conference_internasional' => 'Conference Internasional']),
             self::group('LPPM Dosen · Jenis', $ldP, 'jenis', ['q_internasional' => 'Jurnal Q Internasional', 'sinta_nasional' => 'Jurnal Sinta Nasional', 'hki' => 'HKI', 'book' => 'Buku']),
             self::group('LPPM Dosen · Peringkat Jurnal', $ldP->whereNotNull('peringkat'), 'peringkat', null),
-            self::group('Rekognisi · Jenis', $rekP, 'jenis', ['nasional' => 'Nasional', 'internasional' => 'Internasional', 'alumni' => 'Alumni']),
+            self::group('Rekognisi · Jenis Karya', $rekP, 'jenis', ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'alumni' => 'Alumni', 'rekognisi' => 'Rekognisi']),
+            self::group('Rekognisi · Skala', $rekP, 'skala', ['nasional' => 'Nasional', 'internasional' => 'Internasional']),
+            self::group('Rekognisi · Tipe User', $rekP, 'tipe_user', ['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen', 'alumni' => 'Alumni']),
             self::group('Rekognisi · Mitra Terbanyak', $rekP, 'mitra', null, 5),
             self::group('Kerja Sama · Jenis', $ksP, 'jenis', null),
             self::group('Kerja Sama · Peserta', $ksP, 'tipe_user', ['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen']),

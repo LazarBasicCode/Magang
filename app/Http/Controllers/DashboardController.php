@@ -59,7 +59,7 @@ class DashboardController extends Controller
         $internasionalBase = $kemahasiswaan->count() + $rekognisi->count();
         $internasionalPct = $internasionalBase > 0
             ? round(($kemahasiswaan->where('tingkat', 'internasional')->count()
-                + $rekognisi->where('jenis', 'internasional')->count()) / $internasionalBase * 100)
+                + $rekognisi->where('skala', 'internasional')->count()) / $internasionalBase * 100)
             : 0;
 
         $earliest = collect([$kemahasiswaan, $lppmMahasiswa, $rekognisi, $kerjaSama])
@@ -138,7 +138,7 @@ class DashboardController extends Controller
         // + kerja sama yang jenisnya berlabel internasional, dari seluruh kegiatan.
         $jenisKerjaSamaIntl = ['conference_internasional', 'pengabdian_internasional', 'research_internasional'];
         $internasionalCount = $lppm->where('jenis', 'q_internasional')->count()
-            + $rekognisi->where('jenis', 'internasional')->count()
+            + $rekognisi->where('skala', 'internasional')->count()
             + $kerjaSama->whereIn('jenis', $jenisKerjaSamaIntl)->count();
         $internasionalPct = $total > 0 ? round($internasionalCount / $total * 100) : 0;
 

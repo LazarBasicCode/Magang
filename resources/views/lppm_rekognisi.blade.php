@@ -213,6 +213,7 @@
                                     <th>Penulis</th>
                                     <th>Mitra</th>
                                     <th class="center">Jenis</th>
+                                    <th>Detail Karya</th>
                                     <th class="center">Skala</th>
                                     <th>Jabatan (Alumni)</th>
                                     <th class="center">Periode</th>
@@ -240,8 +241,14 @@
                                 $nama = optional($item->user)->name ?? 'Tanpa Nama';
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
                                 $avatarColor = $colors[$item->user_id % count($colors)];
+                                $detailKarya = match ($item->jenis) {
+                                    'jurnal', 'sinta' => trim(($item->nama_jurnal ?? '') . ($item->peringkat ? ' · ' . $item->peringkat : '')) ?: '-',
+                                    'hki' => \Illuminate\Support\Str::headline((string) $item->jenis_hki),
+                                    'book' => \Illuminate\Support\Str::headline((string) $item->kategori_buku),
+                                    default => '-',
+                                };
                                 @endphp
-                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tipe_user="{{ $item->tipe_user }}">
+                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tipe_user="{{ $item->tipe_user_efektif }}">
                                     <td><span class="nim-code">{{ optional($item->user)->nim_nidn ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
@@ -249,12 +256,18 @@
                                             <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                         </div>
                                     </td>
-                                    <td class="center"><span class="plain-text">{{ ucfirst($item->tipe_user) }}</span></td>
+                                    <td class="center"><span class="plain-text">{{ ucfirst($item->tipe_user_efektif) }}</span></td>
                                     <td><span class="activity-title" title="{{ $item->judul }}">{{ $item->judul ?: '-' }}</span></td>
                                     <td><span class="plain-text">{{ $item->penulis ?: '-' }}</span></td>
                                     <td><span class="activity-title" title="{{ $item->mitra }}">{{ $item->mitra ?: '-' }}</span>
                                         @include('partials.approval-chip', ['item' => $item])</td>
                                     <td class="center"><span class="plain-text">{{ $jenisLabel[$item->jenis] ?? $item->jenis }}</span></td>
+                                    <td>
+                                        <span class="plain-text">{{ $detailKarya }}</span>
+                                        @if($item->link_doi)
+                                            <a href="{{ $item->link_doi }}" target="_blank" rel="noopener noreferrer" class="evidence-link"><span>DOI</span></a>
+                                        @endif
+                                    </td>
                                     <td class="center"><span class="plain-text">{{ $item->skala ? ucfirst($item->skala) : '-' }}</span></td>
                                     <td><span class="plain-text">{{ $item->jabatan_efektif ?? '-' }}</span></td>
                                     <td class="center"><span class="year-chip">{{ optional($item->tanggal_mulai)->format('d M Y') }} &ndash; {{ optional($item->tanggal_selesai)->format('d M Y') }}</span></td>
@@ -269,7 +282,7 @@
                                             <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                                                 data-id="{{ $item->id }}"
                                                 data-user_id="{{ $item->user_id }}"
-                                                data-tipe_user="{{ $item->tipe_user }}"
+                                                data-tipe_user="{{ $item->tipe_user_efektif }}"
                                                 data-jenis="{{ $item->jenis }}"
                                                 data-skala="{{ $item->skala ?? '' }}"
                                                 data-judul="{{ $item->judul ?? '' }}"
@@ -296,7 +309,7 @@
                                 </tr>
                                 @endforeach
                                 <tr id="emptyRow" {{ $items->total() === 0 ? '' : 'hidden' }}>
-                                    <td colspan="12" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="13" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data. Klik "Tambah Rekognisi" untuk mulai mengisi.
                                     </td>
                                 </tr>
@@ -305,7 +318,7 @@
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
                             <tbody class="sk-body" aria-hidden="true">
                                 @for($i = 0; $i < 7; $i++)
-                                <tr><td colspan="12"><span class="sk-bar"></span></td></tr>
+                                <tr><td colspan="13"><span class="sk-bar"></span></td></tr>
                                 @endfor
                             </tbody>
                         </table>
@@ -330,7 +343,7 @@
 
     <!-- ============ MODAL: Tambah / Edit Rekognisi ============ -->
     <div class="modal-backdrop" id="modalBackdrop"></div>
-    <div class="modal-card" id="rekognisiModal" role="dialog" aria-modal="true" aria-hidden="true" data-own-scope="{{ $ownScope ? '1' : '0' }}">
+    <div class="modal-card" id="rekognisiModal" role="dialog" aria-modal="true" aria-hidden="true">
         <div class="modal-drag-handle" id="modalDragHandle">
             <div>
                 <h3 class="modal-title" id="modalTitle">Tambah Rekognisi</h3>
@@ -344,26 +357,6 @@
         <form id="rekognisiForm" class="modal-body">
             <input type="hidden" id="form-id" value="">
 
-            @if($ownScope)
-            <input type="hidden" id="form-tipe_user" value="{{ auth()->user()->role }}">
-            @else
-            <div class="field">
-                <label class="field-label">Tipe User</label>
-                <div class="dropdown" data-dropdown id="dd-tipe_user">
-                    <input type="hidden" id="form-tipe_user" value="dosen" />
-                    <button type="button" class="dropdown-trigger">
-                        <span class="dropdown-value">Dosen</span>
-                        <span class="material-symbols-outlined caret">expand_more</span>
-                    </button>
-                    <div class="dropdown-panel">
-                        <button type="button" class="dropdown-option is-selected" data-value="dosen">Dosen</button>
-                        <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
-                        <button type="button" class="dropdown-option" data-value="alumni">Alumni</button>
-                    </div>
-                </div>
-            </div>
-            @endif
-
             <div class="field">
                 <label class="field-label">Nama (Dosen/Mahasiswa/Alumni)</label>
                 <div class="dropdown" data-dropdown id="dd-user">
@@ -374,13 +367,13 @@
                     </button>
                     <div class="dropdown-panel">
                         @foreach($userList as $u)
-                        <button type="button" class="dropdown-option" data-value="{{ $u->id }}" data-role="{{ $u->role }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} ({{ ucfirst($u->role) }})</button>
+                        <button type="button" class="dropdown-option" data-value="{{ $u->id }}" data-role="{{ $u->role }}" data-status="{{ $u->mahasiswa?->status ?? '' }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} (@if($u->role === 'mahasiswa' && $u->mahasiswa?->status === 'lulus') Alumni @else {{ ucfirst($u->role) }} @endif)</button>
                         @endforeach
                     </div>
                 </div>
             </div>
 
-            <div class="field-row" id="row-jenis-skala">
+            <div class="field-row hidden" id="row-jenis-skala">
                 <div class="field">
                     <label class="field-label">Jenis Karya / Publikasi</label>
                     <div class="dropdown" data-dropdown id="dd-jenis">
@@ -415,7 +408,7 @@
                 </div>
             </div>
 
-            <div class="field-row">
+            <div class="field-row hidden" id="row-mitra-tahun">
                 <div class="field" id="field-mitra">
                     <label class="field-label" for="form-mitra">Mitra / Instansi</label>
                     <div class="field-control">
@@ -500,7 +493,7 @@
                 </div>
             </div>
 
-            <div class="field-row">
+            <div class="field-row hidden" id="row-tanggal">
                 <div class="field">
                     <label class="field-label">Tanggal Mulai</label>
                     <div class="datepicker" data-datepicker id="dp-tanggal_mulai">
@@ -549,14 +542,14 @@
                 </div>
             </div>
 
-            <div class="field">
+            <div class="field hidden" id="field-bukti">
                 <label class="field-label" for="form-bukti_kegiatan">Link Bukti Kegiatan</label>
                 <div class="field-control">
                     <input id="form-bukti_kegiatan" type="url" placeholder="https://drive.google.com/..." required>
                 </div>
             </div>
 
-            <div class="field">
+            <div class="field hidden" id="field-bukti_tambahan">
                 <label class="field-label" for="form-bukti_tambahan">Link Bukti Tambahan (opsional)</label>
                 <div class="field-control">
                     <input id="form-bukti_tambahan" type="url" placeholder="https://drive.google.com/...">
@@ -632,37 +625,28 @@
 
         // ---- Field kondisional (khusus halaman ini) ----
         const userDropdown = document.getElementById('dd-user');
-        const typeDropdown = document.getElementById('dd-tipe_user');
-        const ownScope = modalCard.dataset.ownScope === '1';
         const kindOptions = {
             dosen: ['jurnal', 'hki', 'book', 'rekognisi'],
             mahasiswa: ['sinta', 'conference', 'jurnal', 'rekognisi'],
-            alumni: ['rekognisi'],
+            alumni: ['sinta', 'conference', 'jurnal', 'rekognisi'],
         };
+        const defaultKindByType = { dosen: 'jurnal', mahasiswa: 'sinta', alumni: 'sinta' };
         const scalableKinds = ['jurnal', 'sinta', 'conference'];
         const userOptionButtons = Array.from(userDropdown.querySelectorAll('.dropdown-option'));
         const kindOptionButtons = Array.from(document.querySelectorAll('#dd-jenis .dropdown-option'));
+        let lastSelectedType = null;
 
         function selectedType() {
-            return document.getElementById('form-tipe_user').value || 'dosen';
-        }
-
-        function updateUserOptions() {
-            const type = selectedType();
-            userOptionButtons.forEach((option) => {
-                const allowed = type === 'alumni'
-                    ? ['dosen', 'mahasiswa'].includes(option.dataset.role)
-                    : option.dataset.role === type;
-                option.hidden = !allowed;
-                option.style.display = allowed ? '' : 'none';
-            });
-
-            const selectedUser = userOptionButtons.find((option) => option.dataset.value === document.getElementById('form-user_id').value);
-            if (selectedUser?.hidden) SIDA.dropdown.select(userDropdown, '', 'Pilih nama...');
+            const userId = document.getElementById('form-user_id').value;
+            const selectedUser = userOptionButtons.find((option) => option.dataset.value === userId);
+            if (!selectedUser) return null;
+            if (selectedUser.dataset.role === 'mahasiswa' && selectedUser.dataset.status === 'lulus') return 'alumni';
+            return selectedUser.dataset.role;
         }
 
         function updateKindOptions() {
-            const allowed = kindOptions[selectedType()] || [];
+            const type = selectedType();
+            const allowed = kindOptions[type] || [];
             kindOptionButtons.forEach((option) => {
                 const visible = allowed.includes(option.dataset.value);
                 option.hidden = !visible;
@@ -670,19 +654,27 @@
             });
 
             const current = document.getElementById('form-jenis').value;
-            if (!allowed.includes(current)) SIDA.dropdown.select(document.getElementById('dd-jenis'), allowed[0]);
+            if (allowed.length && (type !== lastSelectedType || !allowed.includes(current))) {
+                SIDA.dropdown.select(document.getElementById('dd-jenis'), defaultKindByType[type] || allowed[0]);
+            }
+            lastSelectedType = type;
             updateConditionalFields();
         }
 
         function updateConditionalFields() {
+            const hasUser = Boolean(document.getElementById('form-user_id').value);
             const type = selectedType();
             const kind = document.getElementById('form-jenis').value;
-            const isPublication = ['dosen', 'mahasiswa'].includes(type) && kind !== 'rekognisi';
-            const hasJournalFields = ['jurnal', 'sinta'].includes(kind) && type !== 'alumni';
-            const hasScale = (scalableKinds.includes(kind) || kind === 'rekognisi') && type !== 'alumni';
-            const isAlumni = type === 'alumni';
+            const isPublication = hasUser && kind !== 'rekognisi';
+            const hasJournalFields = hasUser && ['jurnal', 'sinta'].includes(kind);
+            const hasScale = hasUser && (scalableKinds.includes(kind) || (kind === 'rekognisi' && type !== 'alumni'));
+            const isAlumni = hasUser && type === 'alumni';
 
-            document.getElementById('field-mitra').classList.toggle('hidden', false);
+            document.getElementById('row-jenis-skala').classList.toggle('hidden', !hasUser);
+            document.getElementById('row-mitra-tahun').classList.toggle('hidden', !hasUser);
+            document.getElementById('row-tanggal').classList.toggle('hidden', !hasUser);
+            document.getElementById('field-bukti').classList.toggle('hidden', !hasUser);
+            document.getElementById('field-bukti_tambahan').classList.toggle('hidden', !hasUser);
             document.getElementById('field-skala').classList.toggle('hidden', !hasScale);
             document.getElementById('row-judul-penulis').classList.toggle('hidden', !isPublication);
             document.getElementById('field-tahun').classList.toggle('hidden', !isPublication);
@@ -697,24 +689,17 @@
             document.getElementById('form-judul').required = isPublication;
             document.getElementById('form-penulis').required = isPublication;
             document.getElementById('form-tahun').required = isPublication;
+            document.getElementById('form-nama_jurnal').required = hasJournalFields;
+            document.getElementById('form-peringkat').required = hasJournalFields;
+            document.getElementById('form-tanggal_mulai').required = hasUser;
+            document.getElementById('form-tanggal_selesai').required = hasUser;
+            document.getElementById('form-bukti_kegiatan').required = hasUser;
         }
 
-        typeDropdown?.querySelectorAll('.dropdown-option').forEach((option) => {
-            option.addEventListener('click', () => setTimeout(() => {
-                updateUserOptions();
-                updateKindOptions();
-            }, 0));
-        });
         userOptionButtons.forEach((option) => {
-            option.addEventListener('click', () => setTimeout(() => {
-                if (selectedType() === 'alumni') return;
-                if (typeDropdown) SIDA.dropdown.select(typeDropdown, option.dataset.role);
-                else document.getElementById('form-tipe_user').value = option.dataset.role;
-                updateKindOptions();
-            }, 0));
+            option.addEventListener('click', () => setTimeout(updateKindOptions, 0));
         });
         kindOptionButtons.forEach((option) => option.addEventListener('click', () => setTimeout(updateConditionalFields, 0)));
-        updateUserOptions();
         updateKindOptions();
 
         // Datepicker (Tanggal Mulai & Selesai) sudah ada di script.js: SIDA.datepicker
@@ -748,7 +733,7 @@
                 if (mitraEl) { mitraEl.textContent = r.mitra; mitraEl.title = r.mitra; }
                 const jenisEl = cells[6] && cells[6].querySelector('.plain-text');
                 if (jenisEl) jenisEl.textContent = jenisLabel[r.jenis] || r.jenis;
-                const jabEl = cells[8] && cells[8].querySelector('.plain-text');
+                const jabEl = cells[9] && cells[9].querySelector('.plain-text');
                 if (jabEl) jabEl.textContent = r.jabatan_tampil || '-';
 
                 const edit = tr.querySelector('.btn-edit-row');
@@ -778,6 +763,13 @@
         }
 
         function buildRowHTML(item) {
+            const detail = ['jurnal', 'sinta'].includes(item.jenis)
+                ? [item.nama_jurnal, item.peringkat].filter(Boolean).join(' · ') || '-'
+                : item.jenis === 'hki'
+                    ? (item.jenis_hki || '-').replaceAll('_', ' ')
+                    : item.jenis === 'book'
+                        ? (item.kategori_buku || '-').replaceAll('_', ' ')
+                        : '-';
             return `
             <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tipe_user="${item.tipe_user}">
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
@@ -792,6 +784,7 @@
                 <td><span class="plain-text">${esc(item.penulis || '-')}</span></td>
                 <td><span class="activity-title" title="${esc(item.mitra || '')}">${esc(item.mitra || '-')}</span>${window.apprChip ? window.apprChip(item) : ''}</td>
                 <td class="center"><span class="plain-text">${esc(jenisLabel[item.jenis] || item.jenis)}</span></td>
+                <td><span class="plain-text">${esc(detail)}</span>${item.link_doi ? ` <a href="${esc(item.link_doi)}" target="_blank" rel="noopener noreferrer" class="evidence-link"><span>DOI</span></a>` : ''}</td>
                 <td class="center"><span class="plain-text">${esc(item.skala ? item.skala.charAt(0).toUpperCase() + item.skala.slice(1) : '-')}</span></td>
                 <td><span class="plain-text">${esc(item.jabatan_tampil || '-')}</span></td>
                 <td class="center"><span class="year-chip">${fmtDate(item.tanggal_mulai)} &ndash; ${fmtDate(item.tanggal_selesai)}</span></td>
@@ -922,14 +915,10 @@
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
 
-            const defaultType = ownScope ? document.getElementById('form-tipe_user').value : 'dosen';
-            const type = data.tipe_user || defaultType;
-            if (typeDropdown) SIDA.dropdown.select(typeDropdown, type);
-            else document.getElementById('form-tipe_user').value = type;
-            updateUserOptions();
             SIDA.dropdown.select(document.getElementById('dd-user'), data.user_id || '', 'Pilih nama...');
+            const type = selectedType();
             updateKindOptions();
-            const defaultKind = { dosen: 'jurnal', mahasiswa: 'sinta', alumni: 'rekognisi' }[type];
+            const defaultKind = defaultKindByType[type] || 'jurnal';
             const jenis = data.jenis || defaultKind;
             SIDA.dropdown.select(document.getElementById('dd-jenis'), jenis);
             SIDA.dropdown.select(document.getElementById('dd-skala'), data.skala || 'nasional');
@@ -966,7 +955,6 @@
             const tipeUser = selectedType();
             const payload = {
                 user_id: document.getElementById('form-user_id').value,
-                tipe_user: tipeUser,
                 jenis: document.getElementById('form-jenis').value,
                 skala: document.getElementById('form-skala').value || null,
                 mitra: document.getElementById('form-mitra').value,

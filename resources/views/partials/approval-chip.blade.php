@@ -1,5 +1,5 @@
 {{--
-    Chip status persetujuan di bawah judul pada tabel menu (Kemahasiswaan, LPPM Mahasiswa, Rekognisi, Kerja Sama).
+    Chip status persetujuan di bawah judul pada tabel menu (Kemahasiswaan, Rekognisi, Kerja Sama).
     Hanya tampil untuk yang BELUM disetujui — baris tanpa chip berarti sudah disetujui.
     Parameter: $item (model dengan trait HasApproval)
 --}}

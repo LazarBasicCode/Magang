@@ -134,8 +134,6 @@ class User extends Authenticatable
      */
     public const OPERATIONAL_MENUS = [
         'kemahasiswaan',
-        'lppm_mahasiswa',
-        'lppm_dosen',
         'rekognisi',
         'kerja_sama',
     ];

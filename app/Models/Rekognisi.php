@@ -49,7 +49,17 @@ class Rekognisi extends Model
      */
     public function getJabatanEfektifAttribute(): ?string
     {
-        return $this->tipe_user === 'alumni' ? ($this->jabatan ?: null) : null;
+        return $this->tipe_user_efektif === 'alumni' ? ($this->jabatan ?: null) : null;
+    }
+
+    public function getTipeUserEfektifAttribute(): string
+    {
+        if ($this->user?->role === 'dosen') return 'dosen';
+        if ($this->user?->role === 'mahasiswa') {
+            return $this->user?->mahasiswa?->status === 'lulus' ? 'alumni' : 'mahasiswa';
+        }
+
+        return $this->tipe_user;
     }
 
     public function user()

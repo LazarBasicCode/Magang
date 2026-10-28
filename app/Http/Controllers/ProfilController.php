@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
-use App\Models\LppmDosen;
-use App\Models\LppmMahasiswa;
 use App\Models\Rekognisi;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
@@ -26,29 +24,23 @@ class ProfilController extends Controller
         // Kategori per role: [key, label, ikon, menu (hak akses), url menu asal, query milik user, pemetaan baris]
         $sources = $isDosen
             ? [
-                ['lppm_dosen', 'Publikasi LPPM', 'menu_book', 'lppm_dosen', '/lppm/dosen',
-                    $profile ? LppmDosen::where('dosen_id', $profile->id) : null,
-                    fn ($i) => [$i->judul, $this->label($i->jenis), $i->tahun]],
                 ['kerja_sama', 'Kerja Sama', 'handshake', 'kerja_sama', '/kerja-sama',
                     KerjaSama::where('user_id', $user->id),
                     fn ($i) => [$i->judul_kegiatan, $i->mitra, optional($i->tanggal_mulai)->year]],
                 ['rekognisi', 'Rekognisi', 'workspace_premium', 'rekognisi', '/lppm/rekognisi',
                     Rekognisi::where('user_id', $user->id),
-                    fn ($i) => [$i->mitra, $this->label($i->jenis), optional($i->tanggal_mulai)->year]],
+                    fn ($i) => [$i->judul ?: ($i->jabatan_efektif ?: $i->mitra), $this->label($i->jenis) . ($i->skala ? ' · ' . $this->label($i->skala) : ''), optional($i->tanggal_mulai)->year]],
             ]
             : [
                 ['kemahasiswaan', 'Kemahasiswaan', 'school', 'kemahasiswaan', '/kemahasiswaan',
                     $profile ? Kemahasiswaan::where('mahasiswa_id', $profile->id) : null,
                     fn ($i) => [$i->nama_kegiatan, $this->label($i->jenis) . ' · ' . $this->label($i->tingkat), $i->tahun]],
-                ['lppm_mahasiswa', 'Publikasi LPPM', 'menu_book', 'lppm_mahasiswa', '/lppm/mahasiswa',
-                    $profile ? LppmMahasiswa::where('mahasiswa_id', $profile->id) : null,
-                    fn ($i) => [$i->judul, $this->label($i->jenis), $i->tahun]],
                 ['kerja_sama', 'Kerja Sama', 'handshake', 'kerja_sama', '/kerja-sama',
                     KerjaSama::where('user_id', $user->id),
                     fn ($i) => [$i->judul_kegiatan, $i->mitra, optional($i->tanggal_mulai)->year]],
                 ['rekognisi', 'Rekognisi', 'workspace_premium', 'rekognisi', '/lppm/rekognisi',
                     Rekognisi::where('user_id', $user->id),
-                    fn ($i) => [$i->mitra, $this->label($i->jenis), optional($i->tanggal_mulai)->year]],
+                    fn ($i) => [$i->judul ?: ($i->jabatan_efektif ?: $i->mitra), $this->label($i->jenis) . ($i->skala ? ' · ' . $this->label($i->skala) : ''), optional($i->tanggal_mulai)->year]],
             ];
 
         $items = collect();

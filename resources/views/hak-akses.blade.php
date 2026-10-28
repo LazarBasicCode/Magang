@@ -417,7 +417,7 @@
         // ADMIN_READONLY_CEILING_MENUS di backend — dipakai untuk memberi
         // panduan visual di modal SEBELUM submit (validasi sebenarnya tetap
         // di server, ini cuma supaya UX-nya tidak perlu nunggu ditolak dulu).
-        const ADMIN_SINGLE_RESPONSIBILITY_MENUS = ['kemahasiswaan', 'lppm_mahasiswa', 'lppm_dosen', 'rekognisi', 'kerja_sama'];
+        const ADMIN_SINGLE_RESPONSIBILITY_MENUS = ['kemahasiswaan', 'rekognisi', 'kerja_sama'];
         const ADMIN_READONLY_CEILING_MENUS = ['data_master', 'hak_akses', 'log', 'backup'];
 
         function applyRoleAccessRules(role) {

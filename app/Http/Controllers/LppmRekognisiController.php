@@ -10,6 +10,7 @@ use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
 use App\Support\Approval;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 class LppmRekognisiController extends Controller
@@ -23,18 +24,17 @@ class LppmRekognisiController extends Controller
     /** Aturan validasi yang sama dipakai form (store/update) dan unggah massal. */
     private const RULES = [
         'user_id'         => ['required', 'exists:users,id'],
-        'tipe_user'       => ['required', 'in:mahasiswa,dosen,alumni'],
         'jenis'           => ['required', 'in:jurnal,hki,book,sinta,conference,alumni,rekognisi,nasional,internasional'],
         'skala'           => ['nullable', 'required_if:jenis,jurnal,sinta,conference', 'in:nasional,internasional'],
-        'mitra'           => ['nullable', 'required_if:tipe_user,dosen,alumni', 'string', 'max:255'],
+        'mitra'           => ['nullable', 'string', 'max:255'],
         'judul'           => ['nullable', 'required_unless:jenis,rekognisi,alumni', 'string', 'max:255'],
         'penulis'         => ['nullable', 'required_unless:jenis,rekognisi,alumni', 'string', 'max:255'],
-        'nama_jurnal'     => ['nullable', 'string', 'max:255'],
-        'peringkat'       => ['nullable', 'string', 'max:100'],
+        'nama_jurnal'     => ['nullable', 'required_if:jenis,jurnal', 'required_if:jenis,sinta', 'string', 'max:255'],
+        'peringkat'       => ['nullable', 'required_if:jenis,jurnal', 'required_if:jenis,sinta', 'string', 'max:100'],
         'jenis_hki'       => ['nullable', 'required_if:jenis,hki', 'in:hak_cipta,paten,merek'],
         'kategori_buku'   => ['nullable', 'required_if:jenis,book', 'in:ajar,referensi,chapter'],
         'link_doi'        => ['nullable', 'url', 'max:2048'],
-        'jabatan'         => ['nullable', 'required_if:tipe_user,alumni', 'string', 'max:255'],
+        'jabatan'         => ['nullable', 'string', 'max:255'],
         'tanggal_mulai'   => ['required', 'date'],
         'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
         'tahun'           => ['nullable', 'required_unless:jenis,rekognisi,alumni', 'integer', 'between:2000,2100'],
@@ -50,6 +50,7 @@ class LppmRekognisiController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $user->loadMissing(['mahasiswa', 'dosen']);
         $ownScope = $user->menuLevel('rekognisi') === 'biasa';
 
         $tipe_user = $request->query('tipe_user');
@@ -58,11 +59,11 @@ class LppmRekognisiController extends Controller
         $term = trim((string) $request->query('q', ''));
 
         $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $term) {
-            $query = Rekognisi::with('user')->latest()->orderByDesc('id');
+            $query = Rekognisi::with('user.mahasiswa')->latest()->orderByDesc('id');
             if ($ownScope) {
                 $query->where('user_id', $user->id);
             }
-            if ($tipe_user && $tipe_user !== 'semua') $query->where('tipe_user', $tipe_user);
+            if ($tipe_user && $tipe_user !== 'semua') $this->applyUserTypeFilter($query, $tipe_user);
             if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
             if ($skala && $skala !== 'semua') $query->where('skala', $skala);
             if ($term !== '') {
@@ -102,20 +103,23 @@ class LppmRekognisiController extends Controller
 
         $userList = $ownScope
             ? collect([$user])
-            : User::whereIn('role', ['dosen', 'mahasiswa'])->orderBy('name')->get();
+            : User::with(['mahasiswa', 'dosen'])->whereIn('role', ['dosen', 'mahasiswa'])->orderBy('name')->get();
 
         $statsQuery = fn () => $ownScope
             ? Rekognisi::where('user_id', $user->id)
             : Rekognisi::query();
 
+        $alumniStatsQuery = clone $statsQuery();
+        $this->applyUserTypeFilter($alumniStatsQuery, 'alumni');
+
         $stats = [
             'total'         => (clone $statsQuery())->count(),
             'nasional'      => (clone $statsQuery())->where('skala', 'nasional')->count(),
             'internasional' => (clone $statsQuery())->where('skala', 'internasional')->count(),
-            'alumni'        => (clone $statsQuery())->where('tipe_user', 'alumni')->count(),
+            'alumni'        => $alumniStatsQuery->count(),
         ];
 
-        return view('lppm_rekognisi', compact('items', 'userList', 'stats', 'ownScope'));
+        return view('lppm_rekognisi', compact('items', 'userList', 'stats'));
     }
 
     public function store(Request $request)
@@ -127,7 +131,7 @@ class LppmRekognisiController extends Controller
         $owner = ($data['tipe_user'] ?? null) === 'mahasiswa' ? User::find($data['user_id'])?->mahasiswa : null;
         $data += Approval::attributesFor($request->user(), $owner, true);
 
-        $item = Rekognisi::create($data)->load('user');
+        $item = Rekognisi::create($data)->load('user.mahasiswa');
 
         Approval::afterSubmit('rekognisi', $item, $request->user(), null);
         $this->notifyRekognisi($request, $item, 'ditambahkan');
@@ -150,7 +154,7 @@ class LppmRekognisiController extends Controller
         $data += Approval::attributesFor($request->user(), $rekognisi->user?->mahasiswa, false);
 
         $rekognisi->update($data);
-        $rekognisi->load('user');
+        $rekognisi->load('user.mahasiswa');
 
         Approval::afterSubmit('rekognisi', $rekognisi, $request->user(), $previous);
         $this->notifyRekognisi($request, $rekognisi, 'diperbarui');
@@ -216,10 +220,10 @@ class LppmRekognisiController extends Controller
         $jabatan = $changes['jabatan'] ?? $item->jabatan;
         $errors = [];
 
-        $allowedKinds = match ($item->tipe_user) {
+        $allowedKinds = match ($item->tipe_user_efektif) {
             'dosen' => ['jurnal', 'hki', 'book', 'rekognisi'],
             'mahasiswa' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
-            'alumni' => ['rekognisi'],
+            'alumni' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
             default => [],
         };
         $jenis = (string) ($changes['jenis'] ?? $item->jenis);
@@ -227,7 +231,7 @@ class LppmRekognisiController extends Controller
             $errors[] = 'Jenis karya tidak sesuai dengan tipe pengguna ' . $item->tipe_user . '.';
         }
 
-        if ($item->tipe_user === 'alumni') {
+        if ($item->tipe_user_efektif === 'alumni') {
             if (trim((string) $jabatan) === '') {
                 $errors[] = 'Jabatan wajib diisi untuk tipe Alumni.';
             }
@@ -239,6 +243,23 @@ class LppmRekognisiController extends Controller
 
         if (array_key_exists('skala', $changes) && !in_array($jenis, ['jurnal', 'sinta', 'conference'], true)) {
             $errors[] = 'Skala hanya berlaku untuk karya jurnal, SINTA, atau conference.';
+        }
+        $finalScale = $changes['skala'] ?? $item->skala;
+        if ((in_array($jenis, ['jurnal', 'sinta', 'conference'], true)
+                || ($jenis === 'rekognisi' && $item->tipe_user_efektif !== 'alumni'))
+            && blank($finalScale)) {
+            $errors[] = 'Skala wajib diisi untuk jenis karya ini.';
+        }
+        if (in_array($jenis, ['jurnal', 'sinta'], true)) {
+            foreach (['nama_jurnal', 'peringkat'] as $field) {
+                if (blank($item->{$field})) $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' wajib diisi untuk jenis jurnal.';
+            }
+        }
+        if ($jenis === 'hki' && blank($item->jenis_hki)) $errors[] = 'Jenis HKI wajib diisi.';
+        if ($jenis === 'book' && blank($item->kategori_buku)) $errors[] = 'Kategori buku wajib diisi.';
+        if (in_array($item->tipe_user_efektif, ['dosen', 'alumni'], true)
+            && array_key_exists('mitra', $changes) && blank($changes['mitra'])) {
+            $errors[] = 'Mitra wajib diisi untuk Dosen dan Alumni.';
         }
 
         return [$changes, $errors];
@@ -274,7 +295,6 @@ class LppmRekognisiController extends Controller
             [
                 'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
                 'nim_nidn'        => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
-                'tipe_user'       => ['required' => 'Ya', 'example' => 'dosen', 'width' => 16, 'options' => ['dosen', 'mahasiswa', 'alumni'], 'note' => 'Tipe data Rekognisi.'],
                 'jenis'           => ['required' => 'Ya', 'example' => 'jurnal', 'width' => 16, 'options' => ['jurnal', 'hki', 'book', 'sinta', 'conference', 'rekognisi'], 'note' => 'Jenis karya, terpisah dari skala.'],
                 'skala'           => ['required' => 'Untuk publikasi', 'example' => 'internasional', 'width' => 18, 'options' => ['nasional', 'internasional'], 'note' => 'Skala publikasi.'],
                 'judul'           => ['required' => 'Dosen/Mahasiswa', 'example' => 'Judul karya', 'width' => 34, 'note' => 'Judul karya atau publikasi.'],
@@ -317,7 +337,7 @@ class LppmRekognisiController extends Controller
                 $item->id,
                 $item->user->nim_nidn ?? '',
                 $item->user->name ?? '',
-                $item->tipe_user,
+                $item->tipe_user_efektif,
                 $item->jenis,
                 $item->skala,
                 $item->judul,
@@ -369,8 +389,10 @@ class LppmRekognisiController extends Controller
                 $skala = $skala ?: $jenis;
                 $jenis = 'rekognisi';
             }
-            $requestedType = Csv::normalizeKey($d['tipe_user'] ?? '');
-            $tipeUser = $requestedType ?: ($existing?->tipe_user ?: ($jenis === 'alumni' ? 'alumni' : ($owner?->role === 'dosen' ? 'dosen' : 'mahasiswa')));
+            $owner?->loadMissing('mahasiswa');
+            $tipeUser = $owner
+                ? $this->userTypeFor($owner)
+                : ($existing?->tipe_user_efektif ?? 'mahasiswa');
             if ($jenis === 'alumni' && $tipeUser === 'alumni') $jenis = 'rekognisi';
             [$dates, $badDates] = $this->bulkParseDates($d, ['tanggal_mulai', 'tanggal_selesai'], $rowErrors);
 
@@ -401,19 +423,10 @@ class LppmRekognisiController extends Controller
             );
             $rowErrors = array_merge($rowErrors, $messages);
 
-            $roleMatches = match ($tipeUser) {
-                'dosen' => $owner?->role === 'dosen',
-                'mahasiswa' => $owner?->role === 'mahasiswa',
-                'alumni' => in_array($owner?->role, ['mahasiswa', 'dosen'], true),
-                default => false,
-            };
-            if ($owner && !$roleMatches) {
-                $rowErrors[] = 'Tipe pengguna tidak sesuai dengan NIM/NIDN pada baris ini.';
-            }
             $allowedKinds = match ($tipeUser) {
                 'dosen' => ['jurnal', 'hki', 'book', 'rekognisi'],
                 'mahasiswa' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
-                'alumni' => ['rekognisi'],
+                'alumni' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
                 default => [],
             };
             if (!in_array($jenis, $allowedKinds, true)) {
@@ -421,6 +434,12 @@ class LppmRekognisiController extends Controller
             }
             if ($jenis === 'rekognisi' && $tipeUser !== 'alumni' && !$payload['skala']) {
                 $rowErrors[] = 'Skala wajib diisi untuk jenis Rekognisi pada baris ini.';
+            }
+            if (in_array($tipeUser, ['dosen', 'alumni'], true) && blank($payload['mitra'])) {
+                $rowErrors[] = 'Mitra wajib diisi untuk Dosen dan Alumni.';
+            }
+            if ($tipeUser === 'alumni' && blank($payload['jabatan'])) {
+                $rowErrors[] = 'Jabatan wajib diisi untuk Alumni.';
             }
 
             if ($rowErrors) {
@@ -463,8 +482,9 @@ class LppmRekognisiController extends Controller
 
         // Timpa user_id (dan tipe_user turunannya) jadi milik mereka sendiri,
         // berapa pun yang dikirim dari klien.
+        $actor->loadMissing('mahasiswa');
         $data['user_id'] = $actor->id;
-        $data['tipe_user'] = $actor->role === 'dosen' ? 'dosen' : 'mahasiswa';
+        $data['tipe_user'] = $this->userTypeFor($actor);
     }
 
     private function authorizeOwnership(Request $request, Rekognisi $rekognisi): void
@@ -485,28 +505,21 @@ class LppmRekognisiController extends Controller
     {
         $data = $request->validate(self::RULES);
 
-        $user = User::findOrFail($data['user_id']);
-        $roleMatches = match ($data['tipe_user']) {
-            'dosen' => $user->role === 'dosen',
-            'mahasiswa' => $user->role === 'mahasiswa',
-            'alumni' => in_array($user->role, ['mahasiswa', 'dosen'], true),
-        };
-        if (!$roleMatches) {
-            throw ValidationException::withMessages(['user_id' => 'Nama tidak sesuai dengan tipe pengguna yang dipilih.']);
-        }
+        $user = User::with('mahasiswa')->findOrFail($data['user_id']);
+        $data['tipe_user'] = $this->userTypeFor($user);
 
         if (in_array($data['jenis'], ['nasional', 'internasional'], true)) {
             $data['skala'] = $data['jenis'];
             $data['jenis'] = 'rekognisi';
         }
-        if ($data['tipe_user'] === 'alumni' && $data['jenis'] === 'alumni') {
+        if ($data['jenis'] === 'alumni') {
             $data['jenis'] = 'rekognisi';
         }
 
         $allowedKinds = match ($data['tipe_user']) {
             'dosen' => ['jurnal', 'hki', 'book', 'rekognisi'],
             'mahasiswa' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
-            'alumni' => ['rekognisi'],
+            'alumni' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
         };
         if (!in_array($data['jenis'], $allowedKinds, true)) {
             throw ValidationException::withMessages(['jenis' => 'Jenis karya tidak sesuai dengan tipe pengguna.']);
@@ -528,6 +541,14 @@ class LppmRekognisiController extends Controller
         if ($data['jenis'] !== 'hki') $data['jenis_hki'] = null;
         if ($data['jenis'] !== 'book') $data['kategori_buku'] = null;
 
+        $conditionalErrors = [];
+        if (in_array($data['tipe_user'], ['dosen', 'alumni'], true) && blank($data['mitra'] ?? null)) {
+            $conditionalErrors['mitra'][] = 'Mitra wajib diisi untuk Dosen dan Alumni.';
+        }
+        if ($data['tipe_user'] === 'alumni' && blank($data['jabatan'] ?? null)) {
+            $conditionalErrors['jabatan'][] = 'Jabatan wajib diisi untuk Alumni.';
+        }
+        if ($conditionalErrors) throw ValidationException::withMessages($conditionalErrors);
         if ($data['tipe_user'] !== 'alumni') {
             unset($data['jabatan']);
         }
@@ -540,7 +561,7 @@ class LppmRekognisiController extends Controller
         return [
             'id'              => $item->id,
             'user_id'         => $item->user_id,
-            'tipe_user'       => $item->tipe_user,
+            'tipe_user'       => $item->user ? $this->userTypeFor($item->user) : $item->tipe_user,
             'nim_nidn'        => optional($item->user)->nim_nidn ?? '-',
             'nama'            => optional($item->user)->name ?? 'Tanpa Nama',
             'avatar_url'      => optional($item->user)->avatar_url,
@@ -566,5 +587,31 @@ class LppmRekognisiController extends Controller
             'approval_badge'  => $item->approvalBadge(),
             'approval_note'   => $item->approval_note,
         ];
+    }
+
+    private function userTypeFor(User $user): string
+    {
+        if ($user->role === 'dosen') return 'dosen';
+        if ($user->role === 'mahasiswa' && $user->mahasiswa?->status === 'lulus') return 'alumni';
+
+        return 'mahasiswa';
+    }
+
+    private function applyUserTypeFilter(Builder $query, string $type): void
+    {
+        if ($type === 'dosen') {
+            $query->whereHas('user', fn ($user) => $user->where('role', 'dosen'));
+            return;
+        }
+
+        if ($type === 'mahasiswa') {
+            $query->whereHas('user', fn ($user) => $user->where('role', 'mahasiswa'))
+                ->whereDoesntHave('user.mahasiswa', fn ($mahasiswa) => $mahasiswa->where('status', 'lulus'));
+            return;
+        }
+
+        if ($type === 'alumni') {
+            $query->whereHas('user.mahasiswa', fn ($mahasiswa) => $mahasiswa->where('status', 'lulus'));
+        }
     }
 }

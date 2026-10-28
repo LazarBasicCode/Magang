@@ -6,8 +6,6 @@ use App\Models\Dosen;
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
 use App\Models\LoginAttempt;
-use App\Models\LppmDosen;
-use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
@@ -30,13 +28,11 @@ class ReportData
         // kosong (map() tetap mengembalikan koleksi Eloquent) lalu digabung dengan angka, terjadi error
         // "Call to a member function getKey() on int". Koleksi biasa tidak punya masalah itu.
         $kem = Kemahasiswaan::with('mahasiswa.user')->approved()->get()->toBase();
-        $lm  = LppmMahasiswa::with('mahasiswa.user')->approved()->get()->toBase();
-        $ld  = LppmDosen::with('dosen.user')->get()->toBase();
-        $rek = Rekognisi::with('user')->approved()->get()->toBase();
+        $rek = Rekognisi::with('user.mahasiswa')->approved()->get()->toBase();
         $ks  = KerjaSama::with('user')->approved()->get()->toBase();
 
         // Daftar tahun yang tersedia untuk filter
-        $years = $kem->concat($lm)->concat($ld)->concat($rek)->concat($ks)
+        $years = $kem->concat($rek)->concat($ks)
             ->map(fn ($i) => self::year($i))->filter()->push((int) now()->year)
             ->unique()->sortDesc()->values()->all();
 
@@ -45,26 +41,20 @@ class ReportData
             : $c;
 
         $kemP = $inYear($kem);
-        $lmP  = $inYear($lm);
-        $ldP  = $inYear($ld);
         $rekP = $inYear($rek);
         $ksP  = $inYear($ks);
 
         $ksIntl = ['conference_internasional', 'pengabdian_internasional', 'research_internasional'];
-        $intl = fn ($k, $l, $d, $r, $s) => $k->where('tingkat', 'internasional')->count()
-            + $l->whereIn('jenis', ['jurnal_internasional', 'conference_internasional'])->count()
-            + $d->where('jenis', 'q_internasional')->count()
+        $intl = fn ($k, $r, $s) => $k->where('tingkat', 'internasional')->count()
             + $r->where('skala', 'internasional')->count()
             + $s->whereIn('jenis', $ksIntl)->count();
 
-        $totalPeriode = $kemP->count() + $lmP->count() + $ldP->count() + $rekP->count() + $ksP->count();
-        $intlPeriode  = $intl($kemP, $lmP, $ldP, $rekP, $ksP);
+        $totalPeriode = $kemP->count() + $rekP->count() + $ksP->count();
+        $intlPeriode  = $intl($kemP, $rekP, $ksP);
 
         // ---- Rekap per modul ----
         $modules = [
             ['label' => 'Kemahasiswaan',  'icon' => 'school',            'all' => $kem->count(), 'periode' => $kemP->count(), 'intl' => $kemP->where('tingkat', 'internasional')->count()],
-            ['label' => 'LPPM Mahasiswa', 'icon' => 'person',            'all' => $lm->count(),  'periode' => $lmP->count(),  'intl' => $lmP->whereIn('jenis', ['jurnal_internasional', 'conference_internasional'])->count()],
-            ['label' => 'LPPM Dosen',     'icon' => 'co_present',        'all' => $ld->count(),  'periode' => $ldP->count(),  'intl' => $ldP->where('jenis', 'q_internasional')->count()],
             ['label' => 'Rekognisi',      'icon' => 'workspace_premium', 'all' => $rek->count(), 'periode' => $rekP->count(), 'intl' => $rekP->where('skala', 'internasional')->count()],
             ['label' => 'Kerja Sama',     'icon' => 'handshake',         'all' => $ks->count(),  'periode' => $ksP->count(),  'intl' => $ksP->whereIn('jenis', $ksIntl)->count()],
         ];
@@ -79,12 +69,10 @@ class ReportData
         $dsnTotal = Dosen::count();
 
         $mhsIds = $kemP->map(fn ($i) => $i->mahasiswa?->user_id)
-            ->concat($lmP->map(fn ($i) => $i->mahasiswa?->user_id))
-            ->concat($rekP->where('tipe_user', 'mahasiswa')->pluck('user_id'))
+            ->concat($rekP->filter(fn ($i) => $i->tipe_user_efektif === 'mahasiswa' || $i->tipe_user_efektif === 'alumni')->pluck('user_id'))
             ->concat($ksP->where('tipe_user', 'mahasiswa')->pluck('user_id'))
             ->filter()->unique()->count();
-        $dsnIds = $ldP->map(fn ($i) => $i->dosen?->user_id)
-            ->concat($rekP->where('tipe_user', 'dosen')->pluck('user_id'))
+        $dsnIds = $rekP->filter(fn ($i) => $i->tipe_user_efektif === 'dosen')->pluck('user_id')
             ->concat($ksP->where('tipe_user', 'dosen')->pluck('user_id'))
             ->filter()->unique()->count();
 
@@ -93,12 +81,10 @@ class ReportData
             self::group('Kemahasiswaan · Tingkat', $kemP, 'tingkat', ['lokal' => 'Lokal', 'nasional' => 'Nasional', 'internasional' => 'Internasional']),
             self::group('Kemahasiswaan · Jenis', $kemP, 'jenis', ['inbis' => 'Inbis', 'kemahasiswaan' => 'Kemahasiswaan']),
             self::group('Kemahasiswaan · Bidang', $kemP, 'tab', ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']),
-            self::group('LPPM Mahasiswa · Jenis', $lmP, 'jenis', ['sinta_nasional' => 'Jurnal Sinta Nasional', 'jurnal_internasional' => 'Jurnal Internasional', 'conference_internasional' => 'Conference Internasional']),
-            self::group('LPPM Dosen · Jenis', $ldP, 'jenis', ['q_internasional' => 'Jurnal Q Internasional', 'sinta_nasional' => 'Jurnal Sinta Nasional', 'hki' => 'HKI', 'book' => 'Buku']),
-            self::group('LPPM Dosen · Peringkat Jurnal', $ldP->whereNotNull('peringkat'), 'peringkat', null),
-            self::group('Rekognisi · Jenis Karya', $rekP, 'jenis', ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'alumni' => 'Alumni', 'rekognisi' => 'Rekognisi']),
+            self::group('Rekognisi · Jenis Karya', $rekP, 'jenis', ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'rekognisi' => 'Rekognisi']),
             self::group('Rekognisi · Skala', $rekP, 'skala', ['nasional' => 'Nasional', 'internasional' => 'Internasional']),
-            self::group('Rekognisi · Tipe User', $rekP, 'tipe_user', ['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen', 'alumni' => 'Alumni']),
+            self::group('Rekognisi · Tipe User', $rekP->map(fn ($item) => ['tipe_user' => $item->tipe_user_efektif]), 'tipe_user', ['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen', 'alumni' => 'Alumni']),
+            self::group('Rekognisi · Peringkat Jurnal', $rekP->whereNotNull('peringkat'), 'peringkat', null),
             self::group('Rekognisi · Mitra Terbanyak', $rekP, 'mitra', null, 5),
             self::group('Kerja Sama · Jenis', $ksP, 'jenis', null),
             self::group('Kerja Sama · Peserta', $ksP, 'tipe_user', ['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen']),
@@ -108,10 +94,10 @@ class ReportData
 
         // ---- Tren per tahun (semua tahun, maks. 6 terakhir) ----
         $trendYears = collect($years)->sort()->slice(-6)->values();
-        $trend = $trendYears->map(function ($y) use ($kem, $lm, $ld, $rek, $ks) {
+        $trend = $trendYears->map(function ($y) use ($kem, $rek, $ks) {
             $c = fn (Collection $col) => $col->filter(fn ($i) => self::year($i) === $y)->count();
-            $row = ['tahun' => $y, 'kem' => $c($kem), 'lm' => $c($lm), 'ld' => $c($ld), 'rek' => $c($rek), 'ks' => $c($ks)];
-            $row['total'] = $row['kem'] + $row['lm'] + $row['ld'] + $row['rek'] + $row['ks'];
+            $row = ['tahun' => $y, 'kem' => $c($kem), 'rek' => $c($rek), 'ks' => $c($ks)];
+            $row['total'] = $row['kem'] + $row['rek'] + $row['ks'];
 
             return $row;
         })->all();
@@ -120,9 +106,7 @@ class ReportData
         $owner = fn ($name, $role) => $name ? [$name . '|' . $role] : [];
         $contrib = collect()
             ->concat($kemP->flatMap(fn ($i) => $owner($i->mahasiswa?->user?->name, 'Mahasiswa')))
-            ->concat($lmP->flatMap(fn ($i) => $owner($i->mahasiswa?->user?->name, 'Mahasiswa')))
-            ->concat($ldP->flatMap(fn ($i) => $owner($i->dosen?->user?->name, 'Dosen')))
-            ->concat($rekP->flatMap(fn ($i) => $owner($i->user?->name, ucfirst((string) $i->tipe_user))))
+            ->concat($rekP->flatMap(fn ($i) => $owner($i->user?->name, ucfirst((string) $i->tipe_user_efektif))))
             ->concat($ksP->flatMap(fn ($i) => $owner($i->user?->name, ucfirst((string) $i->tipe_user))))
             ->countBy()->sortDesc()->take(10)
             ->map(function ($n, $key) {
@@ -132,11 +116,10 @@ class ReportData
             })->values()->all();
 
         // ---- Kualitas data ----
-        $noDoi = $lmP->whereIn('jenis', ['jurnal_internasional', 'sinta_nasional'])->filter(fn ($i) => blank($i->link_doi))->count()
-            + $ldP->whereIn('jenis', ['q_internasional', 'sinta_nasional'])->filter(fn ($i) => blank($i->link_doi))->count();
+        $noDoi = $rekP->whereIn('jenis', ['jurnal', 'sinta'])->filter(fn ($i) => blank($i->link_doi))->count();
         $noEmail = User::where(fn ($q) => $q->whereNull('email')->orWhere('email', ''))->count();
         $quality = [
-            ['label' => 'Jurnal tanpa link DOI', 'value' => $noDoi, 'note' => 'LPPM Mahasiswa & Dosen pada periode ini', 'url' => null],
+            ['label' => 'Jurnal tanpa link DOI', 'value' => $noDoi, 'note' => 'Rekognisi publikasi pada periode ini', 'url' => null],
             ['label' => 'Akun belum punya email', 'value' => $noEmail, 'note' => 'Tidak bisa memakai fitur lupa password', 'url' => url('/data-master/users')],
         ];
 

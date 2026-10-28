@@ -1,4 +1,4 @@
-{{-- DASHBOARD DOSEN. Data dari DashboardController::dosen() (LPPM Dosen, Rekognisi, Kerja Sama). --}}
+{{-- DASHBOARD DOSEN. Data dari DashboardController::dosen() (Rekognisi, Kerja Sama). --}}
 @php
     // Widget khusus dosen, memakai format yang sama dengan widget admin
     // (lihat partials/dashboard/widgets.blade.php).
@@ -40,7 +40,7 @@
 
 @include('partials.dashboard.content', [
     'brand'    => 'SIDA',
-    'subtitle' => 'Ringkasan riset, publikasi & kerja samamu di Sistem Informasi Data Akademik',
+    'subtitle' => 'Ringkasan publikasi, rekognisi & kerja samamu di Sistem Informasi Data Akademik',
     'action'   => null,
         'hero'     => [
             ['icon' => 'local_fire_department', 'label' => 'Total Kegiatan',        'value' => $stats['total'],             'unit' => 'kegiatan'],
@@ -48,25 +48,24 @@
             ['icon' => 'public',                'label' => 'Capaian Internasional', 'value' => $stats['internasional_pct'], 'unit' => '%'],
         ],
     'cards'    => [
-        ['label' => 'LPPM Dosen',             'value' => $stats['lppm_dosen'],  'color' => 'info',    'icon' => 'co_present'],
-        ['label' => 'Jurnal Q Internasional', 'value' => $stats['publikasi_q'], 'color' => 'success', 'icon' => 'menu_book'],
-        ['label' => 'Rekognisi',              'value' => $stats['rekognisi'],   'color' => 'warning', 'icon' => 'workspace_premium'],
+        ['label' => 'Rekognisi',              'value' => $stats['rekognisi'],             'color' => 'warning', 'icon' => 'workspace_premium'],
+        ['label' => 'Jurnal Internasional',   'value' => $stats['jurnal_internasional'],  'color' => 'success', 'icon' => 'menu_book'],
         ['label' => 'Kerja Sama',             'value' => $stats['kerja_sama'],  'color' => 'primary', 'icon' => 'handshake'],
+        ['label' => 'Mitra Unik',              'value' => $stats['mitra_unik'], 'color' => 'info',    'icon' => 'apartment'],
     ],
     'cards2'   => [
-        ['label' => 'Jurnal Sinta Nasional', 'value' => $stats['sinta_nasional'], 'color' => 'info',    'icon' => 'article'],
+        ['label' => 'Jurnal Nasional',       'value' => $stats['jurnal_nasional'], 'color' => 'info',    'icon' => 'article'],
         ['label' => 'HKI',                   'value' => $stats['hki'],            'color' => 'warning', 'icon' => 'verified'],
         ['label' => 'Buku',                  'value' => $stats['buku'],           'color' => 'success', 'icon' => 'auto_stories'],
-        ['label' => 'Mitra Unik',            'value' => $stats['mitra_unik'],     'color' => 'primary', 'icon' => 'apartment'],
     ],
     'donuts'   => [
-        ['title' => 'Distribusi Kegiatan per Kategori', 'sub' => 'Sebaran kegiatanmu di 3 menu', 'caption' => 'Kegiatan', 'data' => $kategoriDonut],
-        ['title' => 'Distribusi Luaran LPPM', 'sub' => 'Jurnal, HKI, dan buku di LPPM Dosen', 'caption' => 'Luaran', 'data' => $luaranDonut],
+        ['title' => 'Distribusi Kegiatan per Kategori', 'sub' => 'Sebaran kegiatanmu di 2 menu', 'caption' => 'Kegiatan', 'data' => $kategoriDonut],
+        ['title' => 'Distribusi Publikasi', 'sub' => 'Jurnal, HKI, dan buku di Rekognisi', 'caption' => 'Publikasi', 'data' => $luaranDonut],
     ],
     'widgets'       => $widgets,
     'trendSub'      => 'Riset & Publikasi vs Eksternal · bandingkan keseimbangan portofoliomu dari waktu ke waktu',
     'trendDatasets' => $trendDatasets,
-    'barSub'        => 'Gabungan 3 kategori',
+    'barSub'        => 'Gabungan 2 kategori',
     'barDatasets'   => $barDatasets,
     'recentSub'     => 'Kegiatan terakhir yang kamu tambahkan',
     'recent'        => $recent,

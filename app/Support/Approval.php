@@ -6,7 +6,6 @@ use App\Models\ApprovalComment;
 use App\Models\ApprovalLog;
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
-use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
@@ -78,23 +77,6 @@ class Approval
                     'Tahun'   => $i->tahun,
                 ],
             ],
-            'lppm-mahasiswa' => [
-                'model'     => LppmMahasiswa::class,
-                'label'     => 'LPPM Mahasiswa',
-                'icon'      => 'person',
-                'url'       => '/lppm/mahasiswa',
-                'with'      => ['mahasiswa.user'],
-                'title'     => fn ($i) => $i->judul,
-                'mahasiswa' => fn ($i) => $i->mahasiswa,
-                'bukti'     => fn ($i) => $i->bukti_kegiatan,
-                'detail'    => fn ($i) => array_filter([
-                    'Jenis'      => $pretty($i->jenis),
-                    'Jurnal'     => $i->nama_jurnal,
-                    'Peringkat'  => $i->peringkat,
-                    'Tahun'      => $i->tahun,
-                    'Link DOI'   => $i->link_doi,
-                ], fn ($v) => $v !== null && $v !== ''),
-            ],
             'rekognisi' => [
                 'model'     => Rekognisi::class,
                 'label'     => 'Rekognisi',
@@ -105,7 +87,7 @@ class Approval
                 'mahasiswa' => fn ($i) => $i->user?->mahasiswa,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
                 'detail'    => fn ($i) => array_filter([
-                    'Tipe'     => $pretty($i->tipe_user),
+                    'Tipe'     => $pretty($i->tipe_user_efektif),
                     'Jenis'    => $pretty($i->jenis),
                     'Skala'    => $pretty($i->skala),
                     'Penulis'  => $i->penulis,

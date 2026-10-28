@@ -20,8 +20,6 @@
     $crumbs = [
         'dashboard'      => [null, 'Dashboard'],
         'kemahasiswaan'  => ['Kemahasiswaan', 'Data Prestasi & Kegiatan'],
-        'lppm_mahasiswa' => ['LPPM', 'Data Mahasiswa'],
-        'lppm_dosen'     => ['LPPM', 'Data Dosen'],
         'rekognisi'      => ['LPPM', 'Rekognisi'],
         'kerja_sama'     => ['Kemitraan', 'Kerja Sama'],
         'data_master'    => ['Administrasi', 'Data Master Pengguna'],

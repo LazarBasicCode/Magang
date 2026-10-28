@@ -292,13 +292,15 @@ class AdminDashboardData
     // =====================================================================
     private static function rekognisi(): array
     {
-        $items = Rekognisi::with('user')->approved()->get();
+        $items = Rekognisi::with('user.mahasiswa')->approved()->get();
         $total = $items->count();
         $owner = fn ($i) => $i->user?->name;
         $intl = $items->where('skala', 'internasional')->count();
         $upcoming = self::upcoming([[$items, fn ($i) => $i->jabatan_efektif ?: ($i->judul ?: $i->mitra), 'Rekognisi', 'workspace_premium', $owner]]);
-        $alumniTanpaJabatan = $items->where('tipe_user', 'alumni')->filter(fn ($i) => blank($i->jabatan));
-        $alumni = $items->where('tipe_user', 'alumni')->count();
+        $userTypes = $items->groupBy(fn ($i) => $i->tipe_user_efektif);
+        $alumniItems = $userTypes->get('alumni', collect());
+        $alumniTanpaJabatan = $alumniItems->filter(fn ($i) => blank($i->jabatan));
+        $alumni = $alumniItems->count();
 
         return [
             'meta' => [
@@ -319,8 +321,8 @@ class AdminDashboardData
                 self::c('Alumni', $alumni, 'school', 'warning'),
             ],
             'cards2' => [
-                self::c('Mahasiswa', $items->where('tipe_user', 'mahasiswa')->count(), 'person', 'info'),
-                self::c('Dosen', $items->where('tipe_user', 'dosen')->count(), 'co_present', 'primary'),
+                self::c('Mahasiswa', $userTypes->get('mahasiswa', collect())->count(), 'person', 'info'),
+                self::c('Dosen', $userTypes->get('dosen', collect())->count(), 'co_present', 'primary'),
                 self::c('Mitra Unik', self::uniqueCount($items, 'mitra'), 'apartment', 'success'),
                 self::c('Sedang Berlangsung', $upcoming['total'], 'schedule', 'warning'),
             ],
@@ -331,11 +333,11 @@ class AdminDashboardData
                         'internasional' => ['Internasional', 'var(--chart-5)'],
                     ])),
                 self::donutCard('Tipe User', 'Mahasiswa, dosen, dan alumni', 'Rekognisi',
-                    self::donut($items, 'tipe_user', [
-                        'mahasiswa' => ['Mahasiswa', 'var(--chart-1)'],
-                        'dosen'     => ['Dosen', 'var(--chart-4)'],
-                        'alumni'    => ['Alumni', 'var(--chart-2)'],
-                    ])),
+                    [
+                        ['label' => 'Mahasiswa', 'value' => $userTypes->get('mahasiswa', collect())->count(), 'color' => 'var(--chart-1)'],
+                        ['label' => 'Dosen', 'value' => $userTypes->get('dosen', collect())->count(), 'color' => 'var(--chart-4)'],
+                        ['label' => 'Alumni', 'value' => $alumni, 'color' => 'var(--chart-2)'],
+                    ]),
             ],
             'widgets' => [
                 self::barsWidget('Mitra Terbanyak', 'Mitra dengan rekognisi paling banyak',
@@ -354,9 +356,9 @@ class AdminDashboardData
                 self::rankingWidget('Penerima Rekognisi Terbanyak', 'Jumlah rekognisi terbanyak', 'rekognisi', self::top($items, $owner)),
             ],
             'groups' => [
-                ['label' => 'Mahasiswa', 'items' => $items->where('tipe_user', 'mahasiswa')->values()],
-                ['label' => 'Dosen', 'items' => $items->where('tipe_user', 'dosen')->values()],
-                ['label' => 'Alumni', 'items' => $items->where('tipe_user', 'alumni')->values()],
+                ['label' => 'Mahasiswa', 'items' => $userTypes->get('mahasiswa', collect())->values()],
+                ['label' => 'Dosen', 'items' => $userTypes->get('dosen', collect())->values()],
+                ['label' => 'Alumni', 'items' => $alumniItems->values()],
             ],
             'recent' => self::recent([[$items, fn ($i) => $i->jabatan_efektif ?: ($i->judul ?: $i->mitra), 'Rekognisi', 'workspace_premium', $owner]]),
         ];
@@ -448,21 +450,16 @@ class AdminDashboardData
     private static function sida(User $viewer): array
     {
         $kem = Kemahasiswaan::with('mahasiswa.user')->approved()->get();
-        $lm = LppmMahasiswa::with('mahasiswa.user')->approved()->get();
-        $ld = LppmDosen::with('dosen.user')->get();
-        $rek = Rekognisi::with('user')->approved()->get();
+        $rek = Rekognisi::with('user.mahasiswa')->approved()->get();
         $ks = KerjaSama::with('user')->approved()->get();
 
-        $all = $kem->concat($lm)->concat($ld)->concat($rek)->concat($ks);
+        $all = $kem->concat($rek)->concat($ks);
         $total = $all->count();
         $intl = $kem->where('tingkat', 'internasional')->count()
-            + $lm->whereIn('jenis', ['jurnal_internasional', 'conference_internasional'])->count()
-            + $ld->where('jenis', 'q_internasional')->count()
             + $rek->where('skala', 'internasional')->count()
             + $ks->whereIn('jenis', ['conference_internasional', 'pengabdian_internasional', 'research_internasional'])->count();
 
         $ownerMhs = fn ($i) => $i->mahasiswa?->user?->name;
-        $ownerDsn = fn ($i) => $i->dosen?->user?->name;
         $ownerUsr = fn ($i) => $i->user?->name;
 
         $upcoming = self::upcoming([
@@ -475,8 +472,6 @@ class AdminDashboardData
         $dsnCount = Dosen::count();
 
         $topOwners = $kem->map($ownerMhs)
-            ->concat($lm->map($ownerMhs))
-            ->concat($ld->map($ownerDsn))
             ->concat($rek->map($ownerUsr))
             ->concat($ks->map($ownerUsr))
             ->filter()->countBy()->sortDesc()->take(5)
@@ -484,11 +479,9 @@ class AdminDashboardData
 
         $widgets = [
             self::barsWidget('Kontribusi per Menu', 'Jumlah data di tiap menu operasional', collect([
-                'Kemahasiswaan'  => $kem->count(),
-                'LPPM Mahasiswa' => $lm->count(),
-                'LPPM Dosen'     => $ld->count(),
-                'Rekognisi'      => $rek->count(),
-                'Kerja Sama'     => $ks->count(),
+                'Kemahasiswaan' => $kem->count(),
+                'Rekognisi'     => $rek->count(),
+                'Kerja Sama'    => $ks->count(),
             ]), 'is-q', false),
             self::upcomingWidget('Berlangsung & Akan Datang', $upcoming),
             self::rankingWidget('Kontributor Teraktif', 'Total data terbanyak lintas semua menu', 'data', $topOwners),
@@ -534,9 +527,8 @@ class AdminDashboardData
             ],
             'cards' => [
                 self::c('Kemahasiswaan', $kem->count(), 'school', 'info'),
-                self::c('LPPM Mahasiswa', $lm->count(), 'person', 'primary'),
-                self::c('LPPM Dosen', $ld->count(), 'co_present', 'success'),
                 self::c('Rekognisi', $rek->count(), 'workspace_premium', 'warning'),
+                self::c('Kerja Sama', $ks->count(), 'handshake', 'primary'),
             ],
             'cards2' => [
                 self::c('Kerja Sama', $ks->count(), 'handshake', 'info'),
@@ -545,12 +537,10 @@ class AdminDashboardData
                 self::c('Admin & Superadmin', (int) ($counts['admin'] ?? 0) + (int) ($counts['superadmin'] ?? 0), 'admin_panel_settings', 'warning'),
             ],
             'donuts' => [
-                self::donutCard('Distribusi per Menu', 'Sebaran data di 5 menu operasional', 'Data', [
+                self::donutCard('Distribusi per Menu', 'Sebaran data di 3 menu operasional', 'Data', [
                     ['label' => 'Kemahasiswaan', 'value' => $kem->count(), 'color' => 'var(--chart-1)'],
-                    ['label' => 'LPPM Mahasiswa', 'value' => $lm->count(), 'color' => 'var(--chart-2)'],
-                    ['label' => 'LPPM Dosen', 'value' => $ld->count(), 'color' => 'var(--chart-3)'],
-                    ['label' => 'Rekognisi', 'value' => $rek->count(), 'color' => 'var(--chart-4)'],
-                    ['label' => 'Kerja Sama', 'value' => $ks->count(), 'color' => 'var(--chart-5)'],
+                    ['label' => 'Rekognisi', 'value' => $rek->count(), 'color' => 'var(--chart-2)'],
+                    ['label' => 'Kerja Sama', 'value' => $ks->count(), 'color' => 'var(--chart-3)'],
                 ]),
                 self::donutCard('Sebaran Akun', 'Jumlah akun per peran', 'Akun', [
                     ['label' => 'Mahasiswa', 'value' => (int) ($counts['mahasiswa'] ?? 0), 'color' => 'var(--chart-1)'],
@@ -561,14 +551,12 @@ class AdminDashboardData
             ],
             'widgets' => $widgets,
             'groups' => [
-                ['label' => 'Akademik (Kemahasiswaan + LPPM)', 'items' => $kem->concat($lm)->concat($ld)->values()],
+                ['label' => 'Akademik (Kemahasiswaan)', 'items' => $kem->values()],
                 ['label' => 'Eksternal (Rekognisi + Kerja Sama)', 'items' => $rek->concat($ks)->values()],
             ],
             'recent' => self::recent([
                 [$kem, fn ($i) => $i->nama_kegiatan, 'Kemahasiswaan', 'school', $ownerMhs],
-                [$lm, fn ($i) => $i->judul, 'LPPM Mahasiswa', 'person', $ownerMhs],
-                [$ld, fn ($i) => $i->judul, 'LPPM Dosen', 'co_present', $ownerDsn],
-                [$rek, fn ($i) => $i->jabatan_efektif ?: $i->mitra, 'Rekognisi', 'workspace_premium', $ownerUsr],
+                [$rek, fn ($i) => $i->judul ?: ($i->jabatan_efektif ?: $i->mitra), 'Rekognisi', 'workspace_premium', $ownerUsr],
                 [$ks, fn ($i) => $i->judul_kegiatan, 'Kerja Sama', 'handshake', $ownerUsr],
             ]),
         ];

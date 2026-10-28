@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KemahasiswaanController;
-use App\Http\Controllers\LppmDosenController;
 use App\Http\Controllers\LppmMahasiswaController;
 use App\Http\Controllers\LppmRekognisiController;
 use App\Http\Controllers\KerjaSamaController;
@@ -97,39 +96,12 @@ Route::middleware(['auth', 'log.activity'])->group(function () {
         Route::delete('/kemahasiswaan/{kemahasiswaan}', [KemahasiswaanController::class, 'destroy'])->name('kemahasiswaan.destroy');
     });
 
-    // ---- LPPM Dosen ----
-    Route::middleware('menu.access:lppm_dosen,readonly')->group(function () {
-        Route::get('/lppm/dosen', [LppmDosenController::class, 'index'])->name('lppm.dosen.index');
-        // Unduh seluruh data (CSV) — pembatasan role admin/superadmin ada di controller.
-        Route::get('/lppm/dosen/export', [LppmDosenController::class, 'export'])->name('lppm.dosen.export');
-    });
-    // Template & unggah massal CSV — hanya admin/superadmin dengan akses penuh.
-    Route::middleware('menu.access:lppm_dosen,penuh')->group(function () {
-        Route::get('/lppm/dosen/template', [LppmDosenController::class, 'template'])->name('lppm.dosen.template');
-        Route::post('/lppm/dosen/import', [LppmDosenController::class, 'import'])->name('lppm.dosen.import');
-    });
-    Route::middleware('menu.access:lppm_dosen,biasa')->group(function () {
-        Route::post('/lppm/dosen', [LppmDosenController::class, 'store'])->name('lppm.dosen.store');
-        Route::put('/lppm/dosen/{lppmDosen}', [LppmDosenController::class, 'update'])->name('lppm.dosen.update');
-        Route::delete('/lppm/dosen/{lppmDosen}', [LppmDosenController::class, 'destroy'])->name('lppm.dosen.destroy');
-    });
+    // URL halaman lama tetap mengarah ke modul LPPM gabungan.
+    Route::get('/lppm/dosen', fn () => redirect()->route('lppm.rekognisi.index'));
+    Route::get('/lppm/mahasiswa', fn () => redirect()->route('lppm.rekognisi.index'));
+    Route::post('/lppm/mahasiswa/import', [LppmMahasiswaController::class, 'import'])
+        ->middleware('menu.access:rekognisi,penuh')->name('lppm.mahasiswa.import');
 
-    // ---- LPPM Mahasiswa ----
-    Route::middleware('menu.access:lppm_mahasiswa,readonly')->group(function () {
-        Route::get('/lppm/mahasiswa', [LppmMahasiswaController::class, 'index'])->name('lppm.mahasiswa.index');
-        // Unduh seluruh data (CSV) — pembatasan role admin/superadmin ada di controller.
-        Route::get('/lppm/mahasiswa/export', [LppmMahasiswaController::class, 'export'])->name('lppm.mahasiswa.export');
-    });
-    // Template & unggah massal CSV — hanya admin/superadmin dengan akses penuh.
-    Route::middleware('menu.access:lppm_mahasiswa,penuh')->group(function () {
-        Route::get('/lppm/mahasiswa/template', [LppmMahasiswaController::class, 'template'])->name('lppm.mahasiswa.template');
-        Route::post('/lppm/mahasiswa/import', [LppmMahasiswaController::class, 'import'])->name('lppm.mahasiswa.import');
-    });
-    Route::middleware('menu.access:lppm_mahasiswa,biasa')->group(function () {
-        Route::post('/lppm/mahasiswa', [LppmMahasiswaController::class, 'store'])->name('lppm.mahasiswa.store');
-        Route::put('/lppm/mahasiswa/{lppmMahasiswa}', [LppmMahasiswaController::class, 'update'])->name('lppm.mahasiswa.update');
-        Route::delete('/lppm/mahasiswa/{lppmMahasiswa}', [LppmMahasiswaController::class, 'destroy'])->name('lppm.mahasiswa.destroy');
-    });
 
     // ---- LPPM Rekognisi ----
     Route::middleware('menu.access:rekognisi,readonly')->group(function () {

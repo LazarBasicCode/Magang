@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
             'name' => 'superadmin',
             'nim_nidn' => 'superadmin',
             'password' => Hash::make('12345678'),
-            'role' => 'admin'
+            'role' => 'superadmin'
         ]);
 
         // 2. Akun Mahasiswa

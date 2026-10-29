@@ -402,6 +402,7 @@
         .btn-primary:hover i { transform: translateX(4px); }
 
         .link-line { text-align: center; font-size: .8rem; }
+        .link-line.forgot-link { text-align: left; }
         .link-line a { color: var(--primary); text-decoration: none; font-weight: 500; }
         .link-line a:hover { text-decoration: underline; }
 
@@ -653,16 +654,15 @@
                             <i class="fa-regular fa-eye" id="eyeIcon"></i>
                         </button>
                     </div>
+                    <div class="link-line forgot-link">
+                        <a href="#lupa-password" id="goToForgotBtn">Lupa password?</a>
+                    </div>
                 </div>
 
                 <button class="btn-primary" type="submit">
                     <span>Masuk sekarang</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
-
-                <div class="link-line">
-                    <a href="#lupa-password" id="goToForgotBtn">Lupa password? Klik di sini untuk reset</a>
-                </div>
             </form>
             </div>
 

@@ -98,7 +98,7 @@ class RekognisiTypesTest extends TestCase
         ]);
     }
 
-    public function test_alumni_type_requires_mitra_and_position(): void
+    public function test_alumni_publication_requires_mitra_and_position(): void
     {
         $alumni = $this->user('mahasiswa', '300001');
         Mahasiswa::create(['user_id' => $alumni->id, 'nim' => '300001', 'status' => 'lulus']);
@@ -107,7 +107,13 @@ class RekognisiTypesTest extends TestCase
 
         $payload = [
             'user_id' => $alumni->id,
-            'jenis' => 'rekognisi',
+            'jenis' => 'sinta',
+            'skala' => 'nasional',
+            'judul' => 'Alumni publication',
+            'penulis' => 'Alumni Author',
+            'nama_jurnal' => 'Jurnal Alumni',
+            'peringkat' => 'S2',
+            'tahun' => 2026,
             'tanggal_mulai' => '2026-03-01',
             'tanggal_selesai' => '2026-03-02',
             'bukti_kegiatan' => 'https://example.com/alumni-evidence',
@@ -125,7 +131,7 @@ class RekognisiTypesTest extends TestCase
         $this->assertDatabaseHas('rekognisi', [
             'user_id' => $alumni->id,
             'tipe_user' => 'alumni',
-            'jenis' => 'rekognisi',
+            'jenis' => 'sinta',
             'mitra' => 'Example Company',
             'jabatan' => 'Product Manager',
         ]);
@@ -156,7 +162,82 @@ class RekognisiTypesTest extends TestCase
         $response->assertDontSee('id="dd-tipe_user"', false)
             ->assertDontSee('id="form-tipe_user"', false)
             ->assertSee('data-status="lulus"', false)
+            ->assertDontSee('data-value="rekognisi"', false)
             ->assertSee('Alumni', false);
+    }
+
+    public function test_rekognisi_kind_and_related_records_are_deleted(): void
+    {
+        $dosen = $this->user('dosen', '800001');
+        $item = Rekognisi::create([
+            'user_id' => $dosen->id,
+            'tipe_user' => 'dosen',
+            'jenis' => 'rekognisi',
+            'mitra' => 'Legacy partner',
+            'tanggal_mulai' => '2025-03-01',
+            'tanggal_selesai' => '2025-03-02',
+            'bukti_kegiatan' => 'https://example.com/legacy',
+        ]);
+        $previouslyArchivedItem = Rekognisi::create([
+            'user_id' => $dosen->id,
+            'tipe_user' => 'dosen',
+            'jenis' => 'legacy',
+            'mitra' => 'Previously archived partner',
+            'tanggal_mulai' => '2025-03-03',
+            'tanggal_selesai' => '2025-03-04',
+            'bukti_kegiatan' => 'https://example.com/previously-archived',
+        ]);
+
+        DB::table('approval_logs')->insert([
+            'menu' => 'rekognisi',
+            'item_id' => $item->id,
+            'action' => 'diajukan',
+            'to_status' => 'diajukan',
+            'created_at' => now(),
+        ]);
+        DB::table('approval_comments')->insert([
+            'menu' => 'rekognisi',
+            'item_id' => $item->id,
+            'user_id' => $dosen->id,
+            'body' => 'Test comment',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('user_notifications')->insert([
+            'user_id' => $dosen->id,
+            'type' => 'data_updated',
+            'color' => 'warning',
+            'icon' => 'edit_note',
+            'title' => 'Data rekognisi diperbarui',
+            'description' => 'Test notification',
+            'data' => json_encode(['rekognisi_id' => $item->id]),
+            'created_at' => now(),
+        ]);
+
+        $migration = require base_path('database/migrations/2026_10_29_000001_remove_rekognisi_kind.php');
+        $migration->up();
+
+        $this->assertDatabaseMissing('rekognisi', ['id' => $item->id]);
+        $this->assertDatabaseMissing('rekognisi', ['id' => $previouslyArchivedItem->id]);
+        $this->assertDatabaseMissing('approval_logs', ['menu' => 'rekognisi', 'item_id' => $item->id]);
+        $this->assertDatabaseMissing('approval_comments', ['menu' => 'rekognisi', 'item_id' => $item->id]);
+        $this->assertDatabaseMissing('user_notifications', ['data->rekognisi_id' => $item->id]);
+
+        $migration->down();
+        $this->assertDatabaseMissing('rekognisi', ['id' => $item->id]);
+    }
+
+    public function test_rekognisi_is_not_accepted_as_a_new_kind(): void
+    {
+        $dosen = $this->user('dosen', '810001');
+
+        $this->actingAs($this->admin())->postJson('/lppm/rekognisi', [
+            'user_id' => $dosen->id,
+            'jenis' => 'rekognisi',
+            'tanggal_mulai' => '2026-03-01',
+            'tanggal_selesai' => '2026-03-02',
+            'bukti_kegiatan' => 'https://example.com/evidence',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['jenis']);
     }
 
     public function test_linked_lppm_publications_copy_into_rekognisi_only_once(): void

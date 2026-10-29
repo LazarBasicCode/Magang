@@ -81,7 +81,7 @@ class ReportData
             self::group('Kemahasiswaan · Skala', $kemP, 'tingkat', ['lokal' => 'Lokal', 'nasional' => 'Nasional', 'internasional' => 'Internasional']),
             self::group('Kemahasiswaan · Jenis Prestasi', $kemP, 'jenis', ['inbis' => 'Inbis', 'kemahasiswaan' => 'Kemahasiswaan']),
             self::group('Kemahasiswaan · Jenis Prestasi', $kemP, 'tab', ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']),
-            self::group('Rekognisi · Jenis Karya', $rekP, 'jenis', ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'rekognisi' => 'Rekognisi']),
+            self::group('Rekognisi · Jenis Karya', $rekP, 'jenis', ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference']),
             self::group('Rekognisi · Skala', $rekP, 'skala', ['nasional' => 'Nasional', 'internasional' => 'Internasional']),
             self::group('Rekognisi · Tipe User', $rekP->map(fn ($item) => ['tipe_user' => $item->tipe_user_efektif]), 'tipe_user', ['mahasiswa' => 'Mahasiswa', 'dosen' => 'Dosen', 'alumni' => 'Alumni']),
             self::group('Rekognisi · Peringkat Jurnal', $rekP->whereNotNull('peringkat'), 'peringkat', null),

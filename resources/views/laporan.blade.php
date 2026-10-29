@@ -142,7 +142,7 @@
 
                 <!-- ===== 3. RINCIAN ===== -->
                 <section class="rp-card" data-section="rincian">
-                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Rincian per Jenis &amp; Tingkat</h2>
+                    <div class="rp-card-head" role="button" tabindex="0" aria-expanded="true"><div class="rp-card-title"><h2>Rincian per Jenis Prestasi &amp; Skala</h2>
                         <p>Sebaran data di dalam tiap menu (periode: {{ $periode }})</p></div><span class="material-symbols-outlined rp-acc-chev">expand_more</span></div>
 <div class="rp-card-body"><div class="rp-card-inner">
                     @if(count($report['breakdowns']))

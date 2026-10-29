@@ -51,7 +51,7 @@
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Kerja Sama &amp; Kemitraan</h1>
-                        <p class="page-subtitle">Pendataan kerja sama mahasiswa, dosen, guest lecture, pengabdian &amp; research internasional &middot; Tahun {{ now()->year }}</p>
+                        <p class="page-subtitle">Pendataan kerja sama mahasiswa dan dosen &middot; Tahun {{ now()->year }}</p>
                     </div>
                     @php
                         // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
@@ -119,22 +119,28 @@
                     </div>
                 </div>
 
-                <!-- FILTER BAR (tampilan saja, belum disambung ke query) -->
+                <!-- FILTER BAR -->
                 <div class="filter-card">
                     <div class="filter-grid">
                         <!-- Tipe User -->
                         <div class="field">
                             <label class="field-label">Tipe User</label>
                             <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-tipe-user" value="semua" />
+                                <input type="hidden" id="filter-tipe-user" value="{{ $filterTipeUser }}" />
                                 <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Tipe</span>
+                                    <span class="dropdown-value">{{ $filterTipeUser === 'semua' ? 'Semua Tipe' : ucfirst($filterTipeUser) }}</span>
                                     <span class="material-symbols-outlined caret">expand_more</span>
                                 </button>
                                 <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Tipe</button>
-                                    <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
-                                    <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
+                                    @if(!$filterOwnRole)
+                                        <button type="button" class="dropdown-option {{ $filterTipeUser === 'semua' ? 'is-selected' : '' }}" data-value="semua">Semua Tipe</button>
+                                    @endif
+                                    @if(!$filterOwnRole || $filterTipeUser === 'mahasiswa')
+                                        <button type="button" class="dropdown-option {{ $filterTipeUser === 'mahasiswa' ? 'is-selected' : '' }}" data-value="mahasiswa">Mahasiswa</button>
+                                    @endif
+                                    @if(!$filterOwnRole || $filterTipeUser === 'dosen')
+                                        <button type="button" class="dropdown-option {{ $filterTipeUser === 'dosen' ? 'is-selected' : '' }}" data-value="dosen">Dosen</button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -152,12 +158,30 @@
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Jenis</button>
                                     <button type="button" class="dropdown-option" data-value="conference_internasional">Conference Internasional</button>
                                     <button type="button" class="dropdown-option" data-value="pkl">PKL (Output)</button>
-                                    <button type="button" class="dropdown-option" data-value="sharing_session">Sharing Session</button>
+                                    <button type="button" class="dropdown-option" data-value="fgd">FGD</button>
                                     <button type="button" class="dropdown-option" data-value="keynote_session">Keynote Speaker</button>
                                     <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
-                                    <button type="button" class="dropdown-option" data-value="pengabdian_internasional">Pengabdian Internasional</button>
-                                    <button type="button" class="dropdown-option" data-value="research_internasional">Research Internasional</button>
+                                    <button type="button" class="dropdown-option" data-value="pengabdian">Pengabdian</button>
+                                    <button type="button" class="dropdown-option" data-value="penelitian">Penelitian</button>
+                                    <button type="button" class="dropdown-option" data-value="pertukaran_pelajar">Pertukaran Pelajar</button>
                                     <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Skala -->
+                        <div class="field">
+                            <label class="field-label">Skala</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-skala" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Skala</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Skala</button>
+                                    <button type="button" class="dropdown-option" data-value="nasional">Nasional</button>
+                                    <button type="button" class="dropdown-option" data-value="internasional">Internasional</button>
                                 </div>
                             </div>
                         </div>
@@ -239,6 +263,7 @@
                                     <th>Judul Kegiatan</th>
                                     <th class="center">Jenis</th>
                                     <th class="center">Tipe User</th>
+                                    <th class="center">Skala</th>
                                     <th class="center">Arah</th>
                                     <th class="center">Mitra</th>
                                     <th class="center">Periode</th>
@@ -251,11 +276,12 @@
                                 $jenisBadge = [
                                 'conference_internasional' => ['label' => 'Conference Int.', 'class' => 'badge-info'],
                                 'pkl' => ['label' => 'PKL', 'class' => 'badge-primary'],
-                                'sharing_session' => ['label' => 'Sharing Session', 'class' => 'badge-warning'],
+                                'fgd' => ['label' => 'FGD', 'class' => 'badge-warning'],
                                 'keynote_session' => ['label' => 'Keynote Speaker', 'class' => 'badge-success'],
                                 'guest_lecture' => ['label' => 'Guest Lecture', 'class' => 'badge-info'],
-                                'pengabdian_internasional' => ['label' => 'Pengabdian Int.', 'class' => 'badge-danger'],
-                                'research_internasional' => ['label' => 'Research Int.', 'class' => 'badge-neutral'],
+                                'pengabdian' => ['label' => 'Pengabdian', 'class' => 'badge-danger'],
+                                'penelitian' => ['label' => 'Penelitian', 'class' => 'badge-neutral'],
+                                'pertukaran_pelajar' => ['label' => 'Pertukaran Pelajar', 'class' => 'badge-primary'],
                                 'lainnya' => ['label' => 'Lainnya', 'class' => 'badge-neutral'],
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
@@ -285,6 +311,7 @@
                                     </td>
                                     <td class="center"><span class="badge {{ $jb['class'] }}">{{ $jb['label'] }}</span></td>
                                     <td class="center"><span class="badge badge-neutral">{{ ucfirst($item->tipe_user) }}</span></td>
+                                    <td class="center"><span class="badge badge-neutral">Skala {{ ucfirst($item->skala) }}</span></td>
                                     <td class="center">
                                         @if($item->arah)
                                         <span class="badge badge-primary">{{ ucfirst($item->arah) }}</span>
@@ -308,6 +335,7 @@
                                                 data-tipe_user="{{ $item->tipe_user }}"
                                                 data-jenis="{{ $item->jenis }}"
                                                 data-jenis_lainnya="{{ $item->jenis_lainnya ?? '' }}"
+                                                data-skala="{{ $item->skala }}"
                                                 data-arah="{{ $item->arah }}"
                                                 data-mitra="{{ $item->mitra }}"
                                                 data-judul_kegiatan="{{ $item->judul_kegiatan }}"
@@ -324,7 +352,7 @@
                                 </tr>
                                 @endforeach
                                 <tr id="emptyRow" {{ $items->total() === 0 ? '' : 'hidden' }}>
-                                    <td colspan="10" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="11" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data kerja sama. Klik "Tambah Kerja Sama" untuk mulai mengisi.
                                     </td>
                                 </tr>
@@ -407,12 +435,28 @@
                     <div class="dropdown-panel">
                         <button type="button" class="dropdown-option is-selected" data-value="conference_internasional">Conference Internasional</button>
                         <button type="button" class="dropdown-option" data-value="pkl">PKL (Output)</button>
-                        <button type="button" class="dropdown-option" data-value="sharing_session">Sharing Session</button>
+                        <button type="button" class="dropdown-option" data-value="fgd">FGD</button>
                         <button type="button" class="dropdown-option" data-value="keynote_session">Keynote Speaker</button>
                         <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
-                        <button type="button" class="dropdown-option" data-value="pengabdian_internasional">Pengabdian Internasional</button>
-                        <button type="button" class="dropdown-option" data-value="research_internasional">Research Internasional</button>
+                        <button type="button" class="dropdown-option" data-value="pengabdian">Pengabdian</button>
+                        <button type="button" class="dropdown-option" data-value="penelitian">Penelitian</button>
+                        <button type="button" class="dropdown-option" data-value="pertukaran_pelajar">Pertukaran Pelajar</button>
                         <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label">Skala</label>
+                <div class="dropdown" data-dropdown id="dd-skala">
+                    <input type="hidden" id="form-skala" value="nasional" />
+                    <button type="button" class="dropdown-trigger">
+                        <span class="dropdown-value">Skala Nasional</span>
+                        <span class="material-symbols-outlined caret">expand_more</span>
+                    </button>
+                    <div class="dropdown-panel">
+                        <button type="button" class="dropdown-option is-selected" data-value="nasional">Nasional</button>
+                        <button type="button" class="dropdown-option" data-value="internasional">Internasional</button>
                     </div>
                 </div>
             </div>
@@ -561,13 +605,16 @@
                     'options' => [
                         'conference_internasional' => 'Conference Internasional',
                         'pkl'                      => 'PKL (Output)',
-                        'sharing_session'          => 'Sharing Session',
+                        'pertukaran_pelajar'       => 'Pertukaran Pelajar',
+                        'fgd'                      => 'FGD',
                         'keynote_session'          => 'Keynote Speaker',
                         'guest_lecture'            => 'Guest Lecture',
-                        'pengabdian_internasional' => 'Pengabdian Internasional',
-                        'research_internasional'   => 'Research Internasional',
+                        'pengabdian'               => 'Pengabdian',
+                        'penelitian'               => 'Penelitian',
                         'lainnya'                  => 'Lainnya',
                     ]],
+                ['name' => 'skala',          'label' => 'Skala',              'type' => 'select',
+                    'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional']],
                 ['name' => 'arah',           'label' => 'Arah (Guest Lecture)', 'type' => 'select', 'row' => 'a',
                     'showWhen' => ['jenis' => ['guest_lecture']],
                     'options' => ['inbound' => 'Inbound', 'outbound' => 'Outbound']],
@@ -645,7 +692,7 @@
         // GET /kerja-sama?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
         // Tombol halaman digambar public/js/pager.js.
         // ================================================================
-        const FILTERS = ['filter-tipe-user','filter-jenis','filter-arah'];
+        const FILTERS = ['filter-tipe-user','filter-jenis','filter-skala','filter-arah'];
         const searchInput = document.getElementById('filter-search');
         const emptyRow = document.getElementById('emptyRow');
         const emptyDefault = emptyRow.firstElementChild.textContent.trim();
@@ -705,7 +752,7 @@
         function applyFilters() { loadPage(1); }
 
         // Listener filter — set nilai manual supaya tidak bergantung script.js
-        document.querySelectorAll('#filter-tipe-user, #filter-jenis, #filter-arah').forEach((input) => {
+        document.querySelectorAll('#filter-tipe-user, #filter-jenis, #filter-skala, #filter-arah').forEach((input) => {
             const dropdownEl = input.closest('[data-dropdown]');
             dropdownEl?.querySelectorAll('.dropdown-option').forEach((opt) => {
                 opt.addEventListener('click', () => {
@@ -864,6 +911,7 @@
             updateConditionalFields(jenis);
             syncFormJenisOptions();
             document.getElementById('form-jenis_lainnya').value = data.jenis_lainnya || '';
+            SIDA.dropdown.select(document.getElementById('dd-skala'), data.skala || 'nasional');
 
             SIDA.dropdown.select(document.getElementById('dd-arah'), data.arah || 'inbound', 'Inbound');
 
@@ -895,8 +943,8 @@
                 label: 'PKL',
                 cls: 'badge-primary'
             },
-            sharing_session: {
-                label: 'Sharing Session',
+            fgd: {
+                label: 'FGD',
                 cls: 'badge-warning'
             },
             keynote_session: {
@@ -907,13 +955,17 @@
                 label: 'Guest Lecture',
                 cls: 'badge-info'
             },
-            pengabdian_internasional: {
-                label: 'Pengabdian Int.',
+            pengabdian: {
+                label: 'Pengabdian',
                 cls: 'badge-danger'
             },
-            research_internasional: {
-                label: 'Research Int.',
+            penelitian: {
+                label: 'Penelitian',
                 cls: 'badge-neutral'
+            },
+            pertukaran_pelajar: {
+                label: 'Pertukaran Pelajar',
+                cls: 'badge-primary'
             },
         };
 
@@ -953,6 +1005,7 @@
                 <td><span class="activity-title" title="${esc(item.judul_kegiatan)}">${esc(item.judul_kegiatan)}</span>${window.apprChip ? window.apprChip(item) : ''}</td>
                 <td class="center"><span class="badge ${jb.cls}">${esc(jb.label)}</span></td>
                 <td class="center"><span class="badge badge-neutral">${esc(ucfirst(item.tipe_user))}</span></td>
+                <td class="center"><span class="badge badge-neutral">Skala ${esc(ucfirst(item.skala))}</span></td>
                 <td class="center">${arahHTML}</td>
                 <td class="center"><span class="plain-text">${esc(item.mitra)}</span></td>
                 <td class="center"><span class="year-chip">${esc(periode)}</span></td>
@@ -965,7 +1018,7 @@
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                             data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
-                            data-jenis="${item.jenis}" data-jenis_lainnya="${esc(item.jenis_lainnya || '')}" data-arah="${item.arah || ''}"
+                            data-jenis="${item.jenis}" data-jenis_lainnya="${esc(item.jenis_lainnya || '')}" data-skala="${item.skala}" data-arah="${item.arah || ''}"
                             data-mitra="${esc(item.mitra)}"
                             data-judul_kegiatan="${esc(item.judul_kegiatan)}"
                             data-tanggal_mulai="${item.tanggal_mulai}" data-tanggal_selesai="${item.tanggal_selesai}"
@@ -1001,6 +1054,7 @@
                 tipe_user: document.getElementById('form-tipe_user').value,
                 jenis: jenis,
                 jenis_lainnya: jenis === 'lainnya' ? document.getElementById('form-jenis_lainnya').value.trim() : null,
+                skala: document.getElementById('form-skala').value,
                 arah: jenis === 'guest_lecture' ? document.getElementById('form-arah').value : null,
                 judul_kegiatan: document.getElementById('form-judul_kegiatan').value,
                 mitra: document.getElementById('form-mitra').value,

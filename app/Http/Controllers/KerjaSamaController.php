@@ -23,8 +23,9 @@ class KerjaSamaController extends Controller
     private const RULES = [
         'user_id'          => ['required', 'exists:users,id'],
         'tipe_user'        => ['required', 'in:mahasiswa,dosen'],
-        'jenis'            => ['required', 'in:conference_internasional,pkl,sharing_session,keynote_session,guest_lecture,pengabdian_internasional,research_internasional,lainnya'],
+        'jenis'            => ['required', 'in:conference_internasional,pkl,pertukaran_pelajar,fgd,keynote_session,guest_lecture,pengabdian,penelitian,lainnya'],
         'jenis_lainnya'    => ['nullable', 'required_if:jenis,lainnya', 'string', 'max:255'],
+        'skala'            => ['required', 'in:nasional,internasional'],
         'arah'             => ['nullable', 'required_if:jenis,guest_lecture', 'in:inbound,outbound'],
         'mitra'            => ['required', 'string', 'max:255'],
         'judul_kegiatan'   => ['required', 'string', 'max:255'],
@@ -35,9 +36,9 @@ class KerjaSamaController extends Controller
 
     /** Jenis kerja sama yang boleh dipilih tiap tipe pengguna. Satu sumber untuk server (jenisRestriction) & UI (filter, form, update massal). */
     public const JENIS_BY_TIPE = [
-        'mahasiswa' => ['conference_internasional', 'pkl', 'sharing_session', 'lainnya'],
-        'dosen'     => ['conference_internasional', 'sharing_session', 'keynote_session', 'guest_lecture',
-                        'pengabdian_internasional', 'research_internasional', 'lainnya'],
+        'mahasiswa' => ['conference_internasional', 'pkl', 'pertukaran_pelajar', 'lainnya'],
+        'dosen'     => ['conference_internasional', 'fgd', 'keynote_session', 'guest_lecture',
+                        'pengabdian', 'penelitian', 'lainnya'],
     ];
 
     /**
@@ -54,16 +55,20 @@ class KerjaSamaController extends Controller
 
         $tipe_user = $request->query('tipe_user');
         $jenis = $request->query('jenis');
+        $skala = $request->query('skala');
         $arah = $request->query('arah');
         $term = trim((string) $request->query('q', ''));
 
-        $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $arah, $term) {
-            $query = KerjaSama::with('user')->latest()->orderByDesc('id');
+        $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $arah, $term) {
+            $query = KerjaSama::with('user')
+                ->orderBy(User::selectRaw('LOWER(name)')->whereColumn('users.id', 'kerja_sama.user_id'))
+                ->orderBy('kerja_sama.id');
             if ($ownScope) {
                 $query->where('user_id', $user->id);
             }
             if ($tipe_user && $tipe_user !== 'semua') $query->where('tipe_user', $tipe_user);
             if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
+            if ($skala && $skala !== 'semua') $query->where('skala', $skala);
             if ($arah && $arah !== 'semua') $query->where('arah', $arah);
             if ($term !== '') {
                 $like = '%' . addcslashes($term, '%_\\') . '%';
@@ -101,13 +106,6 @@ class KerjaSamaController extends Controller
             ? collect([$user])
             : User::whereIn('role', ['mahasiswa', 'dosen'])->orderBy('name')->get();
 
-        $internasionalJenis = [
-            'conference_internasional',
-            'guest_lecture',
-            'pengabdian_internasional',
-            'research_internasional',
-        ];
-
         $statsQuery = fn () => $ownScope
             ? KerjaSama::where('user_id', $user->id)
             : KerjaSama::query();
@@ -116,10 +114,14 @@ class KerjaSamaController extends Controller
             'total'         => (clone $statsQuery())->count(),
             'mahasiswa'     => (clone $statsQuery())->where('tipe_user', 'mahasiswa')->count(),
             'dosen'         => (clone $statsQuery())->where('tipe_user', 'dosen')->count(),
-            'internasional' => (clone $statsQuery())->whereIn('jenis', $internasionalJenis)->count(),
+            'internasional' => (clone $statsQuery())->where('skala', 'internasional')->count(),
         ];
 
-        return view('kerja-sama', compact('items', 'userList', 'stats') + ['jenisByTipe' => self::JENIS_BY_TIPE]);
+        return view('kerja-sama', compact('items', 'userList', 'stats') + [
+            'jenisByTipe' => self::JENIS_BY_TIPE,
+            'filterTipeUser' => $ownScope && in_array($user->role, ['mahasiswa', 'dosen'], true) ? $user->role : 'semua',
+            'filterOwnRole' => $ownScope && in_array($user->role, ['mahasiswa', 'dosen'], true),
+        ]);
     }
 
     public function store(Request $request)
@@ -207,8 +209,9 @@ class KerjaSamaController extends Controller
             KerjaSama::class,
             ['user'],
             [
-                'jenis'          => ['nullable', 'in:conference_internasional,pkl,sharing_session,keynote_session,guest_lecture,pengabdian_internasional,research_internasional,lainnya'],
+                'jenis'          => ['nullable', 'in:conference_internasional,pkl,pertukaran_pelajar,fgd,keynote_session,guest_lecture,pengabdian,penelitian,lainnya'],
                 'jenis_lainnya'  => ['nullable', 'string', 'max:255'],
+                'skala'          => ['nullable', 'in:nasional,internasional'],
                 'arah'           => ['nullable', 'in:inbound,outbound'],
                 'mitra'          => ['nullable', 'string', 'max:255'],
                 'judul_kegiatan' => ['nullable', 'string', 'max:255'],
@@ -227,7 +230,7 @@ class KerjaSamaController extends Controller
      */
     private function resolveBulkRow(KerjaSama $item, array $changes): array
     {
-        $final = array_merge($item->only(['tipe_user', 'jenis', 'jenis_lainnya', 'arah']), $changes);
+        $final = array_merge($item->only(['tipe_user', 'jenis', 'jenis_lainnya', 'skala', 'arah']), $changes);
         $jenis = (string) $final['jenis'];
         $errors = [];
 
@@ -263,6 +266,7 @@ class KerjaSamaController extends Controller
         return [array_merge($changes, [
             'arah'          => $final['arah'],
             'jenis_lainnya' => $final['jenis_lainnya'],
+            'skala'         => $final['skala'],
         ]), $errors];
     }
 
@@ -301,8 +305,9 @@ class KerjaSamaController extends Controller
             [
                 'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
                 'nim_nidn'        => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'           => ['required' => 'Ya', 'example' => 'conference_internasional', 'width' => 28, 'options' => ['conference_internasional', 'pkl', 'sharing_session', 'keynote_session', 'guest_lecture', 'pengabdian_internasional', 'research_internasional', 'lainnya'], 'note' => 'Jenis kerja sama. Pilih dari dropdown. Mahasiswa hanya boleh: conference_internasional, pkl, sharing_session, lainnya. Dosen tidak boleh pkl.'],
+                'jenis'           => ['required' => 'Ya', 'example' => 'conference_internasional', 'width' => 28, 'options' => ['conference_internasional', 'pkl', 'pertukaran_pelajar', 'fgd', 'keynote_session', 'guest_lecture', 'pengabdian', 'penelitian', 'lainnya'], 'note' => 'Jenis kerja sama. Mahasiswa: conference_internasional, pkl, pertukaran_pelajar, lainnya. Dosen tidak boleh pkl atau pertukaran_pelajar.'],
                 'jenis_lainnya'   => ['required' => 'Jika jenis = lainnya', 'example' => '', 'width' => 26, 'note' => 'Tulis nama jenis kerja sama lainnya. Selain jenis "lainnya" kosongkan.'],
+                'skala'           => ['required' => 'Ya', 'example' => 'nasional', 'width' => 18, 'options' => ['nasional', 'internasional'], 'note' => 'Skala kerja sama.'],
                 'arah'            => ['required' => 'Jika jenis = guest_lecture', 'example' => '', 'width' => 14, 'options' => ['inbound', 'outbound'], 'note' => 'Arah guest lecture. Selain guest_lecture kosongkan.'],
                 'mitra'           => ['required' => 'Ya', 'example' => 'Universitas Tokyo', 'width' => 30, 'note' => 'Nama institusi / perusahaan / negara mitra.'],
                 'judul_kegiatan'  => ['required' => 'Ya', 'example' => 'Judul kegiatan', 'width' => 36, 'note' => 'Judul kegiatan kerja sama.'],
@@ -314,7 +319,7 @@ class KerjaSamaController extends Controller
                 'Isi data di sheet "Data Kerja Sama", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
                 'Kolom id: kosongkan untuk data baru, isi id (dari hasil Download) untuk mengedit data.',
                 'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
-                'Mahasiswa hanya boleh jenis: conference_internasional, pkl, sharing_session, lainnya. Dosen tidak boleh pkl.',
+                'Mahasiswa hanya boleh jenis: conference_internasional, pkl, pertukaran_pelajar, lainnya. Dosen tidak boleh pkl atau pertukaran_pelajar.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
@@ -328,8 +333,8 @@ class KerjaSamaController extends Controller
         return $this->bulkXlsxExportResponse(
             'kerja-sama-' . now()->format('Ymd-His') . '.xlsx',
             self::SHEET,
-            ['id', 'nim_nidn', 'nama', 'jenis', 'jenis_lainnya', 'arah', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan'],
-            [10, 18, 28, 28, 26, 14, 30, 36, 18, 18, 46],
+            ['id', 'nim_nidn', 'nama', 'jenis', 'jenis_lainnya', 'skala', 'arah', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan'],
+            [10, 18, 28, 28, 26, 18, 14, 30, 36, 18, 18, 46],
             KerjaSama::class,
             fn (KerjaSama $item) => [
                 $item->id,
@@ -337,6 +342,7 @@ class KerjaSamaController extends Controller
                 $item->user->name ?? '',
                 $item->jenis,
                 $item->jenis_lainnya,
+                $item->skala,
                 $item->arah,
                 $item->mitra,
                 $item->judul_kegiatan,
@@ -356,7 +362,7 @@ class KerjaSamaController extends Controller
     {
         $this->bulkEnsureAccess($request, true);
 
-        $parsed = $this->bulkParseUpload($request, ['jenis', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan']);
+        $parsed = $this->bulkParseUpload($request, ['jenis', 'skala', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan']);
         if ($parsed instanceof JsonResponse) {
             return $parsed;
         }
@@ -381,6 +387,7 @@ class KerjaSamaController extends Controller
                 'tipe_user'      => $existing ? $existing->tipe_user : ($owner?->role === 'dosen' ? 'dosen' : 'mahasiswa'),
                 'jenis'          => $jenis,
                 'jenis_lainnya'  => trim((string) ($d['jenis_lainnya'] ?? '')) ?: null,
+                'skala'          => Csv::normalizeKey($d['skala'] ?? ''),
                 'arah'           => Csv::normalizeKey($d['arah'] ?? '') ?: null,
                 'mitra'          => trim((string) ($d['mitra'] ?? '')),
                 'judul_kegiatan' => trim((string) ($d['judul_kegiatan'] ?? '')),
@@ -500,6 +507,7 @@ class KerjaSamaController extends Controller
             'tipe_user'        => $item->tipe_user,
             'jenis'            => $item->jenis,
             'jenis_lainnya'    => $item->jenis_lainnya,
+            'skala'            => $item->skala,
             'arah'             => $item->arah,
             'mitra'            => $item->mitra,
             'judul_kegiatan'   => $item->judul_kegiatan,

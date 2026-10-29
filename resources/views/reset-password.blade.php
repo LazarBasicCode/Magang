@@ -13,10 +13,24 @@
 
     <script>
         (function () {
+            var root = document.documentElement;
+            root.setAttribute('data-theme', 'light');
             try {
-                var t = localStorage.getItem('sida-theme');
-                if (t) document.documentElement.setAttribute('data-theme', t);
+                var t = localStorage.getItem('theme');
+                if (t !== 'dark' && t !== 'light') {
+                    t = localStorage.getItem('sida-theme');
+                    if (t !== 'dark' && t !== 'light') t = 'light';
+                    root.setAttribute('data-theme', t);
+                    localStorage.setItem('theme', t);
+                }
+                root.setAttribute('data-theme', t);
             } catch (e) {}
+
+            window.addEventListener('storage', function (event) {
+                if (event.key === 'theme') {
+                    root.setAttribute('data-theme', event.newValue === 'dark' ? 'dark' : 'light');
+                }
+            });
         })();
     </script>
 

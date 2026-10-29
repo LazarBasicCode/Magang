@@ -14,9 +14,17 @@
 
     <script>
         (function () {
+            var root = document.documentElement;
+            root.setAttribute('data-theme', 'light');
             try {
-                var t = localStorage.getItem('sida-theme');
-                if (t) document.documentElement.setAttribute('data-theme', t);
+                var t = localStorage.getItem('theme');
+                if (t !== 'dark' && t !== 'light') {
+                    t = localStorage.getItem('sida-theme');
+                    if (t !== 'dark' && t !== 'light') t = 'light';
+                    root.setAttribute('data-theme', t);
+                    localStorage.setItem('theme', t);
+                }
+                root.setAttribute('data-theme', t);
             } catch (e) {}
         })();
     </script>
@@ -321,8 +329,8 @@
             min-height: 0;
         }
         .auth-inner { width: 100%; max-width: 380px; margin: 0 auto; flex: 1 1 auto; align-content: center; }
-        .auth h2 { margin: 0; font-size: clamp(1.6rem, 2.2vw, 1.75rem); font-weight: 800; letter-spacing: -.02em; }
-        .auth .sub-title { margin: .35rem 0 1.5rem; color: var(--ink-soft); font-size: .88rem; line-height: 1.5; }
+        .auth h2 { margin: 0; font-size: clamp(1.8rem, 2.2vw, 1.75rem); font-weight: 800; letter-spacing: -.02em; text-align: center;}
+        .auth .sub-title { margin: .35rem 0 1.5rem; color: var(--ink-soft); font-size: .88rem; line-height: 1.5; text-align: center;}
 
         #loginForm, #forgotForm { margin-top: clamp(1rem, 2.8vh, 1.6rem); display: flex; flex-direction: column; gap: clamp(.75rem, 2vh, 1.1rem); }
 
@@ -754,12 +762,19 @@
     /* Ganti Mode Dark/Bright */
     (function () {
         var root = document.documentElement;
+        function applyTheme(theme) {
+            root.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+        }
+
         document.getElementById('themeToggle').addEventListener('click', function () {
-            var isDark = root.getAttribute('data-theme') === 'dark' ||
-                (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            var isDark = root.getAttribute('data-theme') === 'dark';
             var next = isDark ? 'light' : 'dark';
-            root.setAttribute('data-theme', next);
-            try { localStorage.setItem('sida-theme', next); } catch (e) {}
+            applyTheme(next);
+            try { localStorage.setItem('theme', next); } catch (e) {}
+        });
+
+        window.addEventListener('storage', function (event) {
+            if (event.key === 'theme') applyTheme(event.newValue);
         });
     })();
 

@@ -125,16 +125,15 @@
                 <div class="filter-card">
                     <div class="filter-grid">
                         <div class="field">
-                            <label class="field-label">Jenis Divisi</label>
+                            <label class="field-label">Jenis Prestasi</label>
                             <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-jenis" value="semua" />
+                                <input type="hidden" id="filter-jenis_divisi" value="semua" />
                                 <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Jenis</span>
+                                    <span class="dropdown-value">Semua Jenis Prestasi</span>
                                     <span class="material-symbols-outlined caret">expand_more</span>
                                 </button>
                                 <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
-                                        Jenis</button>
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Jenis Prestasi</button>
                                     <button type="button" class="dropdown-option" data-value="inbis">Inbis (Inkubator
                                         Bisnis)</button>
                                     <button type="button" class="dropdown-option"
@@ -143,16 +142,15 @@
                             </div>
                         </div>
                         <div class="field">
-                            <label class="field-label">Kategori Tab</label>
+                            <label class="field-label">Jenis Prestasi</label>
                             <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-tab" value="semua" />
+                                <input type="hidden" id="filter-jenis_prestasi" value="semua" />
                                 <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Tab</span>
+                                    <span class="dropdown-value">Semua Jenis Prestasi</span>
                                     <span class="material-symbols-outlined caret">expand_more</span>
                                 </button>
                                 <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
-                                        Tab</button>
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Jenis Prestasi</button>
                                     <button type="button" class="dropdown-option"
                                         data-value="akademik">Akademik</button>
                                     <button type="button" class="dropdown-option" data-value="non_akademik">Non
@@ -161,16 +159,15 @@
                             </div>
                         </div>
                         <div class="field">
-                            <label class="field-label">Tingkat Capaian</label>
+                            <label class="field-label">Skala</label>
                             <div class="dropdown" data-dropdown>
-                                <input type="hidden" id="filter-tingkat" value="semua" />
+                                <input type="hidden" id="filter-skala" value="semua" />
                                 <button type="button" class="dropdown-trigger">
-                                    <span class="dropdown-value">Semua Tingkat</span>
+                                    <span class="dropdown-value">Semua Skala</span>
                                     <span class="material-symbols-outlined caret">expand_more</span>
                                 </button>
                                 <div class="dropdown-panel">
-                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua
-                                        Tingkat</button>
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Skala</button>
                                     <button type="button" class="dropdown-option" data-value="lokal">Lokal
                                         (Kota/Wilayah)</button>
                                     <button type="button" class="dropdown-option"
@@ -181,7 +178,7 @@
                             </div>
                         </div>
                         <div class="field">
-                            @php $tsYear = now()->year; @endphp
+                            @php $currentYear = now()->year; @endphp
                             <label class="field-label">Tahun Akademik</label>
                             <div class="dropdown" data-dropdown>
                                 <input type="hidden" id="filter-tahun" value="semua" />
@@ -191,9 +188,9 @@
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Tahun</button>
-                                    <button type="button" class="dropdown-option" data-value="{{ $tsYear }}">TS ({{ $tsYear }})</button>
-                                    <button type="button" class="dropdown-option" data-value="{{ $tsYear - 1 }}">TS-1 ({{ $tsYear - 1 }})</button>
-                                    <button type="button" class="dropdown-option" data-value="{{ $tsYear - 2 }}">TS-2 ({{ $tsYear - 2 }})</button>
+                                    @for($year = $currentYear; $year >= 2023; $year--)
+                                    <button type="button" class="dropdown-option" data-value="{{ $year }}">{{ $year }}</button>
+                                    @endfor
                                 </div>
                             </div>
                         </div>
@@ -244,9 +241,9 @@
                                     <th>NIM</th>
                                     <th>Mahasiswa</th>
                                     <th>Nama Kegiatan</th>
-                                    <th class="center">Jenis</th>
-                                    <th class="center">Tab</th>
-                                    <th class="center">Tingkat</th>
+                                    <th class="center">Jenis Prestasi</th>
+                                    <th class="center">Jenis Prestasi</th>
+                                    <th class="center">Skala</th>
                                     <th class="center">Tahun</th>
                                     <th class="center">Bukti Kegiatan</th>
                                     <th class="center">Aksi</th>
@@ -375,7 +372,7 @@
 
             <div class="field-row">
                 <div class="field">
-                    <label class="field-label">Jenis Kegiatan</label>
+                    <label class="field-label">Jenis Prestasi</label>
                     <div class="dropdown" data-dropdown id="dd-jenis">
                         <input type="hidden" id="form-jenis" value="kemahasiswaan" />
                         <button type="button" class="dropdown-trigger">
@@ -389,7 +386,7 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label class="field-label">Kategori Tab</label>
+                    <label class="field-label">Jenis Prestasi</label>
                     <div class="dropdown" data-dropdown id="dd-tab">
                         <input type="hidden" id="form-tab" value="akademik" />
                         <button type="button" class="dropdown-trigger">
@@ -406,7 +403,7 @@
 
             <div class="field-row">
                 <div class="field">
-                    <label class="field-label">Tingkat Capaian</label>
+                    <label class="field-label">Skala</label>
                     <div class="dropdown" data-dropdown id="dd-tingkat">
                         <input type="hidden" id="form-tingkat" value="lokal" />
                         <button type="button" class="dropdown-trigger">
@@ -468,11 +465,11 @@
     'updateLabel' => 'Kemahasiswaan',
     'updateFields' => [
     ['name' => 'nama_kegiatan', 'label' => 'Nama Kegiatan', 'type' => 'text', 'placeholder' => 'Kosongkan = nama kegiatan tidak diubah', 'col' => 2, 'target' => '.activity-title'],
-    ['name' => 'jenis', 'label' => 'Jenis Kegiatan', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
+    ['name' => 'jenis', 'label' => 'Jenis Prestasi', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
     'options' => ['kemahasiswaan' => 'Kemahasiswaan', 'inbis' => 'Inbis (Inkubator Bisnis)']],
-    ['name' => 'tab', 'label' => 'Kategori Tab', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
+    ['name' => 'tab', 'label' => 'Jenis Prestasi', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
     'options' => ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']],
-    ['name' => 'tingkat', 'label' => 'Tingkat Capaian', 'type' => 'select', 'col' => 5, 'target' => '.plain-text',
+    ['name' => 'tingkat', 'label' => 'Skala', 'type' => 'select', 'col' => 5, 'target' => '.plain-text',
     'options' => ['lokal' => 'Lokal (Kota/Wilayah)', 'nasional' => 'Nasional (RI)', 'internasional' => 'Internasional (Global)']],
     ],
     ])
@@ -557,7 +554,7 @@
         // GET /kemahasiswaan?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
         // Tombol halaman digambar public/js/pager.js.
         // ================================================================
-        const FILTERS = ['filter-jenis', 'filter-tab', 'filter-tingkat', 'filter-tahun'];
+        const FILTERS = ['filter-jenis_divisi', 'filter-jenis_prestasi', 'filter-skala', 'filter-tahun'];
         const searchInput = document.getElementById('filter-search');
         const emptyRow = document.getElementById('emptyRow');
         const footerRange = document.getElementById('footerRange');

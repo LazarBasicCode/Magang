@@ -36,10 +36,10 @@ class KemahasiswaanController extends Controller
         $ownScope = $user->menuLevel('kemahasiswaan') === 'biasa';
         $mahasiswa = $user->mahasiswa;
 
-        $jenis = $request->query('jenis');
+        $jenis = $request->query('jenis_divisi', $request->query('jenis'));
         $status = $request->query('status');
-        $tab = $request->query('tab');
-        $tingkat = $request->query('tingkat');
+        $tab = $request->query('jenis_prestasi', $request->query('tab'));
+        $tingkat = $request->query('skala', $request->query('tingkat'));
         $tahun = $request->query('tahun');
         $term = trim((string) $request->query('q', ''));
 
@@ -269,6 +269,15 @@ class KemahasiswaanController extends Controller
         return self::SHEET;
     }
 
+    protected function bulkExtraAliases(): array
+    {
+        return [
+            'jenis_divisi' => 'jenis',
+            'jenis_prestasi' => 'tab',
+            'skala' => 'tingkat',
+        ];
+    }
+
     /** Unduh template Excel (.xlsx): sheet data + sheet petunjuk, dengan dropdown pilihan. */
     public function template(Request $request)
     {
@@ -281,9 +290,9 @@ class KemahasiswaanController extends Controller
             [
                 'id'             => ['required' => 'Tidak',          'example' => '',                             'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
                 'nim'            => ['required' => 'Ya (data baru)', 'example' => '2210001',                      'width' => 18, 'note' => 'NIM mahasiswa yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'          => ['required' => 'Ya',             'example' => 'kemahasiswaan',                'width' => 18, 'options' => ['inbis', 'kemahasiswaan'], 'note' => 'Kategori kegiatan. Pilih dari dropdown.'],
-                'tab'            => ['required' => 'Ya',             'example' => 'akademik',                     'width' => 16, 'options' => ['akademik', 'non_akademik'], 'note' => 'Bidang kegiatan. Perhatikan non_akademik pakai garis bawah (_). Pilih dari dropdown.'],
-                'tingkat'        => ['required' => 'Ya',             'example' => 'nasional',                     'width' => 16, 'options' => ['lokal', 'nasional', 'internasional'], 'note' => 'Skala/tingkat kegiatan atau prestasi. Pilih dari dropdown.'],
+                'jenis_divisi'   => ['required' => 'Ya',             'example' => 'kemahasiswaan',                'width' => 18, 'options' => ['inbis', 'kemahasiswaan'], 'note' => 'Jenis divisi. Pilih dari dropdown.'],
+                'jenis_prestasi' => ['required' => 'Ya',             'example' => 'akademik',                     'width' => 16, 'options' => ['akademik', 'non_akademik'], 'note' => 'Jenis prestasi. Perhatikan non_akademik pakai garis bawah (_). Pilih dari dropdown.'],
+                'skala'          => ['required' => 'Ya',             'example' => 'nasional',                     'width' => 16, 'options' => ['lokal', 'nasional', 'internasional'], 'note' => 'Skala kegiatan atau prestasi. Pilih dari dropdown.'],
                 'tahun'          => ['required' => 'Ya',             'example' => '2026',                         'width' => 10, 'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
                 'nama_kegiatan'  => ['required' => 'Ya',             'example' => 'Juara 1 Lomba Karya Tulis',    'width' => 38, 'note' => 'Nama kegiatan atau prestasi, mis. "Juara 1 Lomba Karya Tulis".'],
                 'bukti_kegiatan' => ['required' => 'Ya',             'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
@@ -306,7 +315,7 @@ class KemahasiswaanController extends Controller
         return $this->bulkXlsxExportResponse(
             'kemahasiswaan-' . now()->format('Ymd-His') . '.xlsx',
             self::SHEET,
-            ['id', 'nim', 'nama', 'jenis', 'tab', 'tingkat', 'tahun', 'nama_kegiatan', 'bukti_kegiatan'],
+            ['id', 'nim', 'nama', 'jenis_divisi', 'jenis_prestasi', 'skala', 'tahun', 'nama_kegiatan', 'bukti_kegiatan'],
             [10, 18, 28, 18, 16, 16, 10, 38, 46],
             Kemahasiswaan::class,
             fn (Kemahasiswaan $item) => [

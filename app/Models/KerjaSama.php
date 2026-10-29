@@ -16,6 +16,7 @@ class KerjaSama extends Model
         'tipe_user',
         'jenis',
         'jenis_lainnya',
+        'skala',
         'arah',
         'mitra',
         'judul_kegiatan',

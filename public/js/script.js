@@ -225,19 +225,30 @@
         init() {
             const btn = document.getElementById("themeToggleBtn");
             const icon = document.getElementById("themeIcon");
-            const saved = localStorage.getItem("theme");
+            const applyTheme = (isDark) => {
+                document.body.classList.toggle("dark-mode", isDark);
+                if (icon) icon.textContent = isDark ? "light_mode" : "dark_mode";
+            };
 
-            if (saved === "dark") {
-                document.body.classList.add("dark-mode");
-                if (icon) icon.textContent = "light_mode";
+            try {
+                applyTheme(localStorage.getItem("theme") === "dark");
+            } catch (error) {
+                console.error("[SIDA] Tema gagal dibaca:", error);
+                applyTheme(false);
             }
 
+            window.addEventListener("storage", (event) => {
+                if (event.key === "theme") applyTheme(event.newValue === "dark");
+            });
+
             btn?.addEventListener("click", () => {
-                document.body.classList.toggle("dark-mode");
-                const isDark = document.body.classList.contains("dark-mode");
-                if (icon)
-                    icon.textContent = isDark ? "light_mode" : "dark_mode";
-                localStorage.setItem("theme", isDark ? "dark" : "light");
+                const isDark = !document.body.classList.contains("dark-mode");
+                applyTheme(isDark);
+                try {
+                    localStorage.setItem("theme", isDark ? "dark" : "light");
+                } catch (error) {
+                    console.error("[SIDA] Tema gagal disimpan:", error);
+                }
             });
         },
     };

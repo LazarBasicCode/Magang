@@ -90,9 +90,9 @@ class ReportData
 
         // ---- Rincian per jenis/tingkat (periode terpilih) ----
         $breakdowns = [
-            self::group('Kemahasiswaan · Tingkat', $kemP, 'tingkat', ['lokal' => 'Lokal', 'nasional' => 'Nasional', 'internasional' => 'Internasional']),
-            self::group('Kemahasiswaan · Jenis', $kemP, 'jenis', ['inbis' => 'Inbis', 'kemahasiswaan' => 'Kemahasiswaan']),
-            self::group('Kemahasiswaan · Bidang', $kemP, 'tab', ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']),
+            self::group('Kemahasiswaan · Skala', $kemP, 'tingkat', ['lokal' => 'Lokal', 'nasional' => 'Nasional', 'internasional' => 'Internasional']),
+            self::group('Kemahasiswaan · Jenis Prestasi', $kemP, 'jenis', ['inbis' => 'Inbis', 'kemahasiswaan' => 'Kemahasiswaan']),
+            self::group('Kemahasiswaan · Jenis Prestasi', $kemP, 'tab', ['akademik' => 'Akademik', 'non_akademik' => 'Non Akademik']),
             self::group('LPPM Mahasiswa · Jenis', $lmP, 'jenis', ['sinta_nasional' => 'Jurnal Sinta Nasional', 'jurnal_internasional' => 'Jurnal Internasional', 'conference_internasional' => 'Conference Internasional']),
             self::group('LPPM Dosen · Jenis', $ldP, 'jenis', ['q_internasional' => 'Jurnal Q Internasional', 'sinta_nasional' => 'Jurnal Sinta Nasional', 'hki' => 'HKI', 'book' => 'Buku']),
             self::group('LPPM Dosen · Peringkat Jurnal', $ldP->whereNotNull('peringkat'), 'peringkat', null),

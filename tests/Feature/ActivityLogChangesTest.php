@@ -7,8 +7,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Monolog\Handler\TestHandler;
-use Monolog\Logger;
 use Tests\TestCase;
 
 /** Log aktivitas mencatat sebelum -> sesudah (input -> output) lewat ChangeTracker + middleware LogActivity. */
@@ -16,33 +14,18 @@ class ActivityLogChangesTest extends TestCase
 {
     use RefreshDatabase;
 
-    private TestHandler $handler;
+    private ?array $logged = null;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Arahkan channel "activity" ke handler di memori (tanpa menulis file). Channel lain tetap normal,
-        // jadi kode aplikasi yang memanggil Log::info()/warning() di tempat lain tidak terganggu.
-        $this->handler = new TestHandler();
-        $handler = $this->handler;
-        // PENTING: Log::extend() mengikat ulang $this ke LogManager, jadi handler dibawa lewat use(), bukan $this->handler.
-        Log::extend('capture', function () use ($handler) {
-            return new Logger('activity', [$handler]);
+        // Tangkap konteks yang ditulis ke channel "activity" (tanpa menulis file).
+        $channel = \Mockery::mock();
+        $channel->shouldReceive('info', 'warning')->andReturnUsing(function ($message, $context = []) {
+            $this->logged = $context;
         });
-        config(['logging.channels.activity' => ['driver' => 'capture']]);
-    }
-
-    /** Konteks entri log "activity" terakhir (null kalau belum ada). */
-    private function lastLog(): ?array
-    {
-        $records = $this->handler->getRecords();
-        if ($records === []) {
-            return null;
-        }
-        $last = end($records);
-
-        return is_array($last) ? $last['context'] : $last->context; // Monolog 2 = array, Monolog 3 = LogRecord
+        Log::partialMock()->shouldReceive('channel')->with('activity')->andReturn($channel);
     }
 
     private function superadmin(): User
@@ -76,14 +59,13 @@ class ActivityLogChangesTest extends TestCase
             ->putJson('/data-master/users/' . $mhs->id, $this->form($mhs, ['name' => 'Budi S.']))
             ->assertOk();
 
-        $logged = $this->lastLog();
-        $this->assertNotNull($logged, 'aktivitas tercatat');
-        $this->assertSame('data-master.users.update', $logged['rute']);
-        $this->assertSame('User', $logged['data']);
-        $this->assertSame($mhs->id, $logged['data_id']);
+        $this->assertNotNull($this->logged, 'aktivitas tercatat');
+        $this->assertSame('data-master.users.update', $this->logged['rute']);
+        $this->assertSame('User', $this->logged['data']);
+        $this->assertSame($mhs->id, $this->logged['data_id']);
         $this->assertSame(
             ['name' => ['input' => 'Budi Santoso', 'output' => 'Budi S.']],
-            $logged['update'],
+            $this->logged['update'],
             'hanya kolom yang berubah yang dicatat',
         );
     }
@@ -97,9 +79,8 @@ class ActivityLogChangesTest extends TestCase
             ->putJson('/data-master/users/' . $mhs->id, $this->form($mhs, ['password' => 'rahasiaBaru123']))
             ->assertOk();
 
-        $logged = $this->lastLog();
-        $this->assertSame(['input' => '••••••', 'output' => '••••••'], $logged['update']['password']);
-        $json = json_encode($logged);
+        $this->assertSame(['input' => '••••••', 'output' => '••••••'], $this->logged['update']['password']);
+        $json = json_encode($this->logged);
         $this->assertStringNotContainsString('rahasiaBaru123', $json);
         $this->assertStringNotContainsString('$2y$', $json, 'hash password juga tidak boleh masuk log');
     }
@@ -111,11 +92,10 @@ class ActivityLogChangesTest extends TestCase
 
         $this->actingAs($actor)->deleteJson('/data-master/users/' . $mhs->id)->assertOk();
 
-        $logged = $this->lastLog();
-        $this->assertSame('Budi Santoso', $logged['delete']['name']['input']);
-        $this->assertSame('1001', $logged['delete']['nim_nidn']['input']);
-        $this->assertSame('••••••', $logged['delete']['password']['input']);
-        $this->assertStringNotContainsString('$2y$', json_encode($logged));
+        $this->assertSame('Budi Santoso', $this->logged['delete']['name']['input']);
+        $this->assertSame('1001', $this->logged['delete']['nim_nidn']['input']);
+        $this->assertSame('••••••', $this->logged['delete']['password']['input']);
+        $this->assertStringNotContainsString('$2y$', json_encode($this->logged));
     }
 
     public function test_tambah_mencatat_nilai_baru_sebagai_output_dan_dikelompokkan_per_data(): void
@@ -129,7 +109,7 @@ class ActivityLogChangesTest extends TestCase
 
         $user = User::where('nim_nidn', '2002')->firstOrFail();
         // dua data baru (akun + profil mahasiswa) -> dikelompokkan "Tipe#id"
-        $create = $this->lastLog()['create'];
+        $create = $this->logged['create'];
         $this->assertSame('Sari Dewi', $create['User#' . $user->id]['name']['output']);
         $this->assertSame('••••••', $create['User#' . $user->id]['password']['output']);
         $this->assertSame('2002', $create['Mahasiswa#' . $user->mahasiswa->id]['nim']['output']);
@@ -140,10 +120,9 @@ class ActivityLogChangesTest extends TestCase
     {
         $this->actingAs($this->superadmin())->get('/data-master/users/export')->assertOk();
 
-        $logged = $this->lastLog();
-        $this->assertNotNull($logged);
+        $this->assertNotNull($this->logged);
         foreach (['create', 'update', 'delete'] as $k) {
-            $this->assertArrayNotHasKey($k, $logged);
+            $this->assertArrayNotHasKey($k, $this->logged);
         }
     }
 
@@ -153,10 +132,10 @@ class ActivityLogChangesTest extends TestCase
         $mhs = $this->mahasiswa();
 
         $this->actingAs($actor)->putJson('/data-master/users/' . $mhs->id, $this->form($mhs, ['name' => 'Budi S.']))->assertOk();
-        $this->assertArrayHasKey('update', $this->lastLog());
+        $this->assertArrayHasKey('update', $this->logged);
 
-        $this->handler->clear();
+        $this->logged = null;
         $this->actingAs($actor)->get('/data-master/users/export')->assertOk();
-        $this->assertArrayNotHasKey('update', $this->lastLog() ?? []);
+        $this->assertArrayNotHasKey('update', $this->logged ?? []);
     }
 }

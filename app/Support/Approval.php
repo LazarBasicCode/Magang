@@ -6,7 +6,6 @@ use App\Models\ApprovalComment;
 use App\Models\ApprovalLog;
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
-use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
@@ -78,37 +77,25 @@ class Approval
                     'Tahun'   => $i->tahun,
                 ],
             ],
-            'lppm-mahasiswa' => [
-                'model'     => LppmMahasiswa::class,
-                'label'     => 'LPPM Mahasiswa',
-                'icon'      => 'person',
-                'url'       => '/lppm/mahasiswa',
-                'with'      => ['mahasiswa.user'],
-                'title'     => fn ($i) => $i->judul,
-                'mahasiswa' => fn ($i) => $i->mahasiswa,
-                'bukti'     => fn ($i) => $i->bukti_kegiatan,
-                'detail'    => fn ($i) => array_filter([
-                    'Jenis'      => $pretty($i->jenis),
-                    'Jurnal'     => $i->nama_jurnal,
-                    'Peringkat'  => $i->peringkat,
-                    'Tahun'      => $i->tahun,
-                    'Link DOI'   => $i->link_doi,
-                ], fn ($v) => $v !== null && $v !== ''),
-            ],
             'rekognisi' => [
                 'model'     => Rekognisi::class,
                 'label'     => 'Rekognisi',
                 'icon'      => 'workspace_premium',
                 'url'       => '/lppm/rekognisi',
                 'with'      => ['user.mahasiswa'],
-                'title'     => fn ($i) => $i->jabatan ?: $i->mitra,
+                'title'     => fn ($i) => $i->judul ?: ($i->jabatan ?: ($i->mitra ?: 'Rekognisi')),
                 'mahasiswa' => fn ($i) => $i->user?->mahasiswa,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
                 'detail'    => fn ($i) => array_filter([
-                    'Mitra'   => $i->mitra,
-                    'Jenis'   => $pretty($i->jenis),
-                    'Jabatan' => $i->jabatan,
-                    'Periode' => optional($i->tanggal_mulai)->format('d/m/Y') . ' – ' . optional($i->tanggal_selesai)->format('d/m/Y'),
+                    'Tipe'     => $pretty($i->tipe_user_efektif),
+                    'Jenis'    => $pretty($i->jenis),
+                    'Skala'    => $pretty($i->skala),
+                    'Penulis'  => $i->penulis,
+                    'Jurnal'   => $i->nama_jurnal,
+                    'Peringkat'=> $i->peringkat,
+                    'Mitra'    => $i->mitra,
+                    'Jabatan'  => $i->jabatan_efektif,
+                    'Periode'  => optional($i->tanggal_mulai)->format('d/m/Y') . ' – ' . optional($i->tanggal_selesai)->format('d/m/Y'),
                 ], fn ($v) => $v !== null && $v !== ''),
             ],
             'kerja-sama' => [

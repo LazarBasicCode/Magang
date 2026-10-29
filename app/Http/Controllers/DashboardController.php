@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
-use App\Models\LppmDosen;
-use App\Models\LppmMahasiswa;
 use App\Models\Rekognisi;
 use App\Support\AdminDashboardData;
 use App\Support\DashboardCharts;
@@ -35,7 +33,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Dashboard mahasiswa: 4 sumber (Kemahasiswaan, LPPM Mahasiswa, Rekognisi, Kerja Sama).
+    * Dashboard mahasiswa: Kemahasiswaan, Rekognisi, dan Kerja Sama.
      */
     private function mahasiswa($user): array
     {
@@ -44,32 +42,28 @@ class DashboardController extends Controller
         $kemahasiswaan = $mahasiswa
             ? Kemahasiswaan::approved()->where('mahasiswa_id', $mahasiswa->id)->get()
             : collect();
-        $lppmMahasiswa = $mahasiswa
-            ? LppmMahasiswa::approved()->where('mahasiswa_id', $mahasiswa->id)->get()
-            : collect();
-        $rekognisi = Rekognisi::approved()->where('user_id', $user->id)
-            ->where('tipe_user', 'mahasiswa')->get();
+        $effectiveType = $mahasiswa?->status === 'lulus' ? 'alumni' : 'mahasiswa';
+        $rekognisi = Rekognisi::with('user.mahasiswa')->approved()->where('user_id', $user->id)->get()
+            ->filter(fn ($item) => $item->tipe_user_efektif === $effectiveType)->values();
         $kerjaSama = KerjaSama::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'mahasiswa')->get();
 
-        $total = $kemahasiswaan->count() + $lppmMahasiswa->count()
-            + $rekognisi->count() + $kerjaSama->count();
+        $total = $kemahasiswaan->count() + $rekognisi->count() + $kerjaSama->count();
 
         // Capaian internasional: dari 2 sumber yang punya makna "tingkat/jenis internasional"
         $internasionalBase = $kemahasiswaan->count() + $rekognisi->count();
         $internasionalPct = $internasionalBase > 0
             ? round(($kemahasiswaan->where('tingkat', 'internasional')->count()
-                + $rekognisi->where('jenis', 'internasional')->count()) / $internasionalBase * 100)
+                + $rekognisi->where('skala', 'internasional')->count()) / $internasionalBase * 100)
             : 0;
 
-        $earliest = collect([$kemahasiswaan, $lppmMahasiswa, $rekognisi, $kerjaSama])
+        $earliest = collect([$kemahasiswaan, $rekognisi, $kerjaSama])
             ->flatMap(fn ($c) => $c->pluck('created_at'))->filter()->min();
         $monthsActive = $earliest ? max(1, Carbon::parse($earliest)->diffInMonths(now()) + 1) : 1;
 
         $stats = [
             'total'             => $total,
             'kemahasiswaan'     => $kemahasiswaan->count(),
-            'lppm_mahasiswa'    => $lppmMahasiswa->count(),
             'rekognisi'         => $rekognisi->count(),
             'kerja_sama'        => $kerjaSama->count(),
             'internasional_pct' => $internasionalPct,
@@ -78,9 +72,8 @@ class DashboardController extends Controller
 
         $kategoriDonut = [
             ['label' => 'Kemahasiswaan', 'value' => $kemahasiswaan->count(), 'color' => 'var(--chart-1)'],
-            ['label' => 'LPPM Mahasiswa', 'value' => $lppmMahasiswa->count(), 'color' => 'var(--chart-2)'],
-            ['label' => 'Rekognisi', 'value' => $rekognisi->count(), 'color' => 'var(--chart-3)'],
-            ['label' => 'Kerja Sama', 'value' => $kerjaSama->count(), 'color' => 'var(--chart-4)'],
+            ['label' => 'Rekognisi', 'value' => $rekognisi->count(), 'color' => 'var(--chart-2)'],
+            ['label' => 'Kerja Sama', 'value' => $kerjaSama->count(), 'color' => 'var(--chart-3)'],
         ];
 
         $tingkatCounts = $kemahasiswaan->countBy('tingkat');
@@ -94,9 +87,9 @@ class DashboardController extends Controller
         }
 
         $charts = DashboardCharts::build(
-            $kemahasiswaan->concat($lppmMahasiswa),
+            $kemahasiswaan,
             $rekognisi->concat($kerjaSama),
-            'Akademik (Kemahasiswaan + LPPM)',
+            'Akademik (Kemahasiswaan)',
             'Eksternal (Rekognisi + Kerja Sama)'
         );
         $trendDatasets = $charts['trend'];
@@ -104,8 +97,7 @@ class DashboardController extends Controller
 
         $recent = collect()
             ->concat($kemahasiswaan->map(fn ($i) => ['title' => $i->nama_kegiatan, 'menu' => 'Kemahasiswaan', 'icon' => 'school', 'date' => $i->created_at]))
-            ->concat($lppmMahasiswa->map(fn ($i) => ['title' => $i->judul, 'menu' => 'LPPM Mahasiswa', 'icon' => 'person', 'date' => $i->created_at]))
-            ->concat($rekognisi->map(fn ($i) => ['title' => $i->jabatan_efektif ?? $i->mitra, 'menu' => 'Rekognisi', 'icon' => 'workspace_premium', 'date' => $i->created_at]))
+            ->concat($rekognisi->map(fn ($i) => ['title' => $i->judul ?: ($i->jabatan_efektif ?: $i->mitra), 'menu' => 'Rekognisi', 'icon' => 'workspace_premium', 'date' => $i->created_at]))
             ->concat($kerjaSama->map(fn ($i) => ['title' => $i->judul_kegiatan, 'menu' => 'Kerja Sama', 'icon' => 'handshake', 'date' => $i->created_at]))
             ->filter(fn ($i) => !is_null($i['date']))
             ->sortByDesc('date')
@@ -116,33 +108,26 @@ class DashboardController extends Controller
     }
 
     /**
-     * Dashboard khusus dosen. Sumber datanya 3 menu yang relevan untuk dosen:
-     * LPPM Dosen (jurnal Q/Sinta, HKI, buku), Rekognisi, dan Kerja Sama.
+    * Dashboard khusus dosen. Sumber datanya Rekognisi dan Kerja Sama.
      * (Kemahasiswaan tidak dipakai karena itu data kegiatan mahasiswa.)
      */
     private function dosen($user): array
     {
-        $dosen = $user->dosen;
-
-        $lppm = $dosen
-            ? LppmDosen::where('dosen_id', $dosen->id)->get()
-            : collect();
-        $rekognisi = Rekognisi::approved()->where('user_id', $user->id)
-            ->where('tipe_user', 'dosen')->get();
+        $rekognisi = Rekognisi::with('user.mahasiswa')->approved()->where('user_id', $user->id)->get()
+            ->filter(fn ($item) => $item->tipe_user_efektif === 'dosen')->values();
         $kerjaSama = KerjaSama::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'dosen')->get();
 
-        $total = $lppm->count() + $rekognisi->count() + $kerjaSama->count();
+        $total = $rekognisi->count() + $kerjaSama->count();
 
         // Capaian internasional: jurnal Q internasional + rekognisi internasional
         // + kerja sama yang jenisnya berlabel internasional, dari seluruh kegiatan.
         $jenisKerjaSamaIntl = ['conference_internasional', 'pengabdian_internasional', 'research_internasional'];
-        $internasionalCount = $lppm->where('jenis', 'q_internasional')->count()
-            + $rekognisi->where('jenis', 'internasional')->count()
+        $internasionalCount = $rekognisi->where('skala', 'internasional')->count()
             + $kerjaSama->whereIn('jenis', $jenisKerjaSamaIntl)->count();
         $internasionalPct = $total > 0 ? round($internasionalCount / $total * 100) : 0;
 
-        $earliestDate = collect([$lppm, $rekognisi, $kerjaSama])
+        $earliestDate = collect([$rekognisi, $kerjaSama])
             ->flatMap(fn ($c) => $c->pluck('created_at'))
             ->filter()
             ->min();
@@ -152,15 +137,14 @@ class DashboardController extends Controller
 
         $stats = [
             'total'             => $total,
-            'lppm_dosen'        => $lppm->count(),
-            'publikasi_q'       => $lppm->where('jenis', 'q_internasional')->count(),
+            'jurnal_internasional' => $rekognisi->where('jenis', 'jurnal')->where('skala', 'internasional')->count(),
             'rekognisi'         => $rekognisi->count(),
             'kerja_sama'        => $kerjaSama->count(),
             'internasional_pct' => $internasionalPct,
             'avg_per_month'     => round($total / $monthsActive, 1),
-            'sinta_nasional'    => $lppm->where('jenis', 'sinta_nasional')->count(),
-            'hki'               => $lppm->where('jenis', 'hki')->count(),
-            'buku'              => $lppm->where('jenis', 'book')->count(),
+            'jurnal_nasional'   => $rekognisi->where('jenis', 'jurnal')->where('skala', 'nasional')->count(),
+            'hki'               => $rekognisi->where('jenis', 'hki')->count(),
+            'buku'              => $rekognisi->where('jenis', 'book')->count(),
             'mitra_unik'        => $rekognisi->concat($kerjaSama)
                 ->pluck('mitra')
                 ->map(fn ($m) => mb_strtolower(trim((string) $m)))
@@ -170,19 +154,23 @@ class DashboardController extends Controller
         ];
 
         $kategoriDonut = [
-            ['label' => 'LPPM Dosen', 'value' => $lppm->count(), 'color' => 'var(--chart-2)'],
-            ['label' => 'Rekognisi', 'value' => $rekognisi->count(), 'color' => 'var(--chart-3)'],
-            ['label' => 'Kerja Sama', 'value' => $kerjaSama->count(), 'color' => 'var(--chart-4)'],
+            ['label' => 'Rekognisi', 'value' => $rekognisi->count(), 'color' => 'var(--chart-2)'],
+            ['label' => 'Kerja Sama', 'value' => $kerjaSama->count(), 'color' => 'var(--chart-3)'],
         ];
 
         // Donut 2: luaran LPPM per jenis
         $jenisLppm = [
-            'q_internasional' => ['Jurnal Q Internasional', 'var(--chart-5)'],
-            'sinta_nasional'  => ['Jurnal Sinta Nasional', 'var(--chart-3)'],
-            'hki'             => ['HKI', 'var(--chart-2)'],
-            'book'            => ['Buku', 'var(--chart-4)'],
+            'jurnal_intl' => ['Jurnal Internasional', 'var(--chart-5)'],
+            'jurnal_nas'  => ['Jurnal Nasional', 'var(--chart-3)'],
+            'hki'         => ['HKI', 'var(--chart-2)'],
+            'book'        => ['Buku', 'var(--chart-4)'],
         ];
-        $jenisCounts = $lppm->countBy('jenis');
+        $jenisCounts = collect([
+            'jurnal_intl' => $rekognisi->where('jenis', 'jurnal')->where('skala', 'internasional')->count(),
+            'jurnal_nas' => $rekognisi->where('jenis', 'jurnal')->where('skala', 'nasional')->count(),
+            'hki' => $rekognisi->where('jenis', 'hki')->count(),
+            'book' => $rekognisi->where('jenis', 'book')->count(),
+        ]);
         $luaranDonut = [];
         foreach ($jenisLppm as $key => [$label, $color]) {
             $luaranDonut[] = ['label' => $label, 'value' => $jenisCounts->get($key, 0), 'color' => $color];
@@ -191,7 +179,7 @@ class DashboardController extends Controller
         // Kualitas publikasi: sebaran peringkat jurnal (Q1-Q4 untuk jurnal
         // internasional, S1-S6 untuk Sinta). Peringkat kosong/di luar pola
         // dikelompokkan ke "Lainnya" supaya tidak ada data yang hilang.
-        $jurnal = $lppm->whereIn('jenis', ['q_internasional', 'sinta_nasional']);
+        $jurnal = $rekognisi->where('jenis', 'jurnal');
         $kualitasCounts = $jurnal
             ->map(function ($i) {
                 $r = strtoupper(trim((string) $i->peringkat));
@@ -217,7 +205,7 @@ class DashboardController extends Controller
             'perlu'      => $jurnal->filter(fn ($i) => blank($i->link_doi))
                 ->sortByDesc('created_at')
                 ->take(3)
-                ->map(fn ($i) => ['title' => $i->judul, 'jenis' => $i->jenis === 'q_internasional' ? 'Jurnal Q' : 'Sinta'])
+                ->map(fn ($i) => ['title' => $i->judul, 'jenis' => $i->skala === 'internasional' ? 'Jurnal Internasional' : 'Jurnal Nasional'])
                 ->values(),
         ];
 
@@ -246,7 +234,7 @@ class DashboardController extends Controller
                 'end'   => $i->tanggal_selesai,
             ])
             ->concat($rekognisi->map(fn ($i) => [
-                'title' => $i->jabatan_efektif ?? $i->mitra,
+                'title' => $i->judul ?: ($i->jabatan_efektif ?: $i->mitra),
                 'menu'  => 'Rekognisi',
                 'icon'  => 'workspace_premium',
                 'start' => $i->tanggal_mulai,
@@ -263,23 +251,17 @@ class DashboardController extends Controller
         $berjalan = $berjalan->take(4)->values();
 
         $charts = DashboardCharts::build(
-            $lppm,
+            $rekognisi,
             $rekognisi->concat($kerjaSama),
-            'Riset & Publikasi (LPPM)',
+            'Publikasi + Rekognisi',
             'Eksternal (Rekognisi + Kerja Sama)'
         );
         $trendDatasets = $charts['trend'];
         $barDatasets = $charts['bar'];
 
         $recent = collect()
-            ->concat($lppm->map(fn ($i) => [
-                'title' => $i->judul,
-                'menu'  => 'LPPM Dosen',
-                'icon'  => 'co_present',
-                'date'  => $i->created_at,
-            ]))
             ->concat($rekognisi->map(fn ($i) => [
-                'title' => $i->jabatan_efektif ?? $i->mitra,
+                'title' => $i->judul ?: ($i->jabatan_efektif ?: $i->mitra),
                 'menu'  => 'Rekognisi',
                 'icon'  => 'workspace_premium',
                 'date'  => $i->created_at,

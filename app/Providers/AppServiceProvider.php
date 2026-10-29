@@ -67,8 +67,6 @@ class AppServiceProvider extends ServiceProvider
             'kemahasiswaan-dashboard',
             'persetujuan',
             'dashboard',
-            'lppm_dosen',
-            'lppm_mahasiswa',
             'lppm_rekognisi',
             'kerja-sama',
             'data-master-users',

@@ -29,8 +29,6 @@ class HakAkses extends Model
     // yang login (isinya menyesuaikan role), jadi tidak perlu diatur hak akses.
     public const MENUS = [
         'kemahasiswaan'   => ['label' => 'Kemahasiswaan', 'icon' => 'school'],
-        'lppm_mahasiswa'  => ['label' => 'LPPM Mahasiswa', 'icon' => 'person'],
-        'lppm_dosen'      => ['label' => 'LPPM Dosen', 'icon' => 'co_present'],
         'rekognisi'       => ['label' => 'Rekognisi', 'icon' => 'workspace_premium'],
         'kerja_sama'      => ['label' => 'Kerja Sama', 'icon' => 'handshake'],
         'data_master'     => ['label' => 'Data Master', 'icon' => 'manage_accounts'],
@@ -60,8 +58,6 @@ class HakAkses extends Model
      */
     public const ADMIN_SINGLE_RESPONSIBILITY_MENUS = [
         'kemahasiswaan',
-        'lppm_mahasiswa',
-        'lppm_dosen',
         'rekognisi',
         'kerja_sama',
     ];
@@ -105,8 +101,6 @@ class HakAkses extends Model
                 // default yang otomatis aktif supaya tidak ada akun admin
                 // baru yang "kebetulan" punya akses ke banyak area sekaligus.
                 'kemahasiswaan'  => 'none',
-                'lppm_mahasiswa' => 'none',
-                'lppm_dosen'     => 'none',
                 'rekognisi'      => 'none',
                 'kerja_sama'     => 'none',
                 // Data Master & Hak Akses: murni wewenang superadmin.
@@ -120,8 +114,6 @@ class HakAkses extends Model
             ],
             'dosen' => [
                 'kemahasiswaan'  => 'biasa',
-                'lppm_mahasiswa' => 'biasa',
-                'lppm_dosen'     => 'biasa',
                 'rekognisi'      => 'biasa',
                 'kerja_sama'     => 'biasa',
                 'data_master'    => 'none',
@@ -131,8 +123,6 @@ class HakAkses extends Model
             ],
             'mahasiswa' => [
                 'kemahasiswaan'  => 'biasa',
-                'lppm_mahasiswa' => 'biasa',
-                'lppm_dosen'     => 'none',
                 'rekognisi'      => 'biasa',
                 'kerja_sama'     => 'biasa',
                 'data_master'    => 'none',

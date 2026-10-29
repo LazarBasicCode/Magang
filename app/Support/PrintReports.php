@@ -4,8 +4,6 @@ namespace App\Support;
 
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
-use App\Models\LppmDosen;
-use App\Models\LppmMahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -76,71 +74,28 @@ class PrintReports
                 ],
             ],
 
-            'lppm-mahasiswa' => [
-                'title'     => 'Publikasi Mahasiswa (LPPM)',
-                'menu'      => 'lppm_mahasiswa',
-                'model'     => LppmMahasiswa::class,
-                'with'      => ['mahasiswa.user'],
-                'year'      => ['column' => 'tahun'],
-                'landscape' => true,
-                'stats'     => [
-                    ['Total Publikasi',  'menu_book',  'blue',   fn (Collection $c) => $c->count()],
-                    ['SINTA Nasional',   'school',     'teal',   $count('jenis', 'sinta_nasional')],
-                    ['Conference Int\'l', 'groups',    'violet', $count('jenis', 'conference_internasional')],
-                    ['Jurnal Int\'l',     'public',    'orange', $count('jenis', 'jurnal_internasional')],
-                ],
-                'columns'   => [
-                    ['NIM',               fn ($i) => $i->mahasiswa->nim ?? '-'],
-                    ['Penulis (Mahasiswa)', fn ($i) => $i->mahasiswa->user->name ?? 'Tanpa Nama'],
-                    ['Judul Publikasi',   fn ($i) => $i->judul, 'wrap'],
-                    ['Jenis',             fn ($i) => self::label($i->jenis)],
-                    ['Jurnal / Peringkat', fn ($i) => trim(($i->nama_jurnal ?: '') . ($i->peringkat ? ' (' . $i->peringkat . ')' : '')) ?: '-', 'wrap'],
-                    ['Tahun',             fn ($i) => $i->tahun, 'num'],
-                ],
-            ],
-
-            'lppm-dosen' => [
-                'title'     => 'Publikasi Dosen (LPPM)',
-                'menu'      => 'lppm_dosen',
-                'model'     => LppmDosen::class,
-                'with'      => ['dosen.user'],
-                'year'      => ['column' => 'tahun'],
-                'landscape' => true,
-                'stats'     => [
-                    ['Total Karya',      'menu_book',      'blue',   fn (Collection $c) => $c->count()],
-                    ['Jurnal Q Int\'l',  'public',         'teal',   $count('jenis', 'q_internasional')],
-                    ['SINTA Nasional',   'school',         'violet', $count('jenis', 'sinta_nasional')],
-                    ['HKI & Buku',       'workspace_premium', 'orange', $count('jenis', ['hki', 'book'])],
-                ],
-                'columns'   => [
-                    ['NIDN',          fn ($i) => $i->dosen->nidn ?? '-'],
-                    ['Penulis (Dosen)', fn ($i) => $i->dosen->user->name ?? 'Tanpa Nama'],
-                    ['Judul Karya',   fn ($i) => $i->judul, 'wrap'],
-                    ['Jenis',         fn ($i) => self::label($i->jenis)],
-                    ['Kategori / Peringkat', fn ($i) => self::label($i->peringkat ?: ($i->jenis_hki ?: $i->kategori_buku))],
-                    ['Tahun',         fn ($i) => $i->tahun, 'num'],
-                ],
-            ],
-
             'rekognisi' => [
                 'title'     => 'Rekognisi',
                 'menu'      => 'rekognisi',
                 'model'     => Rekognisi::class,
-                'with'      => ['user'],
+                'with'      => ['user.mahasiswa'],
                 'year'      => ['column' => 'tanggal_mulai', 'date' => true],
                 'landscape' => true,
                 'stats'     => [
                     ['Total Rekognisi', 'workspace_premium', 'blue',   fn (Collection $c) => $c->count()],
-                    ['Nasional',        'flag',              'teal',   $count('jenis', 'nasional')],
-                    ['Internasional',   'public',            'violet', $count('jenis', 'internasional')],
-                    ['Alumni',          'school',            'orange', $count('jenis', 'alumni')],
+                    ['Nasional',        'flag',              'teal',   $count('skala', 'nasional')],
+                    ['Internasional',   'public',            'violet', $count('skala', 'internasional')],
+                    ['Alumni',          'school',            'orange', fn (Collection $c) => $c->filter(fn ($i) => $i->tipe_user_efektif === 'alumni')->count()],
                 ],
                 'columns'   => [
                     ['NIM / NIDN', fn ($i) => $i->user->nim_nidn ?? '-'],
                     ['Nama',       fn ($i) => $i->user->name ?? 'Tanpa Nama'],
-                    ['Tipe',       fn ($i) => self::label($i->tipe_user)],
-                    ['Mitra',      fn ($i) => $i->mitra, 'wrap'],
+                    ['Tipe',       fn ($i) => self::label($i->tipe_user_efektif)],
+                    ['Judul Karya', fn ($i) => $i->judul ?: '-', 'wrap'],
+                    ['Penulis',    fn ($i) => $i->penulis ?: '-', 'wrap'],
+                    ['Mitra',      fn ($i) => $i->mitra ?: '-', 'wrap'],
                     ['Jenis',      fn ($i) => self::label($i->jenis)],
+                    ['Skala',      fn ($i) => self::label($i->skala ?: '-')],
                     ['Jabatan',    fn ($i) => $i->jabatan_efektif ?: '-'],
                     ['Periode',    fn ($i) => self::period($i)],
                 ],

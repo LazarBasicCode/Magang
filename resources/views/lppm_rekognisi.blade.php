@@ -50,7 +50,7 @@
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Rekognisi Nasional, Internasional &amp; Alumni</h1>
-                        <p class="page-subtitle">Pendataan rekognisi dosen dan mahasiswa &middot; Tahun {{ now()->year }}</p>
+                        <p class="page-subtitle">Pendataan rekognisi dosen, mahasiswa, dan alumni &middot; Tahun {{ now()->year }}</p>
                     </div>
                     @php
                         // Menu titik tiga (Unduh Template / Upload / Download / Cetak Laporan): hanya admin & superadmin.
@@ -125,11 +125,12 @@
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Tipe</button>
                                     <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
                                     <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
+                                    <button type="button" class="dropdown-option" data-value="alumni">Alumni</button>
                                 </div>
                             </div>
                         </div>
                         <div class="field">
-                            <label class="field-label">Jenis Rekognisi</label>
+                            <label class="field-label">Jenis Karya</label>
                             <div class="dropdown" data-dropdown>
                                 <input type="hidden" id="filter-jenis" value="semua" />
                                 <button type="button" class="dropdown-trigger">
@@ -138,9 +139,27 @@
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Jenis</button>
+                                    <button type="button" class="dropdown-option" data-value="jurnal">Jurnal</button>
+                                    <button type="button" class="dropdown-option" data-value="hki">HKI</button>
+                                    <button type="button" class="dropdown-option" data-value="book">Buku</button>
+                                    <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
+                                    <button type="button" class="dropdown-option" data-value="conference">Conference</button>
+                                    <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Skala</label>
+                            <div class="dropdown" data-dropdown>
+                                <input type="hidden" id="filter-skala" value="semua" />
+                                <button type="button" class="dropdown-trigger">
+                                    <span class="dropdown-value">Semua Skala</span>
+                                    <span class="material-symbols-outlined caret">expand_more</span>
+                                </button>
+                                <div class="dropdown-panel">
+                                    <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Skala</button>
                                     <button type="button" class="dropdown-option" data-value="nasional">Nasional</button>
                                     <button type="button" class="dropdown-option" data-value="internasional">Internasional</button>
-                                    <button type="button" class="dropdown-option" data-value="alumni">Alumni</button>
                                 </div>
                             </div>
                         </div>
@@ -149,7 +168,7 @@
                                 <label class="field-label" for="filter-search">Pencarian Cepat</label>
                                 <div class="field-control">
                                     <span class="material-symbols-outlined icon-search">search</span>
-                                    <input id="filter-search" type="text" placeholder="Cari nama, mitra, atau jabatan..." />
+                                    <input id="filter-search" type="text" placeholder="Cari nama, judul, penulis, mitra..." />
                                 </div>
                             </div>
                             <div class="field field-reset">
@@ -190,8 +209,12 @@
                                     <th>NIM/NIDN</th>
                                     <th>Nama</th>
                                     <th class="center">Tipe</th>
+                                    <th>Judul Karya</th>
+                                    <th>Penulis</th>
                                     <th>Mitra</th>
                                     <th class="center">Jenis</th>
+                                    <th>Detail Karya</th>
+                                    <th class="center">Skala</th>
                                     <th>Jabatan (Alumni)</th>
                                     <th class="center">Periode</th>
                                     <th class="center">Bukti</th>
@@ -201,14 +224,15 @@
                             <tbody id="rekognisiTableBody">
                                 @php
                                 $jenisLabel = [
+                                'jurnal' => 'Jurnal',
+                                'hki' => 'HKI',
+                                'book' => 'Buku',
+                                'sinta' => 'Publikasi SINTA',
+                                'conference' => 'Conference',
                                 'nasional' => 'Nasional',
                                 'internasional' => 'Internasional',
                                 'alumni' => 'Alumni',
-                                ];
-                                $jenisBadge = [
-                                'nasional' => 'c-warning',
-                                'internasional' => 'c-info',
-                                'alumni' => 'c-success',
+                                'rekognisi' => 'Rekognisi',
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
@@ -217,8 +241,14 @@
                                 $nama = optional($item->user)->name ?? 'Tanpa Nama';
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
                                 $avatarColor = $colors[$item->user_id % count($colors)];
+                                $detailKarya = match ($item->jenis) {
+                                    'jurnal', 'sinta' => trim(($item->nama_jurnal ?? '') . ($item->peringkat ? ' · ' . $item->peringkat : '')) ?: '-',
+                                    'hki' => \Illuminate\Support\Str::headline((string) $item->jenis_hki),
+                                    'book' => \Illuminate\Support\Str::headline((string) $item->kategori_buku),
+                                    default => '-',
+                                };
                                 @endphp
-                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tipe_user="{{ $item->tipe_user }}">
+                                <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tipe_user="{{ $item->tipe_user_efektif }}">
                                     <td><span class="nim-code">{{ optional($item->user)->nim_nidn ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
@@ -226,10 +256,19 @@
                                             <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                         </div>
                                     </td>
-                                    <td class="center"><span class="plain-text">{{ ucfirst($item->tipe_user) }}</span></td>
-                                    <td><span class="activity-title" title="{{ $item->mitra }}">{{ $item->mitra }}</span>
+                                    <td class="center"><span class="plain-text">{{ ucfirst($item->tipe_user_efektif) }}</span></td>
+                                    <td><span class="activity-title" title="{{ $item->judul }}">{{ $item->judul ?: '-' }}</span></td>
+                                    <td><span class="plain-text">{{ $item->penulis ?: '-' }}</span></td>
+                                    <td><span class="activity-title" title="{{ $item->mitra }}">{{ $item->mitra ?: '-' }}</span>
                                         @include('partials.approval-chip', ['item' => $item])</td>
                                     <td class="center"><span class="plain-text">{{ $jenisLabel[$item->jenis] ?? $item->jenis }}</span></td>
+                                    <td>
+                                        <span class="plain-text">{{ $detailKarya }}</span>
+                                        @if($item->link_doi)
+                                            <a href="{{ $item->link_doi }}" target="_blank" rel="noopener noreferrer" class="evidence-link"><span>DOI</span></a>
+                                        @endif
+                                    </td>
+                                    <td class="center"><span class="plain-text">{{ $item->skala ? ucfirst($item->skala) : '-' }}</span></td>
                                     <td><span class="plain-text">{{ $item->jabatan_efektif ?? '-' }}</span></td>
                                     <td class="center"><span class="year-chip">{{ optional($item->tanggal_mulai)->format('d M Y') }} &ndash; {{ optional($item->tanggal_selesai)->format('d M Y') }}</span></td>
                                     <td class="center">
@@ -243,9 +282,19 @@
                                             <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                                                 data-id="{{ $item->id }}"
                                                 data-user_id="{{ $item->user_id }}"
+                                                data-tipe_user="{{ $item->tipe_user_efektif }}"
                                                 data-jenis="{{ $item->jenis }}"
+                                                data-skala="{{ $item->skala ?? '' }}"
+                                                data-judul="{{ $item->judul ?? '' }}"
+                                                data-penulis="{{ $item->penulis ?? '' }}"
                                                 data-mitra="{{ $item->mitra }}"
+                                                data-nama_jurnal="{{ $item->nama_jurnal ?? '' }}"
+                                                data-peringkat="{{ $item->peringkat ?? '' }}"
+                                                data-jenis_hki="{{ $item->jenis_hki ?? '' }}"
+                                                data-kategori_buku="{{ $item->kategori_buku ?? '' }}"
+                                                data-link_doi="{{ $item->link_doi ?? '' }}"
                                                 data-jabatan="{{ $item->jabatan ?? '' }}"
+                                                data-tahun="{{ $item->tahun ?? '' }}"
                                                 data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
                                                 data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
                                                 data-bukti_kegiatan="{{ $item->bukti_kegiatan }}"
@@ -260,7 +309,7 @@
                                 </tr>
                                 @endforeach
                                 <tr id="emptyRow" {{ $items->total() === 0 ? '' : 'hidden' }}>
-                                    <td colspan="9" style="text-align:center; padding: 32px; color: var(--ink-faint);">
+                                    <td colspan="13" style="text-align:center; padding: 32px; color: var(--ink-faint);">
                                         Belum ada data. Klik "Tambah Rekognisi" untuk mulai mengisi.
                                     </td>
                                 </tr>
@@ -269,7 +318,7 @@
                             {{-- Skeleton loading: tampil selama .page-wrap.is-loading --}}
                             <tbody class="sk-body" aria-hidden="true">
                                 @for($i = 0; $i < 7; $i++)
-                                <tr><td colspan="10"><span class="sk-bar"></span></td></tr>
+                                <tr><td colspan="13"><span class="sk-bar"></span></td></tr>
                                 @endfor
                             </tbody>
                         </table>
@@ -309,7 +358,7 @@
             <input type="hidden" id="form-id" value="">
 
             <div class="field">
-                <label class="field-label">Nama (Dosen/Mahasiswa)</label>
+                <label class="field-label">Nama (Dosen/Mahasiswa/Alumni)</label>
                 <div class="dropdown" data-dropdown id="dd-user">
                     <input type="hidden" id="form-user_id" value="" />
                     <button type="button" class="dropdown-trigger">
@@ -318,17 +367,35 @@
                     </button>
                     <div class="dropdown-panel">
                         @foreach($userList as $u)
-                        <button type="button" class="dropdown-option" data-value="{{ $u->id }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} ({{ ucfirst($u->role) }})</button>
+                        <button type="button" class="dropdown-option" data-value="{{ $u->id }}" data-role="{{ $u->role }}" data-status="{{ $u->mahasiswa?->status ?? '' }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} (@if($u->role === 'mahasiswa' && $u->mahasiswa?->status === 'lulus') Alumni @else {{ ucfirst($u->role) }} @endif)</button>
                         @endforeach
                     </div>
                 </div>
             </div>
 
-            <div class="field-row">
+            <div class="field-row hidden" id="row-jenis-skala">
                 <div class="field">
-                    <label class="field-label">Jenis Rekognisi</label>
+                    <label class="field-label">Jenis Karya / Publikasi</label>
                     <div class="dropdown" data-dropdown id="dd-jenis">
-                        <input type="hidden" id="form-jenis" value="nasional" />
+                        <input type="hidden" id="form-jenis" value="jurnal" />
+                        <button type="button" class="dropdown-trigger">
+                            <span class="dropdown-value">Jurnal</span>
+                            <span class="material-symbols-outlined caret">expand_more</span>
+                        </button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="jurnal">Jurnal</button>
+                            <button type="button" class="dropdown-option" data-value="hki">Hak Kekayaan Intelektual</button>
+                            <button type="button" class="dropdown-option" data-value="book">Buku</button>
+                            <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
+                            <button type="button" class="dropdown-option" data-value="conference">Conference</button>
+                            <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field" id="field-skala">
+                    <label class="field-label">Skala</label>
+                    <div class="dropdown" data-dropdown id="dd-skala">
+                        <input type="hidden" id="form-skala" value="nasional" />
                         <button type="button" class="dropdown-trigger">
                             <span class="dropdown-value">Nasional</span>
                             <span class="material-symbols-outlined caret">expand_more</span>
@@ -336,19 +403,89 @@
                         <div class="dropdown-panel">
                             <button type="button" class="dropdown-option is-selected" data-value="nasional">Nasional</button>
                             <button type="button" class="dropdown-option" data-value="internasional">Internasional</button>
-                            <button type="button" class="dropdown-option" data-value="alumni">Alumni</button>
                         </div>
-                    </div>
-                </div>
-                <div class="field">
-                    <label class="field-label" for="form-mitra">Mitra / Instansi</label>
-                    <div class="field-control">
-                        <input id="form-mitra" type="text" placeholder="Nama perusahaan/instansi" required>
                     </div>
                 </div>
             </div>
 
-            <!-- Field khusus alumni -->
+            <div class="field-row hidden" id="row-mitra-tahun">
+                <div class="field" id="field-mitra">
+                    <label class="field-label" for="form-mitra">Mitra / Instansi</label>
+                    <div class="field-control">
+                        <input id="form-mitra" type="text" placeholder="Nama perusahaan/instansi">
+                    </div>
+                </div>
+                <div class="field hidden" id="field-tahun">
+                    <label class="field-label" for="form-tahun">Tahun</label>
+                    <div class="field-control">
+                        <input id="form-tahun" type="number" min="2000" max="2100" value="{{ now()->year }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-row hidden" id="row-judul-penulis">
+                <div class="field">
+                    <label class="field-label" for="form-judul">Judul Karya / Publikasi</label>
+                    <div class="field-control">
+                        <input id="form-judul" type="text" maxlength="255" placeholder="Judul karya atau publikasi">
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-penulis">Penulis</label>
+                    <div class="field-control">
+                        <input id="form-penulis" type="text" maxlength="255" placeholder="Nama-nama penulis">
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-row hidden" id="row-jurnal">
+                <div class="field">
+                    <label class="field-label" for="form-nama_jurnal">Nama Jurnal</label>
+                    <div class="field-control">
+                        <input id="form-nama_jurnal" type="text" maxlength="255" placeholder="Nama jurnal">
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-peringkat">Peringkat</label>
+                    <div class="field-control">
+                        <input id="form-peringkat" type="text" maxlength="100" placeholder="Contoh: Q2 atau S3">
+                    </div>
+                </div>
+            </div>
+
+            <div class="field hidden" id="field-link_doi">
+                <label class="field-label" for="form-link_doi">Link DOI</label>
+                <div class="field-control">
+                    <input id="form-link_doi" type="url" placeholder="https://doi.org/...">
+                </div>
+            </div>
+
+            <div class="field hidden" id="field-jenis_hki">
+                <label class="field-label">Jenis HKI</label>
+                <div class="dropdown" data-dropdown id="dd-jenis_hki">
+                    <input type="hidden" id="form-jenis_hki" value="hak_cipta" />
+                    <button type="button" class="dropdown-trigger"><span class="dropdown-value">Hak Cipta</span><span class="material-symbols-outlined caret">expand_more</span></button>
+                    <div class="dropdown-panel">
+                        <button type="button" class="dropdown-option is-selected" data-value="hak_cipta">Hak Cipta</button>
+                        <button type="button" class="dropdown-option" data-value="paten">Paten</button>
+                        <button type="button" class="dropdown-option" data-value="merek">Merek</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field hidden" id="field-kategori_buku">
+                <label class="field-label">Kategori Buku</label>
+                <div class="dropdown" data-dropdown id="dd-kategori_buku">
+                    <input type="hidden" id="form-kategori_buku" value="ajar" />
+                    <button type="button" class="dropdown-trigger"><span class="dropdown-value">Buku Ajar</span><span class="material-symbols-outlined caret">expand_more</span></button>
+                    <div class="dropdown-panel">
+                        <button type="button" class="dropdown-option is-selected" data-value="ajar">Buku Ajar</button>
+                        <button type="button" class="dropdown-option" data-value="referensi">Referensi</button>
+                        <button type="button" class="dropdown-option" data-value="chapter">Chapter</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="field" id="field-jabatan">
                 <label class="field-label" for="form-jabatan">Jabatan (khusus Alumni)</label>
                 <div class="field-control">
@@ -356,7 +493,7 @@
                 </div>
             </div>
 
-            <div class="field-row">
+            <div class="field-row hidden" id="row-tanggal">
                 <div class="field">
                     <label class="field-label">Tanggal Mulai</label>
                     <div class="datepicker" data-datepicker id="dp-tanggal_mulai">
@@ -405,14 +542,14 @@
                 </div>
             </div>
 
-            <div class="field">
+            <div class="field hidden" id="field-bukti">
                 <label class="field-label" for="form-bukti_kegiatan">Link Bukti Kegiatan</label>
                 <div class="field-control">
                     <input id="form-bukti_kegiatan" type="url" placeholder="https://drive.google.com/..." required>
                 </div>
             </div>
 
-            <div class="field">
+            <div class="field hidden" id="field-bukti_tambahan">
                 <label class="field-label" for="form-bukti_tambahan">Link Bukti Tambahan (opsional)</label>
                 <div class="field-control">
                     <input id="form-bukti_tambahan" type="url" placeholder="https://drive.google.com/...">
@@ -444,10 +581,12 @@
         @include('partials.bulk-update-modal', [
             'updateLabel'  => 'Rekognisi',
             'updateFields' => [
-                ['name' => 'jenis',   'label' => 'Jenis Rekognisi', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
-                    'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional', 'alumni' => 'Alumni']],
+                ['name' => 'jenis',   'label' => 'Jenis Karya', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
+                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'rekognisi' => 'Rekognisi']],
+                ['name' => 'skala',   'label' => 'Skala', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
+                    'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional']],
                 ['name' => 'mitra',   'label' => 'Mitra / Instansi', 'type' => 'text',   'row' => 'a', 'col' => 3, 'target' => '.activity-title'],
-                ['name' => 'jabatan', 'label' => 'Jabatan (Alumni)', 'type' => 'text',   'col' => 5, 'target' => '.plain-text'],
+                ['name' => 'jabatan', 'label' => 'Jabatan (Alumni)', 'type' => 'text',   'col' => 2, 'target' => '.plain-text'],
             ],
         ])
     @endif
@@ -485,14 +624,83 @@
         const dragHandle = document.getElementById('modalDragHandle');
 
         // ---- Field kondisional (khusus halaman ini) ----
-        const fieldJabatan = document.getElementById('field-jabatan');
+        const userDropdown = document.getElementById('dd-user');
+        const kindOptions = {
+            dosen: ['jurnal', 'hki', 'book', 'rekognisi'],
+            mahasiswa: ['sinta', 'conference', 'jurnal', 'rekognisi'],
+            alumni: ['sinta', 'conference', 'jurnal', 'rekognisi'],
+        };
+        const defaultKindByType = { dosen: 'jurnal', mahasiswa: 'sinta', alumni: 'sinta' };
+        const scalableKinds = ['jurnal', 'sinta', 'conference'];
+        const userOptionButtons = Array.from(userDropdown.querySelectorAll('.dropdown-option'));
+        const kindOptionButtons = Array.from(document.querySelectorAll('#dd-jenis .dropdown-option'));
+        let lastSelectedType = null;
 
-        function updateConditionalFields(jenis) {
-            fieldJabatan.classList.toggle('hidden', jenis !== 'alumni');
+        function selectedType() {
+            const userId = document.getElementById('form-user_id').value;
+            const selectedUser = userOptionButtons.find((option) => option.dataset.value === userId);
+            if (!selectedUser) return null;
+            if (selectedUser.dataset.role === 'mahasiswa' && selectedUser.dataset.status === 'lulus') return 'alumni';
+            return selectedUser.dataset.role;
         }
-        document.querySelectorAll('#dd-jenis .dropdown-option').forEach((opt) => {
-            opt.addEventListener('click', () => updateConditionalFields(opt.dataset.value));
+
+        function updateKindOptions() {
+            const type = selectedType();
+            const allowed = kindOptions[type] || [];
+            kindOptionButtons.forEach((option) => {
+                const visible = allowed.includes(option.dataset.value);
+                option.hidden = !visible;
+                option.style.display = visible ? '' : 'none';
+            });
+
+            const current = document.getElementById('form-jenis').value;
+            if (allowed.length && (type !== lastSelectedType || !allowed.includes(current))) {
+                SIDA.dropdown.select(document.getElementById('dd-jenis'), defaultKindByType[type] || allowed[0]);
+            }
+            lastSelectedType = type;
+            updateConditionalFields();
+        }
+
+        function updateConditionalFields() {
+            const hasUser = Boolean(document.getElementById('form-user_id').value);
+            const type = selectedType();
+            const kind = document.getElementById('form-jenis').value;
+            const isPublication = hasUser && kind !== 'rekognisi';
+            const hasJournalFields = hasUser && ['jurnal', 'sinta'].includes(kind);
+            const hasScale = hasUser && (scalableKinds.includes(kind) || (kind === 'rekognisi' && type !== 'alumni'));
+            const isAlumni = hasUser && type === 'alumni';
+
+            document.getElementById('row-jenis-skala').classList.toggle('hidden', !hasUser);
+            document.getElementById('row-mitra-tahun').classList.toggle('hidden', !hasUser);
+            document.getElementById('row-tanggal').classList.toggle('hidden', !hasUser);
+            document.getElementById('field-bukti').classList.toggle('hidden', !hasUser);
+            document.getElementById('field-bukti_tambahan').classList.toggle('hidden', !hasUser);
+            document.getElementById('field-skala').classList.toggle('hidden', !hasScale);
+            document.getElementById('row-judul-penulis').classList.toggle('hidden', !isPublication);
+            document.getElementById('field-tahun').classList.toggle('hidden', !isPublication);
+            document.getElementById('row-jurnal').classList.toggle('hidden', !hasJournalFields);
+            document.getElementById('field-link_doi').classList.toggle('hidden', !hasJournalFields);
+            document.getElementById('field-jenis_hki').classList.toggle('hidden', kind !== 'hki');
+            document.getElementById('field-kategori_buku').classList.toggle('hidden', kind !== 'book');
+            document.getElementById('field-jabatan').classList.toggle('hidden', !isAlumni);
+
+            document.getElementById('form-mitra').required = type === 'dosen' || isAlumni;
+            document.getElementById('form-jabatan').required = isAlumni;
+            document.getElementById('form-judul').required = isPublication;
+            document.getElementById('form-penulis').required = isPublication;
+            document.getElementById('form-tahun').required = isPublication;
+            document.getElementById('form-nama_jurnal').required = hasJournalFields;
+            document.getElementById('form-peringkat').required = hasJournalFields;
+            document.getElementById('form-tanggal_mulai').required = hasUser;
+            document.getElementById('form-tanggal_selesai').required = hasUser;
+            document.getElementById('form-bukti_kegiatan').required = hasUser;
+        }
+
+        userOptionButtons.forEach((option) => {
+            option.addEventListener('click', () => setTimeout(updateKindOptions, 0));
         });
+        kindOptionButtons.forEach((option) => option.addEventListener('click', () => setTimeout(updateConditionalFields, 0)));
+        updateKindOptions();
 
         // Datepicker (Tanggal Mulai & Selesai) sudah ada di script.js: SIDA.datepicker
         const { start: dpMulai, end: dpSelesai } = SIDA.datepicker.pair(
@@ -502,9 +710,15 @@
 
         // ---- Label jenis (khusus halaman ini) ----
         const jenisLabel = {
+            jurnal: 'Jurnal',
+            hki: 'HKI',
+            book: 'Buku',
+            sinta: 'Publikasi SINTA',
+            conference: 'Conference',
             nasional: 'Nasional',
             internasional: 'Internasional',
-            alumni: 'Alumni'
+            alumni: 'Alumni',
+            rekognisi: 'Rekognisi'
         };
 
         // ---- Tampilkan hasil Update Massal di baris tabel (khusus halaman ini) ----
@@ -515,11 +729,11 @@
                 const tr = body && body.querySelector(`tr[data-id="${r.id}"]`);
                 if (!tr) return;
                 const cells = Array.from(tr.children).filter((td) => !td.classList.contains('sel-col'));
-                const mitraEl = cells[3] && cells[3].querySelector('.activity-title');
+                const mitraEl = cells[5] && cells[5].querySelector('.activity-title');
                 if (mitraEl) { mitraEl.textContent = r.mitra; mitraEl.title = r.mitra; }
-                const jenisEl = cells[4] && cells[4].querySelector('.plain-text');
+                const jenisEl = cells[6] && cells[6].querySelector('.plain-text');
                 if (jenisEl) jenisEl.textContent = jenisLabel[r.jenis] || r.jenis;
-                const jabEl = cells[5] && cells[5].querySelector('.plain-text');
+                const jabEl = cells[9] && cells[9].querySelector('.plain-text');
                 if (jabEl) jabEl.textContent = r.jabatan_tampil || '-';
 
                 const edit = tr.querySelector('.btn-edit-row');
@@ -549,6 +763,13 @@
         }
 
         function buildRowHTML(item) {
+            const detail = ['jurnal', 'sinta'].includes(item.jenis)
+                ? [item.nama_jurnal, item.peringkat].filter(Boolean).join(' · ') || '-'
+                : item.jenis === 'hki'
+                    ? (item.jenis_hki || '-').replaceAll('_', ' ')
+                    : item.jenis === 'book'
+                        ? (item.kategori_buku || '-').replaceAll('_', ' ')
+                        : '-';
             return `
             <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tipe_user="${item.tipe_user}">
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
@@ -559,8 +780,12 @@
                     </div>
                 </td>
                 <td class="center"><span class="plain-text">${esc(item.tipe_user.charAt(0).toUpperCase() + item.tipe_user.slice(1))}</span></td>
-                <td><span class="activity-title" title="${esc(item.mitra)}">${esc(item.mitra)}</span>${window.apprChip ? window.apprChip(item) : ''}</td>
+                <td><span class="activity-title" title="${esc(item.judul || '')}">${esc(item.judul || '-')}</span></td>
+                <td><span class="plain-text">${esc(item.penulis || '-')}</span></td>
+                <td><span class="activity-title" title="${esc(item.mitra || '')}">${esc(item.mitra || '-')}</span>${window.apprChip ? window.apprChip(item) : ''}</td>
                 <td class="center"><span class="plain-text">${esc(jenisLabel[item.jenis] || item.jenis)}</span></td>
+                <td><span class="plain-text">${esc(detail)}</span>${item.link_doi ? ` <a href="${esc(item.link_doi)}" target="_blank" rel="noopener noreferrer" class="evidence-link"><span>DOI</span></a>` : ''}</td>
+                <td class="center"><span class="plain-text">${esc(item.skala ? item.skala.charAt(0).toUpperCase() + item.skala.slice(1) : '-')}</span></td>
                 <td><span class="plain-text">${esc(item.jabatan_tampil || '-')}</span></td>
                 <td class="center"><span class="year-chip">${fmtDate(item.tanggal_mulai)} &ndash; ${fmtDate(item.tanggal_selesai)}</span></td>
                 <td class="center">
@@ -571,8 +796,13 @@
                 <td class="center">
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                            data-id="${item.id}" data-user_id="${item.user_id}" data-jenis="${item.jenis}"
-                            data-mitra="${esc(item.mitra)}"
+                            data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
+                            data-jenis="${item.jenis}" data-skala="${item.skala || ''}"
+                            data-judul="${esc(item.judul || '')}" data-penulis="${esc(item.penulis || '')}"
+                            data-mitra="${esc(item.mitra || '')}"
+                            data-nama_jurnal="${esc(item.nama_jurnal || '')}" data-peringkat="${esc(item.peringkat || '')}"
+                            data-jenis_hki="${item.jenis_hki || ''}" data-kategori_buku="${item.kategori_buku || ''}"
+                            data-link_doi="${esc(item.link_doi || '')}" data-tahun="${item.tahun || ''}"
                             data-jabatan="${esc(item.jabatan || '')}"
                             data-tanggal_mulai="${item.tanggal_mulai || ''}"
                             data-tanggal_selesai="${item.tanggal_selesai || ''}"
@@ -598,7 +828,7 @@
         // GET /lppm/rekognisi?filter&q=&page= (JSON: items + meta) -> baris digambar buildRowHTML.
         // Tombol halaman digambar public/js/pager.js.
         // ================================================================
-        const FILTERS = ['filter-tipe-user','filter-jenis'];
+        const FILTERS = ['filter-tipe-user','filter-jenis','filter-skala'];
         const searchInput = document.getElementById('filter-search');
         const emptyRow = document.getElementById('emptyRow');
         const emptyDefault = emptyRow.firstElementChild.textContent.trim();
@@ -686,12 +916,24 @@
             modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
 
             SIDA.dropdown.select(document.getElementById('dd-user'), data.user_id || '', 'Pilih nama...');
-            const jenis = data.jenis || 'nasional';
+            const type = selectedType();
+            updateKindOptions();
+            const defaultKind = defaultKindByType[type] || 'jurnal';
+            const jenis = data.jenis || defaultKind;
             SIDA.dropdown.select(document.getElementById('dd-jenis'), jenis);
-            updateConditionalFields(jenis);
+            SIDA.dropdown.select(document.getElementById('dd-skala'), data.skala || 'nasional');
+            updateConditionalFields();
 
             document.getElementById('form-mitra').value = data.mitra || '';
             document.getElementById('form-jabatan').value = data.jabatan || '';
+            document.getElementById('form-judul').value = data.judul || '';
+            document.getElementById('form-penulis').value = data.penulis || '';
+            document.getElementById('form-nama_jurnal').value = data.nama_jurnal || '';
+            document.getElementById('form-peringkat').value = data.peringkat || '';
+            document.getElementById('form-link_doi').value = data.link_doi || '';
+            document.getElementById('form-tahun').value = data.tahun || new Date().getFullYear();
+            SIDA.dropdown.select(document.getElementById('dd-jenis_hki'), data.jenis_hki || 'hak_cipta');
+            SIDA.dropdown.select(document.getElementById('dd-kategori_buku'), data.kategori_buku || 'ajar');
             dpMulai.setValue(data.tanggal_mulai || '');
             dpSelesai.setMinDate(data.tanggal_mulai || null);
             dpSelesai.setValue(data.tanggal_selesai || '');
@@ -710,12 +952,21 @@
             modalSubmitBtn.disabled = true;
 
             const id = document.getElementById('form-id').value;
-            const jenis = document.getElementById('form-jenis').value;
+            const tipeUser = selectedType();
             const payload = {
                 user_id: document.getElementById('form-user_id').value,
-                jenis,
+                jenis: document.getElementById('form-jenis').value,
+                skala: document.getElementById('form-skala').value || null,
                 mitra: document.getElementById('form-mitra').value,
-                jabatan: jenis === 'alumni' ? document.getElementById('form-jabatan').value : null,
+                jabatan: tipeUser === 'alumni' ? document.getElementById('form-jabatan').value : null,
+                judul: document.getElementById('form-judul').value || null,
+                penulis: document.getElementById('form-penulis').value || null,
+                nama_jurnal: document.getElementById('form-nama_jurnal').value || null,
+                peringkat: document.getElementById('form-peringkat').value || null,
+                jenis_hki: document.getElementById('form-jenis_hki').value || null,
+                kategori_buku: document.getElementById('form-kategori_buku').value || null,
+                link_doi: document.getElementById('form-link_doi').value || null,
+                tahun: document.getElementById('form-tahun').value || null,
                 tanggal_mulai: document.getElementById('form-tanggal_mulai').value,
                 tanggal_selesai: document.getElementById('form-tanggal_selesai').value,
                 bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
@@ -723,7 +974,7 @@
             };
 
             if (!payload.user_id) {
-                modalError.textContent = 'Pilih nama dosen/mahasiswa terlebih dahulu.';
+                modalError.textContent = 'Pilih nama sesuai tipe pengguna terlebih dahulu.';
                 modalError.hidden = false;
                 modalSubmitBtn.disabled = false;
                 return;

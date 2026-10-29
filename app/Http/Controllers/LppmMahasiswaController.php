@@ -236,7 +236,7 @@ class LppmMahasiswaController extends Controller
 
     protected function bulkMenu(): string
     {
-        return 'lppm_mahasiswa';
+        return 'rekognisi';
     }
 
     // Pemilik data lewat tabel profil mahasiswa, bukan langsung user_id.

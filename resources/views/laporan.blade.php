@@ -149,7 +149,7 @@
                         <div class="rp-mini-grid">
                             @foreach($report['breakdowns'] as $g)
                                 @php
-                                    $mm = ['Kemahasiswaan'=>['blue','school'],'LPPM Mahasiswa'=>['teal','person'],'LPPM Dosen'=>['violet','co_present'],'Rekognisi'=>['amber','workspace_premium'],'Kerja Sama'=>['green','handshake']];
+                                    $mm = ['Kemahasiswaan'=>['blue','school'],'Rekognisi'=>['amber','workspace_premium'],'Kerja Sama'=>['green','handshake']];
                                     [$mc, $mi] = $mm[\Illuminate\Support\Str::before($g['title'], ' ·')] ?? ['blue','bar_chart'];
                                 @endphp
                                 <div class="rp-mini rp-c-{{ $mc }}">
@@ -178,13 +178,13 @@
                     <div class="rp-table-wrap">
                         <table class="rp-table">
                             <thead>
-                                <tr><th>Tahun</th><th class="num">Kemahasiswaan</th><th class="num">LPPM Mhs</th><th class="num">LPPM Dosen</th><th class="num">Rekognisi</th><th class="num">Kerja Sama</th><th class="num">Total</th><th style="width:20%"></th></tr>
+                                <tr><th>Tahun</th><th class="num">Kemahasiswaan</th><th class="num">Rekognisi</th><th class="num">Kerja Sama</th><th class="num">Total</th><th style="width:20%"></th></tr>
                             </thead>
                             <tbody>
                                 @foreach($report['trend'] as $t)
                                     <tr>
                                         <td><strong>{{ $t['tahun'] }}</strong></td>
-                                        <td class="num">{{ $t['kem'] }}</td><td class="num">{{ $t['lm'] }}</td><td class="num">{{ $t['ld'] }}</td><td class="num">{{ $t['rek'] }}</td><td class="num">{{ $t['ks'] }}</td>
+                                        <td class="num">{{ $t['kem'] }}</td><td class="num">{{ $t['rek'] }}</td><td class="num">{{ $t['ks'] }}</td>
                                         <td class="num"><strong>{{ $t['total'] }}</strong></td>
                                         <td><div class="rp-bar"><span style="--w: {{ round($t['total'] / $maxTrend * 100) }}%"></span></div></td>
                                     </tr>

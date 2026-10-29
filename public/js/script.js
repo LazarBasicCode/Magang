@@ -90,6 +90,9 @@
     // ---------------------------------------------------------------
     SIDA.dropdown = {
         allNodes: [],
+        // dropdown -> panel yang sedang "dipindah" ke <body> (lihat openPortal)
+        portaled: new Map(),
+        _globalBound: false,
 
         init() {
             this.allNodes = Array.from(
@@ -101,6 +104,9 @@
                 // di modal) ditandai data-bound="1" -> jangan dipasang listener
                 // ganda, kalau tidak klik akan buka lalu langsung tutup.
                 if (dropdown.dataset.bound === "1") return;
+                // init() boleh dipanggil lagi (dropdown baru): yang sudah terpasang dilewati.
+                if (dropdown.dataset.sidaBound === "1") return;
+                dropdown.dataset.sidaBound = "1";
 
                 const trigger = dropdown.querySelector(".dropdown-trigger");
                 const valueEl = dropdown.querySelector(".dropdown-value");
@@ -113,7 +119,10 @@
                     e.stopPropagation();
                     const wasOpen = dropdown.classList.contains("is-open");
                     this.closeAll();
-                    if (!wasOpen) dropdown.classList.add("is-open");
+                    if (!wasOpen) {
+                        dropdown.classList.add("is-open");
+                        this.openPortal(dropdown);
+                    }
                 });
 
                 options.forEach((option) => {
@@ -131,15 +140,119 @@
                             );
                         }
                         dropdown.classList.remove("is-open");
+                        this.closePortal(dropdown);
                     });
                 });
             });
 
+            if (this._globalBound) return;
+            this._globalBound = true;
+
             document.addEventListener("click", () => this.closeAll());
+
+            // Esc: tutup daftar yang sedang terbuka di luar modal lebih dulu
+            // (modalnya tetap terbuka; Esc kedua baru menutup modal).
+            window.addEventListener(
+                "keydown",
+                (e) => {
+                    if (e.key !== "Escape" || !this.portaled.size) return;
+                    this.closeAll();
+                    e.stopPropagation();
+                },
+                true,
+            );
+
+            // Panel yang dipindah ke <body> tidak ikut bergeser saat modal/halaman
+            // di-scroll atau jendela diubah ukurannya, jadi ditutup saja.
+            // Scroll DI DALAM panel (daftar panjang) tidak boleh menutupnya.
+            window.addEventListener(
+                "scroll",
+                (e) => {
+                    if (!this.portaled.size) return;
+                    if (
+                        e.target instanceof Element &&
+                        e.target.closest(".dropdown-panel")
+                    )
+                        return;
+                    this.closeAll();
+                },
+                true,
+            );
+            window.addEventListener("resize", () => {
+                if (this.portaled.size) this.closeAll();
+            });
+        },
+
+        /**
+         * Dropdown DI DALAM modal: daftar pilihannya dipindah ke <body> (position: fixed)
+         * supaya tidak terpotong / ikut ter-scroll oleh .modal-body (overflow) dan tidak
+         * terkurung transform modal. Dikembalikan ke induknya saat ditutup.
+         * Otomatis berlaku untuk semua dropdown di semua modal.
+         */
+        openPortal(dropdown) {
+            if (!dropdown.closest(".modal-card")) return;
+            const panel = dropdown.querySelector(".dropdown-panel");
+            const trigger = dropdown.querySelector(".dropdown-trigger");
+            if (!panel || !trigger) return;
+
+            const rect = trigger.getBoundingClientRect();
+            const gap = 6;
+            const margin = 12;
+            const below = window.innerHeight - rect.bottom - gap - margin;
+            const above = rect.top - gap - margin;
+            // Ruang di bawah sempit -> buka ke atas; tinggi daftar menyesuaikan ruang yang ada.
+            const flip = below < 160 && above > below;
+            const maxH = Math.max(120, Math.min(240, flip ? above : below));
+
+            // Aturan CSS yang bergantung pada induk (mis. ".permission-row .dropdown-panel":
+            // rata kanan + lebar minimum) hilang setelah panel pindah ke <body>, jadi dibaca
+            // dulu selagi panel masih di dalam dropdown lalu diterapkan sebagai gaya inline.
+            const cs = window.getComputedStyle(panel);
+            const minW = parseFloat(cs.minWidth) || 0;
+            const alignRight = cs.left === "auto" && cs.right !== "auto";
+            const width = Math.max(rect.width, minW);
+            let left = alignRight ? rect.right - width : rect.left;
+            left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+
+            panel.classList.add("dropdown-panel--portal");
+            Object.assign(panel.style, {
+                display: "flex",
+                position: "fixed",
+                left: left + "px",
+                width: width + "px",
+                right: "auto",
+                zIndex: "9999",
+                maxHeight: maxH + "px",
+                overflowY: "auto",
+                overscrollBehavior: "contain", // gulir mentok tidak menggulir modal di belakangnya
+            });
+            if (flip) {
+                panel.style.top = "auto";
+                panel.style.bottom = window.innerHeight - rect.top + gap + "px";
+            } else {
+                panel.style.top = rect.bottom + gap + "px";
+                panel.style.bottom = "auto";
+            }
+
+            document.body.appendChild(panel);
+            this.portaled.set(dropdown, panel);
+        },
+
+        closePortal(dropdown) {
+            const panel = this.portaled.get(dropdown);
+            if (!panel) return;
+            this.portaled.delete(dropdown);
+            panel.classList.remove("dropdown-panel--portal");
+            [
+                "display", "position", "left", "top", "bottom", "width",
+                "right", "zIndex", "maxHeight", "overflowY", "overscrollBehavior",
+            ].forEach((prop) => (panel.style[prop] = ""));
+            dropdown.appendChild(panel);
         },
 
         closeAll() {
             this.allNodes.forEach((d) => d.classList.remove("is-open"));
+            Array.from(this.portaled.keys()).forEach((d) => this.closePortal(d));
         },
 
         // Set nilai terpilih dari luar (mis. saat buka modal Edit)

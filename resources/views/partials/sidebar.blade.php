@@ -5,7 +5,7 @@
         @include('partials.sidebar', ['active' => '<kunci menu>'])
 
     Kunci menu yang dikenal ($active):
-        dashboard | kemahasiswaan | lppm_mahasiswa | lppm_dosen | rekognisi
+        dashboard | kemahasiswaan | rekognisi
         kerja_sama | data_master | hak_akses | log | backup | laporan | profil
 
     Visibilitas tiap menu ditentukan User::canAccessMenu() (lihat HakAkses),
@@ -57,20 +57,8 @@
             </a>
             @endif
 
-            @if($__user->canAccessMenu('lppm_mahasiswa') || $__user->canAccessMenu('lppm_dosen') || $__user->canAccessMenu('rekognisi'))
+            @if($__user->canAccessMenu('rekognisi'))
             <div class="nav-heading">LPPM</div>
-            @endif
-            @if($__user->canAccessMenu('lppm_mahasiswa'))
-            <a href="{{ url('/lppm/mahasiswa') }}"@if($navActive('lppm_mahasiswa')) aria-current="page" class="nav-link is-active"@else class="nav-link"@endif>
-                <span class="material-symbols-outlined">person</span>
-                <span>Mahasiswa</span>
-            </a>
-            @endif
-            @if($__user->canAccessMenu('lppm_dosen'))
-            <a href="{{ url('/lppm/dosen') }}"@if($navActive('lppm_dosen')) aria-current="page" class="nav-link is-active"@else class="nav-link"@endif>
-                <span class="material-symbols-outlined">co_present</span>
-                <span>Dosen</span>
-            </a>
             @endif
             @if($__user->canAccessMenu('rekognisi'))
             <a href="{{ url('/lppm/rekognisi') }}"@if($navActive('rekognisi')) aria-current="page" class="nav-link is-active"@else class="nav-link"@endif>

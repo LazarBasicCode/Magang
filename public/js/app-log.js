@@ -149,10 +149,12 @@
     //   banyak data: { "Mahasiswa#5": { kolom: { input, output } }, "…": "dan N data lainnya tidak dirinci" }
     // Ditampilkan sebagai tabel Kolom | Input (sebelum) | Output (sesudah), seperti diff.
     // ------------------------------------------------------------------
+    // mode: 'diff' = Kolom | Sebelum -> Sesudah ; 'new' = Kolom | Nilai yang disimpan ; 'old' = Kolom | Nilai sebelum dihapus
+    // (data baru tidak punya "sebelum", data dihapus tidak punya "sesudah" -> cukup satu kolom nilai, tidak ada kolom kosong).
     const CHANGE_KINDS = {
-        update: { title: 'Perubahan Data', sub: 'nilai lama → nilai baru', tone: 'warning' },
-        create: { title: 'Data Ditambahkan', sub: 'nilai yang disimpan', tone: 'success' },
-        delete: { title: 'Data Dihapus', sub: 'nilai sebelum dihapus', tone: 'danger' },
+        update: { title: 'Perubahan Data', sub: 'nilai lama → nilai baru', tone: 'warning', mode: 'diff' },
+        create: { title: 'Data Ditambahkan', sub: 'nilai yang disimpan', tone: 'success', mode: 'new' },
+        delete: { title: 'Data Dihapus', sub: 'nilai sebelum dihapus', tone: 'danger', mode: 'old' },
     };
 
     const isPair = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -164,27 +166,46 @@
         if (!(side in pair)) return '<span class="alog-diff-none">—</span>';
         const v = pair[side];
         if (v === null || v === undefined || v === '') return '<em class="alog-diff-null">kosong</em>';
-        return esc(String(v));
+        return esc(typeof v === 'object' ? JSON.stringify(v) : String(v));
     }
 
-    function diffRows(fields) {
-        return Object.entries(fields).map(([col, pair]) => `
-            <tr>
-                <td class="alog-diff-col"><code class="alog-code">${esc(col)}</code></td>
-                <td class="alog-diff-old">${diffCell(pair, 'input')}</td>
-                <td class="alog-diff-new">${diffCell(pair, 'output')}</td>
-            </tr>`).join('');
+    // Diff dirender sebagai GRID <div> (role=table), BUKAN <table>: tabel ini berada di dalam <table class="data-table"> (daftar log),
+    // sehingga semua aturan global ".data-table th/td/thead" (tinggi header, padding first/last-child, hover) ikut mengenainya.
+    // Elemen <div> kebal dari itu semua.
+    function diffRows(fields, mode) {
+        return Object.entries(fields).map(([col, pair]) => {
+            const name = `<div class="alog-diff-col" role="rowheader" data-label="Kolom"><code class="alog-code">${esc(col)}</code></div>`;
+            // Satu sisi saja: pakai sisi yang ada (pasangan data baru hanya punya output, data dihapus hanya punya input).
+            if (mode === 'new') return `<div class="alog-diff-row" role="row">${name}<div class="alog-diff-new" role="cell" data-label="Nilai">${diffCell(pair, 'output' in pair ? 'output' : 'input')}</div></div>`;
+            if (mode === 'old') return `<div class="alog-diff-row" role="row">${name}<div class="alog-diff-old" role="cell" data-label="Nilai">${diffCell(pair, 'input' in pair ? 'input' : 'output')}</div></div>`;
+            return `<div class="alog-diff-row" role="row">${name}
+                <div class="alog-diff-old" role="cell" data-label="Sebelum">${diffCell(pair, 'input')}</div>
+                <div class="alog-diff-arrow" role="presentation" aria-hidden="true">→</div>
+                <div class="alog-diff-new" role="cell" data-label="Sesudah">${diffCell(pair, 'output')}</div>
+            </div>`;
+        }).join('');
     }
 
-    /** Tabel diff untuk satu jenis perubahan, atau null bila bentuknya tidak dikenali (jatuh ke "Lainnya"). */
+    const DIFF_HEAD = {
+        diff: ['Kolom', 'Input <small>(sebelum)</small>', '', 'Output <small>(sesudah)</small>'],
+        new: ['Kolom', 'Output <small>(nilai yang disimpan)</small>'],
+        old: ['Kolom', 'Input <small>(nilai sebelum dihapus)</small>'],
+    };
+
+    const diffHead = (mode) => `<div class="alog-diff-head" role="row">${DIFF_HEAD[mode].map((h, i) =>
+        `<div class="alog-diff-h${mode === 'diff' && i === 2 ? ' alog-diff-arrow' : ''}" role="columnheader">${h}</div>`).join('')}</div>`;
+
+    /** Diff untuk satu jenis perubahan, atau null bila bentuknya tidak dikenali (jatuh ke "Lainnya"). */
     function changeHTML(kind, data) {
         const meta = CHANGE_KINDS[kind];
+        if (!meta) return null;
+        const mode = meta.mode;
         let rows = '';
         let cols = 0;
         let records = 0;
 
         if (isFieldMap(data)) {
-            rows = diffRows(data);
+            rows = diffRows(data, mode);
             cols = Object.keys(data).length;
             records = 1;
         } else if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -192,26 +213,24 @@
                 if (isFieldMap(val)) {
                     records++;
                     cols += Object.keys(val).length;
-                    rows += `<tr class="alog-diff-group"><th colspan="3">${esc(key.replace('#', ' #'))}</th></tr>${diffRows(val)}`;
+                    rows += `<div class="alog-diff-group" role="row"><div role="rowheader">${esc(key.replace('#', ' #'))}</div></div>${diffRows(val, mode)}`;
                 } else if (typeof val === 'string') { // catatan "dan N data lainnya tidak dirinci"
-                    rows += `<tr class="alog-diff-more"><td colspan="3">${esc(val)}</td></tr>`;
+                    rows += `<div class="alog-diff-more" role="row"><div role="cell">${esc(val)}</div></div>`;
                 }
             });
         }
-        if (!rows || !meta) return null;
+        if (!rows) return null;
 
         const badge = records > 1 ? `${records} data · ${cols} kolom` : `${cols} kolom`;
         return `
             <section class="alog-sec alog-sec--diff alog-tone-${meta.tone}">
                 <h4 class="alog-sec-title">${esc(meta.title)} <span class="alog-diff-sub">${esc(meta.sub)}</span> <span class="alog-diff-count">${esc(badge)}</span></h4>
                 <div class="alog-diff-wrap">
-                    <table class="alog-diff">
-                        <thead><tr><th>Kolom</th><th>Input <small>(sebelum)</small></th><th>Output <small>(sesudah)</small></th></tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
+                    <div class="alog-diff alog-diff--${mode}" role="table" aria-label="${esc(meta.title)}">${diffHead(mode)}${rows}</div>
                 </div>
             </section>`;
     }
+
 
     function summaryHTML(ctx) {
         const used = new Set();

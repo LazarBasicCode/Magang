@@ -1,0 +1,10 @@
+/* Halaman Rekognisi terpadu (resources/views/lppm_rekognisi.blade.php) */
+#rekognisiModal [hidden] { display: none !important; }   /* .field / .dropdown / .field-row punya display sendiri */
+#rekognisiModal .modal-body { padding-bottom: 8px; }
+#rekognisiModal .field.is-locked .dropdown { pointer-events: none; opacity: .65; }
+.dropdown.is-placeholder .dropdown-trigger { opacity: .6; cursor: not-allowed; }
+#rkBody.is-fetching { opacity: .55; pointer-events: none; transition: opacity .15s; }
+.rk-sub { display: block; margin-top: 2px; font-size: 11.5px; color: var(--ink-muted); }
+.rk-title { font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.rk-detail { display: inline-block; margin-top: 3px; font-size: 11.5px; color: var(--ink-muted); }
+.rk-tipe { text-transform: capitalize; }

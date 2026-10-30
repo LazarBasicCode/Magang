@@ -144,6 +144,7 @@
                                     <button type="button" class="dropdown-option" data-value="book">Buku</button>
                                     <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                                     <button type="button" class="dropdown-option" data-value="conference">Conference</button>
+                                    <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
                                 </div>
                             </div>
                         </div>
@@ -228,6 +229,10 @@
                                 'book' => 'Buku',
                                 'sinta' => 'Publikasi SINTA',
                                 'conference' => 'Conference',
+                                'nasional' => 'Nasional',
+                                'internasional' => 'Internasional',
+                                'alumni' => 'Alumni',
+                                'rekognisi' => 'Rekognisi',
                                 ];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
@@ -383,6 +388,7 @@
                             <button type="button" class="dropdown-option" data-value="book">Buku</button>
                             <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                             <button type="button" class="dropdown-option" data-value="conference">Conference</button>
+                            <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
                         </div>
                     </div>
                 </div>
@@ -402,6 +408,12 @@
                 </div>
             </div>
 
+            {{-- Layout Mahasiswa: judul lebar di atas, lalu tahun & penulis berdampingan.
+                 Field judul/penulis/tahun dipindahkan ke dua baris ini oleh JS (applyLayout)
+                 saat nama yang dipilih adalah mahasiswa; untuk dosen/alumni kembali ke baris semula. --}}
+            <div class="hidden" id="row-judul-wide"></div>
+            <div class="field-row hidden" id="row-tahun-penulis"></div>
+
             <div class="field-row hidden" id="row-mitra-tahun">
                 <div class="field" id="field-mitra">
                     <label class="field-label" for="form-mitra">Mitra / Instansi</label>
@@ -418,13 +430,13 @@
             </div>
 
             <div class="field-row hidden" id="row-judul-penulis">
-                <div class="field">
+                <div class="field" id="field-judul">
                     <label class="field-label" for="form-judul">Judul Karya / Publikasi</label>
                     <div class="field-control">
                         <input id="form-judul" type="text" maxlength="255" placeholder="Judul karya atau publikasi">
                     </div>
                 </div>
-                <div class="field">
+                <div class="field" id="field-penulis">
                     <label class="field-label" for="form-penulis">Penulis</label>
                     <div class="field-control">
                         <input id="form-penulis" type="text" maxlength="255" placeholder="Nama-nama penulis">
@@ -576,7 +588,7 @@
             'updateLabel'  => 'Rekognisi',
             'updateFields' => [
                 ['name' => 'jenis',   'label' => 'Jenis Karya', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
-                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference']],
+                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'rekognisi' => 'Rekognisi']],
                 ['name' => 'skala',   'label' => 'Skala', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
                     'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional']],
                 ['name' => 'mitra',   'label' => 'Mitra / Instansi', 'type' => 'text',   'row' => 'a', 'col' => 3, 'target' => '.activity-title'],
@@ -620,15 +632,17 @@
         // ---- Field kondisional (khusus halaman ini) ----
         const userDropdown = document.getElementById('dd-user');
         const kindOptions = {
-            dosen: ['jurnal', 'hki', 'book'],
+            dosen: ['jurnal', 'hki', 'book', 'rekognisi'],
             mahasiswa: ['sinta', 'conference', 'jurnal'],
-            alumni: ['sinta', 'conference', 'jurnal'],
+            alumni: ['sinta', 'conference', 'jurnal', 'rekognisi'],
         };
         const defaultKindByType = { dosen: 'jurnal', mahasiswa: 'sinta', alumni: 'sinta' };
         const scalableKinds = ['jurnal', 'sinta', 'conference'];
         const userOptionButtons = Array.from(userDropdown.querySelectorAll('.dropdown-option'));
         const kindOptionButtons = Array.from(document.querySelectorAll('#dd-jenis .dropdown-option'));
         let lastSelectedType = null;
+        // Data lama mahasiswa yang jenisnya "rekognisi" tetap bisa diedit tanpa berubah diam-diam jadi jenis lain.
+        let legacyKind = null;
 
         function selectedType() {
             const userId = document.getElementById('form-user_id').value;
@@ -640,7 +654,7 @@
 
         function updateKindOptions() {
             const type = selectedType();
-            const allowed = kindOptions[type] || [];
+            const allowed = (kindOptions[type] || []).concat(type === 'mahasiswa' && legacyKind ? [legacyKind] : []);
             kindOptionButtons.forEach((option) => {
                 const visible = allowed.includes(option.dataset.value);
                 option.hidden = !visible;
@@ -655,22 +669,45 @@
             updateConditionalFields();
         }
 
+        // Letak field per tipe. Mahasiswa: [Jenis | Skala] -> [Judul (lebar)] -> [Tahun | Penulis] -> [Nama Jurnal | Peringkat].
+        // Dosen/Alumni: susunan semula ([Mitra | Tahun] -> [Judul | Penulis]).
+        function applyLayout(isMahasiswa) {
+            const el = (id) => document.getElementById(id);
+            const judul = el('field-judul'), penulis = el('field-penulis'), tahun = el('field-tahun'), mitra = el('field-mitra');
+            if (isMahasiswa) {
+                if (judul.parentElement.id !== 'row-judul-wide') el('row-judul-wide').appendChild(judul);
+                if (tahun.parentElement.id !== 'row-tahun-penulis') el('row-tahun-penulis').appendChild(tahun);
+                if (penulis.parentElement.id !== 'row-tahun-penulis') el('row-tahun-penulis').appendChild(penulis);
+            } else {
+                if (mitra.parentElement.id !== 'row-mitra-tahun') el('row-mitra-tahun').insertBefore(mitra, el('row-mitra-tahun').firstChild);
+                if (tahun.parentElement.id !== 'row-mitra-tahun') el('row-mitra-tahun').appendChild(tahun);
+                if (judul.parentElement.id !== 'row-judul-penulis') el('row-judul-penulis').insertBefore(judul, el('row-judul-penulis').firstChild);
+                if (penulis.parentElement.id !== 'row-judul-penulis') el('row-judul-penulis').appendChild(penulis);
+            }
+        }
+
         function updateConditionalFields() {
             const hasUser = Boolean(document.getElementById('form-user_id').value);
             const type = selectedType();
             const kind = document.getElementById('form-jenis').value;
-            const isPublication = hasUser;
+            const isPublication = hasUser && kind !== 'rekognisi';
             const hasJournalFields = hasUser && ['jurnal', 'sinta'].includes(kind);
-            const hasScale = hasUser && scalableKinds.includes(kind);
+            const hasScale = hasUser && (scalableKinds.includes(kind) || (kind === 'rekognisi' && type !== 'alumni'));
             const isAlumni = hasUser && type === 'alumni';
+            const isMahasiswa = hasUser && type === 'mahasiswa';
+            applyLayout(isMahasiswa);
 
             document.getElementById('row-jenis-skala').classList.toggle('hidden', !hasUser);
-            document.getElementById('row-mitra-tahun').classList.toggle('hidden', !hasUser);
+            // Mahasiswa tidak mengisi Mitra / Instansi.
+            document.getElementById('row-mitra-tahun').classList.toggle('hidden', !hasUser || isMahasiswa);
+            document.getElementById('field-mitra').classList.toggle('hidden', isMahasiswa);
             document.getElementById('row-tanggal').classList.toggle('hidden', !hasUser);
             document.getElementById('field-bukti').classList.toggle('hidden', !hasUser);
             document.getElementById('field-bukti_tambahan').classList.toggle('hidden', !hasUser);
             document.getElementById('field-skala').classList.toggle('hidden', !hasScale);
-            document.getElementById('row-judul-penulis').classList.toggle('hidden', !isPublication);
+            document.getElementById('row-judul-penulis').classList.toggle('hidden', !isPublication || isMahasiswa);
+            document.getElementById('row-judul-wide').classList.toggle('hidden', !(isPublication && isMahasiswa));
+            document.getElementById('row-tahun-penulis').classList.toggle('hidden', !(isPublication && isMahasiswa));
             document.getElementById('field-tahun').classList.toggle('hidden', !isPublication);
             document.getElementById('row-jurnal').classList.toggle('hidden', !hasJournalFields);
             document.getElementById('field-link_doi').classList.toggle('hidden', !hasJournalFields);
@@ -709,6 +746,10 @@
             book: 'Buku',
             sinta: 'Publikasi SINTA',
             conference: 'Conference',
+            nasional: 'Nasional',
+            internasional: 'Internasional',
+            alumni: 'Alumni',
+            rekognisi: 'Rekognisi'
         };
 
         // ---- Tampilkan hasil Update Massal di baris tabel (khusus halaman ini) ----
@@ -760,21 +801,6 @@
                     : item.jenis === 'book'
                         ? (item.kategori_buku || '-').replaceAll('_', ' ')
                         : '-';
-            const editAction = `<button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                            data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
-                            data-jenis="${item.jenis}" data-skala="${item.skala || ''}"
-                            data-judul="${esc(item.judul || '')}" data-penulis="${esc(item.penulis || '')}"
-                            data-mitra="${esc(item.mitra || '')}"
-                            data-nama_jurnal="${esc(item.nama_jurnal || '')}" data-peringkat="${esc(item.peringkat || '')}"
-                            data-jenis_hki="${item.jenis_hki || ''}" data-kategori_buku="${item.kategori_buku || ''}"
-                            data-link_doi="${esc(item.link_doi || '')}" data-tahun="${item.tahun || ''}"
-                            data-jabatan="${esc(item.jabatan || '')}"
-                            data-tanggal_mulai="${item.tanggal_mulai || ''}"
-                            data-tanggal_selesai="${item.tanggal_selesai || ''}"
-                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}"
-                            data-bukti_tambahan="${esc(item.bukti_tambahan || '')}">
-                            <span class="material-symbols-outlined">edit</span>
-                        </button>`;
             return `
             <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tipe_user="${item.tipe_user}">
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
@@ -800,7 +826,21 @@
                 </td>
                 <td class="center">
                     <div class="row-actions">
-                        ${editAction}
+                        <button type="button" title="Edit" class="row-action-btn btn-edit-row"
+                            data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
+                            data-jenis="${item.jenis}" data-skala="${item.skala || ''}"
+                            data-judul="${esc(item.judul || '')}" data-penulis="${esc(item.penulis || '')}"
+                            data-mitra="${esc(item.mitra || '')}"
+                            data-nama_jurnal="${esc(item.nama_jurnal || '')}" data-peringkat="${esc(item.peringkat || '')}"
+                            data-jenis_hki="${item.jenis_hki || ''}" data-kategori_buku="${item.kategori_buku || ''}"
+                            data-link_doi="${esc(item.link_doi || '')}" data-tahun="${item.tahun || ''}"
+                            data-jabatan="${esc(item.jabatan || '')}"
+                            data-tanggal_mulai="${item.tanggal_mulai || ''}"
+                            data-tanggal_selesai="${item.tanggal_selesai || ''}"
+                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}"
+                            data-bukti_tambahan="${esc(item.bukti_tambahan || '')}">
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
@@ -906,6 +946,7 @@
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
 
+            legacyKind = mode === 'edit' && data.jenis === 'rekognisi' ? 'rekognisi' : null;
             SIDA.dropdown.select(document.getElementById('dd-user'), data.user_id || '', 'Pilih nama...');
             const type = selectedType();
             updateKindOptions();

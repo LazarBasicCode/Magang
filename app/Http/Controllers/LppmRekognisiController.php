@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HandlesBulkData;
+use App\Http\Controllers\Concerns\MahasiswaView;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use App\Models\Rekognisi;
 use App\Models\User;
@@ -17,6 +18,7 @@ class LppmRekognisiController extends Controller
 {
     use NotifiesOwner;
     use HandlesBulkData;
+    use MahasiswaView;
 
     /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
     private const PER_PAGE = 50;
@@ -52,6 +54,11 @@ class LppmRekognisiController extends Controller
         $user = $request->user();
         $user->loadMissing(['mahasiswa', 'dosen']);
         $ownScope = $user->menuLevel('rekognisi') === 'biasa';
+        // Mahasiswa/alumni/dosen dengan akses "biasa" mendapat tampilan sederhana "Rekognisi Saya".
+        // Hanya data mahasiswa/alumni yang melewati antrean verifikasi Prodi (dosen langsung disetujui).
+        $selfView = $this->isSelfServiceView($request, $ownScope);
+        $verify = $this->needsVerification($request);
+        $status = $request->query('status');
 
         $tipe_user = $request->query('tipe_user');
         $requestedJenis = $request->query('jenis');
@@ -61,7 +68,7 @@ class LppmRekognisiController extends Controller
         $skala = $request->query('skala');
         $term = trim((string) $request->query('q', ''));
 
-        $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $term) {
+        $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $term, $status) {
             $query = Rekognisi::with('user.mahasiswa')->latest()->orderByDesc('id');
             if ($ownScope) {
                 $query->where('user_id', $user->id);
@@ -69,6 +76,7 @@ class LppmRekognisiController extends Controller
             if ($tipe_user && $tipe_user !== 'semua') $this->applyUserTypeFilter($query, $tipe_user);
             if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
             if ($skala && $skala !== 'semua') $query->where('skala', $skala);
+            $this->applyStatusFilter($query, $status);
             if ($term !== '') {
                 $like = '%' . addcslashes($term, '%_\\') . '%';
                 $query->where(function ($w) use ($like) {
@@ -89,18 +97,33 @@ class LppmRekognisiController extends Controller
             $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();
         }
 
+        $payload = [
+            'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
+            'meta'  => [
+                'page'  => $items->currentPage(),
+                'last'  => max(1, $items->lastPage()),
+                'total' => $items->total(),
+                'from'  => $items->firstItem() ?? 0,
+                'to'    => $items->lastItem() ?? 0,
+            ],
+        ];
+        if ($selfView && $verify) {
+            // Ringkasan per status (kartu filter di tampilan mahasiswa).
+            $payload['summary'] = $this->statusSummary(Rekognisi::where('user_id', $user->id));
+        }
+
         // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
-        // Baris digambar JS (buildRowHTML) di blade, jadi tidak perlu partial.
+        // Baris digambar JS (buildRowHTML / MhsView) di blade, jadi tidak perlu partial.
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
-                'meta'  => [
-                    'page'  => $items->currentPage(),
-                    'last'  => max(1, $items->lastPage()),
-                    'total' => $items->total(),
-                    'from'  => $items->firstItem() ?? 0,
-                    'to'    => $items->lastItem() ?? 0,
-                ],
+            return response()->json($payload);
+        }
+
+        if ($selfView) {
+            return view('mahasiswa.rekognisi', [
+                'initial'   => $payload,
+                'summary'   => $payload['summary'] ?? null,
+                'ownerType' => $this->userTypeFor($user), // mahasiswa | alumni | dosen
+                'verify'    => $verify,
             ]);
         }
 
@@ -570,6 +593,7 @@ class LppmRekognisiController extends Controller
             'approval_label'  => $item->approvalLabel(),
             'approval_badge'  => $item->approvalBadge(),
             'approval_note'   => $item->approval_note,
+            'diajukan'        => optional($item->created_at)->format('d M Y'),
         ];
     }
 

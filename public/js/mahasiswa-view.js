@@ -1,8 +1,10 @@
 /**
- * Tampilan MAHASISWA (Prestasi Saya / Publikasi Saya) — logika bersama.
+ * Tampilan MAHASISWA / DOSEN (Prestasi Saya, Rekognisi Saya, Kerja Sama Saya) — logika bersama.
  *
  * Tiap halaman (resources/views/mahasiswa/*.blade.php) cukup memanggil:
  *   MhsView.init({ endpoint, initial, titleOf, metaOf, detailRows, linksOf, fillForm, readForm, emptyText })
+ * Opsional: verification (default true). Isi false untuk DOSEN — datanya langsung disetujui, jadi
+ * kolom status, progres, komentar Prodi, dan teks "antrean verifikasi" tidak ditampilkan.
  * dan menyediakan markup standar (id berawalan "mv"). Selebihnya — daftar, filter status,
  * pencarian, progres verifikasi, modal detail, simpan & hapus — dikerjakan di sini.
  * Bergantung pada: script.js (SIDA), pager.js, delete-confirm.js.
@@ -54,6 +56,7 @@
 
     function init(cfg) {
         const csrf = SIDA.util.csrfToken();
+        const verify = cfg.verification !== false; // false = tanpa alur verifikasi (dosen)
         const items = new Map();
         const state = { page: 1, status: 'semua', term: '', seq: 0, current: null };
 
@@ -77,7 +80,7 @@
         function rowHTML(item) {
             return `<tr class="mv-row" data-id="${item.id}">
                 <td><div class="mv-title">${esc(cfg.titleOf(item))}</div><div class="mv-meta">${esc(cfg.metaOf(item))}</div></td>
-                <td>${miniProgress(item)}</td>
+                ${verify ? `<td>${miniProgress(item)}</td>` : ''}
                 <td class="center"><button type="button" class="mv-more" data-id="${item.id}" title="Lihat detail" aria-label="Lihat detail"><span class="material-symbols-outlined">more_vert</span></button></td>
             </tr>`;
         }
@@ -100,7 +103,9 @@
             if (none) {
                 const filtered = state.status !== 'semua' || state.term !== '';
                 $('mvEmptyTitle').textContent = filtered ? 'Tidak ada data yang cocok' : cfg.emptyTitle;
-                $('mvEmptyDesc').textContent = filtered ? 'Coba ubah kata kunci atau pilih status lain.' : cfg.emptyDesc;
+                $('mvEmptyDesc').textContent = filtered
+                    ? (verify ? 'Coba ubah kata kunci atau pilih status lain.' : 'Coba ubah kata kunci pencarian.')
+                    : cfg.emptyDesc;
             }
             footer.textContent = none ? '' : `Menampilkan ${data.meta.from}–${data.meta.to} dari ${data.meta.total} data`;
             pager.render(data.meta.page, data.meta.last);
@@ -150,19 +155,20 @@
             state.current = item;
             const rows = cfg.detailRows(item).filter(([, v]) => v !== null && v !== undefined && v !== '');
             const links = (cfg.linksOf(item) || []).filter((l) => l.url);
-            const hint = item.approval_status === 'ditolak'
-                ? 'Perbaiki data lalu simpan — pengajuan akan dikirim ulang untuk diverifikasi.'
-                : 'Mengubah data akan mengirim ulang pengajuan untuk diverifikasi.';
+            const hint = !verify ? ''
+                : item.approval_status === 'ditolak'
+                    ? 'Perbaiki data lalu simpan — pengajuan akan dikirim ulang untuk diverifikasi.'
+                    : 'Mengubah data akan mengirim ulang pengajuan untuk diverifikasi.';
 
             $('mvDetailBody').innerHTML = `
-                ${fullProgress(item)}
+                ${verify ? fullProgress(item) : ''}
                 <h4 class="mv-detail-name">${esc(cfg.titleOf(item))}</h4>
                 <dl class="mv-dl">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
                 ${links.length ? `<div class="mv-links">${links.map((l) => `<a class="mv-link-btn" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined">${l.icon || 'link'}</span>${esc(l.label)}</a>`).join('')}</div>` : ''}
-                <p class="mv-hint">${hint}</p>`;
-            $('mvDetailEditLabel').textContent = item.approval_status === 'ditolak' ? 'Perbaiki' : 'Edit';
+                ${hint ? `<p class="mv-hint">${hint}</p>` : ''}`;
+            $('mvDetailEditLabel').textContent = verify && item.approval_status === 'ditolak' ? 'Perbaiki' : 'Edit';
             detailModal.open();
-            loadComments(item);
+            if (verify) loadComments(item);
         }
 
         // Komentar dari Prodi (hanya baca). Perlu cfg.approvalMenu = slug menu di Approval::menus().
@@ -240,7 +246,9 @@
                     return;
                 }
                 formModal.close();
-                window.Toast?.show?.({ type: 'success', title: id ? 'Perubahan disimpan' : 'Berhasil dikirim', message: 'Pengajuanmu masuk antrean verifikasi.' });
+                window.Toast?.show?.(verify
+                    ? { type: 'success', title: id ? 'Perubahan disimpan' : 'Berhasil dikirim', message: 'Pengajuanmu masuk antrean verifikasi.' }
+                    : { type: 'success', title: id ? 'Perubahan disimpan' : 'Berhasil disimpan', message: id ? 'Datamu sudah diperbarui.' : 'Data baru sudah ditambahkan.' });
                 await load(id ? state.page : 1);
             } catch (e2) {
                 err.textContent = 'Gagal terhubung ke server.';

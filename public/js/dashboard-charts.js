@@ -443,3 +443,22 @@ window.addEventListener('resize', () => {
     tick();
     setInterval(tick, 30 * 1000);
 })();
+
+// ================================================================
+// KARTU RINGKASAN GABUNGAN (partials/dashboard/content.blade.php: [data-stat-switch])
+// Buka/tutup dropdown ditangani SIDA.dropdown (script.js); di sini hanya mengganti angka + ikon kartu.
+// ================================================================
+(function () {
+    document.querySelectorAll('[data-stat-switch]').forEach((card) => {
+        const valueEl = card.querySelector('[data-stat-value]');
+        const iconEl = card.querySelector('[data-stat-icon]');
+        if (!valueEl) return;
+        card.querySelectorAll('.dropdown-option').forEach((opt) => opt.addEventListener('click', () => {
+            valueEl.textContent = opt.dataset.value;
+            if (iconEl && opt.dataset.icon) iconEl.textContent = opt.dataset.icon;
+            valueEl.classList.remove('is-swapping');
+            void valueEl.offsetWidth; // ulang animasi
+            valueEl.classList.add('is-swapping');
+        }));
+    });
+})();

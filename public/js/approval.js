@@ -23,8 +23,8 @@
     const ICON = { diajukan: 'send', menunggu_prodi: 'hourglass_top', disetujui: 'check_circle', ditolak: 'cancel' };
 
     const ACTIONS = {
-        setujui: { title: 'Verifikasi Pengajuan', label: 'Catatan (opsional)', ph: 'Catatan untuk arsip / mahasiswa.', required: false, btn: 'Verifikasi', done: 'success' },
-        tolak:   { title: 'Tolak Pengajuan', label: 'Alasan penolakan (wajib)', ph: 'Jelaskan apa yang perlu diperbaiki mahasiswa, mis. link bukti tidak bisa dibuka.', required: true, btn: 'Tolak', done: 'warning', danger: true },
+        setujui: { title: 'Verifikasi Pengajuan', label: 'Catatan (opsional)', ph: 'Catatan untuk arsip / pengaju.', required: false, btn: 'Verifikasi', done: 'success' },
+        tolak:   { title: 'Tolak Pengajuan', label: 'Alasan penolakan (wajib)', ph: 'Jelaskan apa yang perlu diperbaiki pengaju, mis. link bukti tidak bisa dibuka.', required: true, btn: 'Tolak', done: 'warning', danger: true },
         batal:   { title: 'Batalkan Verifikasi', label: 'Alasan pembatalan (opsional)', ph: 'Mis. data ternyata belum lengkap. Pengajuan kembali ke antrean Prodi.', required: false, btn: 'Batalkan Verifikasi', done: 'warning', danger: true },
         massal:  { title: 'Verifikasi Terpilih', label: 'Catatan untuk semua (opsional)', ph: 'Catatan ini dikirim ke semua pengajuan terpilih.', required: false, btn: 'Verifikasi Semua', done: 'success' },
     };
@@ -71,7 +71,7 @@
                 <span class="appr-title-cell" title="${esc(i.title)}">${esc(i.title || '(tanpa judul)')}</span>
                 <span class="appr-menu"><span class="material-symbols-outlined">${esc(i.icon)}</span>${esc(i.menu_label)}</span>
             </td>
-            <td><div class="appr-person"><b>${esc(i.name)}</b>${i.nim ? `<span>NIM ${esc(i.nim)}</span>` : ''}</div></td>
+            <td><div class="appr-person"><b>${esc(i.name)}</b>${i.nim ? `<span>${esc(i.id_label || 'NIM')} ${esc(i.nim)}</span>` : ''}</div></td>
             <td class="center">${chip(i)}</td>
             <td><div class="appr-time">${esc(pending ? i.submitted : i.updated)}${wait}</div></td>
             <td class="center">
@@ -254,7 +254,7 @@
         const cfg = ACTIONS[pendingAct.aksi];
         const note = noteEl.value.trim();
         if (cfg.required && note.length < 5) {
-            showError('Alasan penolakan wajib diisi (minimal 5 karakter) supaya mahasiswa tahu apa yang perlu diperbaiki.');
+            showError('Alasan penolakan wajib diisi (minimal 5 karakter) supaya pengaju tahu apa yang perlu diperbaiki.');
             noteEl.focus();
             return;
         }
@@ -317,7 +317,7 @@
         return `<section>
                 <h4 class="appr-as-h">Pengaju</h4>
                 <div class="appr-who"><span class="appr-ava">${esc(initials(i.name))}</span>
-                    <div><b>${esc(i.name)}</b>${i.nim ? `<small>NIM ${esc(i.nim)}</small>` : ''}</div></div>
+                    <div><b>${esc(i.name)}</b>${i.nim ? `<small>${esc(i.id_label || 'NIM')} ${esc(i.nim)}</small>` : ''}</div></div>
             </section>
             <section>
                 <h4 class="appr-as-h">Waktu</h4>
@@ -432,7 +432,7 @@
     }
     function renderComments() {
         if (!cm.items.length) {
-            commentList.innerHTML = empty('chat_bubble', 'Belum ada komentar.<br>Komentar Prodi akan terlihat oleh mahasiswa.');
+            commentList.innerHTML = empty('chat_bubble', 'Belum ada komentar.<br>Komentar Prodi akan terlihat oleh pengaju.');
             moreBtn.hidden = true;
             return;
         }
@@ -483,7 +483,7 @@
             $('apprCommentBody').value = '';
             i.comments = (i.comments || 0) + 1;
             setCommentCount(i);
-            toast('success', 'Komentar terkirim', 'Mahasiswa diberi tahu.');
+            toast('success', 'Komentar terkirim', 'Pengaju diberi tahu.');
         } catch (_) {
             err.textContent = 'Tidak bisa terhubung ke server.'; err.hidden = false;
         } finally {

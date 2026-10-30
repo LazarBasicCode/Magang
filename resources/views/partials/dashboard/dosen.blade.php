@@ -47,17 +47,23 @@
             ['icon' => 'trending_up',           'label' => 'Rata-rata per Bulan',   'value' => $stats['avg_per_month'],     'unit' => 'kegiatan/bln'],
             ['icon' => 'public',                'label' => 'Capaian Internasional', 'value' => $stats['internasional_pct'], 'unit' => '%'],
         ],
+    // 4 kartu (satu baris): kartu Rekognisi gabungan — awalnya total, bisa dipilih per jenis luaran.
     'cards'    => [
-        ['label' => 'Rekognisi',              'value' => $stats['rekognisi'],             'color' => 'warning', 'icon' => 'workspace_premium'],
-        ['label' => 'Jurnal Internasional',   'value' => $stats['jurnal_internasional'],  'color' => 'success', 'icon' => 'menu_book'],
-        ['label' => 'Kerja Sama',             'value' => $stats['kerja_sama'],  'color' => 'primary', 'icon' => 'handshake'],
-        ['label' => 'Mitra Unik',              'value' => $stats['mitra_unik'], 'color' => 'info',    'icon' => 'apartment'],
+        [
+            'label' => 'Rekognisi', 'value' => $stats['rekognisi'], 'color' => 'warning', 'icon' => 'workspace_premium',
+            'options' => [
+                ['label' => 'Total Rekognisi',     'value' => $stats['rekognisi'],            'icon' => 'workspace_premium'],
+                ['label' => 'Jurnal Internasional', 'value' => $stats['jurnal_internasional'], 'icon' => 'menu_book'],
+                ['label' => 'Jurnal Nasional',      'value' => $stats['jurnal_nasional'],      'icon' => 'article'],
+                ['label' => 'HKI',                  'value' => $stats['hki'],                  'icon' => 'verified'],
+                ['label' => 'Buku',                 'value' => $stats['buku'],                 'icon' => 'auto_stories'],
+            ],
+        ],
+        ['label' => 'Kerja Sama',      'value' => $stats['kerja_sama'],     'color' => 'primary', 'icon' => 'handshake'],
+        ['label' => 'Mitra Unik',      'value' => $stats['mitra_unik'],     'color' => 'info',    'icon' => 'apartment'],
+        ['label' => 'Kegiatan Aktif',  'value' => $stats['kegiatan_aktif'], 'color' => 'success', 'icon' => 'schedule'],
     ],
-    'cards2'   => [
-        ['label' => 'Jurnal Nasional',       'value' => $stats['jurnal_nasional'], 'color' => 'info',    'icon' => 'article'],
-        ['label' => 'HKI',                   'value' => $stats['hki'],            'color' => 'warning', 'icon' => 'verified'],
-        ['label' => 'Buku',                  'value' => $stats['buku'],           'color' => 'success', 'icon' => 'auto_stories'],
-    ],
+    'cards2'   => [],
     'donuts'   => [
         ['title' => 'Distribusi Kegiatan per Kategori', 'sub' => 'Sebaran kegiatanmu di 2 menu', 'caption' => 'Kegiatan', 'data' => $kategoriDonut],
         ['title' => 'Distribusi Publikasi', 'sub' => 'Jurnal, HKI, dan buku di Rekognisi', 'caption' => 'Publikasi', 'data' => $luaranDonut],

@@ -1576,3 +1576,44 @@ body.dark-mode .chart-tooltip::after {
     .dash-stars-rot .ds { animation: none; }
 }
 
+
+/* ---------- Kartu ringkasan: sedikit lebih tinggi & angka lebih besar (khusus dashboard) ---------- */
+.stat-card { padding: 16px; }
+.stat-value { font-size: 24px; line-height: 1.15; }
+@media (min-width: 641px) {
+    .stat-card { padding: 18px 20px; min-height: 108px; align-items: center; }
+    .stat-info { gap: 10px; }
+    .stat-value { font-size: 30px; }
+    .stat-icon { width: 48px; height: 48px; }
+    .stat-icon .material-symbols-outlined { font-size: 24px; }
+}
+
+/* ---------- Kartu gabungan: dropdown kustom SIDA tampil sebagai label ---------- */
+.stat-card[data-stat-switch] { overflow: visible; }                      /* panel dropdown tidak terpotong */
+.stat-card[data-stat-switch]:has(.dropdown.is-open) { z-index: 5; }
+.stat-dd { align-self: stretch; }
+.stat-dd .dropdown-trigger {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    padding: 0;
+    gap: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+    font-size: .8rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ink-muted);
+}
+.stat-dd .dropdown-trigger:hover { background: transparent; color: var(--ink); }
+.stat-dd .dropdown.is-open .dropdown-trigger,
+.stat-dd.is-open .dropdown-trigger { color: var(--ink); box-shadow: none; }
+.stat-dd .dropdown-panel { right: auto; min-width: 190px; }
+.stat-value.is-swapping { animation: statSwap .22s ease; }
+@keyframes statSwap {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .stat-value.is-swapping { animation: none; } }

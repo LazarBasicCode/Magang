@@ -2,8 +2,11 @@
     Isi halaman tampilan MAHASISWA: judul + tombol tambah, kartu status (sekaligus filter),
     pencarian, dan daftar. Logika di public/js/mahasiswa-view.js.
 
-    Parameter: $title, $subtitle, $addLabel, $searchPlaceholder, $summary, $canAdd (bool)
+    Parameter: $title, $subtitle, $addLabel, $searchPlaceholder, $listTitle, $summary, $canAdd (bool)
+    Opsional : $showStatus (bool, default true) — false untuk DOSEN: data langsung disetujui,
+               jadi kartu status & kolom "Status Verifikasi" disembunyikan.
 --}}
+@php $showStatus = $showStatus ?? true; @endphp
 <main class="app-main">
     <div class="page-wrap">
         <div class="title-bar">
@@ -23,7 +26,8 @@
         <div class="modal-error">Profil mahasiswa belum terhubung ke akunmu. Hubungi admin prodi.</div>
         @endunless
 
-        {{-- Kartu ringkasan = filter status --}}
+        {{-- Kartu ringkasan = filter status (hanya untuk data yang diverifikasi Prodi) --}}
+        @if($showStatus)
         <div class="mv-tiles">
             <button type="button" class="mv-tile is-active" data-status="semua">
                 <span class="mv-tile-icon"><span class="material-symbols-outlined">folder_open</span></span>
@@ -42,6 +46,7 @@
                 <span><span class="mv-tile-num" data-count="ditolak">{{ $summary['ditolak'] }}</span><span class="mv-tile-label">Perlu diperbaiki</span></span>
             </button>
         </div>
+        @endif
 
         <div class="mv-search">
             <span class="material-symbols-outlined">search</span>
@@ -54,7 +59,7 @@
                     <thead>
                         <tr>
                             <th>{{ $listTitle }}</th>
-                            <th>Status Verifikasi</th>
+                            @if($showStatus)<th>Status Verifikasi</th>@endif
                             <th class="center" style="width:70px"></th>
                         </tr>
                     </thead>

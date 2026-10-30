@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HandlesBulkData;
+use App\Http\Controllers\Concerns\MahasiswaView;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use App\Models\KerjaSama;
 use App\Models\User;
@@ -15,6 +16,7 @@ class KerjaSamaController extends Controller
 {
     use NotifiesOwner;
     use HandlesBulkData;
+    use MahasiswaView;
 
     /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
     private const PER_PAGE = 50;
@@ -52,6 +54,11 @@ class KerjaSamaController extends Controller
     {
         $user = $request->user();
         $ownScope = $user->menuLevel('kerja_sama') === 'biasa';
+        // Mahasiswa/dosen dengan akses "biasa" mendapat tampilan sederhana "Kerja Sama Saya".
+        // Hanya data mahasiswa yang melewati antrean verifikasi Prodi (dosen langsung disetujui).
+        $selfView = $this->isSelfServiceView($request, $ownScope);
+        $verify = $this->needsVerification($request);
+        $status = $request->query('status');
 
         $tipe_user = $request->query('tipe_user');
         $jenis = $request->query('jenis');
@@ -59,10 +66,15 @@ class KerjaSamaController extends Controller
         $arah = $request->query('arah');
         $term = trim((string) $request->query('q', ''));
 
-        $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $arah, $term) {
-            $query = KerjaSama::with('user')
-                ->orderBy(User::selectRaw('LOWER(name)')->whereColumn('users.id', 'kerja_sama.user_id'))
-                ->orderBy('kerja_sama.id');
+        $listQuery = function () use ($ownScope, $selfView, $user, $tipe_user, $jenis, $skala, $arah, $term, $status) {
+            $query = KerjaSama::with('user');
+            if ($selfView) {
+                // Data milik sendiri: terbaru dulu (urut nama tidak berguna karena semuanya milik satu orang).
+                $query->orderByDesc('kerja_sama.id');
+            } else {
+                $query->orderBy(User::selectRaw('LOWER(name)')->whereColumn('users.id', 'kerja_sama.user_id'))
+                    ->orderBy('kerja_sama.id');
+            }
             if ($ownScope) {
                 $query->where('user_id', $user->id);
             }
@@ -70,6 +82,7 @@ class KerjaSamaController extends Controller
             if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
             if ($skala && $skala !== 'semua') $query->where('skala', $skala);
             if ($arah && $arah !== 'semua') $query->where('arah', $arah);
+            $this->applyStatusFilter($query, $status);
             if ($term !== '') {
                 $like = '%' . addcslashes($term, '%_\\') . '%';
                 $query->where(function ($w) use ($like) {
@@ -87,18 +100,34 @@ class KerjaSamaController extends Controller
             $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();
         }
 
+        $payload = [
+            'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
+            'meta'  => [
+                'page'  => $items->currentPage(),
+                'last'  => max(1, $items->lastPage()),
+                'total' => $items->total(),
+                'from'  => $items->firstItem() ?? 0,
+                'to'    => $items->lastItem() ?? 0,
+            ],
+        ];
+        if ($selfView && $verify) {
+            // Ringkasan per status (kartu filter di tampilan mahasiswa).
+            $payload['summary'] = $this->statusSummary(KerjaSama::where('user_id', $user->id));
+        }
+
         // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
-        // Baris digambar JS (buildRowHTML) di blade, jadi tidak perlu partial.
+        // Baris digambar JS (buildRowHTML / MhsView) di blade, jadi tidak perlu partial.
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'items' => $items->getCollection()->map(fn ($i) => $this->format($i))->values(),
-                'meta'  => [
-                    'page'  => $items->currentPage(),
-                    'last'  => max(1, $items->lastPage()),
-                    'total' => $items->total(),
-                    'from'  => $items->firstItem() ?? 0,
-                    'to'    => $items->lastItem() ?? 0,
-                ],
+            return response()->json($payload);
+        }
+
+        if ($selfView) {
+            return view('mahasiswa.kerja-sama', [
+                'initial'   => $payload,
+                'summary'   => $payload['summary'] ?? null,
+                'ownerType' => $user->role, // mahasiswa | dosen (sama dengan tipe_user yang dipaksa server)
+                'verify'    => $verify,
+                'jenisByTipe' => self::JENIS_BY_TIPE,
             ]);
         }
 
@@ -518,6 +547,7 @@ class KerjaSamaController extends Controller
             'approval_label'  => $item->approvalLabel(),
             'approval_badge'  => $item->approvalBadge(),
             'approval_note'   => $item->approval_note,
+            'diajukan'        => optional($item->created_at)->format('d M Y'),
         ];
     }
 }

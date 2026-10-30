@@ -3,6 +3,8 @@
     Jangan taruh teks/angka khusus role di sini; itu diatur di partial role masing-masing.
     Parameter yang diterima:
       $brand $subtitle $action? $hero[] $cards[] $cards2[] $donuts[] $widgets[]
+      Kartu ringkasan: ['label','value','icon','color'] — opsional 'options' => [['label','value','icon'], ...]
+      membuat kartu "gabungan": pemilih di tempat label, opsi pertama jadi tampilan awal (lihat dashboard-charts.js).
       $trendSub $trendDatasets $barSub $barDatasets $recentSub $recent[] $showWho
 
     Urutan: sapaan+hero → kartu ringkasan → donut/tren/bar/aktivitas → widget khusus.
@@ -65,13 +67,30 @@
 @foreach(array_filter([$cards, $cards2]) as $row)
     <div class="stat-grid" @if(!$loop->first) style="margin-top:18px;" @endif>
         @foreach($row as $card)
-            <div class="stat-card">
+            @php $opts = $card['options'] ?? []; $first = $opts[0] ?? null; @endphp
+            <div class="stat-card"@if($opts) data-stat-switch @endif>
                 <div class="stat-info">
-                    <span class="stat-label">{{ $card['label'] }}</span>
-                    <span class="stat-value">{{ $card['value'] }}</span>
+                    @if($opts)
+                        {{-- Dropdown kustom SIDA (script.js: SIDA.dropdown; gaya: style.css .dropdown) --}}
+                        <div class="dropdown stat-dd" data-dropdown>
+                            <input type="hidden" value="{{ $first['value'] }}" />
+                            <button type="button" class="dropdown-trigger" aria-label="Pilih data yang ditampilkan">
+                                <span class="dropdown-value">{{ $first['label'] }}</span>
+                                <span class="material-symbols-outlined caret">expand_more</span>
+                            </button>
+                            <div class="dropdown-panel">
+                                @foreach($opts as $o)
+                                    <button type="button" class="dropdown-option {{ $loop->first ? 'is-selected' : '' }}" data-value="{{ $o['value'] }}" data-icon="{{ $o['icon'] ?? $card['icon'] }}">{{ $o['label'] }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                    @else
+                        <span class="stat-label">{{ $card['label'] }}</span>
+                    @endif
+                    <span class="stat-value" data-stat-value>{{ $first['value'] ?? $card['value'] }}</span>
                 </div>
                 <div class="stat-icon {{ $card['color'] }}">
-                    <span class="material-symbols-outlined">{{ $card['icon'] }}</span>
+                    <span class="material-symbols-outlined" data-stat-icon>{{ $first['icon'] ?? $card['icon'] }}</span>
                 </div>
             </div>
         @endforeach

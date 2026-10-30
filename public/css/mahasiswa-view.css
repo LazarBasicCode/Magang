@@ -193,7 +193,7 @@ body.dark-mode .mv-tile {
 .mv-step.is-reject { color: var(--danger); font-weight: 600; }
 
 /* ---------- Modal detail & form ---------- */
-.mv-detail, #mvFormModal { width: min(540px, calc(100vw - 32px)); }
+/* .mv-detail, #mvFormModal { width: min(540px, calc(100vw - 32px)); } */
 .mv-status-box {
     padding: 12px 14px;
     border-radius: 12px;

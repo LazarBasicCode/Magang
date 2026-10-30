@@ -22,9 +22,11 @@
 .table-card-subtitle code { font-size: 11.5px; padding: 1px 5px; border-radius: 4px; background: var(--canvas); border: 1px solid var(--border); }
 
 .alog-table { table-layout: fixed; }
-.alog-table th:nth-child(1), .alog-table td:nth-child(1) { width: 172px; }
-.alog-table th:nth-child(2), .alog-table td:nth-child(2) { width: 110px; }
-.alog-table th:nth-child(4), .alog-table td:nth-child(4) { width: 52px; }
+/* Aturan kolom tabel LUAR dibatasi ke sel langsungnya (child combinator): tabel diff & isi panel detail ada di dalam .alog-table,
+   tanpa pembatasan ini lebar kolomnya ikut bocor ke tabel di dalamnya. */
+.alog-table > thead > tr > th:nth-child(1), .alog-table > tbody > tr:not(.alog-detail) > td:nth-child(1) { width: 172px; }
+.alog-table > thead > tr > th:nth-child(2), .alog-table > tbody > tr:not(.alog-detail) > td:nth-child(2) { width: 110px; }
+.alog-table > thead > tr > th:nth-child(4), .alog-table > tbody > tr:not(.alog-detail) > td:nth-child(4) { width: 52px; }
 .alog-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
 .alog-env { color: var(--ink-faint); font-size: 11px; }
 
@@ -38,7 +40,9 @@
 .alog-caret { transition: transform .2s ease; color: var(--ink-faint); }
 .alog-row.is-open .alog-caret { transform: rotate(180deg); }
 
-.alog-detail td { padding: 14px 24px 14px !important; background: var(--canvas); border-top: 0 !important; }
+/* Hanya sel pembungkus panel (anak langsung), BUKAN sel tabel di dalam panel (diff dll.): selector turunan sebelumnya menimpa
+   padding & warna sebelum/sesudah pada tabel diff. */
+.alog-detail > td { padding: 14px 24px 14px !important; background: var(--canvas); border-top: 0 !important; }
 .alog-detail pre {
     margin: 0; padding: 12px 14px; max-height: 320px; overflow: auto;
     border: 1px solid var(--border); border-radius: 10px; background: var(--card, #fff); color: var(--ink);
@@ -82,8 +86,8 @@
 }
 
 /* Panel detail */
-.alog-detail td { box-shadow: none; }
-.alog-panel { border: 1px solid var(--border); border-radius: 12px; background: var(--card, #fff); overflow: hidden; text-align: left; }
+.alog-detail > td { box-shadow: none; }
+.alog-panel { border: 1px solid var(--border); border-radius: 12px; background: var(--card, #fff); overflow: hidden; text-align: left; container-type: inline-size; container-name: alogpanel; }
 .alog-panel-head {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     padding: 0 10px 0 6px; border-bottom: 1px solid var(--border); background: var(--canvas);
@@ -107,7 +111,8 @@
 
 .alog-pane { padding: 16px 18px; }
 .alog-pane[hidden] { display: none; }
-.alog-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 18px 28px; }
+/* minmax(340px): bagian Aktivitas/Pelaku cukup lebar (nilai tidak patah) dan hanya dua kolom pada panel ±960px; bagian diff selalu 1 / -1 */
+.alog-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px 28px; }
 .alog-sec { min-width: 0; }
 .alog-sec-title { margin: 0 0 9px; font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); }
 .alog-kv { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 12.5px; line-height: 1.45; }
@@ -116,7 +121,7 @@
 
 .alog-code {
     padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--canvas);
-    font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; word-break: break-all;
+    font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; word-break: normal; overflow-wrap: anywhere; /* patah hanya bila tidak muat */
 }
 .alog-chip {
     display: inline-block; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-strong, var(--border));
@@ -149,40 +154,87 @@
 }
 
 
-/* ---- Perubahan Data: tabel Input (sebelum) -> Output (sesudah) ---- */
-.alog-sec--diff .alog-sec-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+/* ---- Perubahan Data: Input (sebelum) -> Output (sesudah) ----
+   Dirender sebagai GRID <div> (bukan <table>) agar kebal dari aturan global ".data-table th/td" (diff berada di dalam tabel log).
+   Bagian diff SELALU selebar penuh (tidak berbagi baris dengan Aktivitas/Pelaku). Kolom nama menyusut sesuai isi dan tidak
+   dipatah di tengah kata; Sebelum/Sesudah berbagi sisa lebar. Pada area sempit (container query) tiap kolom jadi kartu. */
+.alog-pane { container-type: inline-size; container-name: alogpane; }
+.alog-sec--diff { grid-column: 1 / -1; }
+.alog-sec--diff .alog-sec-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .alog-diff-sub { font-size: 11px; font-weight: 500; color: var(--ink-faint); text-transform: none; letter-spacing: 0; }
 .alog-diff-count {
-    margin-left: auto; padding: 1px 8px; border-radius: 999px;
+    margin-left: auto; padding: 2px 9px; border-radius: 999px;
     font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: 0;
     color: var(--verb, var(--ink-muted)); background: var(--verb-bg, var(--canvas)); border: 1px solid var(--verb-bd, var(--border));
 }
-.alog-diff-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
-.alog-diff { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; }
-.alog-diff th, .alog-diff td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
-.alog-diff thead th {
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+.alog-diff-wrap {
+    overflow-x: auto; border: 1px solid var(--border); border-radius: 12px;
+    border-top: 3px solid var(--verb, var(--border)); background: var(--card, transparent);
+}
+.alog-diff { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr); font-size: 12.5px; }
+.alog-diff--new, .alog-diff--old { grid-template-columns: max-content minmax(0, 1fr); }
+.alog-diff-head, .alog-diff-row { display: contents; }
+
+.alog-diff-h, .alog-diff-col, .alog-diff-old, .alog-diff-new, .alog-diff-arrow {
+    padding: 9px 14px; border-bottom: 1px solid var(--border); min-width: 0;
+}
+.alog-diff-row:last-child > * { border-bottom: 0; }
+.alog-diff-h {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
     color: var(--ink-muted); background: var(--canvas);
 }
-.alog-diff thead th small { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
-.alog-diff thead th:nth-child(1), .alog-diff tbody td:nth-child(1) { width: 26%; }
-.alog-diff tbody tr:last-child td { border-bottom: 0; }
+.alog-diff-h small { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
+/* judul Sebelum/Sesudah sejajar dengan teks nilainya (nilai punya ruang untuk tanda − / +) */
+.alog-diff-h:not(:first-child):not(.alog-diff-arrow) { padding-left: 30px; }
 
-.alog-diff-old, .alog-diff-new { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; position: relative; padding-left: 26px !important; }
+.alog-diff-col { white-space: nowrap; }
+.alog-diff-col .alog-code { white-space: nowrap; }
+.alog-diff-old, .alog-diff-new {
+    position: relative; padding-left: 30px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5;
+    overflow-wrap: anywhere; word-break: normal;
+}
 .alog-diff-old { color: var(--danger); background: var(--danger-bg); }
 .alog-diff-new { color: var(--success); background: var(--success-bg); }
-.alog-diff-old::before, .alog-diff-new::before { position: absolute; left: 10px; top: 8px; font-weight: 800; }
+.alog-diff-old::before, .alog-diff-new::before { position: absolute; left: 12px; top: 9px; font-weight: 800; }
 .alog-diff-old::before { content: '\2212'; } /* − */
 .alog-diff-new::before { content: '+'; }
+/* Panah pakai karakter biasa (bukan font ikon) supaya tetap tampil walau font ikon belum/tidak termuat. */
+.alog-diff-arrow { padding: 9px 4px; text-align: center; color: var(--ink-faint); background: var(--canvas); font-size: 15px; font-weight: 700; white-space: nowrap; }
 .alog-diff-null { opacity: .75; font-style: italic; }
 .alog-diff-none { color: var(--ink-faint); }
 
-.alog-diff-group th {
-    padding: 6px 12px; font-size: 11.5px; font-weight: 700; color: var(--ink);
-    background: var(--canvas); border-top: 1px solid var(--border);
-}
-.alog-diff-more td { color: var(--ink-faint); font-style: italic; background: var(--canvas); }
+/* satu data dari banyak data (aksi massal) & catatan "dan N data lainnya": selebar baris */
+.alog-diff-group, .alog-diff-more { grid-column: 1 / -1; }
+.alog-diff-group { padding: 7px 14px; font-size: 11.5px; font-weight: 700; color: var(--ink); background: var(--canvas); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.alog-diff-more { padding: 8px 14px; color: var(--ink-faint); font-style: italic; background: var(--canvas); }
 
-@media (max-width: 640px) {
-    .alog-diff { table-layout: auto; min-width: 460px; }
+/* Area sempit (lebar PANEL, bukan layar: ikut sidebar/zoom): tiap kolom jadi kartu -> nama kolom di atas, nilai di bawahnya. */
+@container alogpane (max-width: 600px) {
+    .alog-diff { display: block; }
+    .alog-diff-head { display: none; }
+    .alog-diff-row { display: block; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .alog-diff-row:last-child { border-bottom: 0; }
+    .alog-diff-row > * { padding: 0; border: 0; }
+    .alog-diff-col { margin-bottom: 6px; }
+    .alog-diff-arrow { display: none; }
+    .alog-diff-row > .alog-diff-old, .alog-diff-row > .alog-diff-new { margin-top: 5px; padding: 7px 10px 7px 30px; border-radius: 8px; }
+    .alog-diff-row > .alog-diff-old::before, .alog-diff-row > .alog-diff-new::before { top: 7px; }
+}
+
+/* Panel detail sempit (lebar PANEL, bukan layar: ikut sidebar/zoom): label di atas nilai, tombol Salin jadi ikon saja,
+   tab lebih rapat -> tidak ada isi yang meluber/terpotong di ponsel. */
+@container alogpanel (max-width: 460px) {
+    .alog-kv { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+    .alog-kv dt { margin-top: 8px; font-size: 11.5px; }
+    .alog-kv dt:first-child { margin-top: 0; }
+    .alog-copy-text { display: none; }
+    .alog-ptab { padding: 11px 10px; }
+}
+
+/* Panel sangat sempit (ponsel kecil): kepala panel boleh membungkus agar tombol Salin tidak terdorong keluar. */
+@container alogpanel (max-width: 300px) {
+    .alog-panel-head { flex-wrap: wrap; padding: 0 8px; }
+    .alog-ptab { padding: 10px 8px; }
+    .alog-copy { margin: 6px 0; }
 }

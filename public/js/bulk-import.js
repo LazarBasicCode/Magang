@@ -248,30 +248,53 @@
         e.preventDefault();
         if (!input.files[0]) return;
 
-        const body = new FormData();
-        body.append('file', input.files[0]);
-
         submitBtn.disabled = true;
         submitBtn.classList.add('is-loading');
         showResult('info', 'Mengunggah dan memeriksa data…');
 
         try {
-            const res = await fetch(importUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': SIDA.util.csrfToken(),
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body,
-            });
-            let json = {};
-            try { json = await res.json(); } catch (_) { /* respons bukan JSON */ }
+            let confirmDuplicates = false;
+            let res, json;
+            while (true) {
+                const body = new FormData();
+                body.append('file', input.files[0]);
+                if (confirmDuplicates) body.append('confirm_duplicates', '1');
+
+                res = await fetch(importUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': SIDA.util.csrfToken(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body,
+                });
+                json = {};
+                try { json = await res.json(); } catch (_) { /* respons bukan JSON */ }
+
+                if (!json.duplicate_confirmation_required || confirmDuplicates) break;
+                if (!await window.DuplicateConfirm.ask({
+                    duplicates: json.duplicates || [],
+                    moreCount: json.more_duplicates || 0,
+                    context: importUrl.includes('/data-master/') ? 'akun' : 'data',
+                })) {
+                    showResult('info', 'Unggahan dibatalkan. Tidak ada data yang disimpan.');
+                    submitBtn.disabled = false;
+                    return;
+                }
+                confirmDuplicates = true;
+            }
 
             if (res.ok && json.success) {
                 showResult('success', '<strong>' + esc(json.message) + '</strong><p class="bulk-more">Memuat ulang tabel…</p>');
                 if (window.Toast) Toast.show({ type: 'success', title: 'Upload berhasil', message: json.message });
-                setTimeout(() => location.reload(), 1400);
+                if (json.warnings?.length && window.Toast) {
+                    const examples = json.warnings.slice(0, 3).join(' ');
+                    const warningCount = json.warning_count || json.warnings.length;
+                    const more = warningCount > 3 ? ` Dan ${warningCount - 3} kemiripan lainnya.` : '';
+                    Toast.show({ type: 'warning', title: 'Kemiripan data ditemukan', message: examples + more });
+                }
+                setTimeout(() => location.reload(), json.warning_count ? 5200 : 1400);
                 return;
             }
 

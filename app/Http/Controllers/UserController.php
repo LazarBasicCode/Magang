@@ -150,6 +150,11 @@ class UserController extends Controller
             ], 403);
         }
 
+        $duplicates = $this->findAccountDuplicates($data['name'], $data['role']);
+        if ($duplicates['exact'] && !$request->boolean('confirm_duplicates')) {
+            return $this->bulkDuplicateConfirmationRequired($duplicates['exact']);
+        }
+
         $user = DB::transaction(function () use ($data) {
             $user = User::create([
                 'name'     => $data['name'],
@@ -167,6 +172,8 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($user),
+            'warnings' => array_slice($duplicates['similar'], 0, 5),
+            'warning_count' => count($duplicates['similar']),
         ]);
     }
 
@@ -327,6 +334,32 @@ class UserController extends Controller
             return response()->json(['success' => false, 'message' => implode(' ', array_slice($problems, 0, 3))], 422);
         }
 
+        $namesToCreate = [];
+        if ($hasManual) {
+            $namesToCreate[] = trim((string) $manual->get('name'));
+        }
+        foreach ($selected as $row) {
+            $namesToCreate[] = trim((string) $row['name']);
+        }
+
+        $existingNames = User::where('role', $role)->get(['id', 'name', 'role']);
+        $stagedNames = collect();
+        $exactDuplicates = [];
+        $similarWarnings = [];
+        foreach ($namesToCreate as $name) {
+            $duplicates = $this->findAccountDuplicates(
+                $name,
+                $role,
+                candidates: $existingNames->concat($stagedNames)
+            );
+            $exactDuplicates = array_merge($exactDuplicates, $duplicates['exact']);
+            $similarWarnings = array_merge($similarWarnings, $duplicates['similar']);
+            $stagedNames->push((object) ['id' => null, 'name' => $name, 'role' => $role]);
+        }
+        if ($exactDuplicates && !$request->boolean('confirm_duplicates')) {
+            return $this->bulkDuplicateConfirmationRequired($exactDuplicates);
+        }
+
         // ---- Simpan ----
         try {
             $created = DB::transaction(function () use ($role, $manual, $hasManual, $selected, $model, $col) {
@@ -392,6 +425,8 @@ class UserController extends Controller
             'role'    => $role,
             'created' => $created,
             'message' => "{$created} akun {$label} berhasil ditambahkan.",
+            'warnings' => array_slice(array_values(array_unique($similarWarnings)), 0, 5),
+            'warning_count' => count(array_unique($similarWarnings)),
         ]);
     }
 
@@ -454,6 +489,11 @@ class UserController extends Controller
             }
         }
 
+        $duplicates = $this->findAccountDuplicates($data['name'], $data['role'], $user->id);
+        if ($duplicates['exact'] && !$request->boolean('confirm_duplicates')) {
+            return $this->bulkDuplicateConfirmationRequired($duplicates['exact']);
+        }
+
         DB::transaction(function () use ($request, $user, $data) {
             $user->name = $data['name'];
             $user->role = $data['role'];
@@ -495,6 +535,8 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($user),
+            'warnings' => array_slice($duplicates['similar'], 0, 5),
+            'warning_count' => count($duplicates['similar']),
         ]);
     }
 
@@ -784,11 +826,43 @@ class UserController extends Controller
                 continue;
             }
 
-            $plan[] = ['existing' => $existing, 'payload' => $payload];
+            $plan[] = ['existing' => $existing, 'payload' => $payload, 'row' => $row['line']];
         }
 
         if ($errors) {
             return $this->bulkRejected($errors);
+        }
+
+        $rolesToCheck = array_values(array_unique(array_column(array_column($plan, 'payload'), 'role')));
+        $nameCandidates = User::whereIn('role', $rolesToCheck)->get(['id', 'name', 'role'])->groupBy('role');
+        $exactDuplicates = [];
+        $similarWarnings = [];
+        $stagedNames = [];
+        foreach ($plan as &$entry) {
+            $role = $entry['payload']['role'];
+            $duplicates = $this->findAccountDuplicates(
+                $entry['payload']['name'],
+                $role,
+                $entry['existing']?->id,
+                $nameCandidates->get($role, collect())->concat($stagedNames[$role] ?? [])
+            );
+            foreach ($duplicates['exact'] as $duplicate) {
+                $exactDuplicates[] = $duplicate + ['row' => $entry['row']];
+            }
+            foreach ($duplicates['similar'] as $warning) {
+                $similarWarnings[] = "Baris {$entry['row']}: {$warning}";
+            }
+            $stagedNames[$role][] = (object) [
+                'id' => null,
+                'name' => $entry['payload']['name'],
+                'role' => $role,
+                'row' => $entry['row'],
+            ];
+        }
+        unset($entry);
+
+        if ($exactDuplicates && !$request->boolean('confirm_duplicates')) {
+            return $this->bulkDuplicateConfirmationRequired($exactDuplicates);
         }
 
         $created = $updated = $unchanged = 0;
@@ -855,7 +929,46 @@ class UserController extends Controller
             ]);
         }
 
-        return $this->bulkSuccess($created, $updated, $unchanged);
+        return $this->bulkSuccess(
+            $created,
+            $updated,
+            $unchanged,
+            warnings: array_values(array_unique($similarWarnings))
+        );
+    }
+
+    /**
+     * Nama akun dibandingkan hanya dengan akun dalam role yang sama.
+     *
+     * @return array{exact: array<int,array{name:string,id?:int,row?:int}>,similar: string[]}
+     */
+    private function findAccountDuplicates(string $name, string $role, ?int $ignoreId = null, ?iterable $candidates = null): array
+    {
+        $candidates ??= User::where('role', $role)->get(['id', 'name', 'role']);
+
+        $exact = [];
+        $similar = [];
+        $normalized = $this->normalizeDuplicateText($name);
+
+        foreach ($candidates as $candidate) {
+            if ($candidate->role !== $role || ($ignoreId !== null && (int) $candidate->id === $ignoreId)) {
+                continue;
+            }
+
+            $candidateName = (string) $candidate->name;
+            if ($normalized === $this->normalizeDuplicateText($candidateName)) {
+                $exact[] = array_filter([
+                    'name' => $candidateName,
+                    'id' => $candidate->id ?? null,
+                    'row' => $candidate->row ?? null,
+                ], static fn ($value) => $value !== null);
+            } elseif ($this->isSimilarDuplicateText($name, $candidateName)) {
+                $reference = isset($candidate->id) ? " (ID #{$candidate->id})" : '';
+                $similar[] = "Nama akun “{$name}” mirip dengan “{$candidateName}”{$reference}.";
+            }
+        }
+
+        return ['exact' => $exact, 'similar' => array_values(array_unique($similar))];
     }
 
     private function validated(Request $request, bool $isUpdate, ?User $user = null): array

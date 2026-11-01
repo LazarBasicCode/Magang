@@ -234,12 +234,29 @@
             btn.disabled = true;
             const id = $('mvFormId').value;
             try {
-                const res = await fetch(id ? `${cfg.endpoint}/${id}` : cfg.endpoint, {
-                    method: id ? 'PUT' : 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-                    body: JSON.stringify(cfg.readForm()),
-                });
-                const result = await res.json();
+                const payload = cfg.readForm();
+                let confirmDuplicates = false;
+                let res, result;
+                while (true) {
+                    res = await fetch(id ? `${cfg.endpoint}/${id}` : cfg.endpoint, {
+                        method: id ? 'PUT' : 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                        body: JSON.stringify({ ...payload, ...(confirmDuplicates ? { confirm_duplicates: true } : {}) }),
+                    });
+                    result = await res.json();
+                    if (!result.duplicate_confirmation_required || confirmDuplicates) break;
+
+                    const confirmed = await window.DuplicateConfirm.ask({
+                        duplicates: result.duplicates || [],
+                        moreCount: result.more_duplicates || 0,
+                    });
+                    if (!confirmed) {
+                        window.Toast?.show?.({ type: 'info', message: 'Data tidak disimpan.' });
+                        return;
+                    }
+                    confirmDuplicates = true;
+                }
+
                 if (!res.ok) {
                     err.textContent = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
                     err.hidden = false;
@@ -249,6 +266,15 @@
                 window.Toast?.show?.(verify
                     ? { type: 'success', title: id ? 'Perubahan disimpan' : 'Berhasil dikirim', message: 'Pengajuanmu masuk antrean verifikasi.' }
                     : { type: 'success', title: id ? 'Perubahan disimpan' : 'Berhasil disimpan', message: id ? 'Datamu sudah diperbarui.' : 'Data baru sudah ditambahkan.' });
+                if (result.warnings?.length) {
+                    const warningCount = result.warning_count || result.warnings.length;
+                    const more = warningCount > result.warnings.length ? ` Dan ${warningCount - result.warnings.length} kemiripan lainnya.` : '';
+                    window.Toast?.show?.({
+                        type: 'warning',
+                        title: 'Kemiripan data ditemukan',
+                        message: result.warnings.slice(0, 3).join(' ') + more,
+                    });
+                }
                 await load(id ? state.page : 1);
             } catch (e2) {
                 err.textContent = 'Gagal terhubung ke server.';

@@ -23,23 +23,30 @@ class LppmRekognisiController extends Controller
     /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
     private const PER_PAGE = 50;
 
+    /** Jenis karya yang memakai Skala (Nasional / Internasional). */
+    private const SCALABLE_KINDS = ['jurnal', 'sinta', 'conference', 'prosiding', 'paten'];
+
     /** Aturan validasi yang sama dipakai form (store/update) dan unggah massal. */
     private const RULES = [
         'user_id'         => ['required', 'exists:users,id'],
-        'jenis'           => ['required', 'in:jurnal,hki,book,sinta,conference,alumni,rekognisi,nasional,internasional'],
-        'skala'           => ['nullable', 'required_if:jenis,jurnal,sinta,conference', 'in:nasional,internasional'],
+        'jenis'           => ['required', 'in:jurnal,hki,book,sinta,conference,prosiding,paten'],
+        'skala'           => ['nullable', 'required_if:jenis,jurnal,sinta,conference,prosiding,paten', 'in:nasional,internasional'],
         'mitra'           => ['nullable', 'string', 'max:255'],
-        'judul'           => ['nullable', 'required_unless:jenis,rekognisi,alumni', 'string', 'max:255'],
-        'penulis'         => ['nullable', 'required_unless:jenis,rekognisi,alumni', 'string', 'max:255'],
+        'judul'           => ['required', 'string', 'max:255'],
+        'penulis'         => ['required', 'string', 'max:255'],
         'nama_jurnal'     => ['nullable', 'required_if:jenis,jurnal', 'required_if:jenis,sinta', 'string', 'max:255'],
         'peringkat'       => ['nullable', 'required_if:jenis,jurnal', 'required_if:jenis,sinta', 'string', 'max:100'],
         'jenis_hki'       => ['nullable', 'required_if:jenis,hki', 'in:hak_cipta,paten,merek'],
         'kategori_buku'   => ['nullable', 'required_if:jenis,book', 'in:ajar,referensi,chapter'],
-        'link_doi'        => ['nullable', 'url', 'max:2048'],
+        'link_doi'        => ['nullable', 'required_if:jenis,prosiding', 'url', 'max:2048'],
+        'nama_konferensi' => ['nullable', 'required_if:jenis,prosiding', 'string', 'max:255'],
+        'nomor_issn_isbn' => ['nullable', 'required_if:jenis,prosiding', 'string', 'max:100'],
+        'status_paten'    => ['nullable', 'required_if:jenis,paten', 'in:terdaftar,granted'],
+        'nomor_paten'     => ['nullable', 'required_if:jenis,paten', 'string', 'max:100'],
         'jabatan'         => ['nullable', 'string', 'max:255'],
         'tanggal_mulai'   => ['required', 'date'],
         'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
-        'tahun'           => ['nullable', 'required_unless:jenis,rekognisi,alumni', 'integer', 'between:2000,2100'],
+        'tahun'           => ['required', 'integer', 'between:2000,2100'],
         'bukti_kegiatan'  => ['required', 'url', 'max:2048'],
         'bukti_tambahan'  => ['nullable', 'url', 'max:2048'],
     ];
@@ -80,6 +87,9 @@ class LppmRekognisiController extends Controller
                     $w->where('judul', 'like', $like)
                         ->orWhere('penulis', 'like', $like)
                         ->orWhere('nama_jurnal', 'like', $like)
+                        ->orWhere('nama_konferensi', 'like', $like)
+                        ->orWhere('nomor_issn_isbn', 'like', $like)
+                        ->orWhere('nomor_paten', 'like', $like)
                         ->orWhere('mitra', 'like', $like)
                         ->orWhere('jabatan', 'like', $like)
                         ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)->orWhere('nim_nidn', 'like', $like));
@@ -169,7 +179,7 @@ class LppmRekognisiController extends Controller
         // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
         $request->merge(['user_id' => $rekognisi->user_id]);
 
-        $data = $this->validated($request, $rekognisi);
+        $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
         // Edit oleh mahasiswa mengembalikan data ke antrean persetujuan (admin/dosen tidak mengubah status).
@@ -221,7 +231,7 @@ class LppmRekognisiController extends Controller
             Rekognisi::class,
             ['user'],
             [
-                'jenis'   => ['nullable', 'in:jurnal,hki,book,sinta,conference,rekognisi'],
+                'jenis'   => ['nullable', 'in:jurnal,hki,book,sinta,conference,prosiding,paten'],
                 'skala'   => ['nullable', 'in:nasional,internasional'],
                 'mitra'   => ['nullable', 'string', 'max:255'],
                 'jabatan' => ['nullable', 'string', 'max:255'],
@@ -244,9 +254,9 @@ class LppmRekognisiController extends Controller
         $errors = [];
 
         $allowedKinds = match ($item->tipe_user_efektif) {
-            'dosen' => ['jurnal', 'hki', 'book', 'rekognisi'],
+            'dosen' => ['jurnal', 'hki', 'book', 'prosiding', 'paten'],
             'mahasiswa' => ['sinta', 'conference', 'jurnal'],
-            'alumni' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
+            'alumni' => ['sinta', 'conference', 'jurnal'],
             default => [],
         };
         $jenis = (string) ($changes['jenis'] ?? $item->jenis);
@@ -264,13 +274,11 @@ class LppmRekognisiController extends Controller
             }
         }
 
-        if (array_key_exists('skala', $changes) && !in_array($jenis, ['jurnal', 'sinta', 'conference'], true)) {
-            $errors[] = 'Skala hanya berlaku untuk karya jurnal, SINTA, atau conference.';
+        if (array_key_exists('skala', $changes) && !in_array($jenis, self::SCALABLE_KINDS, true)) {
+            $errors[] = 'Skala hanya berlaku untuk karya jurnal, SINTA, conference, prosiding, atau paten.';
         }
         $finalScale = $changes['skala'] ?? $item->skala;
-        if ((in_array($jenis, ['jurnal', 'sinta', 'conference'], true)
-                || ($jenis === 'rekognisi' && $item->tipe_user_efektif !== 'alumni'))
-            && blank($finalScale)) {
+        if (in_array($jenis, self::SCALABLE_KINDS, true) && blank($finalScale)) {
             $errors[] = 'Skala wajib diisi untuk jenis karya ini.';
         }
         if (in_array($jenis, ['jurnal', 'sinta'], true)) {
@@ -279,6 +287,16 @@ class LppmRekognisiController extends Controller
             }
         }
         if ($jenis === 'hki' && blank($item->jenis_hki)) $errors[] = 'Jenis HKI wajib diisi.';
+        if ($jenis === 'prosiding') {
+            foreach (['nama_konferensi' => 'Nama konferensi', 'nomor_issn_isbn' => 'Nomor ISSN / ISBN', 'link_doi' => 'Link DOI'] as $field => $label) {
+                if (blank($item->{$field})) $errors[] = $label . ' wajib diisi untuk jenis prosiding.';
+            }
+        }
+        if ($jenis === 'paten') {
+            foreach (['status_paten' => 'Status paten', 'nomor_paten' => 'Nomor permohonan / paten'] as $field => $label) {
+                if (blank($item->{$field})) $errors[] = $label . ' wajib diisi untuk jenis paten.';
+            }
+        }
         if ($jenis === 'book' && blank($item->kategori_buku)) $errors[] = 'Kategori buku wajib diisi.';
         if (in_array($item->tipe_user_efektif, ['dosen', 'alumni'], true)
             && array_key_exists('mitra', $changes) && blank($changes['mitra'])) {
@@ -306,6 +324,42 @@ class LppmRekognisiController extends Controller
         return self::SHEET;
     }
 
+    /** Alias judul kolom yang dikenali saat unggah (selain nama kolom persis di template). */
+    protected function bulkExtraAliases(): array
+    {
+        return [
+            'konferensi'              => 'nama_konferensi',
+            'nama_seminar'            => 'nama_konferensi',
+            'nama_konferensi_seminar' => 'nama_konferensi',
+            'issn'                    => 'nomor_issn_isbn',
+            'isbn'                    => 'nomor_issn_isbn',
+            'issn_isbn'               => 'nomor_issn_isbn',
+            'doi'                     => 'link_doi',
+            'nomor_permohonan'        => 'nomor_paten',
+            'nomor_permohonan_paten'  => 'nomor_paten',
+            'no_paten'                => 'nomor_paten',
+            'inventor'                => 'penulis',
+            'inventor_penulis'        => 'penulis',
+        ];
+    }
+
+    /**
+     * Samakan isian Status Paten dari Excel/CSV ke nilai database.
+     * Terima: terdaftar, filed, "Terdaftar (Filed)" -> terdaftar; granted, bersertifikat, "Granted (Bersertifikat)" -> granted.
+     * Nilai lain dikembalikan apa adanya supaya ditolak validasi dengan pesan yang jelas.
+     */
+    private function normalizeStatusPaten(mixed $value): ?string
+    {
+        $key = Csv::normalizeKey($value);
+        if ($key === '') return null;
+
+        return match (true) {
+            str_contains($key, 'granted'), str_contains($key, 'bersertifikat') => 'granted',
+            str_contains($key, 'terdaftar'), str_contains($key, 'filed')       => 'terdaftar',
+            default => $key,
+        };
+    }
+
     /** Unduh template Excel (.xlsx): sheet petunjuk + sheet data, dengan dropdown pilihan. */
     public function template(Request $request)
     {
@@ -318,7 +372,7 @@ class LppmRekognisiController extends Controller
             [
                 'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
                 'nim_nidn'        => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
-                'jenis'           => ['required' => 'Ya', 'example' => 'jurnal', 'width' => 16, 'options' => ['jurnal', 'hki', 'book', 'sinta', 'conference', 'rekognisi'], 'note' => 'Jenis karya, terpisah dari skala.'],
+                'jenis'           => ['required' => 'Ya', 'example' => 'jurnal', 'width' => 16, 'options' => ['jurnal', 'hki', 'book', 'sinta', 'conference', 'prosiding', 'paten'], 'note' => 'Jenis karya, terpisah dari skala. prosiding & paten hanya untuk Dosen.'],
                 'skala'           => ['required' => 'Untuk publikasi', 'example' => 'internasional', 'width' => 18, 'options' => ['nasional', 'internasional'], 'note' => 'Skala publikasi.'],
                 'judul'           => ['required' => 'Dosen/Mahasiswa', 'example' => 'Judul karya', 'width' => 34, 'note' => 'Judul karya atau publikasi.'],
                 'penulis'         => ['required' => 'Dosen/Mahasiswa', 'example' => 'Nama penulis', 'width' => 28, 'note' => 'Nama penulis.'],
@@ -326,7 +380,11 @@ class LppmRekognisiController extends Controller
                 'peringkat'       => ['required' => 'Tidak', 'example' => '', 'width' => 14, 'note' => 'Contoh: Q2 atau S3.'],
                 'jenis_hki'       => ['required' => 'Jika jenis = hki', 'example' => 'hak_cipta', 'width' => 18, 'options' => ['hak_cipta', 'paten', 'merek'], 'note' => 'Jenis HKI.'],
                 'kategori_buku'   => ['required' => 'Jika jenis = book', 'example' => 'ajar', 'width' => 18, 'options' => ['ajar', 'referensi', 'chapter'], 'note' => 'Kategori buku.'],
-                'link_doi'        => ['required' => 'Tidak', 'example' => '', 'width' => 46, 'note' => 'Link DOI (opsional).'],
+                'link_doi'        => ['required' => 'Tidak', 'example' => '', 'width' => 46, 'note' => 'Link DOI. Wajib untuk prosiding, opsional untuk jurnal/SINTA.'],
+                'nama_konferensi' => ['required' => 'Jika jenis = prosiding', 'example' => '', 'width' => 34, 'note' => 'Nama konferensi / seminar.'],
+                'nomor_issn_isbn' => ['required' => 'Jika jenis = prosiding', 'example' => '', 'width' => 22, 'note' => 'Nomor ISSN / ISBN prosiding. Boleh pakai tanda hubung (mis. 2345-6789).'],
+                'status_paten'    => ['required' => 'Jika jenis = paten', 'example' => '', 'width' => 18, 'options' => ['terdaftar', 'granted'], 'note' => 'terdaftar = Terdaftar (Filed), granted = Granted (Bersertifikat). Tulisan "Filed" / "Bersertifikat" juga diterima.'],
+                'nomor_paten'     => ['required' => 'Jika jenis = paten', 'example' => '', 'width' => 26, 'note' => 'Nomor permohonan / paten.'],
                 'tahun'           => ['required' => 'Dosen/Mahasiswa', 'example' => 2026, 'width' => 12, 'note' => 'Tahun publikasi/karya.'],
                 'mitra'           => ['required' => 'Dosen/Alumni', 'example' => 'PT Teknologi Nusantara', 'width' => 34, 'note' => 'Wajib untuk Dosen dan Alumni, opsional untuk Mahasiswa.'],
                 'jabatan'         => ['required' => 'Alumni', 'example' => '', 'width' => 26, 'note' => 'Jabatan alumni di mitra.'],
@@ -353,8 +411,8 @@ class LppmRekognisiController extends Controller
         return $this->bulkXlsxExportResponse(
             'rekognisi-' . now()->format('Ymd-His') . '.xlsx',
             self::SHEET,
-            ['id', 'nim_nidn', 'nama', 'tipe_user', 'jenis', 'skala', 'judul', 'penulis', 'nama_jurnal', 'peringkat', 'jenis_hki', 'kategori_buku', 'link_doi', 'tahun', 'mitra', 'jabatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan', 'bukti_tambahan'],
-            [10, 18, 28, 16, 16, 18, 34, 28, 28, 14, 18, 18, 46, 12, 34, 26, 18, 18, 46, 46],
+            ['id', 'nim_nidn', 'nama', 'tipe_user', 'jenis', 'skala', 'judul', 'penulis', 'nama_jurnal', 'peringkat', 'jenis_hki', 'kategori_buku', 'link_doi', 'nama_konferensi', 'nomor_issn_isbn', 'status_paten', 'nomor_paten', 'tahun', 'mitra', 'jabatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan', 'bukti_tambahan'],
+            [10, 18, 28, 16, 16, 18, 34, 28, 28, 14, 18, 18, 46, 34, 22, 18, 26, 12, 34, 26, 18, 18, 46, 46],
             Rekognisi::class,
             fn (Rekognisi $item) => [
                 $item->id,
@@ -370,6 +428,10 @@ class LppmRekognisiController extends Controller
                 $item->jenis_hki,
                 $item->kategori_buku,
                 $item->link_doi,
+                $item->nama_konferensi,
+                $item->nomor_issn_isbn,
+                $item->status_paten,
+                $item->nomor_paten,
                 $item->tahun,
                 $item->mitra,
                 $item->jabatan_efektif,
@@ -408,15 +470,10 @@ class LppmRekognisiController extends Controller
 
             $jenis = Csv::normalizeKey($d['jenis'] ?? '');
             $skala = Csv::normalizeKey($d['skala'] ?? '');
-            if (in_array($jenis, ['nasional', 'internasional'], true)) {
-                $skala = $skala ?: $jenis;
-                $jenis = 'rekognisi';
-            }
             $owner?->loadMissing('mahasiswa');
             $tipeUser = $owner
                 ? $this->userTypeFor($owner)
                 : ($existing?->tipe_user_efektif ?? 'mahasiswa');
-            if ($jenis === 'alumni' && $tipeUser === 'alumni') $jenis = 'rekognisi';
             [$dates, $badDates] = $this->bulkParseDates($d, ['tanggal_mulai', 'tanggal_selesai'], $rowErrors);
 
             $payload = [
@@ -431,6 +488,10 @@ class LppmRekognisiController extends Controller
                 'jenis_hki'      => Csv::normalizeKey($d['jenis_hki'] ?? '') ?: null,
                 'kategori_buku'  => Csv::normalizeKey($d['kategori_buku'] ?? '') ?: null,
                 'link_doi'       => trim((string) ($d['link_doi'] ?? '')) ?: null,
+                'nama_konferensi' => trim((string) ($d['nama_konferensi'] ?? '')) ?: null,
+                'nomor_issn_isbn' => trim((string) ($d['nomor_issn_isbn'] ?? '')) ?: null,
+                'status_paten'   => $this->normalizeStatusPaten($d['status_paten'] ?? ''),
+                'nomor_paten'    => trim((string) ($d['nomor_paten'] ?? '')) ?: null,
                 'tahun'          => trim((string) ($d['tahun'] ?? '')) ?: null,
                 'mitra'          => trim((string) ($d['mitra'] ?? '')) ?: null,
                 'jabatan'        => trim((string) ($d['jabatan'] ?? '')) ?: null,
@@ -447,17 +508,21 @@ class LppmRekognisiController extends Controller
             $rowErrors = array_merge($rowErrors, $messages);
 
             $allowedKinds = match ($tipeUser) {
-                'dosen' => ['jurnal', 'hki', 'book', 'rekognisi'],
-                'mahasiswa' => array_merge(['sinta', 'conference', 'jurnal'], $existing?->jenis === 'rekognisi' ? ['rekognisi'] : []),
-                'alumni' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
+                'dosen' => ['jurnal', 'hki', 'book', 'prosiding', 'paten'],
+                'mahasiswa' => ['sinta', 'conference', 'jurnal'],
+                'alumni' => ['sinta', 'conference', 'jurnal'],
                 default => [],
             };
-            if ($tipeUser === 'mahasiswa' && $jenis !== 'rekognisi') $payload['mitra'] = null; // mahasiswa tidak punya Mitra
+            if ($tipeUser === 'mahasiswa') $payload['mitra'] = null; // mahasiswa tidak punya Mitra
+            // Kolom khusus jenis dikosongkan bila tidak relevan (sama seperti validated()).
+            if (!in_array($jenis, ['jurnal', 'sinta', 'prosiding'], true)) $payload['link_doi'] = null;
+            if ($jenis !== 'prosiding') { $payload['nama_konferensi'] = null; $payload['nomor_issn_isbn'] = null; }
+            if ($jenis !== 'paten') { $payload['status_paten'] = null; $payload['nomor_paten'] = null; }
             if (!in_array($jenis, $allowedKinds, true)) {
                 $rowErrors[] = 'Jenis karya tidak sesuai dengan tipe pengguna pada baris ini.';
             }
-            if ($jenis === 'rekognisi' && $tipeUser !== 'alumni' && !$payload['skala']) {
-                $rowErrors[] = 'Skala wajib diisi untuk jenis Rekognisi pada baris ini.';
+            if (in_array($jenis, self::SCALABLE_KINDS, true) && !$payload['skala']) {
+                $rowErrors[] = 'Skala wajib diisi untuk jenis karya ini pada baris ini.';
             }
             if (in_array($tipeUser, ['dosen', 'alumni'], true) && blank($payload['mitra'])) {
                 $rowErrors[] = 'Mitra wajib diisi untuk Dosen dan Alumni.';
@@ -525,33 +590,23 @@ class LppmRekognisiController extends Controller
         );
     }
 
-    private function validated(Request $request, ?Rekognisi $existing = null): array
+    private function validated(Request $request): array
     {
         $data = $request->validate(self::RULES);
 
         $user = User::with('mahasiswa')->findOrFail($data['user_id']);
         $data['tipe_user'] = $this->userTypeFor($user);
 
-        if (in_array($data['jenis'], ['nasional', 'internasional'], true)) {
-            $data['skala'] = $data['jenis'];
-            $data['jenis'] = 'rekognisi';
-        }
-        if ($data['jenis'] === 'alumni') {
-            $data['jenis'] = 'rekognisi';
-        }
-
-        // Mahasiswa tidak punya jenis "rekognisi" lagi (data lama yang sudah berjenis itu tetap boleh diedit).
         $allowedKinds = match ($data['tipe_user']) {
-            'dosen' => ['jurnal', 'hki', 'book', 'rekognisi'],
-            'mahasiswa' => array_merge(['sinta', 'conference', 'jurnal'], $existing?->jenis === 'rekognisi' ? ['rekognisi'] : []),
-            'alumni' => ['sinta', 'conference', 'jurnal', 'rekognisi'],
+            'dosen' => ['jurnal', 'hki', 'book', 'prosiding', 'paten'],
+            'mahasiswa' => ['sinta', 'conference', 'jurnal'],
+            'alumni' => ['sinta', 'conference', 'jurnal'],
         };
         if (!in_array($data['jenis'], $allowedKinds, true)) {
             throw ValidationException::withMessages(['jenis' => 'Jenis karya tidak sesuai dengan tipe pengguna.']);
         }
 
-        $scaleRequired = in_array($data['jenis'], ['jurnal', 'sinta', 'conference'], true)
-            || ($data['jenis'] === 'rekognisi' && $data['tipe_user'] !== 'alumni');
+        $scaleRequired = in_array($data['jenis'], self::SCALABLE_KINDS, true);
         if ($scaleRequired && blank($data['skala'])) {
             throw ValidationException::withMessages(['skala' => 'Skala wajib dipilih.']);
         }
@@ -561,10 +616,21 @@ class LppmRekognisiController extends Controller
         if (!in_array($data['jenis'], ['jurnal', 'sinta'], true)) {
             $data['nama_jurnal'] = null;
             $data['peringkat'] = null;
+        }
+        // Link DOI dipakai jurnal, SINTA, dan prosiding.
+        if (!in_array($data['jenis'], ['jurnal', 'sinta', 'prosiding'], true)) {
             $data['link_doi'] = null;
         }
-        // Mahasiswa tidak mengisi Mitra / Instansi (kecuali data lama berjenis rekognisi).
-        if ($data['tipe_user'] === 'mahasiswa' && $data['jenis'] !== 'rekognisi') $data['mitra'] = null;
+        if ($data['jenis'] !== 'prosiding') {
+            $data['nama_konferensi'] = null;
+            $data['nomor_issn_isbn'] = null;
+        }
+        if ($data['jenis'] !== 'paten') {
+            $data['status_paten'] = null;
+            $data['nomor_paten'] = null;
+        }
+        // Mahasiswa tidak mengisi Mitra / Instansi.
+        if ($data['tipe_user'] === 'mahasiswa') $data['mitra'] = null;
         if ($data['jenis'] !== 'hki') $data['jenis_hki'] = null;
         if ($data['jenis'] !== 'book') $data['kategori_buku'] = null;
 
@@ -602,6 +668,10 @@ class LppmRekognisiController extends Controller
             'jenis_hki'       => $item->jenis_hki,
             'kategori_buku'   => $item->kategori_buku,
             'link_doi'        => $item->link_doi,
+            'nama_konferensi' => $item->nama_konferensi,
+            'nomor_issn_isbn' => $item->nomor_issn_isbn,
+            'status_paten'    => $item->status_paten,
+            'nomor_paten'     => $item->nomor_paten,
             'jabatan'         => $item->jabatan,          // nilai tersimpan (dipakai form edit untuk memulihkan isian)
             'jabatan_tampil'  => $item->jabatan_efektif,  // nilai yang ditampilkan di tabel (null bila bukan alumni)
             'tanggal_mulai'   => optional($item->tanggal_mulai)->format('Y-m-d'),

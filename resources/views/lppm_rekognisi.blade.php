@@ -144,7 +144,8 @@
                                     <button type="button" class="dropdown-option" data-value="book">Buku</button>
                                     <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                                     <button type="button" class="dropdown-option" data-value="conference">Conference</button>
-                                    <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
+                                    <button type="button" class="dropdown-option" data-value="prosiding">Prosiding</button>
+                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
                                 </div>
                             </div>
                         </div>
@@ -229,11 +230,10 @@
                                 'book' => 'Buku',
                                 'sinta' => 'Publikasi SINTA',
                                 'conference' => 'Conference',
-                                'nasional' => 'Nasional',
-                                'internasional' => 'Internasional',
-                                'alumni' => 'Alumni',
-                                'rekognisi' => 'Rekognisi',
+                                'prosiding' => 'Prosiding',
+                                'paten' => 'Paten',
                                 ];
+                                $statusPatenLabel = ['terdaftar' => 'Terdaftar (Filed)', 'granted' => 'Granted (Bersertifikat)'];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
                                 @foreach($items as $item)
@@ -245,6 +245,8 @@
                                     'jurnal', 'sinta' => trim(($item->nama_jurnal ?? '') . ($item->peringkat ? ' · ' . $item->peringkat : '')) ?: '-',
                                     'hki' => \Illuminate\Support\Str::headline((string) $item->jenis_hki),
                                     'book' => \Illuminate\Support\Str::headline((string) $item->kategori_buku),
+                                    'prosiding' => trim(($item->nama_konferensi ?? '') . ($item->nomor_issn_isbn ? ' · ' . $item->nomor_issn_isbn : '')) ?: '-',
+                                    'paten' => trim(($statusPatenLabel[$item->status_paten] ?? '') . ($item->nomor_paten ? ' · ' . $item->nomor_paten : '')) ?: '-',
                                     default => '-',
                                 };
                                 @endphp
@@ -293,6 +295,10 @@
                                                 data-jenis_hki="{{ $item->jenis_hki ?? '' }}"
                                                 data-kategori_buku="{{ $item->kategori_buku ?? '' }}"
                                                 data-link_doi="{{ $item->link_doi ?? '' }}"
+                                                data-nama_konferensi="{{ $item->nama_konferensi ?? '' }}"
+                                                data-nomor_issn_isbn="{{ $item->nomor_issn_isbn ?? '' }}"
+                                                data-status_paten="{{ $item->status_paten ?? '' }}"
+                                                data-nomor_paten="{{ $item->nomor_paten ?? '' }}"
                                                 data-jabatan="{{ $item->jabatan ?? '' }}"
                                                 data-tahun="{{ $item->tahun ?? '' }}"
                                                 data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
@@ -388,7 +394,8 @@
                             <button type="button" class="dropdown-option" data-value="book">Buku</button>
                             <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                             <button type="button" class="dropdown-option" data-value="conference">Conference</button>
-                            <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
+                            <button type="button" class="dropdown-option" data-value="prosiding">Prosiding</button>
+                            <button type="button" class="dropdown-option" data-value="paten">Paten</button>
                         </div>
                     </div>
                 </div>
@@ -437,7 +444,7 @@
                     </div>
                 </div>
                 <div class="field" id="field-penulis">
-                    <label class="field-label" for="form-penulis">Penulis</label>
+                    <label class="field-label" for="form-penulis" id="label-penulis">Penulis</label>
                     <div class="field-control">
                         <input id="form-penulis" type="text" maxlength="255" placeholder="Nama-nama penulis">
                     </div>
@@ -463,6 +470,43 @@
                 <label class="field-label" for="form-link_doi">Link DOI</label>
                 <div class="field-control">
                     <input id="form-link_doi" type="url" placeholder="https://doi.org/...">
+                </div>
+            </div>
+
+            {{-- Prosiding (khusus Dosen): Nama Konferensi | Nomor ISSN / ISBN --}}
+            <div class="field-row hidden" id="row-prosiding">
+                <div class="field">
+                    <label class="field-label" for="form-nama_konferensi">Nama Konferensi / Seminar</label>
+                    <div class="field-control">
+                        <input id="form-nama_konferensi" type="text" maxlength="255" placeholder="Nama konferensi atau seminar">
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-nomor_issn_isbn">Nomor ISSN / ISBN</label>
+                    <div class="field-control">
+                        <input id="form-nomor_issn_isbn" type="text" maxlength="100" placeholder="Contoh: 2345-6789">
+                    </div>
+                </div>
+            </div>
+
+            {{-- Paten (khusus Dosen): Status Paten | Nomor Permohonan / Paten --}}
+            <div class="field-row hidden" id="row-paten">
+                <div class="field">
+                    <label class="field-label">Status Paten</label>
+                    <div class="dropdown" data-dropdown id="dd-status_paten">
+                        <input type="hidden" id="form-status_paten" value="terdaftar" />
+                        <button type="button" class="dropdown-trigger"><span class="dropdown-value">Terdaftar (Filed)</span><span class="material-symbols-outlined caret">expand_more</span></button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="terdaftar">Terdaftar (Filed)</button>
+                            <button type="button" class="dropdown-option" data-value="granted">Granted (Bersertifikat)</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-nomor_paten">Nomor Permohonan / Paten</label>
+                    <div class="field-control">
+                        <input id="form-nomor_paten" type="text" maxlength="100" placeholder="Contoh: P00202312345">
+                    </div>
                 </div>
             </div>
 
@@ -588,7 +632,7 @@
             'updateLabel'  => 'Rekognisi',
             'updateFields' => [
                 ['name' => 'jenis',   'label' => 'Jenis Karya', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
-                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'rekognisi' => 'Rekognisi']],
+                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'prosiding' => 'Prosiding', 'paten' => 'Paten']],
                 ['name' => 'skala',   'label' => 'Skala', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
                     'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional']],
                 ['name' => 'mitra',   'label' => 'Mitra / Instansi', 'type' => 'text',   'row' => 'a', 'col' => 3, 'target' => '.activity-title'],
@@ -632,17 +676,15 @@
         // ---- Field kondisional (khusus halaman ini) ----
         const userDropdown = document.getElementById('dd-user');
         const kindOptions = {
-            dosen: ['jurnal', 'hki', 'book', 'rekognisi'],
+            dosen: ['jurnal', 'hki', 'book', 'prosiding', 'paten'],
             mahasiswa: ['sinta', 'conference', 'jurnal'],
-            alumni: ['sinta', 'conference', 'jurnal', 'rekognisi'],
+            alumni: ['sinta', 'conference', 'jurnal'],
         };
         const defaultKindByType = { dosen: 'jurnal', mahasiswa: 'sinta', alumni: 'sinta' };
-        const scalableKinds = ['jurnal', 'sinta', 'conference'];
+        const scalableKinds = ['jurnal', 'sinta', 'conference', 'prosiding', 'paten'];
         const userOptionButtons = Array.from(userDropdown.querySelectorAll('.dropdown-option'));
         const kindOptionButtons = Array.from(document.querySelectorAll('#dd-jenis .dropdown-option'));
         let lastSelectedType = null;
-        // Data lama mahasiswa yang jenisnya "rekognisi" tetap bisa diedit tanpa berubah diam-diam jadi jenis lain.
-        let legacyKind = null;
 
         function selectedType() {
             const userId = document.getElementById('form-user_id').value;
@@ -654,7 +696,7 @@
 
         function updateKindOptions() {
             const type = selectedType();
-            const allowed = (kindOptions[type] || []).concat(type === 'mahasiswa' && legacyKind ? [legacyKind] : []);
+            const allowed = kindOptions[type] || [];
             kindOptionButtons.forEach((option) => {
                 const visible = allowed.includes(option.dataset.value);
                 option.hidden = !visible;
@@ -690,9 +732,9 @@
             const hasUser = Boolean(document.getElementById('form-user_id').value);
             const type = selectedType();
             const kind = document.getElementById('form-jenis').value;
-            const isPublication = hasUser && kind !== 'rekognisi';
+            const isPublication = hasUser;
             const hasJournalFields = hasUser && ['jurnal', 'sinta'].includes(kind);
-            const hasScale = hasUser && (scalableKinds.includes(kind) || (kind === 'rekognisi' && type !== 'alumni'));
+            const hasScale = hasUser && scalableKinds.includes(kind);
             const isAlumni = hasUser && type === 'alumni';
             const isMahasiswa = hasUser && type === 'mahasiswa';
             applyLayout(isMahasiswa);
@@ -710,7 +752,12 @@
             document.getElementById('row-tahun-penulis').classList.toggle('hidden', !(isPublication && isMahasiswa));
             document.getElementById('field-tahun').classList.toggle('hidden', !isPublication);
             document.getElementById('row-jurnal').classList.toggle('hidden', !hasJournalFields);
-            document.getElementById('field-link_doi').classList.toggle('hidden', !hasJournalFields);
+            const isProsiding = hasUser && kind === 'prosiding';
+            const isPaten = hasUser && kind === 'paten';
+            document.getElementById('field-link_doi').classList.toggle('hidden', !(hasJournalFields || isProsiding));
+            document.getElementById('row-prosiding').classList.toggle('hidden', !isProsiding);
+            document.getElementById('row-paten').classList.toggle('hidden', !isPaten);
+            document.getElementById('label-penulis').textContent = (isProsiding || isPaten) ? 'Inventor / Penulis' : 'Penulis';
             document.getElementById('field-jenis_hki').classList.toggle('hidden', kind !== 'hki');
             document.getElementById('field-kategori_buku').classList.toggle('hidden', kind !== 'book');
             document.getElementById('field-jabatan').classList.toggle('hidden', !isAlumni);
@@ -722,6 +769,10 @@
             document.getElementById('form-tahun').required = isPublication;
             document.getElementById('form-nama_jurnal').required = hasJournalFields;
             document.getElementById('form-peringkat').required = hasJournalFields;
+            document.getElementById('form-link_doi').required = isProsiding;
+            document.getElementById('form-nama_konferensi').required = isProsiding;
+            document.getElementById('form-nomor_issn_isbn').required = isProsiding;
+            document.getElementById('form-nomor_paten').required = isPaten;
             document.getElementById('form-tanggal_mulai').required = hasUser;
             document.getElementById('form-tanggal_selesai').required = hasUser;
             document.getElementById('form-bukti_kegiatan').required = hasUser;
@@ -746,10 +797,8 @@
             book: 'Buku',
             sinta: 'Publikasi SINTA',
             conference: 'Conference',
-            nasional: 'Nasional',
-            internasional: 'Internasional',
-            alumni: 'Alumni',
-            rekognisi: 'Rekognisi'
+            prosiding: 'Prosiding',
+            paten: 'Paten',
         };
 
         // ---- Tampilkan hasil Update Massal di baris tabel (khusus halaman ini) ----
@@ -800,7 +849,11 @@
                     ? (item.jenis_hki || '-').replaceAll('_', ' ')
                     : item.jenis === 'book'
                         ? (item.kategori_buku || '-').replaceAll('_', ' ')
-                        : '-';
+                        : item.jenis === 'prosiding'
+                            ? [item.nama_konferensi, item.nomor_issn_isbn].filter(Boolean).join(' · ') || '-'
+                            : item.jenis === 'paten'
+                                ? [({ terdaftar: 'Terdaftar (Filed)', granted: 'Granted (Bersertifikat)' })[item.status_paten], item.nomor_paten].filter(Boolean).join(' · ') || '-'
+                                : '-';
             return `
             <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tipe_user="${item.tipe_user}">
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>
@@ -834,6 +887,8 @@
                             data-nama_jurnal="${esc(item.nama_jurnal || '')}" data-peringkat="${esc(item.peringkat || '')}"
                             data-jenis_hki="${item.jenis_hki || ''}" data-kategori_buku="${item.kategori_buku || ''}"
                             data-link_doi="${esc(item.link_doi || '')}" data-tahun="${item.tahun || ''}"
+                            data-nama_konferensi="${esc(item.nama_konferensi || '')}" data-nomor_issn_isbn="${esc(item.nomor_issn_isbn || '')}"
+                            data-status_paten="${item.status_paten || ''}" data-nomor_paten="${esc(item.nomor_paten || '')}"
                             data-jabatan="${esc(item.jabatan || '')}"
                             data-tanggal_mulai="${item.tanggal_mulai || ''}"
                             data-tanggal_selesai="${item.tanggal_selesai || ''}"
@@ -946,7 +1001,6 @@
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
 
-            legacyKind = mode === 'edit' && data.jenis === 'rekognisi' ? 'rekognisi' : null;
             SIDA.dropdown.select(document.getElementById('dd-user'), data.user_id || '', 'Pilih nama...');
             const type = selectedType();
             updateKindOptions();
@@ -963,6 +1017,10 @@
             document.getElementById('form-nama_jurnal').value = data.nama_jurnal || '';
             document.getElementById('form-peringkat').value = data.peringkat || '';
             document.getElementById('form-link_doi').value = data.link_doi || '';
+            document.getElementById('form-nama_konferensi').value = data.nama_konferensi || '';
+            document.getElementById('form-nomor_issn_isbn').value = data.nomor_issn_isbn || '';
+            document.getElementById('form-nomor_paten').value = data.nomor_paten || '';
+            SIDA.dropdown.select(document.getElementById('dd-status_paten'), data.status_paten || 'terdaftar');
             document.getElementById('form-tahun').value = data.tahun || new Date().getFullYear();
             SIDA.dropdown.select(document.getElementById('dd-jenis_hki'), data.jenis_hki || 'hak_cipta');
             SIDA.dropdown.select(document.getElementById('dd-kategori_buku'), data.kategori_buku || 'ajar');
@@ -998,6 +1056,10 @@
                 jenis_hki: document.getElementById('form-jenis_hki').value || null,
                 kategori_buku: document.getElementById('form-kategori_buku').value || null,
                 link_doi: document.getElementById('form-link_doi').value || null,
+                nama_konferensi: document.getElementById('form-nama_konferensi').value || null,
+                nomor_issn_isbn: document.getElementById('form-nomor_issn_isbn').value || null,
+                status_paten: document.getElementById('form-jenis').value === 'paten' ? document.getElementById('form-status_paten').value : null,
+                nomor_paten: document.getElementById('form-nomor_paten').value || null,
                 tahun: document.getElementById('form-tahun').value || null,
                 tanggal_mulai: document.getElementById('form-tanggal_mulai').value,
                 tanggal_selesai: document.getElementById('form-tanggal_selesai').value,

@@ -66,7 +66,7 @@
     'cards2'   => [],
     'donuts'   => [
         ['title' => 'Distribusi Kegiatan per Kategori', 'sub' => 'Sebaran kegiatanmu di 2 menu', 'caption' => 'Kegiatan', 'data' => $kategoriDonut],
-        ['title' => 'Distribusi Publikasi', 'sub' => 'Jurnal, HKI, dan buku di Rekognisi', 'caption' => 'Publikasi', 'data' => $luaranDonut],
+        ['title' => 'Distribusi Publikasi', 'sub' => 'Jurnal, HKI, buku, prosiding, dan paten di Rekognisi', 'caption' => 'Publikasi', 'data' => $luaranDonut],
     ],
     'widgets'       => $widgets,
     'trendSub'      => 'Riset & Publikasi vs Eksternal · bandingkan keseimbangan portofoliomu dari waktu ke waktu',

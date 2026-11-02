@@ -164,12 +164,16 @@ class DashboardController extends Controller
             'jurnal_nas'  => ['Jurnal Nasional', 'var(--chart-3)'],
             'hki'         => ['HKI', 'var(--chart-2)'],
             'book'        => ['Buku', 'var(--chart-4)'],
+            'prosiding'   => ['Prosiding', 'var(--chart-1)'],
+            'paten'       => ['Paten', 'var(--chart-3)'],
         ];
         $jenisCounts = collect([
             'jurnal_intl' => $rekognisi->where('jenis', 'jurnal')->where('skala', 'internasional')->count(),
             'jurnal_nas' => $rekognisi->where('jenis', 'jurnal')->where('skala', 'nasional')->count(),
             'hki' => $rekognisi->where('jenis', 'hki')->count(),
             'book' => $rekognisi->where('jenis', 'book')->count(),
+            'prosiding' => $rekognisi->where('jenis', 'prosiding')->count(),
+            'paten' => $rekognisi->where('jenis', 'paten')->count(),
         ]);
         $luaranDonut = [];
         foreach ($jenisLppm as $key => [$label, $color]) {

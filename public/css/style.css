@@ -1194,6 +1194,10 @@ button {
     flex: 1 1 auto;
 }
 
+.filter-search-row .field-control input[type="text"] {
+    padding-left: 2.5rem;
+}
+
 .field-reset {
     flex: 0 0 auto;
 }

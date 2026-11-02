@@ -11,7 +11,7 @@
     $isDosen   = $ownerType === 'dosen';
     $isAlumni  = $ownerType === 'alumni';
     $kinds     = $isDosen
-        ? ['jurnal' => 'Jurnal', 'hki' => 'Hak Kekayaan Intelektual', 'book' => 'Buku']
+        ? ['jurnal' => 'Jurnal', 'hki' => 'Hak Kekayaan Intelektual', 'book' => 'Buku', 'prosiding' => 'Prosiding', 'paten' => 'Paten']
         : ['sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'jurnal' => 'Jurnal'];
     $defaultKind = array_key_first($kinds);
     $mitraRequired = $isDosen || $isAlumni;
@@ -106,7 +106,7 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label class="field-label" for="form-penulis">Penulis</label>
+                    <label class="field-label" for="form-penulis" id="label-penulis">Penulis</label>
                     <div class="field-control">
                         <input id="form-penulis" type="text" maxlength="255" placeholder="Nama-nama penulis" required>
                     </div>
@@ -129,11 +129,48 @@
                 </div>
             </div>
             <div class="field hidden" id="field-link_doi">
-                <label class="field-label" for="form-link_doi">Link DOI (opsional)</label>
+                <label class="field-label" for="form-link_doi" id="label-link_doi">Link DOI (opsional)</label>
                 <div class="field-control">
                     <input id="form-link_doi" type="url" placeholder="https://doi.org/...">
                 </div>
             </div>
+
+            {{-- Khusus Prosiding & Paten (hanya tersedia untuk dosen) --}}
+            @if($isDosen)
+            <div class="field-row hidden" id="row-prosiding">
+                <div class="field">
+                    <label class="field-label" for="form-nama_konferensi">Nama Konferensi / Seminar</label>
+                    <div class="field-control">
+                        <input id="form-nama_konferensi" type="text" maxlength="255" placeholder="Nama konferensi atau seminar">
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-nomor_issn_isbn">Nomor ISSN / ISBN</label>
+                    <div class="field-control">
+                        <input id="form-nomor_issn_isbn" type="text" maxlength="100" placeholder="Contoh: 2345-6789">
+                    </div>
+                </div>
+            </div>
+            <div class="field-row hidden" id="row-paten">
+                <div class="field">
+                    <label class="field-label">Status Paten</label>
+                    <div class="dropdown" data-dropdown id="dd-status_paten">
+                        <input type="hidden" id="form-status_paten" value="terdaftar" />
+                        <button type="button" class="dropdown-trigger"><span class="dropdown-value">Terdaftar (Filed)</span><span class="material-symbols-outlined caret">expand_more</span></button>
+                        <div class="dropdown-panel">
+                            <button type="button" class="dropdown-option is-selected" data-value="terdaftar">Terdaftar (Filed)</button>
+                            <button type="button" class="dropdown-option" data-value="granted">Granted (Bersertifikat)</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="form-nomor_paten">Nomor Permohonan / Paten</label>
+                    <div class="field-control">
+                        <input id="form-nomor_paten" type="text" maxlength="100" placeholder="Contoh: P00202312345">
+                    </div>
+                </div>
+            </div>
+            @endif
 
             {{-- Khusus HKI / Buku (hanya tersedia untuk dosen) --}}
             @if($isDosen)
@@ -226,12 +263,13 @@
         const DEFAULT_KIND = @json($defaultKind);
 
         const L = {
-            jenis: { jurnal: 'Jurnal', hki: 'HKI', book: 'Buku', sinta: 'Publikasi SINTA', conference: 'Conference' },
+            jenis: { jurnal: 'Jurnal', hki: 'HKI', book: 'Buku', sinta: 'Publikasi SINTA', conference: 'Conference', prosiding: 'Prosiding', paten: 'Paten' },
+            statusPaten: { terdaftar: 'Terdaftar (Filed)', granted: 'Granted (Bersertifikat)' },
             skala: { nasional: 'Nasional', internasional: 'Internasional' },
             hki: { hak_cipta: 'Hak Cipta', paten: 'Paten', merek: 'Merek' },
             buku: { ajar: 'Buku Ajar', referensi: 'Referensi', chapter: 'Chapter' },
         };
-        const SCALABLE = ['jurnal', 'sinta', 'conference'];
+        const SCALABLE = ['jurnal', 'sinta', 'conference', 'prosiding', 'paten'];
         const JOURNAL = ['jurnal', 'sinta'];
 
         const fmtDate = (d) => {
@@ -250,10 +288,20 @@
             const journal = JOURNAL.includes(kind);
             $v('field-skala').classList.toggle('hidden', !scalable);
             $v('row-jurnal').classList.toggle('hidden', !journal);
-            $v('field-link_doi').classList.toggle('hidden', !journal);
+            const prosiding = IS_DOSEN && kind === 'prosiding';
+            const paten = IS_DOSEN && kind === 'paten';
+            $v('field-link_doi').classList.toggle('hidden', !(journal || prosiding));
+            $v('label-link_doi').textContent = prosiding ? 'Link DOI' : 'Link DOI (opsional)';
+            $v('form-link_doi').required = prosiding;
+            $v('label-penulis').textContent = (prosiding || paten) ? 'Inventor / Penulis' : 'Penulis';
             $v('form-nama_jurnal').required = journal;
             $v('form-peringkat').required = journal;
             if (IS_DOSEN) {
+                $v('row-prosiding').classList.toggle('hidden', !prosiding);
+                $v('row-paten').classList.toggle('hidden', !paten);
+                $v('form-nama_konferensi').required = prosiding;
+                $v('form-nomor_issn_isbn').required = prosiding;
+                $v('form-nomor_paten').required = paten;
                 $v('field-jenis_hki').classList.toggle('hidden', kind !== 'hki');
                 $v('field-kategori_buku').classList.toggle('hidden', kind !== 'book');
             }
@@ -275,9 +323,13 @@
             detailRows: (i) => [
                 ['Jenis', L.jenis[i.jenis] || i.jenis],
                 ['Skala', i.skala ? (L.skala[i.skala] || i.skala) : null],
-                ['Penulis', i.penulis],
+                ['Penulis / Inventor', i.penulis],
                 ['Nama Jurnal', i.nama_jurnal],
                 ['Peringkat', i.peringkat],
+                ['Nama Konferensi', i.nama_konferensi],
+                ['Nomor ISSN / ISBN', i.nomor_issn_isbn],
+                ['Status Paten', i.status_paten ? (L.statusPaten[i.status_paten] || i.status_paten) : null],
+                ['Nomor Permohonan / Paten', i.nomor_paten],
                 ['Jenis HKI', i.jenis_hki ? (L.hki[i.jenis_hki] || i.jenis_hki) : null],
                 ['Kategori Buku', i.kategori_buku ? (L.buku[i.kategori_buku] || i.kategori_buku) : null],
                 ['Mitra', i.mitra],
@@ -297,6 +349,10 @@
                 if (IS_DOSEN) {
                     SIDA.dropdown.select($v('dd-jenis_hki'), i?.jenis_hki || 'hak_cipta');
                     SIDA.dropdown.select($v('dd-kategori_buku'), i?.kategori_buku || 'ajar');
+                    SIDA.dropdown.select($v('dd-status_paten'), i?.status_paten || 'terdaftar');
+                    $v('form-nama_konferensi').value = i?.nama_konferensi || '';
+                    $v('form-nomor_issn_isbn').value = i?.nomor_issn_isbn || '';
+                    $v('form-nomor_paten').value = i?.nomor_paten || '';
                 }
                 $v('form-judul').value = i?.judul || '';
                 $v('form-penulis').value = i?.penulis || '';
@@ -316,6 +372,8 @@
             readForm: () => {
                 const kind = $v('form-jenis').value;
                 const journal = JOURNAL.includes(kind);
+                const prosiding = IS_DOSEN && kind === 'prosiding';
+                const paten = IS_DOSEN && kind === 'paten';
                 return {
                     user_id: $v('form-user_id').value,
                     jenis: kind,
@@ -328,7 +386,11 @@
                     peringkat: journal ? $v('form-peringkat').value : null,
                     jenis_hki: IS_DOSEN && kind === 'hki' ? $v('form-jenis_hki').value : null,
                     kategori_buku: IS_DOSEN && kind === 'book' ? $v('form-kategori_buku').value : null,
-                    link_doi: journal ? ($v('form-link_doi').value || null) : null,
+                    link_doi: (journal || prosiding) ? ($v('form-link_doi').value || null) : null,
+                    nama_konferensi: prosiding ? $v('form-nama_konferensi').value : null,
+                    nomor_issn_isbn: prosiding ? $v('form-nomor_issn_isbn').value : null,
+                    status_paten: paten ? $v('form-status_paten').value : null,
+                    nomor_paten: paten ? $v('form-nomor_paten').value : null,
                     tahun: $v('form-tahun').value,
                     tanggal_mulai: $v('form-tanggal_mulai').value,
                     tanggal_selesai: $v('form-tanggal_selesai').value,

@@ -142,6 +142,8 @@
                                     <button type="button" class="dropdown-option" data-value="jurnal">Jurnal</button>
                                     <button type="button" class="dropdown-option" data-value="hki">HKI</button>
                                     <button type="button" class="dropdown-option" data-value="book">Buku</button>
+                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
+                                    <button type="button" class="dropdown-option" data-value="proceeding">Proceeding</button>
                                     <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                                     <button type="button" class="dropdown-option" data-value="conference">Conference</button>
                                     <button type="button" class="dropdown-option" data-value="prosiding">Prosiding</button>
@@ -397,6 +399,8 @@
                             <button type="button" class="dropdown-option is-selected" data-value="jurnal">Jurnal</button>
                             <button type="button" class="dropdown-option" data-value="hki">Hak Kekayaan Intelektual</button>
                             <button type="button" class="dropdown-option" data-value="book">Buku</button>
+                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
+                                    <button type="button" class="dropdown-option" data-value="proceeding">Proceeding</button>
                             <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                             <button type="button" class="dropdown-option" data-value="conference">Conference</button>
                             <button type="button" class="dropdown-option" data-value="prosiding">Prosiding</button>
@@ -458,12 +462,12 @@
 
             <div class="field-row hidden" id="row-jurnal">
                 <div class="field">
-                    <label class="field-label" for="form-nama_jurnal">Nama Jurnal</label>
+                    <label class="field-label" for="form-nama_jurnal" id="label-nama_jurnal">Nama Jurnal</label>
                     <div class="field-control">
                         <input id="form-nama_jurnal" type="text" maxlength="255" placeholder="Nama jurnal">
                     </div>
                 </div>
-                <div class="field">
+                <div class="field" id="field-peringkat">
                     <label class="field-label" for="form-peringkat">Peringkat</label>
                     <div class="field-control">
                         <input id="form-peringkat" type="text" maxlength="100" placeholder="Contoh: Q2 atau S3">
@@ -1234,7 +1238,7 @@
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
-    <script src="{{ asset('js/notifications.js') }}"></script>
+    <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>
     @if($showBulk)
         <script src="{{ asset('js/bulk-import.js') }}?v={{ @filemtime(public_path('js/bulk-import.js')) }}"></script>
         <script src="{{ asset('js/row-select.js') }}?v={{ @filemtime(public_path('js/row-select.js')) }}"></script>

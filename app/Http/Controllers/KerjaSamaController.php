@@ -66,6 +66,11 @@ class KerjaSamaController extends Controller
         $skala = $request->query('skala');
         $arah = $request->query('arah');
         $term = trim((string) $request->query('q', ''));
+        $focusId = $selfView ? $this->requestedFocusId($request) : null;
+        if ($focusId) {
+            $status = null;
+            $term = '';
+        }
 
         $listQuery = function () use ($ownScope, $selfView, $user, $tipe_user, $jenis, $skala, $arah, $term, $status) {
             $query = KerjaSama::with('user');
@@ -95,7 +100,9 @@ class KerjaSamaController extends Controller
             return $query;
         };
 
-        $items = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        $focusPage = $focusId ? $this->focusPage($listQuery(), $focusId, self::PER_PAGE, [['id', 'desc']]) : null;
+        $page = $focusPage ?? max(1, (int) $request->query('page', 1));
+        $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $page)->withQueryString();
         // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
         if ($items->lastPage() > 0 && $items->currentPage() > $items->lastPage()) {
             $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();

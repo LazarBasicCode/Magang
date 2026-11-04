@@ -181,7 +181,7 @@ class Approval
             UserNotification::send($userId, 'approval_request', [
                 'title'       => 'Pengajuan baru perlu persetujuan',
                 'description' => $desc,
-                'data'        => ['menu' => $menu, 'item_id' => $item->getKey(), 'actor_id' => $actor->id],
+                'data'        => ['menu' => $menu, 'item_id' => $item->getKey(), 'actor_id' => $actor->id, 'for_reviewer' => true],
             ]);
         }
     }
@@ -299,7 +299,7 @@ class Approval
             UserNotification::send((int) $ownerId, 'approval_comment', [
                 'title'       => 'Komentar baru dari Prodi',
                 'description' => '"' . $cfg['title']($item) . '" (' . $cfg['label'] . '): ' . mb_strimwidth(trim($body), 0, 120, '…'),
-                'data'        => ['menu' => $menu, 'item_id' => $id, 'actor_id' => $actor->id],
+                'data'        => ['menu' => $menu, 'item_id' => $id, 'actor_id' => $actor->id, 'for_owner' => true],
             ]);
         }
 
@@ -345,7 +345,7 @@ class Approval
                 UserNotification::send((int) $ownerId, 'approval_request', [
                     'title'       => 'Pengajuan sedang diperiksa Prodi',
                     'description' => "\"" . $cfg['title']($item) . "\" ({$cfg['label']}) sedang diperiksa Prodi.",
-                    'data'        => ['menu' => $menu, 'item_id' => $item->getKey(), 'actor_id' => $actor->id],
+                        'data'        => ['menu' => $menu, 'item_id' => $item->getKey(), 'actor_id' => $actor->id, 'for_owner' => true],
                 ]);
             }
             unset(self::$pendingCache[$actor->id]);
@@ -380,7 +380,7 @@ class Approval
      * @param  string  $tab  'perlu' (menunggu verifikasi Prodi) | 'riwayat' (sudah diputuskan)
      * @return array{items:array<int,array<string,mixed>>,meta:array<string,int>}
      */
-    public static function listing(User $user, string $tab, string $menuFilter = 'semua', ?string $tahun = null, ?string $q = null, int $page = 1, int $perPage = self::PER_PAGE): array
+    public static function listing(User $user, string $tab, string $menuFilter = 'semua', ?string $tahun = null, ?string $q = null, int $page = 1, int $perPage = self::PER_PAGE, ?int $focusId = null): array
     {
         $empty = ['items' => [], 'meta' => ['page' => 1, 'last' => 1, 'total' => 0, 'from' => 0, 'to' => 0, 'per_page' => $perPage]];
         if (!in_array($user->role, self::PRODI_ROLES, true)) {
@@ -408,7 +408,14 @@ class Approval
         }
 
         // Antrean: yang paling lama menunggu di atas. Riwayat: keputusan terbaru di atas.
-        $rows = $tab === 'perlu' ? $rows->sortBy('submitted_ts') : $rows->sortByDesc('updated_ts');
+        $rows = ($tab === 'perlu' ? $rows->sortBy('submitted_ts') : $rows->sortByDesc('updated_ts'))->values();
+
+        if ($focusId !== null) {
+            $focusIndex = $rows->search(fn ($row) => $row['menu'] === $menuFilter && (int) $row['id'] === $focusId);
+            if ($focusIndex !== false) {
+                $page = intdiv($focusIndex, $perPage) + 1;
+            }
+        }
 
         $total = $rows->count();
         $last = max(1, (int) ceil($total / $perPage));
@@ -591,7 +598,7 @@ class Approval
                     UserNotification::send((int) $id, 'approval_request', [
                         'title'       => 'Verifikasi dibatalkan',
                         'description' => "Verifikasi \"{$title}\" ({$cfg['label']}) dibatalkan oleh {$by} dan diperiksa ulang." . ($note ? " Alasan: {$note}" : ''),
-                        'data'        => $base,
+                        'data'        => $base + ['for_owner' => true],
                     ]);
                 }
             }
@@ -616,7 +623,7 @@ class Approval
             UserNotification::send((int) $id, $type, [
                 'title'       => $approved ? 'Pengajuan terverifikasi' : 'Pengajuan ditolak',
                 'description' => $text,
-                'data'        => $base,
+                'data'        => $base + ['for_owner' => true],
             ]);
         }
     }

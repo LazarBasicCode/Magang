@@ -26,7 +26,7 @@ class NotificationController extends Controller
 
         return response()->json([
             'unread_count'  => $unreadCount,
-            'notifications' => $notifications->map(fn (UserNotification $n) => $this->transform($n)),
+            'notifications' => $notifications->map(fn (UserNotification $n) => $this->transform($n, $user->role)),
         ]);
     }
 
@@ -50,8 +50,13 @@ class NotificationController extends Controller
         return response()->json(['success' => true]);
     }
 
-    private function transform(UserNotification $n): array
+    private function transform(UserNotification $n, string $role): array
     {
+        $data = $n->data ?? [];
+        if (in_array($n->type, ['approval_request', 'approval_approved', 'approval_rejected', 'approval_comment'], true)) {
+            $data[$role === 'superadmin' ? 'for_reviewer' : 'for_owner'] = true;
+        }
+
         return [
             'id'             => $n->id,
             'type'           => $n->type,
@@ -63,7 +68,7 @@ class NotificationController extends Controller
             'time_full'      => $n->created_at->translatedFormat('d F Y, H:i'),
             'group'          => $n->created_at->isToday() ? 'Hari Ini' : ($n->created_at->isYesterday() ? 'Kemarin' : $n->created_at->format('d M Y')),
             'is_unread'      => is_null($n->read_at),
-            'data'           => $n->data,
+            'data'           => $data,
         ];
     }
 }

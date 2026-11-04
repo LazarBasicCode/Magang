@@ -286,6 +286,17 @@
 
         // Render awal dari data yang sudah dikirim server (tanpa fetch ulang)
         render(cfg.initial);
+        const focusId = $('mhsPage')?.dataset.focusId;
+        const focusTarget = focusId && [...list.querySelectorAll('.mv-row')].find((row) => row.dataset.id === focusId);
+        if (focusTarget) {
+            focusTarget.classList.add('is-focus-target');
+            $('mhsPage').classList.add('is-focus-mode');
+            focusTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+                focusTarget.classList.remove('is-focus-target');
+                $('mhsPage').classList.remove('is-focus-mode');
+            }, 1800);
+        }
     }
 
     window.MhsView = { init };

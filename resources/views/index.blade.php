@@ -842,7 +842,7 @@
         }
     });
 </script>
-<script src="{{ asset('js/toast.js') }}"></script>
+<script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
 <script>
     // Kalau halaman login ini dipulihkan dari back-forward cache (mis. user
     // login lalu menekan Back), muat ulang supaya server memutuskan:

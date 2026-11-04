@@ -136,14 +136,15 @@
         setTimeout(() => el.remove(), 600);
     }
 
-    function show({ type = 'info', title = '', message = '', duration = DURATION, sound: withSound = true } = {}) {
+    function show({ type = 'info', title = '', message = '', duration = DURATION, sound: withSound = true, onClick = null } = {}) {
         if (!message && !title) return null;
 
         const cont = getContainer();
         const oldRects = captureRects();
+        const clickable = typeof onClick === 'function';
 
         const el = document.createElement('div');
-        el.className = `toast-item t-${type} is-entering`;
+        el.className = `toast-item t-${type} is-entering${clickable ? ' is-clickable' : ''}`;
         el.setAttribute('role', 'status');
         el.style.setProperty('--toast-duration', duration + 'ms'); // garis progress ikut durasi asli
         el.innerHTML = `
@@ -156,6 +157,18 @@
         `;
 
         el.querySelector('.toast-close').addEventListener('click', () => dismiss(el));
+        if (clickable) {
+            const action = el.querySelector('.toast-content');
+            action.setAttribute('role', 'button');
+            action.tabIndex = 0;
+            action.setAttribute('aria-label', [title, message].filter(Boolean).join(': '));
+            action.addEventListener('click', onClick);
+            action.addEventListener('keydown', (e) => {
+                if (!['Enter', ' '].includes(e.key)) return;
+                e.preventDefault();
+                onClick();
+            });
+        }
 
         cont.appendChild(el); // column-reverse => otomatis muncul di atas tumpukan (dekat layar), tanpa dobel/tumpang tindih
         el.addEventListener('animationend', (e) => {

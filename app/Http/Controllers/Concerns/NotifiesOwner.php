@@ -39,12 +39,29 @@ trait NotifiesOwner
         }
 
         $detailText = $detail !== '' ? " ({$detail})" : '';
+        $menu = match (true) {
+            isset($extra['kemahasiswaan_id']) => 'kemahasiswaan',
+            isset($extra['rekognisi_id']), isset($extra['lppm_mahasiswa_id']), isset($extra['lppm_dosen_id']) => 'rekognisi',
+            isset($extra['kerja_sama_id']) => 'kerja-sama',
+            default => null,
+        };
+        $itemId = $menu ? ($extra[match ($menu) {
+            'kemahasiswaan' => 'kemahasiswaan_id',
+            'rekognisi' => isset($extra['rekognisi_id']) ? 'rekognisi_id' : (isset($extra['lppm_mahasiswa_id']) ? 'lppm_mahasiswa_id' : 'lppm_dosen_id'),
+            'kerja-sama' => 'kerja_sama_id',
+        }] ?? null) : null;
 
         UserNotification::send($ownerUserId, 'data_updated', [
             'title'       => "Data {$entity} Anda {$aksi}",
             'description' => "\"{$label}\"{$detailText} {$aksi} oleh {$actor->name} ({$actor->role}).",
             'data'        => array_merge(
-                ['actor_id' => $actor->id, 'actor_name' => $actor->name],
+                array_filter([
+                    'actor_id' => $actor->id,
+                    'actor_name' => $actor->name,
+                    'menu' => $menu,
+                    'item_id' => $itemId,
+                    'record_action' => $aksi,
+                ], fn ($value) => $value !== null),
                 $extra
             ),
         ]);

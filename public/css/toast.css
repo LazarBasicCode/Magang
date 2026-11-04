@@ -44,6 +44,12 @@
     transform-origin: bottom right;
     transition: transform 180ms ease;
 }
+.toast-item.is-clickable { cursor: pointer; }
+.toast-item.is-clickable .toast-content:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: 4px;
+}
 
 /* ---------- Animasi masuk: kanan -> kiri, kecil -> besar, blur -> normal, atas -> bawah, digabung jadi satu ---------- */
 @keyframes toastEnter {

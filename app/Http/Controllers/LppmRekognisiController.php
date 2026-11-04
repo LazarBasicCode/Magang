@@ -74,6 +74,11 @@ class LppmRekognisiController extends Controller
         $jenis = $request->query('jenis');
         $skala = $request->query('skala');
         $term = trim((string) $request->query('q', ''));
+        $focusId = $selfView ? $this->requestedFocusId($request) : null;
+        if ($focusId) {
+            $status = null;
+            $term = '';
+        }
 
         $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $term, $status) {
             $query = Rekognisi::with(['mahasiswa.user', 'dosen.user'])->latest()->orderByDesc('id');
@@ -104,7 +109,9 @@ class LppmRekognisiController extends Controller
             return $query;
         };
 
-        $items = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        $focusPage = $focusId ? $this->focusPage($listQuery(), $focusId, self::PER_PAGE, 'created_at') : null;
+        $page = $focusPage ?? max(1, (int) $request->query('page', 1));
+        $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $page)->withQueryString();
         // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
         if ($items->lastPage() > 0 && $items->currentPage() > $items->lastPage()) {
             $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();
@@ -290,11 +297,13 @@ class LppmRekognisiController extends Controller
             }
         }
 
-        if (array_key_exists('skala', $changes) && !in_array($jenis, self::SCALABLE_KINDS, true)) {
-            $errors[] = 'Skala hanya berlaku untuk karya jurnal, SINTA, conference, prosiding, atau paten.';
+        if (array_key_exists('skala', $changes) && !in_array($jenis, ['jurnal', 'sinta', 'conference', 'proceeding'], true)) {
+            $errors[] = 'Skala hanya berlaku untuk karya jurnal, SINTA, conference, atau proceeding.';
         }
         $finalScale = $changes['skala'] ?? $item->skala;
-        if (in_array($jenis, self::SCALABLE_KINDS, true) && blank($finalScale)) {
+        if ((in_array($jenis, ['jurnal', 'sinta', 'conference', 'proceeding'], true)
+                || ($jenis === 'rekognisi' && $item->tipe_user_efektif !== 'alumni'))
+            && blank($finalScale)) {
             $errors[] = 'Skala wajib diisi untuk jenis karya ini.';
         }
         if (in_array($jenis, ['jurnal', 'sinta'], true)) {
@@ -695,7 +704,11 @@ class LppmRekognisiController extends Controller
             $data['skala'] = null;
         }
         if (!in_array($data['jenis'], ['jurnal', 'sinta'], true)) {
-            $data['nama_jurnal'] = null;
+            // Proceeding boleh menyimpan nama prosiding (kolom nama_jurnal) dan tautannya; jenis lain dikosongkan.
+            if ($data['jenis'] !== 'proceeding') {
+                $data['nama_jurnal'] = null;
+                $data['link_doi'] = null;
+            }
             $data['peringkat'] = null;
         }
         // Link DOI dipakai jurnal, SINTA, dan prosiding.

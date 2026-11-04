@@ -43,6 +43,11 @@ class KemahasiswaanController extends Controller
         $tingkat = $request->query('skala', $request->query('tingkat'));
         $tahun = $request->query('tahun');
         $term = trim((string) $request->query('q', ''));
+        $focusId = $this->isMahasiswaView($request, $ownScope) ? $this->requestedFocusId($request) : null;
+        if ($focusId) {
+            $status = null;
+            $term = '';
+        }
 
         $listQuery = function () use ($ownScope, $mahasiswa, $jenis, $tab, $tingkat, $tahun, $term, $status) {
             $query = Kemahasiswaan::with('mahasiswa.user')->latest()->orderByDesc('id');
@@ -65,7 +70,9 @@ class KemahasiswaanController extends Controller
             return $query;
         };
 
-        $kegiatan = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        $focusPage = $focusId ? $this->focusPage($listQuery(), $focusId, self::PER_PAGE, 'created_at') : null;
+        $page = $focusPage ?? max(1, (int) $request->query('page', 1));
+        $kegiatan = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $page)->withQueryString();
         // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
         if ($kegiatan->lastPage() > 0 && $kegiatan->currentPage() > $kegiatan->lastPage()) {
             $kegiatan = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $kegiatan->lastPage())->withQueryString();

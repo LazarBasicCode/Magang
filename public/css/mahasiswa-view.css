@@ -90,6 +90,35 @@ body.dark-mode .mv-tile {
 /* ---------- Daftar ---------- */
 .mv-table td { vertical-align: middle; }
 .mv-row { cursor: pointer; }
+#mhsPage.is-focus-mode > :not(.table-card),
+#mhsPage.is-focus-mode .mv-table thead,
+#mhsPage.is-focus-mode .mv-row:not(.is-focus-target) {
+    filter: blur(2px);
+    opacity: .55;
+    transition: filter .2s ease, opacity .2s ease;
+}
+.mv-row.is-focus-target > td {
+    position: relative;
+    z-index: 1;
+    background: var(--primary-soft);
+    border-top: 2px solid var(--primary);
+    border-bottom: 2px solid var(--primary);
+    animation: mvFocusWave .9s ease-in-out 2;
+}
+.mv-row.is-focus-target > td:first-child {
+    border-left: 2px solid var(--primary);
+    border-radius: 10px 0 0 10px;
+}
+.mv-row.is-focus-target > td:last-child {
+    border-right: 2px solid var(--primary);
+    border-radius: 0 10px 10px 0;
+}
+@keyframes mvFocusWave {
+    50% { box-shadow: 0 0 0 6px rgba(79, 70, 229, .18); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .mv-row.is-focus-target > td { animation: none; }
+}
 .mv-title { font-weight: 700; font-size: 14.5px; color: var(--ink); }
 .mv-meta { margin-top: 3px; font-size: 12.5px; color: var(--ink-muted); }
 .mv-more {

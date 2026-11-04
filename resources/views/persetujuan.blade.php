@@ -20,7 +20,7 @@
             } catch (e) {}
         })();
     </script>
-    <link rel="stylesheet" href="{{ asset('css/approval.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/approval.css') }}?v={{ @filemtime(public_path('css/approval.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/row-select.css') }}?v={{ @filemtime(public_path('css/row-select.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
@@ -49,7 +49,8 @@
         @include('partials.header', ['active' => 'persetujuan'])
 
         <main class="app-main">
-            <div class="page-wrap" id="apprPage" data-tab="{{ $tab }}">
+            <div class="page-wrap" id="apprPage" data-tab="{{ $tab }}"
+                data-focus-menu="{{ $focusMenu }}" data-focus-id="{{ $focusId }}">
 
                 <!-- PAGE TITLE -->
                 <div class="title-bar">
@@ -296,8 +297,8 @@
 
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
-    <script src="{{ asset('js/toast.js') }}"></script>
-    <script src="{{ asset('js/notifications.js') }}"></script>
+    <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
+    <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>
     <script>window.__APPR_INITIAL = @json($initial);</script>
     <script src="{{ asset('js/approval.js') }}?v={{ @filemtime(public_path('js/approval.js')) }}"
         data-url-base="{{ url('/persetujuan') }}"></script>

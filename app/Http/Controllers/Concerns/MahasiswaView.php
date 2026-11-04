@@ -62,4 +62,41 @@ trait MahasiswaView
             'ditolak'   => (int) ($by['ditolak'] ?? 0),
         ];
     }
+
+    protected function requestedFocusId(Request $request): ?int
+    {
+        $id = filter_var($request->query('focus_id'), FILTER_VALIDATE_INT);
+
+        return $id !== false && $id > 0 ? $id : null;
+    }
+
+    protected function focusPage(Builder $query, int $id, int $perPage, ?string $sortColumn = null): ?int
+    {
+        $model = $query->getModel();
+        $key = $model->qualifyColumn($model->getKeyName());
+        $sort = $sortColumn ? $model->qualifyColumn($sortColumn) : null;
+        $target = (clone $query)->where($key, $id)->first(array_filter([$key, $sort]));
+        if (!$target) {
+            return null;
+        }
+
+        $beforeQuery = clone $query;
+        if (!$sort) {
+            $beforeQuery->where($key, '>', $id);
+        } else {
+            $sortValue = $target->{$sortColumn};
+            $beforeQuery->where(function ($where) use ($key, $sort, $sortValue, $id) {
+                if ($sortValue === null) {
+                    $where->whereNotNull($sort)
+                        ->orWhere(fn ($same) => $same->whereNull($sort)->where($key, '>', $id));
+                } else {
+                    $where->where($sort, '>', $sortValue)
+                        ->orWhere(fn ($same) => $same->where($sort, $sortValue)->where($key, '>', $id));
+                }
+            });
+        }
+        $before = $beforeQuery->count();
+
+        return intdiv($before, $perPage) + 1;
+    }
 }

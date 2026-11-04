@@ -8,7 +8,7 @@
 --}}
 @php $showStatus = $showStatus ?? true; @endphp
 <main class="app-main">
-    <div class="page-wrap">
+    <div class="page-wrap" id="mhsPage" data-focus-id="{{ request()->query('focus_id') }}">
         <div class="title-bar">
             <div>
                 <h1 class="page-title">{{ $title }}</h1>

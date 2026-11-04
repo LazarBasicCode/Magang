@@ -514,6 +514,26 @@
 
     // ------------------------------------------------------------------ awal
     const initial = window.__APPR_INITIAL;
-    if (initial) { state.page = initial.meta.page; render(initial); setCounts(initial.counts); }
+    if (initial) {
+        state.page = initial.meta.page;
+        render(initial);
+        setCounts(initial.counts);
+
+        const focusId = pageEl.dataset.focusId;
+        const focusMenu = pageEl.dataset.focusMenu;
+        if (focusId && focusMenu) {
+            const target = [...body.querySelectorAll('.appr-row')]
+                .find((row) => row.dataset.menu === focusMenu && row.dataset.id === focusId);
+            if (target) {
+                target.classList.add('is-focus-target');
+                pageEl.classList.add('is-focus-mode');
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    target.classList.remove('is-focus-target');
+                    pageEl.classList.remove('is-focus-mode');
+                }, 1800);
+            }
+        }
+    }
     else load(1);
 })();

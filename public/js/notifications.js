@@ -44,6 +44,45 @@
         password_changed: 'Keamanan Akun',
         account_deleted: 'Akun Dihapus',
     };
+    const APPROVAL_MENUS = new Set(['kemahasiswaan', 'rekognisi', 'kerja-sama']);
+
+    function targetUrl(notification) {
+        const data = notification.data;
+        const legacyTargets = [
+            ['kemahasiswaan', data?.kemahasiswaan_id],
+            ['rekognisi', data?.rekognisi_id ?? data?.lppm_mahasiswa_id ?? data?.lppm_dosen_id],
+            ['kerja-sama', data?.kerja_sama_id],
+        ];
+        const legacyTarget = legacyTargets.find(([, id]) => id !== undefined && /^\d+$/.test(String(id)));
+        const menu = data?.menu || legacyTarget?.[0];
+        const itemId = data?.item_id ?? legacyTarget?.[1];
+        if (menu && APPROVAL_MENUS.has(menu) && /^\d+$/.test(String(itemId))) {
+            if (notification.type === 'approval_request' && data?.for_reviewer) {
+                const params = new URLSearchParams({
+                    tab: 'perlu',
+                    menu,
+                    focus_menu: menu,
+                    focus_id: String(itemId),
+                });
+                return `/persetujuan?${params}`;
+            }
+
+            if (data?.for_owner || (notification.type === 'data_updated' && data.record_action !== 'dihapus')) {
+                const path = {
+                    kemahasiswaan: '/kemahasiswaan',
+                    rekognisi: '/lppm/rekognisi',
+                    'kerja-sama': '/kerja-sama',
+                }[menu];
+                return path ? `${path}?focus_id=${encodeURIComponent(itemId)}` : null;
+            }
+        }
+
+        if (['password_changed', 'concurrent_login', 'account_deleted'].includes(notification.type)
+            || (notification.type === 'data_updated' && !itemId)) {
+            return '/profil';
+        }
+        return null;
+    }
 
     function ensureDot() {
         let dot = document.getElementById('notifDot');
@@ -122,10 +161,12 @@
                 const freshUnread = notifications.filter((n) => n.is_unread && !seenIds.has(n.id));
                 freshUnread.forEach((n) => {
                     if (window.Toast) {
+                        const url = targetUrl(n);
                         window.Toast.show({
                             type: COLOR_TO_TOAST_TYPE[n.color] || 'info',
                             title: n.title,
                             message: n.description,
+                            onClick: url ? () => { window.location.href = url; } : null,
                         });
                     }
                 });
@@ -269,27 +310,33 @@
         } catch (e) { /* UI sudah terlanjur update optimistis, aman diabaikan */ }
     });
 
-    // Klik satu notifikasi -> buka modal detail + tandai dibaca (kalau belum)
-    listWrap.addEventListener('click', (e) => {
+    // Notifikasi dengan tujuan membuka halamannya; lainnya tetap membuka detail.
+    listWrap.addEventListener('click', async (e) => {
         const item = e.target.closest('.notif-item');
         if (!item) return;
         e.preventDefault();
 
-        openDetailModal(item.dataset.id);
+        const notification = lastNotifications.find((n) => String(n.id) === item.dataset.id);
+        const url = notification ? targetUrl(notification) : null;
 
-        if (!item.classList.contains('is-unread')) return;
+        if (item.classList.contains('is-unread')) {
+            item.classList.remove('is-unread');
+            item.querySelector('.notif-item-dot')?.remove();
+            if (!document.querySelector('.notif-item.is-unread')) removeDot();
 
-        item.classList.remove('is-unread');
-        item.querySelector('.notif-item-dot')?.remove();
-        if (!document.querySelector('.notif-item.is-unread')) removeDot();
+            try {
+                await fetch(`/notifications/${item.dataset.id}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                });
+            } catch (e2) { /* Navigasi tetap berjalan meski status baca gagal disimpan. */ }
+        }
 
-        fetch(`/notifications/${item.dataset.id}/read`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-            },
-        }).catch(() => {});
+        if (url) window.location.href = url;
+        else openDetailModal(item.dataset.id);
     });
 
     // Dipakai halaman lain (mis. Profil: "Notifikasi Terbaru") supaya memakai modal detail yang sama.

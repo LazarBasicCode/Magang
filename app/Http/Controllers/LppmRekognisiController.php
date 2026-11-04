@@ -71,6 +71,11 @@ class LppmRekognisiController extends Controller
         $jenis = $request->query('jenis');
         $skala = $request->query('skala');
         $term = trim((string) $request->query('q', ''));
+        $focusId = $selfView ? $this->requestedFocusId($request) : null;
+        if ($focusId) {
+            $status = null;
+            $term = '';
+        }
 
         $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $term, $status) {
             $query = Rekognisi::with('user.mahasiswa')->latest()->orderByDesc('id');
@@ -98,7 +103,9 @@ class LppmRekognisiController extends Controller
             return $query;
         };
 
-        $items = $listQuery()->paginate(self::PER_PAGE)->withQueryString();
+        $focusPage = $focusId ? $this->focusPage($listQuery(), $focusId, self::PER_PAGE, 'created_at') : null;
+        $page = $focusPage ?? max(1, (int) $request->query('page', 1));
+        $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $page)->withQueryString();
         // Halaman di luar jangkauan (mis. setelah menghapus data terakhir di halaman itu): mundur ke halaman terakhir.
         if ($items->lastPage() > 0 && $items->currentPage() > $items->lastPage()) {
             $items = $listQuery()->paginate(self::PER_PAGE, ['*'], 'page', $items->lastPage())->withQueryString();

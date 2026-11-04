@@ -201,7 +201,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <script src="{{ asset('js/script.js') }}"></script>
-    <script src="{{ asset('js/toast.js') }}"></script>
+    <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script>
         @if(session('backup_status')) Toast.show({ type: 'success', message: @json(session('backup_status')) }); @endif
         @if(session('backup_error')) Toast.show({ type: 'error', title: 'Backup gagal', message: @json(session('backup_error')) }); @endif
@@ -209,7 +209,7 @@
     </script>
     <script src="{{ asset('js/backup.js') }}?v={{ @filemtime(public_path('js/backup.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
-    <script src="{{ asset('js/notifications.js') }}"></script>
+    <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>
 </body>
 
 </html>

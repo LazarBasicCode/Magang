@@ -25,11 +25,22 @@ class ApprovalController extends Controller
         if ($menu !== 'semua' && !isset($menus[$menu])) {
             $menu = 'semua';
         }
+        $rawFocusMenu = $request->query('focus_menu');
+        $focusMenu = is_string($rawFocusMenu) ? $rawFocusMenu : '';
+        $rawFocusId = $request->query('focus_id');
+        $focusId = is_string($rawFocusId) ? filter_var($rawFocusId, FILTER_VALIDATE_INT) : false;
+        if ($focusId !== false && $focusId > 0 && isset($menus[$focusMenu])) {
+            $tab = 'perlu';
+            $menu = $focusMenu;
+        } else {
+            $focusId = null;
+            $focusMenu = '';
+        }
         $tahun = preg_match('/^\d{4}$/', (string) $request->query('tahun')) ? (string) $request->query('tahun') : 'semua';
         $q = mb_substr(trim((string) $request->query('q', '')), 0, 100);
         $page = max(1, (int) $request->query('page', 1));
 
-        $data = Approval::listing($user, $tab, $menu, $tahun, $q, $page);
+        $data = Approval::listing($user, $tab, $menu, $tahun, $q, $page, Approval::PER_PAGE, $focusId);
         $counts = Approval::counts($user);
 
         if ($request->expectsJson()) {
@@ -38,7 +49,7 @@ class ApprovalController extends Controller
 
         $initial = ['items' => $data['items'], 'meta' => $data['meta'], 'counts' => $counts];
 
-        return view('persetujuan', compact('initial', 'counts', 'tab', 'menu', 'menus'));
+        return view('persetujuan', compact('initial', 'counts', 'tab', 'menu', 'menus', 'focusMenu', 'focusId'));
     }
 
     /** POST /persetujuan/{menu}/{id}/{aksi}  aksi = setujui | tolak | batal */

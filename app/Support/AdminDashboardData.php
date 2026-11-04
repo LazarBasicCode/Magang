@@ -6,8 +6,6 @@ use App\Models\Dosen;
 use App\Models\Kemahasiswaan;
 use App\Models\KerjaSama;
 use App\Models\LoginAttempt;
-use App\Models\LppmDosen;
-use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
@@ -20,8 +18,8 @@ use Illuminate\Support\Collection;
  * Satu view dipakai semua admin. Yang berbeda hanya "mode"-nya, ditentukan dari
  * menu operasional yang levelnya 'penuh' (aturan sama dengan
  * User::adminRoleLabel()):
- *   - tepat SATU menu 'penuh' -> mode menu itu (kemahasiswaan, lppm_mahasiswa,
- *     lppm_dosen, rekognisi, kerja_sama)
+ *   - tepat SATU menu 'penuh' -> mode menu itu (kemahasiswaan, rekognisi,
+ *     kerja_sama)
  *   - selain itu, dan untuk superadmin -> mode 'sida' (ringkasan semua menu)
  *
  * Tiap mode mengembalikan struktur yang sama supaya view-nya cukup satu:
@@ -51,8 +49,6 @@ class AdminDashboardData
 
         $data = match ($mode) {
             'kemahasiswaan'  => self::kemahasiswaan(),
-            'lppm_mahasiswa' => self::lppmMahasiswa(),
-            'lppm_dosen'     => self::lppmDosen(),
             'rekognisi'      => self::rekognisi(),
             'kerja_sama'     => self::kerjaSama(),
             default          => self::sida($user),
@@ -145,157 +141,13 @@ class AdminDashboardData
     }
 
     // =====================================================================
-    // MODE: LPPM MAHASISWA
-    // =====================================================================
-    private static function lppmMahasiswa(): array
-    {
-        $items = LppmMahasiswa::with('mahasiswa.user')->approved()->get();
-        $total = $items->count();
-        $mhsTotal = Mahasiswa::count();
-        $terlibat = $items->pluck('mahasiswa_id')->unique()->count();
-        $jurnal = $items->whereIn('jenis', ['sinta_nasional', 'jurnal_internasional']);
-        $conf = $items->where('jenis', 'conference_internasional');
-        $intl = $items->whereIn('jenis', ['jurnal_internasional', 'conference_internasional'])->count();
-        $owner = fn ($i) => $i->mahasiswa?->user?->name;
-        $tanpaDoi = $jurnal->filter(fn ($i) => blank($i->link_doi));
-
-        return [
-            'meta' => [
-                'title'      => 'LPPM Mahasiswa',
-                'subtitle'   => 'Pantauan publikasi & conference seluruh mahasiswa',
-                'menu_label' => 'Kelola LPPM Mahasiswa',
-                'menu_url'   => url('/lppm/mahasiswa'),
-            ],
-            'hero' => [
-                self::h('Total Luaran', $total, 'luaran', 'local_fire_department'),
-                self::h('Rata-rata per Bulan', self::avgPerMonth($items), 'luaran/bln', 'trending_up'),
-                self::h('Capaian Internasional', self::pct($intl, $total), '%', 'public'),
-            ],
-            'cards' => [
-                self::c('Total Luaran', $total, 'menu_book', 'info'),
-                self::c('Sinta Nasional', $items->where('jenis', 'sinta_nasional')->count(), 'article', 'primary'),
-                self::c('Jurnal Internasional', $items->where('jenis', 'jurnal_internasional')->count(), 'public', 'success'),
-                self::c('Conference Intl.', $conf->count(), 'co_present', 'warning'),
-            ],
-            'cards2' => [
-                self::c('Mahasiswa Terlibat', $terlibat, 'groups', 'info'),
-                self::c('Partisipasi Mahasiswa', self::pct($terlibat, $mhsTotal) . '%', 'donut_large', 'primary'),
-                self::c('Jurnal Punya DOI', self::pct($jurnal->count() - $tanpaDoi->count(), $jurnal->count()) . '%', 'link', 'success'),
-                self::c('Luaran Tahun Ini', $items->where('tahun', now()->year)->count(), 'event', 'warning'),
-            ],
-            'donuts' => [
-                self::donutCard('Distribusi Jenis Luaran', 'Sinta, jurnal internasional, dan conference', 'Luaran',
-                    self::donut($items, 'jenis', [
-                        'sinta_nasional'           => ['Sinta Nasional', 'var(--chart-3)'],
-                        'jurnal_internasional'     => ['Jurnal Internasional', 'var(--chart-5)'],
-                        'conference_internasional' => ['Conference Intl.', 'var(--chart-2)'],
-                    ])),
-                self::participationDonut('Keterlibatan Mahasiswa', $terlibat, $mhsTotal, 'Mahasiswa'),
-            ],
-            'widgets' => [
-                self::barsWidget('Peringkat Jurnal', 'Sebaran peringkat (S1–S6 / Q1–Q4)',
-                    $jurnal->map(fn ($i) => strtoupper(trim((string) $i->peringkat)) ?: 'Tanpa peringkat')->countBy()->sortKeys()),
-                self::attentionWidget(
-                    'Perlu Ditindaklanjuti', 'Jurnal yang belum dilengkapi link DOI',
-                    self::pct($jurnal->count() - $tanpaDoi->count(), $jurnal->count()),
-                    ($jurnal->count() - $tanpaDoi->count()) . ' dari ' . $jurnal->count() . ' jurnal punya DOI',
-                    $tanpaDoi->sortByDesc('created_at')->take(3)->map(fn ($i) => [
-                        'title' => $i->judul,
-                        'meta'  => ($owner($i) ?? '-') . ' · belum ada link DOI',
-                    ])->values()->all(),
-                    'Semua jurnal sudah punya DOI.',
-                    max(0, $mhsTotal - $terlibat) . ' dari ' . $mhsTotal . ' mahasiswa belum punya luaran LPPM.'
-                ),
-                self::rankingWidget('Mahasiswa Paling Produktif', 'Jumlah luaran terbanyak', 'luaran', self::top($items, $owner)),
-            ],
-            'groups' => [
-                ['label' => 'Jurnal (Sinta & Internasional)', 'items' => $jurnal->values()],
-                ['label' => 'Conference Internasional', 'items' => $conf->values()],
-            ],
-            'recent' => self::recent([[$items, fn ($i) => $i->judul, 'LPPM Mahasiswa', 'person', $owner]]),
-        ];
-    }
-
-    // =====================================================================
-    // MODE: LPPM DOSEN
-    // =====================================================================
-    private static function lppmDosen(): array
-    {
-        $items = LppmDosen::with('dosen.user')->get();
-        $total = $items->count();
-        $dosenTotal = Dosen::count();
-        $terlibat = $items->pluck('dosen_id')->unique()->count();
-        $jurnal = $items->whereIn('jenis', ['q_internasional', 'sinta_nasional']);
-        $lain = $items->whereIn('jenis', ['hki', 'book']);
-        $owner = fn ($i) => $i->dosen?->user?->name;
-        $tanpaDoi = $jurnal->filter(fn ($i) => blank($i->link_doi));
-
-        return [
-            'meta' => [
-                'title'      => 'LPPM Dosen',
-                'subtitle'   => 'Pantauan riset, publikasi, HKI & buku seluruh dosen',
-                'menu_label' => 'Kelola LPPM Dosen',
-                'menu_url'   => url('/lppm/dosen'),
-            ],
-            'hero' => [
-                self::h('Total Luaran', $total, 'luaran', 'local_fire_department'),
-                self::h('Rata-rata per Bulan', self::avgPerMonth($items), 'luaran/bln', 'trending_up'),
-                self::h('Jurnal Q Internasional', self::pct($items->where('jenis', 'q_internasional')->count(), $total), '%', 'public'),
-            ],
-            'cards' => [
-                self::c('Total Luaran', $total, 'co_present', 'info'),
-                self::c('Jurnal Q Internasional', $items->where('jenis', 'q_internasional')->count(), 'menu_book', 'success'),
-                self::c('Jurnal Sinta Nasional', $items->where('jenis', 'sinta_nasional')->count(), 'article', 'primary'),
-                self::c('HKI', $items->where('jenis', 'hki')->count(), 'verified', 'warning'),
-            ],
-            'cards2' => [
-                self::c('Buku', $items->where('jenis', 'book')->count(), 'auto_stories', 'success'),
-                self::c('Dosen Terlibat', $terlibat, 'groups', 'info'),
-                self::c('Partisipasi Dosen', self::pct($terlibat, $dosenTotal) . '%', 'donut_large', 'primary'),
-                self::c('Luaran Tahun Ini', $items->where('tahun', now()->year)->count(), 'event', 'warning'),
-            ],
-            'donuts' => [
-                self::donutCard('Distribusi Jenis Luaran', 'Jurnal, HKI, dan buku', 'Luaran',
-                    self::donut($items, 'jenis', [
-                        'q_internasional' => ['Jurnal Q Internasional', 'var(--chart-5)'],
-                        'sinta_nasional'  => ['Jurnal Sinta Nasional', 'var(--chart-3)'],
-                        'hki'             => ['HKI', 'var(--chart-2)'],
-                        'book'            => ['Buku', 'var(--chart-4)'],
-                    ])),
-                self::participationDonut('Keterlibatan Dosen', $terlibat, $dosenTotal, 'Dosen'),
-            ],
-            'widgets' => [
-                self::barsWidget('Peringkat Jurnal', 'Sebaran peringkat (Q1–Q4 / S1–S6)',
-                    $jurnal->map(fn ($i) => strtoupper(trim((string) $i->peringkat)) ?: 'Tanpa peringkat')->countBy()->sortKeys()),
-                self::attentionWidget(
-                    'Perlu Ditindaklanjuti', 'Jurnal yang belum dilengkapi link DOI',
-                    self::pct($jurnal->count() - $tanpaDoi->count(), $jurnal->count()),
-                    ($jurnal->count() - $tanpaDoi->count()) . ' dari ' . $jurnal->count() . ' jurnal punya DOI',
-                    $tanpaDoi->sortByDesc('created_at')->take(3)->map(fn ($i) => [
-                        'title' => $i->judul,
-                        'meta'  => ($owner($i) ?? '-') . ' · belum ada link DOI',
-                    ])->values()->all(),
-                    'Semua jurnal sudah punya DOI.',
-                    max(0, $dosenTotal - $terlibat) . ' dari ' . $dosenTotal . ' dosen belum punya luaran LPPM.'
-                ),
-                self::rankingWidget('Dosen Paling Produktif', 'Jumlah luaran terbanyak', 'luaran', self::top($items, $owner)),
-            ],
-            'groups' => [
-                ['label' => 'Jurnal (Q & Sinta)', 'items' => $jurnal->values()],
-                ['label' => 'HKI & Buku', 'items' => $lain->values()],
-            ],
-            'recent' => self::recent([[$items, fn ($i) => $i->judul, 'LPPM Dosen', 'co_present', $owner]]),
-        ];
-    }
-
-    // =====================================================================
     // MODE: REKOGNISI
     // =====================================================================
     private static function rekognisi(): array
     {
-        $items = Rekognisi::with('user.mahasiswa')->approved()->get();
+        $items = Rekognisi::with(['mahasiswa.user', 'dosen.user'])->approved()->get();
         $total = $items->count();
-        $owner = fn ($i) => $i->user?->name;
+        $owner = fn ($i) => $i->owner_name;
         $intl = $items->where('skala', 'internasional')->count();
         $upcoming = self::upcoming([[$items, fn ($i) => $i->jabatan_efektif ?: ($i->judul ?: $i->mitra), 'Rekognisi', 'workspace_premium', $owner]]);
         $userTypes = $items->groupBy(fn ($i) => $i->tipe_user_efektif);
@@ -451,7 +303,7 @@ class AdminDashboardData
     private static function sida(User $viewer): array
     {
         $kem = Kemahasiswaan::with('mahasiswa.user')->approved()->get();
-        $rek = Rekognisi::with('user.mahasiswa')->approved()->get();
+        $rek = Rekognisi::with(['mahasiswa.user', 'dosen.user'])->approved()->get();
         $ks = KerjaSama::with('user')->approved()->get();
 
         $all = $kem->concat($rek)->concat($ks);
@@ -461,11 +313,12 @@ class AdminDashboardData
             + $ks->whereIn('jenis', ['conference_internasional', 'pengabdian_internasional', 'research_internasional'])->count();
 
         $ownerMhs = fn ($i) => $i->mahasiswa?->user?->name;
-        $ownerUsr = fn ($i) => $i->user?->name;
+        $ownerRekognisi = fn ($i) => $i->owner_name;
+        $ownerUser = fn ($i) => $i->user?->name;
 
         $upcoming = self::upcoming([
-            [$rek, fn ($i) => $i->jabatan_efektif ?: ($i->judul ?: $i->mitra), 'Rekognisi', 'workspace_premium', $ownerUsr],
-            [$ks, fn ($i) => $i->judul_kegiatan, 'Kerja Sama', 'handshake', $ownerUsr],
+            [$rek, fn ($i) => $i->jabatan_efektif ?: ($i->judul ?: $i->mitra), 'Rekognisi', 'workspace_premium', $ownerRekognisi],
+            [$ks, fn ($i) => $i->judul_kegiatan, 'Kerja Sama', 'handshake', $ownerUser],
         ]);
 
         $counts = User::selectRaw('role, count(*) as n')->groupBy('role')->pluck('n', 'role');
@@ -473,8 +326,8 @@ class AdminDashboardData
         $dsnCount = Dosen::count();
 
         $topOwners = $kem->map($ownerMhs)
-            ->concat($rek->map($ownerUsr))
-            ->concat($ks->map($ownerUsr))
+            ->concat($rek->map($ownerRekognisi))
+            ->concat($ks->map($ownerUser))
             ->filter()->countBy()->sortDesc()->take(5)
             ->map(fn ($v, $k) => ['name' => $k, 'value' => $v])->values()->all();
 
@@ -559,8 +412,8 @@ class AdminDashboardData
             ],
             'recent' => self::recent([
                 [$kem, fn ($i) => $i->nama_kegiatan, 'Kemahasiswaan', 'school', $ownerMhs],
-                [$rek, fn ($i) => $i->judul ?: ($i->jabatan_efektif ?: $i->mitra), 'Rekognisi', 'workspace_premium', $ownerUsr],
-                [$ks, fn ($i) => $i->judul_kegiatan, 'Kerja Sama', 'handshake', $ownerUsr],
+                [$rek, fn ($i) => $i->judul ?: ($i->jabatan_efektif ?: $i->mitra), 'Rekognisi', 'workspace_premium', $ownerRekognisi],
+                [$ks, fn ($i) => $i->judul_kegiatan, 'Kerja Sama', 'handshake', $ownerUser],
             ]),
         ];
     }

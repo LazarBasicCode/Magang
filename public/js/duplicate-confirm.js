@@ -13,6 +13,29 @@
     const cancel = document.getElementById('duplicateConfirmCancel');
     const continueButton = document.getElementById('duplicateConfirmContinue');
     let resolvePending = null;
+    let hiddenModals = [];
+
+    /**
+     * Modal lain yang sedang terbuka (mis. form Tambah/Edit) disembunyikan selama konfirmasi tampil,
+     * supaya tidak ada dua modal bertumpuk. Hanya class `is-active` yang dilepas — isi form dan posisi
+     * geser modal tetap utuh — lalu dikembalikan setelah pengguna memilih.
+     */
+    function hideOtherModals() {
+        hiddenModals = [...document.querySelectorAll('.modal-backdrop.is-active, .modal-card.is-active')]
+            .filter((el) => el !== backdrop && el !== card);
+        hiddenModals.forEach((el) => {
+            el.classList.remove('is-active');
+            if (el.classList.contains('modal-card')) el.setAttribute('aria-hidden', 'true');
+        });
+    }
+
+    function restoreOtherModals() {
+        hiddenModals.forEach((el) => {
+            el.classList.add('is-active');
+            if (el.classList.contains('modal-card')) el.setAttribute('aria-hidden', 'false');
+        });
+        hiddenModals = [];
+    }
 
     const modal = SIDA.modal.attach({
         backdrop,
@@ -27,6 +50,7 @@
         const resolve = resolvePending;
         resolvePending = null;
         modal.close();
+        restoreOtherModals();
         resolve(answer);
     }
 
@@ -68,6 +92,7 @@
             more.textContent = hiddenCount ? `Dan ${hiddenCount} data sama lainnya.` : '';
             more.hidden = !hiddenCount;
 
+            hideOtherModals();
             modal.open();
             return new Promise((resolve) => {
                 resolvePending = resolve;

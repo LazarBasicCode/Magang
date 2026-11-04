@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Dosen;
 use App\Models\Kemahasiswaan;
-use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
+use App\Models\Rekognisi;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -24,11 +24,11 @@ class TambahMahasiswaDosenTest extends TestCase
         ]);
     }
 
-    public function test_import_lppm_dengan_nim_belum_terdaftar_membuat_calon_tanpa_akun(): void
+    public function test_import_rekognisi_dengan_nim_belum_terdaftar_membuat_profil_tanpa_akun(): void
     {
-        $csv = "nim,jenis,judul,penulis,bukti_kegiatan,tahun\n"
-             . "999123,conference_internasional,Judul A,Penulis A,https://example.com/a,2025\n"
-             . "999123,conference_internasional,Judul B,Penulis A,https://example.com/b,2025\n";
+        $csv = "nim_nidn,tipe_user,jenis,skala,judul,penulis,bukti_kegiatan,tahun,tanggal_mulai,tanggal_selesai\n"
+             . "999123,mahasiswa,conference,internasional,Judul A,Penulis A,https://example.com/a,2025,2025-01-01,2025-01-02\n"
+             . "999123,mahasiswa,conference,internasional,Judul B,Penulis A,https://example.com/b,2025,2025-02-01,2025-02-02\n";
 
         $res = $this->actingAs($this->admin())->post('/lppm/mahasiswa/import', [
             'file' => UploadedFile::fake()->createWithContent('lppm.csv', $csv),
@@ -39,7 +39,7 @@ class TambahMahasiswaDosenTest extends TestCase
         $calon = Mahasiswa::where('nim', '999123')->first();
         $this->assertNotNull($calon);
         $this->assertNull($calon->user_id);
-        $this->assertSame(2, LppmMahasiswa::where('mahasiswa_id', $calon->id)->count());
+        $this->assertSame(2, Rekognisi::where('mahasiswa_id', $calon->id)->count());
     }
 
     public function test_daftar_calon_menampilkan_nim_tanpa_akun_beserta_pemakaiannya(): void
@@ -55,19 +55,21 @@ class TambahMahasiswaDosenTest extends TestCase
         $this->assertSame('999001', $json[0]['identifier']);
     }
 
-    public function test_nama_di_tabel_terisi_otomatis_dari_kolom_penulis_lppm(): void
+    public function test_nama_di_tabel_terisi_otomatis_dari_kolom_penulis_rekognisi(): void
     {
         $satu   = Mahasiswa::create(['nim' => '999010']);
         $banyak = Mahasiswa::create(['nim' => '999011']);
         $kosong = Mahasiswa::create(['nim' => '999012']);
 
         $data = fn ($m, $penulis) => [
-            'mahasiswa_id' => $m->id, 'jenis' => 'conference_internasional', 'judul' => 'J',
-            'penulis' => $penulis, 'bukti_kegiatan' => 'https://example.com/x', 'tahun' => 2025,
+            'mahasiswa_id' => $m->id, 'tipe_user' => 'mahasiswa', 'jenis' => 'conference',
+            'skala' => 'internasional', 'judul' => 'J', 'penulis' => $penulis,
+            'bukti_kegiatan' => 'https://example.com/x', 'tahun' => 2025,
+            'tanggal_mulai' => '2025-01-01', 'tanggal_selesai' => '2025-01-02',
         ];
-        LppmMahasiswa::create($data($satu, 'Maharani'));
-        LppmMahasiswa::create($data($satu, 'Maharani'));
-        LppmMahasiswa::create($data($banyak, 'Vito, Gopal'));
+        Rekognisi::create($data($satu, 'Maharani'));
+        Rekognisi::create($data($satu, 'Maharani'));
+        Rekognisi::create($data($banyak, 'Vito, Gopal'));
 
         $rows = collect($this->actingAs($this->admin())
             ->getJson('/data-master/users/calon/mahasiswa')->assertOk()->json('data'))

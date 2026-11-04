@@ -28,8 +28,8 @@ class ReportData
         // kosong (map() tetap mengembalikan koleksi Eloquent) lalu digabung dengan angka, terjadi error
         // "Call to a member function getKey() on int". Koleksi biasa tidak punya masalah itu.
         $kem = Kemahasiswaan::with('mahasiswa.user')->approved()->get()->toBase();
-        $rek = Rekognisi::with('user.mahasiswa')->approved()->get()->toBase();
-        $ks  = KerjaSama::with('user')->approved()->get()->toBase();
+        $rek = Rekognisi::with(['mahasiswa.user', 'dosen.user'])->approved()->get()->toBase();
+        $ks  = KerjaSama::with(['user.mahasiswa', 'user.dosen'])->approved()->get()->toBase();
 
         // Daftar tahun yang tersedia untuk filter
         $years = $kem->concat($rek)->concat($ks)
@@ -68,12 +68,12 @@ class ReportData
         $mhsTotal = Mahasiswa::count();
         $dsnTotal = Dosen::count();
 
-        $mhsIds = $kemP->map(fn ($i) => $i->mahasiswa?->user_id)
-            ->concat($rekP->filter(fn ($i) => $i->tipe_user_efektif === 'mahasiswa' || $i->tipe_user_efektif === 'alumni')->pluck('user_id'))
-            ->concat($ksP->where('tipe_user', 'mahasiswa')->pluck('user_id'))
+        $mhsIds = $kemP->pluck('mahasiswa_id')
+            ->concat($rekP->filter(fn ($i) => $i->tipe_user_efektif === 'mahasiswa' || $i->tipe_user_efektif === 'alumni')->pluck('mahasiswa_id'))
+            ->concat($ksP->where('tipe_user', 'mahasiswa')->map(fn ($i) => $i->user?->mahasiswa?->id))
             ->filter()->unique()->count();
-        $dsnIds = $rekP->filter(fn ($i) => $i->tipe_user_efektif === 'dosen')->pluck('user_id')
-            ->concat($ksP->where('tipe_user', 'dosen')->pluck('user_id'))
+        $dsnIds = $rekP->filter(fn ($i) => $i->tipe_user_efektif === 'dosen')->pluck('dosen_id')
+            ->concat($ksP->where('tipe_user', 'dosen')->map(fn ($i) => $i->user?->dosen?->id))
             ->filter()->unique()->count();
 
         // ---- Rincian per jenis/tingkat (periode terpilih) ----
@@ -106,7 +106,7 @@ class ReportData
         $owner = fn ($name, $role) => $name ? [$name . '|' . $role] : [];
         $contrib = collect()
             ->concat($kemP->flatMap(fn ($i) => $owner($i->mahasiswa?->user?->name, 'Mahasiswa')))
-            ->concat($rekP->flatMap(fn ($i) => $owner($i->user?->name, ucfirst((string) $i->tipe_user_efektif))))
+            ->concat($rekP->flatMap(fn ($i) => $owner($i->owner_name, ucfirst((string) $i->tipe_user_efektif))))
             ->concat($ksP->flatMap(fn ($i) => $owner($i->user?->name, ucfirst((string) $i->tipe_user))))
             ->countBy()->sortDesc()->take(10)
             ->map(function ($n, $key) {
@@ -166,7 +166,7 @@ class ReportData
         ];
     }
 
-    /** Tahun kegiatan: kolom "tahun" (kemahasiswaan/LPPM) atau tahun tanggal_mulai (rekognisi/kerja sama). */
+    /** Tahun kegiatan: kolom tahun (kemahasiswaan) atau tanggal_mulai (rekognisi/kerja sama). */
     private static function year($item): ?int
     {
         $attrs = $item->getAttributes();

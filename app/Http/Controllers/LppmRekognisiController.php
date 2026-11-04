@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\HandlesBulkData;
 use App\Http\Controllers\Concerns\MahasiswaView;
 use App\Http\Controllers\Concerns\NotifiesOwner;
+use App\Models\Dosen;
+use App\Models\Mahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
+use App\Support\DuplicateDetector;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
 use App\Support\Approval;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class LppmRekognisiController extends Controller
@@ -28,7 +32,6 @@ class LppmRekognisiController extends Controller
 
     /** Aturan validasi yang sama dipakai form (store/update) dan unggah massal. */
     private const RULES = [
-        'user_id'         => ['required', 'exists:users,id'],
         'jenis'           => ['required', 'in:jurnal,hki,book,sinta,conference,prosiding,paten'],
         'skala'           => ['nullable', 'required_if:jenis,jurnal,sinta,conference,prosiding,paten', 'in:nasional,internasional'],
         'mitra'           => ['nullable', 'string', 'max:255'],
@@ -73,9 +76,9 @@ class LppmRekognisiController extends Controller
         $term = trim((string) $request->query('q', ''));
 
         $listQuery = function () use ($ownScope, $user, $tipe_user, $jenis, $skala, $term, $status) {
-            $query = Rekognisi::with('user.mahasiswa')->latest()->orderByDesc('id');
+            $query = Rekognisi::with(['mahasiswa.user', 'dosen.user'])->latest()->orderByDesc('id');
             if ($ownScope) {
-                $query->where('user_id', $user->id);
+                $this->scopeToUserProfile($query, $user);
             }
             if ($tipe_user && $tipe_user !== 'semua') $this->applyUserTypeFilter($query, $tipe_user);
             if ($jenis && $jenis !== 'semua') $query->where('jenis', $jenis);
@@ -92,7 +95,10 @@ class LppmRekognisiController extends Controller
                         ->orWhere('nomor_paten', 'like', $like)
                         ->orWhere('mitra', 'like', $like)
                         ->orWhere('jabatan', 'like', $like)
-                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)->orWhere('nim_nidn', 'like', $like));
+                        ->orWhereHas('mahasiswa', fn ($m) => $m->where('nim', 'like', $like)
+                            ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)))
+                        ->orWhereHas('dosen', fn ($d) => $d->where('nidn', 'like', $like)
+                            ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)));
                 });
             }
             return $query;
@@ -116,7 +122,9 @@ class LppmRekognisiController extends Controller
         ];
         if ($selfView && $verify) {
             // Ringkasan per status (kartu filter di tampilan mahasiswa).
-            $payload['summary'] = $this->statusSummary(Rekognisi::where('user_id', $user->id));
+            $summaryQuery = Rekognisi::query();
+            $this->scopeToUserProfile($summaryQuery, $user);
+            $payload['summary'] = $this->statusSummary($summaryQuery);
         }
 
         // Request AJAX (tombol halaman / filter / cari): balas JSON data baris + meta halaman.
@@ -134,12 +142,10 @@ class LppmRekognisiController extends Controller
             ]);
         }
 
-        $userList = $ownScope
-            ? collect([$user])
-            : User::with(['mahasiswa', 'dosen'])->whereIn('role', ['dosen', 'mahasiswa'])->orderBy('name')->get();
+        $userList = $ownScope ? $this->ownerOptionsFor($user) : $this->ownerOptionsForAll();
 
         $statsQuery = fn () => $ownScope
-            ? Rekognisi::where('user_id', $user->id)
+            ? tap(Rekognisi::query(), fn (Builder $query) => $this->scopeToUserProfile($query, $user))
             : Rekognisi::query();
 
         $alumniStatsQuery = clone $statsQuery();
@@ -160,16 +166,21 @@ class LppmRekognisiController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
+        $duplicates = DuplicateDetector::for('rekognisi')->check($data);
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
+        }
+
         // Rekognisi milik mahasiswa yang diisi mahasiswa sendiri -> antrean persetujuan dosen wali.
-        $owner = ($data['tipe_user'] ?? null) === 'mahasiswa' ? User::find($data['user_id'])?->mahasiswa : null;
+        $owner = $data['mahasiswa_id'] ? Mahasiswa::find($data['mahasiswa_id']) : null;
         $data += Approval::attributesFor($request->user(), $owner, true);
 
-        $item = Rekognisi::create($data)->load('user.mahasiswa');
+        $item = Rekognisi::create($data)->load(['mahasiswa.user', 'dosen.user']);
 
         Approval::afterSubmit('rekognisi', $item, $request->user(), null);
         $this->notifyRekognisi($request, $item, 'ditambahkan');
 
-        return response()->json(['success' => true, 'data' => $this->format($item)]);
+        return response()->json(['success' => true, 'data' => $this->format($item), ...DuplicateDetector::warnings($duplicates)]);
     }
 
     public function update(Request $request, Rekognisi $rekognisi)
@@ -177,29 +188,34 @@ class LppmRekognisiController extends Controller
         $this->authorizeOwnership($request, $rekognisi);
 
         // Pemilik data tidak boleh diganti saat edit (dikunci juga di sisi server).
-        $request->merge(['user_id' => $rekognisi->user_id]);
+        $request->merge(['owner_ref' => $rekognisi->owner_ref, 'user_id' => null]);
 
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
+        $duplicates = DuplicateDetector::for('rekognisi')->check($data, $rekognisi->id);
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
+        }
+
         // Edit oleh mahasiswa mengembalikan data ke antrean persetujuan (admin/dosen tidak mengubah status).
         $previous = $rekognisi->approval_status;
-        $data += Approval::attributesFor($request->user(), $rekognisi->user?->mahasiswa, false);
+        $data += Approval::attributesFor($request->user(), $rekognisi->mahasiswa, false);
 
         $rekognisi->update($data);
-        $rekognisi->load('user.mahasiswa');
+        $rekognisi->load(['mahasiswa.user', 'dosen.user']);
 
         Approval::afterSubmit('rekognisi', $rekognisi, $request->user(), $previous);
         $this->notifyRekognisi($request, $rekognisi, 'diperbarui');
 
-        return response()->json(['success' => true, 'data' => $this->format($rekognisi)]);
+        return response()->json(['success' => true, 'data' => $this->format($rekognisi), ...DuplicateDetector::warnings($duplicates)]);
     }
 
     public function destroy(Request $request, Rekognisi $rekognisi)
     {
         $this->authorizeOwnership($request, $rekognisi);
 
-        $rekognisi->loadMissing('user');
+        $rekognisi->loadMissing(['mahasiswa.user', 'dosen.user']);
         $this->notifyRekognisi($request, $rekognisi, 'dihapus');
 
         $id = $rekognisi->id;
@@ -214,7 +230,7 @@ class LppmRekognisiController extends Controller
         return $this->bulkDestroySelected(
             $request,
             Rekognisi::class,
-            ['user'],
+            ['mahasiswa.user', 'dosen.user'],
             fn (Rekognisi $item) => $this->notifyRekognisi($request, $item, 'dihapus')
         );
     }
@@ -229,7 +245,7 @@ class LppmRekognisiController extends Controller
         return $this->bulkUpdateSelected(
             $request,
             Rekognisi::class,
-            ['user'],
+            ['mahasiswa.user', 'dosen.user'],
             [
                 'jenis'   => ['nullable', 'in:jurnal,hki,book,sinta,conference,prosiding,paten'],
                 'skala'   => ['nullable', 'in:nasional,internasional'],
@@ -317,6 +333,11 @@ class LppmRekognisiController extends Controller
         return 'rekognisi';
     }
 
+    protected function bulkOwnerWith(): array|string
+    {
+        return ['mahasiswa.user', 'dosen.user'];
+    }
+
     private const SHEET = 'Data Rekognisi';
 
     protected function bulkSheetName(): ?string
@@ -371,7 +392,8 @@ class LppmRekognisiController extends Controller
             self::SHEET,
             [
                 'id'              => ['required' => 'Tidak', 'example' => '', 'width' => 10, 'note' => 'KOSONGKAN untuk data baru. Isi id (dari hasil Download) untuk MENGEDIT data yang sudah ada.'],
-                'nim_nidn'        => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa / NIDN dosen yang sudah terdaftar. Pemilik data tidak bisa diganti saat edit.'],
+                'nim_nidn'        => ['required' => 'Ya (data baru)', 'example' => '2210001', 'width' => 18, 'note' => 'NIM mahasiswa / NIDN dosen. Profil dapat dibuat otomatis tanpa akun. Pemilik data tidak bisa diganti saat edit.'],
+                'tipe_user'       => ['required' => 'Jika profil belum ada', 'example' => 'mahasiswa', 'width' => 16, 'options' => ['mahasiswa', 'dosen', 'alumni'], 'note' => 'Jenis pemilik, wajib untuk NIM/NIDN yang belum terdaftar.'],
                 'jenis'           => ['required' => 'Ya', 'example' => 'jurnal', 'width' => 16, 'options' => ['jurnal', 'hki', 'book', 'sinta', 'conference', 'prosiding', 'paten'], 'note' => 'Jenis karya, terpisah dari skala. prosiding & paten hanya untuk Dosen.'],
                 'skala'           => ['required' => 'Untuk publikasi', 'example' => 'internasional', 'width' => 18, 'options' => ['nasional', 'internasional'], 'note' => 'Skala publikasi.'],
                 'judul'           => ['required' => 'Dosen/Mahasiswa', 'example' => 'Judul karya', 'width' => 34, 'note' => 'Judul karya atau publikasi.'],
@@ -397,7 +419,7 @@ class LppmRekognisiController extends Controller
                 'Isi data di sheet "Data Rekognisi", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
                 'Kolom id: kosongkan untuk data baru, isi id (dari hasil Download) untuk mengedit data.',
                 'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
-                'Format tanggal: 2026-09-30 atau 30/09/2026. Kolom "nama" otomatis diambil dari NIM/NIDN.',
+                'Format tanggal: 2026-09-30 atau 30/09/2026. Kolom "nama" otomatis diambil dari akun bila tersedia.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
@@ -416,8 +438,8 @@ class LppmRekognisiController extends Controller
             Rekognisi::class,
             fn (Rekognisi $item) => [
                 $item->id,
-                $item->user->nim_nidn ?? '',
-                $item->user->name ?? '',
+                $item->owner_identifier ?? '',
+                $item->owner_name,
                 $item->tipe_user_efektif,
                 $item->jenis,
                 $item->skala,
@@ -452,32 +474,68 @@ class LppmRekognisiController extends Controller
     {
         $this->bulkEnsureAccess($request, true);
 
-        $parsed = $this->bulkParseUpload($request, ['jenis', 'mitra', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan']);
+        $parsed = $this->bulkParseUpload($request, ['nim_nidn', 'jenis', 'judul', 'penulis', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan']);
         if ($parsed instanceof JsonResponse) {
             return $parsed;
         }
         [, $rows] = $parsed;
 
         $existingById = $this->bulkExistingById(Rekognisi::class, $rows);
-        $findOwner = $this->bulkOwnerFinder();
-
+        $profiles = Mahasiswa::with('user')->get()->concat(Dosen::with('user')->get());
+        $newOwners = [];
+        $newOwnerTokens = [];
         $plan = [];
         $errors = [];
         foreach ($rows as $row) {
             $d = $row['data'];
+            $rowErrors = [];
+            $id = trim((string) ($d['id'] ?? ''));
+            $existing = $id !== '' && ctype_digit($id) ? $existingById->get((int) $id) : null;
+            if ($id !== '' && !$existing) {
+                $rowErrors[] = "id \"{$id}\" tidak ditemukan.";
+            }
 
-            [$existing, $owner, $rowErrors] = $this->bulkResolveTarget($d, $existingById, $findOwner);
+            $identifier = trim((string) ($d['nim_nidn'] ?? ''));
+            $typeHint = Csv::normalizeKey($d['tipe_user'] ?? '');
+            $owner = null;
+            if ($existing) {
+                $owner = $existing->owner_profile;
+                if (!$owner) {
+                    $rowErrors[] = "Pemilik Rekognisi #{$existing->id} tidak memiliki profil yang valid.";
+                } elseif ($identifier !== '' && $identifier !== $existing->owner_identifier) {
+                    $rowErrors[] = 'Pemilik data tidak bisa diganti saat edit (NIM/NIDN berbeda dari data aslinya).';
+                }
+            } elseif ($identifier === '') {
+                $rowErrors[] = 'nim_nidn wajib diisi untuk data baru.';
+            } else {
+                [$owner, $ambiguous] = $this->findImportOwner($profiles, $identifier, $typeHint);
+                if ($ambiguous) {
+                    $rowErrors[] = "NIM/NIDN \"{$identifier}\" cocok dengan lebih dari satu profil; isi kolom tipe_user.";
+                } elseif (!$owner) {
+                    if (!in_array($typeHint, ['mahasiswa', 'alumni', 'dosen'], true)) {
+                        $rowErrors[] = "Profil untuk NIM/NIDN \"{$identifier}\" belum terdaftar; isi tipe_user agar profil dapat dibuat.";
+                    } else {
+                        $ownerKey = $typeHint . ':' . $identifier;
+                        $owner = $newOwners[$ownerKey] ??= $this->newImportOwner($identifier, $typeHint);
+                    }
+                }
+            }
+
+            if ($owner && $typeHint !== '') {
+                $actualType = $this->typeForProfile($owner);
+                if ($typeHint !== $actualType && !($typeHint === 'mahasiswa' && $actualType === 'alumni')) {
+                    $rowErrors[] = "tipe_user tidak sesuai dengan profil {$identifier}.";
+                }
+            }
 
             $jenis = Csv::normalizeKey($d['jenis'] ?? '');
             $skala = Csv::normalizeKey($d['skala'] ?? '');
-            $owner?->loadMissing('mahasiswa');
-            $tipeUser = $owner
-                ? $this->userTypeFor($owner)
-                : ($existing?->tipe_user_efektif ?? 'mahasiswa');
+            $tipeUser = $owner ? $this->typeForProfile($owner) : ($existing?->tipe_user_efektif ?? '');
             [$dates, $badDates] = $this->bulkParseDates($d, ['tanggal_mulai', 'tanggal_selesai'], $rowErrors);
 
             $payload = [
-                'user_id'        => $owner?->id,
+                'mahasiswa_id'   => $owner instanceof Mahasiswa ? ($owner->exists ? $owner->id : null) : null,
+                'dosen_id'       => $owner instanceof Dosen ? ($owner->exists ? $owner->id : null) : null,
                 'tipe_user'      => $tipeUser,
                 'jenis'          => $jenis,
                 'skala'          => $skala ?: null,
@@ -499,12 +557,7 @@ class LppmRekognisiController extends Controller
                 'bukti_tambahan' => trim((string) ($d['bukti_tambahan'] ?? '')) ?: null,
             ] + $dates;
 
-            // user_id sudah ditangani pesan di bulkResolveTarget; hindari pesan ganda.
-            [$messages] = $this->bulkValidate(
-                $payload,
-                self::RULES,
-                array_merge($owner ? [] : ['user_id'], $badDates)
-            );
+            [$messages] = $this->bulkValidate($payload, self::RULES, $badDates);
             $rowErrors = array_merge($rowErrors, $messages);
 
             $allowedKinds = match ($tipeUser) {
@@ -539,18 +592,39 @@ class LppmRekognisiController extends Controller
             if ($tipeUser !== 'alumni') {
                 unset($payload['jabatan']);
             }
+            if ($owner && !$owner->exists) {
+                $ownerKey = ($owner instanceof Dosen ? 'dosen:' : 'mahasiswa:') . $this->profileIdentifier($owner);
+                $newOwnerTokens[$ownerKey] ??= -count($newOwnerTokens) - 1;
+                $payload[$owner instanceof Dosen ? 'dosen_id' : 'mahasiswa_id'] = $newOwnerTokens[$ownerKey];
+            }
 
-            $plan[] = ['existing' => $existing, 'payload' => $payload, 'owner' => $owner];
+            $plan[] = ['existing' => $existing, 'payload' => $payload, 'owner' => $owner, 'row' => $row['line']];
         }
 
         if ($errors) {
             return $this->bulkRejected($errors);
         }
 
-        $result = $this->bulkSave(Rekognisi::class, $plan);
+        $duplicates = DuplicateDetector::for('rekognisi')->checkBatch(array_map(static fn ($entry) => [
+            'data' => $entry['payload'],
+            'row' => $entry['row'],
+            'ignore_id' => $entry['existing']?->id,
+        ], $plan));
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
+        }
+
+        $result = $this->saveImportedRows($plan);
         $this->bulkNotifyOwners($request, $result['perOwner'], 'rekognisi');
 
-        return $this->bulkSuccess($result['created'], $result['updated'], $result['unchanged']);
+        return $this->bulkSuccess(
+            $result['created'],
+            $result['updated'],
+            $result['unchanged'],
+            $result['newOwners'],
+            'profil pemilik',
+            $duplicates['similar']
+        );
     }
 
     // =====================================================================
@@ -559,7 +633,7 @@ class LppmRekognisiController extends Controller
 
     private function notifyRekognisi(Request $request, Rekognisi $item, string $aksi): void
     {
-        $this->notifyOwner($request, $item->user_id, 'rekognisi', $item->judul ?: ($item->mitra ?: 'Rekognisi'), $aksi, $item->jenis, ['rekognisi_id' => $item->id]);
+        $this->notifyOwner($request, $item->owner_user?->id, 'rekognisi', $item->judul ?: ($item->mitra ?: 'Rekognisi'), $aksi, $item->jenis, ['rekognisi_id' => $item->id]);
     }
 
     private function enforceOwnUser(Request $request, array &$data): void
@@ -569,11 +643,10 @@ class LppmRekognisiController extends Controller
             return;
         }
 
-        // Timpa user_id (dan tipe_user turunannya) jadi milik mereka sendiri,
-        // berapa pun yang dikirim dari klien.
-        $actor->loadMissing('mahasiswa');
-        $data['user_id'] = $actor->id;
-        $data['tipe_user'] = $this->userTypeFor($actor);
+        $actor->loadMissing(['mahasiswa', 'dosen']);
+        $profile = $actor->role === 'dosen' ? $actor->dosen : $actor->mahasiswa;
+        abort_if(!$profile, 422, 'Profil kamu belum terhubung ke akun ini.');
+        $data = array_merge($data, $this->ownerAttributes($profile));
     }
 
     private function authorizeOwnership(Request $request, Rekognisi $rekognisi): void
@@ -584,7 +657,9 @@ class LppmRekognisiController extends Controller
         }
 
         abort_if(
-            $rekognisi->user_id !== $actor->id,
+            ($actor->role === 'dosen'
+                ? $rekognisi->dosen_id !== $actor->dosen?->id
+                : $rekognisi->mahasiswa_id !== $actor->mahasiswa?->id),
             403,
             'Kamu hanya bisa mengelola data rekognisi milikmu sendiri.'
         );
@@ -592,10 +667,16 @@ class LppmRekognisiController extends Controller
 
     private function validated(Request $request): array
     {
+        $selector = $request->validate([
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'owner_ref' => ['nullable', 'string', 'regex:/^(mahasiswa|dosen):[1-9][0-9]*$/'],
+        ]);
+        if (filled($selector['user_id'] ?? null) === filled($selector['owner_ref'] ?? null)) {
+            throw ValidationException::withMessages(['owner_ref' => 'Pilih satu pemilik Rekognisi yang valid.']);
+        }
+        $profile = $this->resolveOwner($selector['owner_ref'] ?? null, $selector['user_id'] ?? null);
         $data = $request->validate(self::RULES);
-
-        $user = User::with('mahasiswa')->findOrFail($data['user_id']);
-        $data['tipe_user'] = $this->userTypeFor($user);
+        $data = array_merge($data, $this->ownerAttributes($profile));
 
         $allowedKinds = match ($data['tipe_user']) {
             'dosen' => ['jurnal', 'hki', 'book', 'prosiding', 'paten'],
@@ -654,10 +735,11 @@ class LppmRekognisiController extends Controller
         return [
             'id'              => $item->id,
             'user_id'         => $item->user_id,
-            'tipe_user'       => $item->user ? $this->userTypeFor($item->user) : $item->tipe_user,
-            'nim_nidn'        => optional($item->user)->nim_nidn ?? '-',
-            'nama'            => optional($item->user)->name ?? 'Tanpa Nama',
-            'avatar_url'      => optional($item->user)->avatar_url,
+            'owner_ref'       => $item->owner_ref,
+            'tipe_user'       => $item->tipe_user_efektif,
+            'nim_nidn'        => $item->owner_identifier ?? '-',
+            'nama'            => $item->owner_name,
+            'avatar_url'      => $item->owner_user?->avatar_url,
             'jenis'           => $item->jenis,
             'skala'           => $item->skala,
             'mitra'           => $item->mitra,
@@ -698,18 +780,178 @@ class LppmRekognisiController extends Controller
     private function applyUserTypeFilter(Builder $query, string $type): void
     {
         if ($type === 'dosen') {
-            $query->whereHas('user', fn ($user) => $user->where('role', 'dosen'));
+            $query->whereNotNull('dosen_id');
             return;
         }
 
         if ($type === 'mahasiswa') {
-            $query->whereHas('user', fn ($user) => $user->where('role', 'mahasiswa'))
-                ->whereDoesntHave('user.mahasiswa', fn ($mahasiswa) => $mahasiswa->where('status', 'lulus'));
+            $query->whereHas('mahasiswa', fn ($mahasiswa) => $mahasiswa->where('status', '!=', 'lulus'));
             return;
         }
 
         if ($type === 'alumni') {
-            $query->whereHas('user.mahasiswa', fn ($mahasiswa) => $mahasiswa->where('status', 'lulus'));
+            $query->whereHas('mahasiswa', fn ($mahasiswa) => $mahasiswa->where('status', 'lulus'));
         }
+    }
+
+    private function scopeToUserProfile(Builder $query, User $user): void
+    {
+        $user->loadMissing(['mahasiswa', 'dosen']);
+        $profileId = $user->role === 'dosen' ? $user->dosen?->id : $user->mahasiswa?->id;
+        $column = $user->role === 'dosen' ? 'dosen_id' : 'mahasiswa_id';
+
+        $profileId
+            ? $query->where($column, $profileId)
+            : $query->whereRaw('1 = 0');
+    }
+
+    private function ownerOptionsForAll(): \Illuminate\Support\Collection
+    {
+        return Mahasiswa::with('user')->orderBy('nim')->get()
+            ->map(fn (Mahasiswa $m) => $this->ownerOption($m))
+            ->concat(Dosen::with('user')->orderBy('nidn')->get()->map(fn (Dosen $d) => $this->ownerOption($d)))
+            ->values();
+    }
+
+    private function ownerOptionsFor(User $user): \Illuminate\Support\Collection
+    {
+        $profile = $user->role === 'dosen' ? $user->dosen : $user->mahasiswa;
+
+        return $profile ? collect([$this->ownerOption($profile)]) : collect();
+    }
+
+    private function ownerOption(Mahasiswa|Dosen $profile): object
+    {
+        $isDosen = $profile instanceof Dosen;
+        $role = $isDosen ? 'dosen' : 'mahasiswa';
+        $status = $isDosen ? '' : ($profile->status ?? '');
+
+        return (object) [
+            'owner_ref' => $role . ':' . $profile->id,
+            'nim_nidn' => $isDosen ? $profile->nidn : $profile->nim,
+            'name' => $profile->user?->name ?? 'Belum ada akun',
+            'role' => $role,
+            'status' => $status,
+        ];
+    }
+
+    private function findImportOwner(\Illuminate\Support\Collection $profiles, string $identifier, string $typeHint): array
+    {
+        $candidates = $profiles->filter(function (Mahasiswa|Dosen $profile) use ($identifier, $typeHint) {
+            $isDosen = $profile instanceof Dosen;
+            if ($typeHint === 'dosen' && !$isDosen) return false;
+            if (in_array($typeHint, ['mahasiswa', 'alumni'], true) && $isDosen) return false;
+
+            $stored = $this->profileIdentifier($profile);
+
+            return $stored === $identifier
+                || ltrim($stored, '0') === ltrim($identifier, '0');
+        })->values();
+
+        return [$candidates->count() === 1 ? $candidates->first() : null, $candidates->count() > 1];
+    }
+
+    private function newImportOwner(string $identifier, string $type): Mahasiswa|Dosen
+    {
+        if ($type === 'dosen') {
+            return new Dosen(['nidn' => $identifier, 'status' => 'aktif']);
+        }
+
+        return new Mahasiswa([
+            'nim' => $identifier,
+            'status' => $type === 'alumni' ? 'lulus' : 'aktif',
+        ]);
+    }
+
+    private function profileIdentifier(Mahasiswa|Dosen $profile): string
+    {
+        return $profile instanceof Dosen ? (string) $profile->nidn : (string) $profile->nim;
+    }
+
+    private function typeForProfile(Mahasiswa|Dosen $profile): string
+    {
+        return $profile instanceof Dosen
+            ? 'dosen'
+            : ($profile->status === 'lulus' ? 'alumni' : 'mahasiswa');
+    }
+
+    private function saveImportedRows(array $plan): array
+    {
+        $created = $updated = $unchanged = $newOwners = 0;
+        $perOwner = [];
+        $savedOwners = [];
+
+        DB::transaction(function () use ($plan, &$created, &$updated, &$unchanged, &$newOwners, &$perOwner, &$savedOwners) {
+            foreach ($plan as $entry) {
+                /** @var Mahasiswa|Dosen $owner */
+                $owner = $entry['owner'];
+                if (!$owner->exists) {
+                    $key = spl_object_id($owner);
+                    if (!isset($savedOwners[$key])) {
+                        $owner->save();
+                        $savedOwners[$key] = true;
+                        $newOwners++;
+                    }
+                }
+
+                $payload = $entry['payload'];
+                $ownerColumn = $owner instanceof Dosen ? 'dosen_id' : 'mahasiswa_id';
+                $payload[$ownerColumn] = $owner->id;
+
+                if ($entry['existing']) {
+                    unset($payload['mahasiswa_id'], $payload['dosen_id'], $payload['tipe_user']);
+                    $entry['existing']->fill($payload);
+                    if ($entry['existing']->isDirty()) {
+                        $entry['existing']->save();
+                        $updated++;
+                        if ($owner->user_id) {
+                            $perOwner[$owner->user_id]['updated'] = ($perOwner[$owner->user_id]['updated'] ?? 0) + 1;
+                        }
+                    } else {
+                        $unchanged++;
+                    }
+                } else {
+                    Rekognisi::create($payload);
+                    $created++;
+                    if ($owner->user_id) {
+                        $perOwner[$owner->user_id]['created'] = ($perOwner[$owner->user_id]['created'] ?? 0) + 1;
+                    }
+                }
+            }
+        });
+
+        return compact('created', 'updated', 'unchanged', 'newOwners', 'perOwner');
+    }
+
+    private function resolveOwner(?string $ownerRef, ?int $userId): Mahasiswa|Dosen
+    {
+        if ($ownerRef !== null) {
+            [$type, $id] = explode(':', $ownerRef, 2);
+            $profile = $type === 'dosen'
+                ? Dosen::with('user')->find($id)
+                : Mahasiswa::with('user')->find($id);
+            if ($profile) return $profile;
+        } elseif ($userId !== null) {
+            $user = User::with(['mahasiswa', 'dosen'])->findOrFail($userId);
+            $profile = $user->role === 'dosen' ? $user->dosen : ($user->role === 'mahasiswa' ? $user->mahasiswa : null);
+            if ($profile) return $profile;
+        }
+
+        throw ValidationException::withMessages([
+            'owner_ref' => 'Pemilik harus memiliki profil mahasiswa atau dosen yang terdaftar.',
+        ]);
+    }
+
+    private function ownerAttributes(Mahasiswa|Dosen $profile): array
+    {
+        if ($profile instanceof Dosen) {
+            return ['mahasiswa_id' => null, 'dosen_id' => $profile->id, 'tipe_user' => 'dosen'];
+        }
+
+        return [
+            'mahasiswa_id' => $profile->id,
+            'dosen_id' => null,
+            'tipe_user' => $profile->status === 'lulus' ? 'alumni' : 'mahasiswa',
+        ];
     }
 }

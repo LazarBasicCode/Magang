@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
 use App\Support\Approval;
+use App\Support\DuplicateDetector;
 use Illuminate\Http\Request;
 
 class KerjaSamaController extends Controller
@@ -158,6 +159,11 @@ class KerjaSamaController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
 
+        $duplicates = DuplicateDetector::for('kerja_sama')->check($data);
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
+        }
+
         // Kerja sama milik mahasiswa yang diisi mahasiswa sendiri -> antrean persetujuan dosen wali.
         $owner = ($data['tipe_user'] ?? null) === 'mahasiswa' ? User::find($data['user_id'])?->mahasiswa : null;
         $data += Approval::attributesFor($request->user(), $owner, true);
@@ -170,6 +176,7 @@ class KerjaSamaController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($item),
+            ...DuplicateDetector::warnings($duplicates),
         ]);
     }
 
@@ -182,6 +189,11 @@ class KerjaSamaController extends Controller
 
         $data = $this->validated($request);
         $this->enforceOwnUser($request, $data);
+
+        $duplicates = DuplicateDetector::for('kerja_sama')->check($data, $kerjaSama->id);
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
+        }
 
         // Edit oleh mahasiswa mengembalikan data ke antrean persetujuan (admin/dosen tidak mengubah status).
         $previous = $kerjaSama->approval_status;
@@ -196,6 +208,7 @@ class KerjaSamaController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($kerjaSama),
+            ...DuplicateDetector::warnings($duplicates),
         ]);
     }
 
@@ -450,17 +463,26 @@ class KerjaSamaController extends Controller
                 $payload['arah'] = null;
             }
 
-            $plan[] = ['existing' => $existing, 'payload' => $payload, 'owner' => $owner];
+            $plan[] = ['existing' => $existing, 'payload' => $payload, 'owner' => $owner, 'row' => $row['line']];
         }
 
         if ($errors) {
             return $this->bulkRejected($errors);
         }
 
+        $duplicates = DuplicateDetector::for('kerja_sama')->checkBatch(array_map(static fn ($entry) => [
+            'data' => $entry['payload'],
+            'row' => $entry['row'],
+            'ignore_id' => $entry['existing']?->id,
+        ], $plan));
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
+        }
+
         $result = $this->bulkSave(KerjaSama::class, $plan);
         $this->bulkNotifyOwners($request, $result['perOwner'], 'kerja sama');
 
-        return $this->bulkSuccess($result['created'], $result['updated'], $result['unchanged']);
+        return $this->bulkSuccess($result['created'], $result['updated'], $result['unchanged'], warnings: $duplicates['similar']);
     }
 
     // =====================================================================

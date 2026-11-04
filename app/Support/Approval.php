@@ -86,9 +86,9 @@ class Approval
                 'label'     => 'Rekognisi',
                 'icon'      => 'workspace_premium',
                 'url'       => '/lppm/rekognisi',
-                'with'      => ['user.mahasiswa'],
+                'with'      => ['mahasiswa.user', 'dosen.user'],
                 'title'     => fn ($i) => $i->judul ?: ($i->jabatan ?: ($i->mitra ?: 'Rekognisi')),
-                'owner'     => fn ($i) => $i->user,
+                'owner'     => fn ($i) => $i->owner_user,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
                 'detail'    => fn ($i) => array_filter([
                     'Tipe'     => $pretty($i->tipe_user_efektif),
@@ -501,7 +501,8 @@ class Approval
     private static function row(string $slug, array $cfg, Model $item, User $viewer): array
     {
         $owner = $cfg['owner']($item);
-        $isDosen = $owner?->role === 'dosen';
+        $isRekognisi = $item instanceof Rekognisi;
+        $isDosen = $isRekognisi ? $item->tipe_user_efektif === 'dosen' : $owner?->role === 'dosen';
         $status = $item->approval_status;
 
         return [
@@ -511,10 +512,10 @@ class Approval
             'url'        => $cfg['url'],
             'id'         => $item->getKey(),
             'title'      => (string) $cfg['title']($item),
-            'name'       => $owner?->name ?? '—',
-            'nim'        => $owner?->nim_nidn,           // NIM (mahasiswa) atau NIDN (dosen)
+            'name'       => $isRekognisi ? $item->owner_name : ($owner?->name ?? '—'),
+            'nim'        => $isRekognisi ? $item->owner_identifier : $owner?->nim_nidn,
             'id_label'   => $isDosen ? 'NIDN' : 'NIM',
-            'owner_role' => $owner?->role,
+            'owner_role' => $isRekognisi ? $item->tipe_user_efektif : $owner?->role,
             'detail'     => $cfg['detail']($item),
             'bukti'      => $cfg['bukti']($item),
             'status'     => $status,

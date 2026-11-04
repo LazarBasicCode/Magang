@@ -65,8 +65,6 @@ class DataSeeder extends Seeder
             // ---------------------------------
             // Mengikuti HakAkses::defaultsForRole('mahasiswa'):
             //   kemahasiswaan   => biasa
-            //   lppm_mahasiswa  => biasa
-            //   lppm_dosen      => none
             //   rekognisi       => biasa
             //   kerja_sama      => biasa
             //   data_master     => none
@@ -150,12 +148,13 @@ class DataSeeder extends Seeder
         }
 
         // =============================
-        // 3. BUAT 5 DATA LPPM MAHASISWA
+        // 3. BUAT 5 DATA REKOGNISI MAHASISWA
         // =============================
         $lppmData = [
             [
                 'mahasiswa_id'   => $mahasiswaIds[0],
-                'jenis'          => 'sinta_nasional',
+                'jenis'          => 'sinta',
+                'skala'          => 'nasional',
                 'judul'          => 'Analisis Sentimen Media Sosial Terhadap Kebijakan Pendidikan',
                 'penulis'        => 'Ahmad Fauzi, Dr. Bambang S.',
                 'nama_jurnal'    => 'Jurnal Teknologi Informasi Indonesia',
@@ -166,7 +165,8 @@ class DataSeeder extends Seeder
             ],
             [
                 'mahasiswa_id'   => $mahasiswaIds[1],
-                'jenis'          => 'conference_internasional',
+                'jenis'          => 'conference',
+                'skala'          => 'internasional',
                 'judul'          => 'Machine Learning for Early Detection of Diabetes',
                 'penulis'        => 'Siti Nurhaliza, Prof. John Doe',
                 'nama_jurnal'    => null,
@@ -177,7 +177,8 @@ class DataSeeder extends Seeder
             ],
             [
                 'mahasiswa_id'   => $mahasiswaIds[2],
-                'jenis'          => 'jurnal_internasional',
+                'jenis'          => 'jurnal',
+                'skala'          => 'internasional',
                 'judul'          => 'Blockchain Technology for Supply Chain Transparency',
                 'penulis'        => 'Budi Santoso, Dr. Jane Smith',
                 'nama_jurnal'    => 'International Journal of Computer Science',
@@ -188,7 +189,8 @@ class DataSeeder extends Seeder
             ],
             [
                 'mahasiswa_id'   => $mahasiswaIds[3],
-                'jenis'          => 'sinta_nasional',
+                'jenis'          => 'sinta',
+                'skala'          => 'nasional',
                 'judul'          => 'Pengembangan Sistem Informasi Akademik Berbasis Web',
                 'penulis'        => 'Dewi Lestari, Dr. Ahmad Yani',
                 'nama_jurnal'    => 'Jurnal Sistem Informasi Nasional',
@@ -199,7 +201,8 @@ class DataSeeder extends Seeder
             ],
             [
                 'mahasiswa_id'   => $mahasiswaIds[4],
-                'jenis'          => 'conference_internasional',
+                'jenis'          => 'conference',
+                'skala'          => 'internasional',
                 'judul'          => 'IoT-Based Smart Farming for Sustainable Agriculture',
                 'penulis'        => 'Rizky Pratama, Dr. Michael Lee',
                 'nama_jurnal'    => null,
@@ -211,7 +214,12 @@ class DataSeeder extends Seeder
         ];
 
         foreach ($lppmData as $l) {
-            DB::table('lppm_mahasiswa')->insert(array_merge($l, [
+            DB::table('rekognisi')->insert(array_merge($l, [
+                'dosen_id'       => null,
+                'tipe_user'      => 'mahasiswa',
+                'tanggal_mulai'  => Carbon::create((int) $l['tahun'], 1, 1)->toDateString(),
+                'tanggal_selesai'=> Carbon::create((int) $l['tahun'], 12, 31)->toDateString(),
+                'approval_status'=> 'disetujui',
                 'created_at' => $now,
                 'updated_at' => $now,
             ]));

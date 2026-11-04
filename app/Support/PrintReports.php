@@ -94,7 +94,7 @@ class PrintReports
                 'title'     => 'Rekognisi',
                 'menu'      => 'rekognisi',
                 'model'     => Rekognisi::class,
-                'with'      => ['user.mahasiswa'],
+                'with'      => ['mahasiswa.user', 'dosen.user'],
                 'year'      => ['column' => 'tanggal_mulai', 'date' => true],
                 'landscape' => true,
                 'stats'     => [
@@ -104,8 +104,8 @@ class PrintReports
                     ['Alumni',          'school',            'orange', fn (Collection $c) => $c->filter(fn ($i) => $i->tipe_user_efektif === 'alumni')->count()],
                 ],
                 'columns'   => [
-                    ['NIM / NIDN', fn ($i) => $i->user->nim_nidn ?? '-'],
-                    ['Nama',       fn ($i) => $i->user->name ?? 'Tanpa Nama'],
+                    ['NIM / NIDN', fn ($i) => $i->owner_identifier ?? '-'],
+                    ['Nama',       fn ($i) => $i->owner_name],
                     ['Tipe',       fn ($i) => self::label($i->tipe_user_efektif)],
                     ['Judul Karya', fn ($i) => $i->judul ?: '-', 'wrap'],
                     ['Penulis',    fn ($i) => $i->penulis ?: '-', 'wrap'],

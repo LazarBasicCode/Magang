@@ -587,6 +587,8 @@
         </form>
     </div>
 
+    @include('partials.duplicate-confirm-modal')
+
     @if($showBulk && $bulkWrite)
         @include('partials.bulk-import-modal', [
             'bulkLabel'    => 'Kerja Sama',
@@ -1087,16 +1089,32 @@
             const method = id ? 'PUT' : 'POST';
 
             try {
-                const res = await fetch(url, {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify(payload),
-                });
-                const result = await res.json();
+                // Server membalas 409 bila ada data yang persis sama; simpan ulang hanya setelah pengguna mengonfirmasi.
+                let confirmDuplicates = false;
+                let res, result;
+                while (true) {
+                    res = await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ ...payload, ...(confirmDuplicates ? { confirm_duplicates: true } : {}) }),
+                    });
+                    result = await res.json();
+                    if (!result.duplicate_confirmation_required || confirmDuplicates) break;
+
+                    if (!await window.DuplicateConfirm.ask({
+                        duplicates: result.duplicates || [],
+                        moreCount: result.more_duplicates || 0,
+                    })) {
+                        window.Toast?.show?.({ type: 'info', message: 'Data tidak disimpan.' });
+                        return;
+                    }
+                    confirmDuplicates = true;
+                }
+
                 if (!res.ok) {
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
                     modalError.textContent = firstError;
@@ -1105,6 +1123,15 @@
                 }
                 closeModal();
                 await loadPage(id ? currentPage : 1); // data baru tampil di halaman 1 (terbaru dulu)
+                if (result.warnings?.length) {
+                    const warningCount = result.warning_count || result.warnings.length;
+                    const more = warningCount > result.warnings.length ? ` Dan ${warningCount - result.warnings.length} kemiripan lainnya.` : '';
+                    window.Toast?.show?.({
+                        type: 'warning',
+                        title: 'Kemiripan data ditemukan',
+                        message: result.warnings.slice(0, 3).join(' ') + more,
+                    });
+                }
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
@@ -1150,6 +1177,7 @@
     </script>
     <script src="{{ asset('js/delete-confirm.js') }}?v={{ @filemtime(public_path('js/delete-confirm.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
+    <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)

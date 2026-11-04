@@ -232,15 +232,19 @@
                                 'conference' => 'Conference',
                                 'prosiding' => 'Prosiding',
                                 'paten' => 'Paten',
+                                'nasional' => 'Nasional',
+                                'internasional' => 'Internasional',
+                                'alumni' => 'Alumni',
+                                'rekognisi' => 'Rekognisi',
                                 ];
                                 $statusPatenLabel = ['terdaftar' => 'Terdaftar (Filed)', 'granted' => 'Granted (Bersertifikat)'];
                                 $colors = ['c-primary', 'c-info', 'c-warning', 'c-success', 'c-danger'];
                                 @endphp
                                 @foreach($items as $item)
                                 @php
-                                $nama = optional($item->user)->name ?? 'Tanpa Nama';
+                                $nama = $item->owner_name;
                                 $initials = collect(explode(' ', $nama))->filter()->take(2)->map(fn($w) => strtoupper($w[0]))->implode('');
-                                $avatarColor = $colors[$item->user_id % count($colors)];
+                                $avatarColor = $colors[($item->mahasiswa_id ?? $item->dosen_id) % count($colors)];
                                 $detailKarya = match ($item->jenis) {
                                     'jurnal', 'sinta' => trim(($item->nama_jurnal ?? '') . ($item->peringkat ? ' · ' . $item->peringkat : '')) ?: '-',
                                     'hki' => \Illuminate\Support\Str::headline((string) $item->jenis_hki),
@@ -251,10 +255,10 @@
                                 };
                                 @endphp
                                 <tr data-id="{{ $item->id }}" data-jenis="{{ $item->jenis }}" data-tipe_user="{{ $item->tipe_user_efektif }}">
-                                    <td><span class="nim-code">{{ optional($item->user)->nim_nidn ?? '-' }}</span></td>
+                                    <td><span class="nim-code">{{ $item->owner_identifier ?? '-' }}</span></td>
                                     <td>
                                         <div class="student-cell">
-                                            @include('partials.avatar', ['initials' => $initials, 'color' => $avatarColor, 'url' => optional($item->user)->avatar_url])
+                                            @include('partials.avatar', ['initials' => $initials, 'color' => $avatarColor, 'url' => $item->owner_user?->avatar_url])
                                             <div class="student-name"><span class="name">{{ $nama }}</span></div>
                                         </div>
                                     </td>
@@ -284,6 +288,7 @@
                                             <button type="button" title="Edit" class="row-action-btn btn-edit-row"
                                                 data-id="{{ $item->id }}"
                                                 data-user_id="{{ $item->user_id }}"
+                                                data-owner_ref="{{ $item->owner_ref }}"
                                                 data-tipe_user="{{ $item->tipe_user_efektif }}"
                                                 data-jenis="{{ $item->jenis }}"
                                                 data-skala="{{ $item->skala ?? '' }}"
@@ -366,14 +371,14 @@
             <div class="field">
                 <label class="field-label">Nama (Dosen/Mahasiswa/Alumni)</label>
                 <div class="dropdown" data-dropdown id="dd-user">
-                    <input type="hidden" id="form-user_id" value="" />
+                    <input type="hidden" id="form-owner_ref" value="" />
                     <button type="button" class="dropdown-trigger">
                         <span class="dropdown-value">Pilih nama...</span>
                         <span class="material-symbols-outlined caret">expand_more</span>
                     </button>
                     <div class="dropdown-panel">
                         @foreach($userList as $u)
-                        <button type="button" class="dropdown-option" data-value="{{ $u->id }}" data-role="{{ $u->role }}" data-status="{{ $u->mahasiswa?->status ?? '' }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} (@if($u->role === 'mahasiswa' && $u->mahasiswa?->status === 'lulus') Alumni @else {{ ucfirst($u->role) }} @endif)</button>
+                        <button type="button" class="dropdown-option" data-value="{{ $u->owner_ref }}" data-role="{{ $u->role }}" data-status="{{ $u->status }}">{{ $u->nim_nidn ?? '-' }} &mdash; {{ $u->name }} (@if($u->role === 'mahasiswa' && $u->status === 'lulus') Alumni @else {{ ucfirst($u->role) }} @endif)</button>
                         @endforeach
                     </div>
                 </div>
@@ -618,6 +623,8 @@
         </form>
     </div>
 
+    @include('partials.duplicate-confirm-modal')
+
     @if($showBulk && $bulkWrite)
         @include('partials.bulk-import-modal', [
             'bulkLabel'    => 'Rekognisi',
@@ -687,8 +694,8 @@
         let lastSelectedType = null;
 
         function selectedType() {
-            const userId = document.getElementById('form-user_id').value;
-            const selectedUser = userOptionButtons.find((option) => option.dataset.value === userId);
+            const ownerRef = document.getElementById('form-owner_ref').value;
+            const selectedUser = userOptionButtons.find((option) => option.dataset.value === ownerRef);
             if (!selectedUser) return null;
             if (selectedUser.dataset.role === 'mahasiswa' && selectedUser.dataset.status === 'lulus') return 'alumni';
             return selectedUser.dataset.role;
@@ -729,7 +736,7 @@
         }
 
         function updateConditionalFields() {
-            const hasUser = Boolean(document.getElementById('form-user_id').value);
+            const hasUser = Boolean(document.getElementById('form-owner_ref').value);
             const type = selectedType();
             const kind = document.getElementById('form-jenis').value;
             const isPublication = hasUser;
@@ -799,6 +806,10 @@
             conference: 'Conference',
             prosiding: 'Prosiding',
             paten: 'Paten',
+            nasional: 'Nasional',
+            internasional: 'Internasional',
+            alumni: 'Alumni',
+            rekognisi: 'Rekognisi'
         };
 
         // ---- Tampilkan hasil Update Massal di baris tabel (khusus halaman ini) ----
@@ -880,7 +891,7 @@
                 <td class="center">
                     <div class="row-actions">
                         <button type="button" title="Edit" class="row-action-btn btn-edit-row"
-                            data-id="${item.id}" data-user_id="${item.user_id}" data-tipe_user="${item.tipe_user}"
+                            data-id="${item.id}" data-user_id="${item.user_id}" data-owner_ref="${item.owner_ref}" data-tipe_user="${item.tipe_user}"
                             data-jenis="${item.jenis}" data-skala="${item.skala || ''}"
                             data-judul="${esc(item.judul || '')}" data-penulis="${esc(item.penulis || '')}"
                             data-mitra="${esc(item.mitra || '')}"
@@ -915,6 +926,14 @@
         // Tombol halaman digambar public/js/pager.js.
         // ================================================================
         const FILTERS = ['filter-tipe-user','filter-jenis','filter-skala'];
+        const filterKindOptions = {
+            dosen: kindOptions.dosen,
+            mahasiswa: kindOptions.mahasiswa,
+            alumni: kindOptions.alumni,
+        };
+        const filterKindDropdown = document.getElementById('filter-jenis').closest('[data-dropdown]');
+        const filterKindOptionButtons = Array.from(filterKindDropdown.querySelectorAll('.dropdown-option'))
+            .filter((option) => option.dataset.value !== 'semua');
         const searchInput = document.getElementById('filter-search');
         const emptyRow = document.getElementById('emptyRow');
         const emptyDefault = emptyRow.firstElementChild.textContent.trim();
@@ -923,6 +942,25 @@
         let currentPage = {{ $items->currentPage() }};
         let requestSeq = 0;
         let searchTimer = null;
+
+        function updateFilterKindOptions() {
+            const type = document.getElementById('filter-tipe-user').value;
+            const allowed = type === 'semua'
+                ? Object.values(filterKindOptions).flat()
+                : filterKindOptions[type] || [];
+
+            filterKindOptionButtons.forEach((option) => {
+                const visible = allowed.includes(option.dataset.value);
+                option.hidden = !visible;
+                option.style.display = visible ? '' : 'none';
+            });
+
+            if (!allowed.includes(document.getElementById('filter-jenis').value)) {
+                SIDA.dropdown.select(filterKindDropdown, 'semua');
+            }
+        }
+
+        updateFilterKindOptions();
 
         const pager = Pager.create(document.getElementById('pager'), { onGo: (n) => { loadPage(n); document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
         pager.render({{ $items->currentPage() }}, {{ max(1, $items->lastPage()) }});
@@ -969,11 +1007,17 @@
 
         // Cari (tunda 300ms), pilih dropdown, reset -> kembali ke halaman 1
         searchInput?.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadPage(1), 300); });
-        // setTimeout 0: tunggu script.js selesai mengisi nilai dropdown tersembunyi
-        document.querySelectorAll('.filter-card .dropdown-option').forEach((opt) => opt.addEventListener('click', () => setTimeout(() => loadPage(1), 0)));
+        // Tunggu script.js menyimpan nilai dropdown sebelum menerapkan filter dependen.
+        document.querySelectorAll('.filter-card .dropdown-option').forEach((opt) => opt.addEventListener('click', () => setTimeout(() => {
+            if (opt.closest('[data-dropdown]')?.querySelector('input[type="hidden"]')?.id === 'filter-tipe-user') {
+                updateFilterKindOptions();
+            }
+            loadPage(1);
+        }, 0)));
         document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
             if (searchInput) searchInput.value = '';
             FILTERS.forEach((id) => SIDA.dropdown.reset(document.getElementById(id).closest('[data-dropdown]')));
+            updateFilterKindOptions();
             loadPage(1);
         });
 
@@ -1001,7 +1045,7 @@
             document.getElementById('form-id').value = data.id || '';
             modalTitle.textContent = mode === 'edit' ? 'Edit Rekognisi' : 'Tambah Rekognisi';
 
-            SIDA.dropdown.select(document.getElementById('dd-user'), data.user_id || '', 'Pilih nama...');
+            SIDA.dropdown.select(document.getElementById('dd-user'), data.owner_ref || '', 'Pilih nama...');
             const type = selectedType();
             updateKindOptions();
             const defaultKind = defaultKindByType[type] || 'jurnal';
@@ -1044,7 +1088,7 @@
             const id = document.getElementById('form-id').value;
             const tipeUser = selectedType();
             const payload = {
-                user_id: document.getElementById('form-user_id').value,
+                owner_ref: document.getElementById('form-owner_ref').value,
                 jenis: document.getElementById('form-jenis').value,
                 skala: document.getElementById('form-skala').value || null,
                 mitra: document.getElementById('form-mitra').value,
@@ -1067,7 +1111,7 @@
                 bukti_tambahan: document.getElementById('form-bukti_tambahan').value || null,
             };
 
-            if (!payload.user_id) {
+            if (!payload.owner_ref) {
                 modalError.textContent = 'Pilih nama sesuai tipe pengguna terlebih dahulu.';
                 modalError.hidden = false;
                 modalSubmitBtn.disabled = false;
@@ -1078,16 +1122,32 @@
             const method = id ? 'PUT' : 'POST';
 
             try {
-                const res = await fetch(url, {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify(payload),
-                });
-                const result = await res.json();
+                // Server membalas 409 bila ada data yang persis sama; simpan ulang hanya setelah pengguna mengonfirmasi.
+                let confirmDuplicates = false;
+                let res, result;
+                while (true) {
+                    res = await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ ...payload, ...(confirmDuplicates ? { confirm_duplicates: true } : {}) }),
+                    });
+                    result = await res.json();
+                    if (!result.duplicate_confirmation_required || confirmDuplicates) break;
+
+                    if (!await window.DuplicateConfirm.ask({
+                        duplicates: result.duplicates || [],
+                        moreCount: result.more_duplicates || 0,
+                    })) {
+                        Toast.show({ type: 'info', message: 'Data tidak disimpan.' });
+                        return;
+                    }
+                    confirmDuplicates = true;
+                }
+
                 if (!res.ok) {
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
                     modalError.textContent = firstError;
@@ -1105,6 +1165,15 @@
                     type: 'success',
                     message: id ? 'Data rekognisi berhasil diperbarui.' : 'Data rekognisi baru berhasil ditambahkan.',
                 });
+                if (result.warnings?.length) {
+                    const warningCount = result.warning_count || result.warnings.length;
+                    const more = warningCount > result.warnings.length ? ` Dan ${warningCount - result.warnings.length} kemiripan lainnya.` : '';
+                    Toast.show({
+                        type: 'warning',
+                        title: 'Kemiripan data ditemukan',
+                        message: result.warnings.slice(0, 3).join(' ') + more,
+                    });
+                }
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;
@@ -1163,6 +1232,7 @@
     </script>
     <script src="{{ asset('js/delete-confirm.js') }}?v={{ @filemtime(public_path('js/delete-confirm.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
+    <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}"></script>
     @if($showBulk)

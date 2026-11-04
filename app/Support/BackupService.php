@@ -28,8 +28,6 @@ class BackupService
         'dosen'              => 'Profil Dosen',
         'hak_akses'          => 'Hak Akses',
         'kemahasiswaan'      => 'Kemahasiswaan',
-        'lppm_mahasiswa'     => 'LPPM Mahasiswa',
-        'lppm_dosen'         => 'LPPM Dosen',
         'rekognisi'          => 'Rekognisi',
         'kerja_sama'         => 'Kerja Sama',
         'user_notifications' => 'Notifikasi',
@@ -39,8 +37,10 @@ class BackupService
     /** Tabel inti: backup tanpa salah satunya dianggap tidak lengkap dan ditolak saat restore. */
     public const CORE = [
         'users', 'mahasiswa', 'dosen', 'hak_akses',
-        'kemahasiswaan', 'lppm_mahasiswa', 'lppm_dosen', 'rekognisi', 'kerja_sama',
+        'kemahasiswaan', 'rekognisi', 'kerja_sama',
     ];
+
+    private const LEGACY_LPPM_TABLES = ['lppm_mahasiswa', 'lppm_dosen'];
 
     private const JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE;
 
@@ -174,6 +174,11 @@ class BackupService
             }
             if ((int) ($manifest['format'] ?? 0) > self::FORMAT) {
                 throw new RuntimeException('Backup ini dibuat dengan versi SIDA yang lebih baru dan belum didukung.');
+            }
+            if (array_intersect(self::LEGACY_LPPM_TABLES, array_keys($manifest['tables']))) {
+                throw new RuntimeException(
+                    'Backup ini masih menyimpan publikasi di tabel LPPM terpisah. Pulihkan dengan versi aplikasi sebelumnya, lalu jalankan migrasi konsolidasi sebelum membuat backup baru.'
+                );
             }
 
             $stream = $zip->getStream('data.json');

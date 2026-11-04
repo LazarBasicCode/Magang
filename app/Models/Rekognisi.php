@@ -12,7 +12,8 @@ class Rekognisi extends Model
     protected $table = 'rekognisi';
 
     protected $fillable = [
-        'user_id',
+        'mahasiswa_id',
+        'dosen_id',
         'tipe_user',
         'mitra',
         'judul',
@@ -58,16 +59,64 @@ class Rekognisi extends Model
 
     public function getTipeUserEfektifAttribute(): string
     {
-        if ($this->user?->role === 'dosen') return 'dosen';
-        if ($this->user?->role === 'mahasiswa') {
-            return $this->user?->mahasiswa?->status === 'lulus' ? 'alumni' : 'mahasiswa';
+        if ($this->dosen_id !== null) return 'dosen';
+        if ($this->mahasiswa_id !== null) {
+            return $this->mahasiswa?->status === 'lulus' ? 'alumni' : 'mahasiswa';
         }
 
         return $this->tipe_user;
     }
 
-    public function user()
+    public function mahasiswa()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Mahasiswa::class);
+    }
+
+    public function dosen()
+    {
+        return $this->belongsTo(Dosen::class);
+    }
+
+    public function getOwnerUserAttribute(): ?User
+    {
+        return $this->tipe_user_efektif === 'dosen'
+            ? $this->dosen?->user
+            : $this->mahasiswa?->user;
+    }
+
+    public function getOwnerProfileAttribute(): Mahasiswa|Dosen|null
+    {
+        return $this->dosen_id !== null ? $this->dosen : $this->mahasiswa;
+    }
+
+    public function getUserAttribute(): ?User
+    {
+        return $this->owner_user;
+    }
+
+    public function getOwnerIdentifierAttribute(): ?string
+    {
+        return $this->tipe_user_efektif === 'dosen'
+            ? $this->dosen?->nidn
+            : $this->mahasiswa?->nim;
+    }
+
+    public function getOwnerNameAttribute(): string
+    {
+        return $this->owner_user?->name
+            ?? ($this->owner_identifier ? 'Profil ' . $this->owner_identifier : 'Belum ada akun');
+    }
+
+    public function getOwnerRefAttribute(): ?string
+    {
+        if ($this->dosen_id !== null) return 'dosen:' . $this->dosen_id;
+        if ($this->mahasiswa_id !== null) return 'mahasiswa:' . $this->mahasiswa_id;
+
+        return null;
+    }
+
+    public function getUserIdAttribute(): ?int
+    {
+        return $this->owner_user?->id;
     }
 }

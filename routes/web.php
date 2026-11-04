@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KemahasiswaanController;
-use App\Http\Controllers\LppmMahasiswaController;
 use App\Http\Controllers\LppmRekognisiController;
 use App\Http\Controllers\KerjaSamaController;
 use App\Http\Controllers\UserController;
@@ -99,7 +98,7 @@ Route::middleware(['auth', 'log.activity'])->group(function () {
     // URL halaman lama tetap mengarah ke modul LPPM gabungan.
     Route::get('/lppm/dosen', fn () => redirect()->route('lppm.rekognisi.index'));
     Route::get('/lppm/mahasiswa', fn () => redirect()->route('lppm.rekognisi.index'));
-    Route::post('/lppm/mahasiswa/import', [LppmMahasiswaController::class, 'import'])
+    Route::post('/lppm/mahasiswa/import', [LppmRekognisiController::class, 'import'])
         ->middleware('menu.access:rekognisi,penuh')->name('lppm.mahasiswa.import');
 
 
@@ -190,7 +189,7 @@ Route::middleware(['auth', 'log.activity'])->group(function () {
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
 
     // ---- Cetak Laporan per menu (admin/superadmin; akses menu dicek di controller) ----
-    // Daftar menu & kolom: App\Support\PrintReports. Slug: kemahasiswaan, lppm-mahasiswa, lppm-dosen, rekognisi, kerja-sama, data-master.
+    // Daftar menu & kolom: App\Support\PrintReports. Slug: kemahasiswaan, rekognisi, kerja-sama, data-master.
     Route::get('/cetak/{menu}', [CetakLaporanController::class, 'show'])->name('cetak.show');
 
     // ---- Aksi untuk data terpilih (centang baris tabel): export & cetak. Daftar menu: BulkSelectionController::MENUS ----

@@ -28,7 +28,7 @@ class ProfilController extends Controller
                     KerjaSama::where('user_id', $user->id),
                     fn ($i) => [$i->judul_kegiatan, $i->mitra, optional($i->tanggal_mulai)->year]],
                 ['rekognisi', 'Rekognisi', 'workspace_premium', 'rekognisi', '/lppm/rekognisi',
-                    Rekognisi::where('user_id', $user->id),
+                    $profile ? Rekognisi::where('dosen_id', $profile->id) : null,
                     fn ($i) => [$i->judul ?: ($i->jabatan_efektif ?: $i->mitra), $this->label($i->jenis) . ($i->skala ? ' · ' . $this->label($i->skala) : ''), optional($i->tanggal_mulai)->year]],
             ]
             : [
@@ -39,7 +39,7 @@ class ProfilController extends Controller
                     KerjaSama::where('user_id', $user->id),
                     fn ($i) => [$i->judul_kegiatan, $i->mitra, optional($i->tanggal_mulai)->year]],
                 ['rekognisi', 'Rekognisi', 'workspace_premium', 'rekognisi', '/lppm/rekognisi',
-                    Rekognisi::where('user_id', $user->id),
+                    $profile ? Rekognisi::where('mahasiswa_id', $profile->id) : null,
                     fn ($i) => [$i->judul ?: ($i->jabatan_efektif ?: $i->mitra), $this->label($i->jenis) . ($i->skala ? ' · ' . $this->label($i->skala) : ''), optional($i->tanggal_mulai)->year]],
             ];
 

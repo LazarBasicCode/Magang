@@ -49,8 +49,8 @@ class Dosen extends Model
         return $query->whereNull('user_id');
     }
 
-    public function lppm()
+    public function rekognisi()
     {
-        return $this->hasMany(LppmDosen::class, 'dosen_id');
+        return $this->hasMany(Rekognisi::class);
     }
 }

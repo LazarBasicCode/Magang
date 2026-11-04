@@ -64,12 +64,12 @@ Sistem role-based access control dengan 4 tingkatan pengguna:
 |---|---|
 | 👑 **Super Admin** | Kontrol penuh sistem, termasuk pengaturan hak akses Admin & Dosen |
 | 🛡️ **Admin** | Kelola data master (user, mahasiswa, dosen) sesuai hak akses yang diberikan |
-| 👨‍🏫 **Dosen** | Input & kelola data LPPM, rekognisi, dan kerja sama pribadi |
-| 🎓 **Mahasiswa** | Input & kelola data prestasi, LPPM, dan kerja sama pribadi |
+| 👨‍🏫 **Dosen** | Input & kelola rekognisi dan kerja sama pribadi |
+| 🎓 **Mahasiswa** | Input & kelola data prestasi, rekognisi, dan kerja sama pribadi |
 
 ## 🗂️ Struktur Basis Data
 
-Sistem ini terdiri dari **9 tabel utama**:
+Tabel inti data operasional:
 
 ```
 users            → data akun & role pengguna
@@ -77,13 +77,11 @@ users            → data akun & role pengguna
 ├── dosen         → profil dosen (NIDN)
 ├── hak_akses     → matriks izin akses menu per user
 ├── kemahasiswaan → data prestasi (Inbis & Kemahasiswaan)
-├── lppm_mahasiswa → publikasi ilmiah mahasiswa
-├── lppm_dosen    → publikasi ilmiah dosen
-├── rekognisi     → rekognisi nasional/internasional/alumni
+├── rekognisi     → publikasi dan rekognisi; pemilik melalui mahasiswa_id atau dosen_id
 └── kerja_sama    → kegiatan kerja sama institusi
 ```
 
-> 📌 Lihat detail skema lengkap di [`docs/erd.md`](docs/erd.md) *(opsional, sesuaikan dengan struktur repo kamu)*
+NIM/NIDN berasal dari profil mahasiswa/dosen. Profil dapat menyimpan rekognisi sebelum akun `users` dibuat; akun login tetap dapat dihubungkan kemudian.
 
 ## 🛠️ Tech Stack
 

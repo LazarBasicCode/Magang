@@ -17,15 +17,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Alur verifikasi pengajuan MAHASISWA (tanpa dosen):
+ * Alur verifikasi pengajuan MAHASISWA & DOSEN (langsung ke Prodi, tanpa dosen wali):
  *
- *   mahasiswa mengirim -> Diajukan (diajukan)
+ *   mahasiswa / dosen mengirim -> Diajukan (diajukan)
  *   Prodi membuka pengajuan (modal Periksa) -> Diproses Prodi (menunggu_prodi)  [otomatis, sekali]
  *   Prodi memutuskan  -> Terverifikasi (disetujui)  |  Ditolak (ditolak, wajib catatan)
- *   Ditolak --(mahasiswa edit & simpan)--> Diajukan lagi
+ *   Ditolak --(pengaju edit & simpan)--> Diajukan lagi
  *
  * - "Prodi" = superadmin (admin prodi). Ganti PRODI_ROLES bila peran lain ikut memverifikasi.
- * - Data yang diisi admin / superadmin / dosen langsung 'disetujui'.
+ * - Data yang diisi admin / superadmin langsung 'disetujui'. Data mahasiswa & dosen (SUBMITTER_ROLES) masuk antrean.
+ *   Data dosen yang dibuat sebelum fitur ini tetap 'disetujui' (tidak ikut antrean).
  * - Nilai DB 'disetujui' tetap dipakai (label tampilan: "Terverifikasi") supaya scope ->approved(),
  *   dashboard, laporan & cetak tidak perlu diubah.
  */
@@ -38,6 +39,9 @@ class Approval
 
     /** Peran yang bertindak sebagai "Prodi" (memverifikasi pengajuan). */
     public const PRODI_ROLES = ['superadmin'];
+
+    /** Peran yang datanya melewati antrean verifikasi Prodi saat diisi / diedit sendiri. */
+    public const SUBMITTER_ROLES = ['mahasiswa', 'dosen'];
 
     public const PER_PAGE = 15;
 
@@ -68,7 +72,7 @@ class Approval
                 'url'       => '/kemahasiswaan',
                 'with'      => ['mahasiswa.user'],
                 'title'     => fn ($i) => $i->nama_kegiatan,
-                'mahasiswa' => fn ($i) => $i->mahasiswa,
+                'owner'     => fn ($i) => $i->mahasiswa?->user,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
                 'detail'    => fn ($i) => [
                     'Jenis'   => $pretty($i->jenis),
@@ -84,7 +88,7 @@ class Approval
                 'url'       => '/lppm/rekognisi',
                 'with'      => ['user.mahasiswa'],
                 'title'     => fn ($i) => $i->judul ?: ($i->jabatan ?: ($i->mitra ?: 'Rekognisi')),
-                'mahasiswa' => fn ($i) => $i->user?->mahasiswa,
+                'owner'     => fn ($i) => $i->user,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
                 'detail'    => fn ($i) => array_filter([
                     'Tipe'     => $pretty($i->tipe_user_efektif),
@@ -105,7 +109,7 @@ class Approval
                 'url'       => '/kerja-sama',
                 'with'      => ['user.mahasiswa'],
                 'title'     => fn ($i) => $i->judul_kegiatan,
-                'mahasiswa' => fn ($i) => $i->user?->mahasiswa,
+                'owner'     => fn ($i) => $i->user,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
                 'detail'    => fn ($i) => array_filter([
                     'Jenis'   => $i->jenis === 'lainnya' ? ($i->jenis_lainnya ?: 'Lainnya') : $pretty($i->jenis),
@@ -129,20 +133,20 @@ class Approval
     // Saat data diisi / diedit
     // =====================================================================
 
-    /** Status awal pengajuan: mahasiswa -> antre; selain mahasiswa -> langsung disetujui. */
+    /** Status awal pengajuan: mahasiswa & dosen -> antre Prodi; selain itu -> langsung disetujui. */
     public static function initialStatus(User $actor, ?Mahasiswa $mahasiswa = null): string
     {
-        if ($actor->role !== 'mahasiswa') {
+        if (!in_array($actor->role, self::SUBMITTER_ROLES, true)) {
             return self::DISETUJUI;
         }
 
         return self::DIAJUKAN;
     }
 
-    /** Atribut yang ditambahkan ke data create/update. Kosong bila pelaku bukan mahasiswa (status tidak disentuh saat edit). */
+    /** Atribut yang ditambahkan ke data create/update. Kosong bila pelaku bukan mahasiswa/dosen (status tidak disentuh saat edit). */
     public static function attributesFor(User $actor, ?Mahasiswa $mahasiswa, bool $isCreate): array
     {
-        if (!$isCreate && $actor->role !== 'mahasiswa') {
+        if (!$isCreate && !in_array($actor->role, self::SUBMITTER_ROLES, true)) {
             return [];
         }
 
@@ -204,7 +208,7 @@ class Approval
                 ]);
             }
             if ($aksi === 'tolak' && mb_strlen((string) $note) < 5) {
-                throw ValidationException::withMessages(['note' => 'Alasan penolakan wajib diisi (minimal 5 karakter) supaya mahasiswa tahu apa yang perlu diperbaiki.']);
+                throw ValidationException::withMessages(['note' => 'Alasan penolakan wajib diisi (minimal 5 karakter) supaya pengaju tahu apa yang perlu diperbaiki.']);
             }
 
             if ($aksi === 'batal' && !ApprovalLog::where('menu', $menu)->where('item_id', $item->getKey())->whereIn('action', ['disetujui', 'ditolak'])->exists()) {
@@ -229,7 +233,7 @@ class Approval
 
             return [$to, [
                 'setujui'  => 'Pengajuan diverifikasi.',
-                'tolak'    => 'Pengajuan ditolak dan mahasiswa diberi tahu.',
+                'tolak'    => 'Pengajuan ditolak dan pengaju diberi tahu.',
                 'batal'    => 'Verifikasi dibatalkan. Pengajuan kembali ke antrean Prodi.',
             ][$aksi]];
         });
@@ -261,7 +265,7 @@ class Approval
     // Komentar
     // =====================================================================
 
-    /** Boleh melihat komentar: Prodi, atau mahasiswa pemilik pengajuan. */
+    /** Boleh melihat komentar: Prodi, atau pemilik pengajuan (mahasiswa / dosen). */
     public static function canViewComments(User $user, string $menu, int $id): bool
     {
         if (in_array($user->role, self::PRODI_ROLES, true)) {
@@ -270,7 +274,7 @@ class Approval
         $cfg = self::config($menu);
         $item = $cfg['model']::with($cfg['with'])->find($id);
 
-        return $item && (int) ($cfg['mahasiswa']($item)?->user_id) === $user->id;
+        return $item && (int) ($cfg['owner']($item)?->id) === $user->id;
     }
 
     /** @return Collection<int,array<string,mixed>> */
@@ -290,7 +294,7 @@ class Approval
         $comment = ApprovalComment::create(['menu' => $menu, 'item_id' => $id, 'user_id' => $actor->id, 'body' => trim($body)]);
         $comment->setRelation('author', $actor);
 
-        $ownerId = $cfg['mahasiswa']($item)?->user_id;
+        $ownerId = $cfg['owner']($item)?->id;
         if ($ownerId && (int) $ownerId !== $actor->id) {
             UserNotification::send((int) $ownerId, 'approval_comment', [
                 'title'       => 'Komentar baru dari Prodi',
@@ -337,7 +341,7 @@ class Approval
             $item->forceFill(['approval_status' => self::MENUNGGU_PRODI])->save();
             self::log($menu, $item, 'diproses', $from, self::MENUNGGU_PRODI, $actor, null);
 
-            if ($ownerId = $cfg['mahasiswa']($item)?->user_id) {
+            if ($ownerId = $cfg['owner']($item)?->id) {
                 UserNotification::send((int) $ownerId, 'approval_request', [
                     'title'       => 'Pengajuan sedang diperiksa Prodi',
                     'description' => "\"" . $cfg['title']($item) . "\" ({$cfg['label']}) sedang diperiksa Prodi.",
@@ -496,7 +500,8 @@ class Approval
 
     private static function row(string $slug, array $cfg, Model $item, User $viewer): array
     {
-        $mahasiswa = $cfg['mahasiswa']($item);
+        $owner = $cfg['owner']($item);
+        $isDosen = $owner?->role === 'dosen';
         $status = $item->approval_status;
 
         return [
@@ -506,8 +511,10 @@ class Approval
             'url'        => $cfg['url'],
             'id'         => $item->getKey(),
             'title'      => (string) $cfg['title']($item),
-            'name'       => $mahasiswa?->user?->name ?? $mahasiswa?->nim ?? '—',
-            'nim'        => $mahasiswa?->nim,
+            'name'       => $owner?->name ?? '—',
+            'nim'        => $owner?->nim_nidn,           // NIM (mahasiswa) atau NIDN (dosen)
+            'id_label'   => $isDosen ? 'NIDN' : 'NIM',
+            'owner_role' => $owner?->role,
             'detail'     => $cfg['detail']($item),
             'bukti'      => $cfg['bukti']($item),
             'status'     => $status,
@@ -540,7 +547,7 @@ class Approval
         // Dibungkus try/catch: log aktivitas tidak boleh menggagalkan proses persetujuan.
         try {
             $cfg = self::config($menu);
-            $owner = ($cfg['mahasiswa']($item))?->user?->name;
+            $owner = ($cfg['owner']($item))?->name;
 
             ActivityLog::approval(
                 $menu,
@@ -573,7 +580,7 @@ class Approval
     private static function notifyAfterAction(string $menu, Model $item, array $cfg, User $actor, string $aksi, ?string $note): void
     {
         $title = (string) $cfg['title']($item);
-        $ownerId = $cfg['mahasiswa']($item)?->user_id;
+        $ownerId = $cfg['owner']($item)?->id;
         $base = ['menu' => $menu, 'item_id' => $item->getKey(), 'actor_id' => $actor->id];
         $by = "{$actor->name} ({$actor->role})";
 

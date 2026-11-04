@@ -132,7 +132,9 @@
         </form>
     </div>
 
+    @include('partials.duplicate-confirm-modal')
     @include('partials.mhs-scripts')
+    <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
     <script>
         const $v = (id) => document.getElementById(id);
         const L = {

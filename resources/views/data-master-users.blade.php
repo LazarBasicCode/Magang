@@ -457,12 +457,15 @@
         ])
     @endif
 
+    @include('partials.duplicate-confirm-modal')
+
     <script id="dmInit" type="application/json">{!! json_encode(['view' => $view, 'q' => $term, 'page' => $users->currentPage(), 'last' => max(1, $users->lastPage())], JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script src="{{ asset('js/never-login.js') }}?v={{ @filemtime(public_path('js/never-login.js')) }}"></script>
     <script id="apInit" type="application/json">{!! json_encode(['mahasiswa' => \App\Models\Mahasiswa::STATUS, 'dosen' => \App\Models\Dosen::STATUS], JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     <script src="{{ asset('js/add-people.js') }}?v={{ @filemtime(public_path('js/add-people.js')) }}"></script>
+    <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
     <script>
         // ================================================================
         // Bagian ini KHUSUS halaman Data Master Pengguna:
@@ -964,16 +967,31 @@
             const method = id ? 'PUT' : 'POST';
 
             try {
-                const res = await fetch(url, {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify(payload),
-                });
-                const result = await res.json();
+                let confirmDuplicates = false;
+                let res, result;
+                while (true) {
+                    res = await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                        },
+                        body: JSON.stringify({ ...payload, ...(confirmDuplicates ? { confirm_duplicates: true } : {}) }),
+                    });
+                    result = await res.json();
+                    if (!result.duplicate_confirmation_required || confirmDuplicates) break;
+
+                    if (!await window.DuplicateConfirm.ask({
+                        duplicates: result.duplicates || [],
+                        moreCount: result.more_duplicates || 0,
+                        context: 'akun',
+                    })) {
+                        Toast.show({ type: 'info', message: 'Data akun tidak disimpan.' });
+                        return;
+                    }
+                    confirmDuplicates = true;
+                }
 
                 if (!res.ok) {
                     const firstError = result.errors ? Object.values(result.errors)[0][0] : (result.message || 'Terjadi kesalahan, coba lagi.');
@@ -997,6 +1015,15 @@
                     type: 'success',
                     message: id ? 'Data pengguna berhasil diperbarui.' : 'Pengguna baru berhasil ditambahkan.',
                 });
+                if (result.warnings?.length) {
+                    const warningCount = result.warning_count || result.warnings.length;
+                    const more = warningCount > result.warnings.length ? ` Dan ${warningCount - result.warnings.length} kemiripan lainnya.` : '';
+                    Toast.show({
+                        type: 'warning',
+                        title: 'Kemiripan nama ditemukan',
+                        message: result.warnings.slice(0, 3).join(' ') + more,
+                    });
+                }
             } catch (err) {
                 modalError.textContent = 'Gagal terhubung ke server.';
                 modalError.hidden = false;

@@ -25,7 +25,8 @@ use Illuminate\Support\Collection;
  *   - selain itu, dan untuk superadmin -> mode 'sida' (ringkasan semua menu)
  *
  * Tiap mode mengembalikan struktur yang sama supaya view-nya cukup satu:
- *   meta, hero[3], cards[4], cards2[4], donuts[2], widgets[], groups[2], recent[]
+ *   meta, hero[3], cards[4], cards2[0|4], donuts[2], widgets[], groups[2], recent[]
+ *   (kartu boleh punya 'options' = kartu gabungan dengan pemilih; lihat partials/dashboard/content)
  */
 class AdminDashboardData
 {
@@ -525,17 +526,19 @@ class AdminDashboardData
                 self::h('Rata-rata per Bulan', self::avgPerMonth($all), 'data/bln', 'trending_up'),
                 self::h('Capaian Internasional', self::pct($intl, $total), '%', 'public'),
             ],
+            // 4 kartu (satu baris): kartu pertama gabungan — awalnya total semua data, bisa dipilih per menu.
             'cards' => [
-                self::c('Kemahasiswaan', $kem->count(), 'school', 'info'),
-                self::c('Rekognisi', $rek->count(), 'workspace_premium', 'warning'),
-                self::c('Kerja Sama', $ks->count(), 'handshake', 'primary'),
-            ],
-            'cards2' => [
-                self::c('Kerja Sama', $ks->count(), 'handshake', 'info'),
+                self::cMulti([
+                    ['label' => 'Total Prestasi', 'value' => $total, 'icon' => 'emoji_events'],
+                    ['label' => 'Kemahasiswaan', 'value' => $kem->count(), 'icon' => 'school'],
+                    ['label' => 'Rekognisi', 'value' => $rek->count(), 'icon' => 'workspace_premium'],
+                    ['label' => 'Kerja Sama', 'value' => $ks->count(), 'icon' => 'handshake'],
+                ], 'info'),
                 self::c('Mahasiswa Terdaftar', $mhsCount, 'groups', 'primary'),
                 self::c('Dosen Terdaftar', $dsnCount, 'badge', 'success'),
                 self::c('Admin & Superadmin', (int) ($counts['admin'] ?? 0) + (int) ($counts['superadmin'] ?? 0), 'admin_panel_settings', 'warning'),
             ],
+            'cards2' => [],
             'donuts' => [
                 self::donutCard('Distribusi per Menu', 'Sebaran data di 3 menu operasional', 'Data', [
                     ['label' => 'Kemahasiswaan', 'value' => $kem->count(), 'color' => 'var(--chart-1)'],
@@ -573,6 +576,23 @@ class AdminDashboardData
     private static function c(string $label, $value, string $icon, string $color): array
     {
         return compact('label', 'value', 'icon', 'color');
+    }
+
+    /**
+     * Kartu gabungan: satu kartu berisi beberapa angka, dipilih lewat dropdown di kartunya.
+     * $options = [[label, value, icon], ...]; opsi pertama = tampilan awal (biasanya totalnya).
+     */
+    private static function cMulti(array $options, string $color): array
+    {
+        $first = $options[0];
+
+        return [
+            'label'   => $first['label'],
+            'value'   => $first['value'],
+            'icon'    => $first['icon'],
+            'color'   => $color,
+            'options' => array_values($options),
+        ];
     }
 
     private static function pct(int $part, int $whole): int

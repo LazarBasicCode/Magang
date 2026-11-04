@@ -314,16 +314,31 @@
         busy = true;
         submitBtn.disabled = true;
         try {
-            const res = await fetch('/data-master/users/people', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrf(),
-                },
-                body: JSON.stringify(payload),
-            });
-            const json = await res.json().catch(() => ({}));
+            let confirmDuplicates = false;
+            let res, json;
+            while (true) {
+                res = await fetch('/data-master/users/people', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': csrf(),
+                    },
+                    body: JSON.stringify({ ...payload, ...(confirmDuplicates ? { confirm_duplicates: true } : {}) }),
+                });
+                json = await res.json().catch(() => ({}));
+                if (!json.duplicate_confirmation_required || confirmDuplicates) break;
+
+                if (!await window.DuplicateConfirm.ask({
+                    duplicates: json.duplicates || [],
+                    moreCount: json.more_duplicates || 0,
+                    context: 'akun',
+                })) {
+                    toast('info', null, 'Tidak ada akun yang dibuat.');
+                    return;
+                }
+                confirmDuplicates = true;
+            }
 
             if (!res.ok) {
                 const first = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Terjadi kesalahan, coba lagi.');
@@ -335,6 +350,11 @@
             busy = false;
             close();
             toast('success', null, json.message || 'Akun berhasil ditambahkan.');
+            if (json.warnings?.length) {
+                const warningCount = json.warning_count || json.warnings.length;
+                const more = warningCount > json.warnings.length ? ` Dan ${warningCount - json.warnings.length} kemiripan lainnya.` : '';
+                toast('warning', 'Kemiripan nama ditemukan', json.warnings.slice(0, 3).join(' ') + more);
+            }
             window.dispatchEvent(new CustomEvent('dm:people-added', { detail: { role: type, created: json.created } }));
         } catch (err) {
             showError('Gagal terhubung ke server.');

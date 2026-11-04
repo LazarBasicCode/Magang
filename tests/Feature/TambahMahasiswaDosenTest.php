@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Dosen;
+use App\Models\Kemahasiswaan;
 use App\Models\LppmMahasiswa;
 use App\Models\Mahasiswa;
 use App\Models\User;
@@ -179,5 +180,175 @@ class TambahMahasiswaDosenTest extends TestCase
         $this->actingAs($admin)->postJson('/data-master/users/people', $payload)->assertOk();
         $this->actingAs($admin)->postJson('/data-master/users/people', $payload)->assertStatus(422);
         $this->assertSame(1, User::where('nim_nidn', '999001')->count());
+    }
+
+    public function test_tambah_akun_dari_calon_meminta_konfirmasi_nama_persis_sama(): void
+    {
+        $admin = $this->admin();
+        $existing = User::create(['name' => 'Nama Sama', 'nim_nidn' => '999065', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        Mahasiswa::create(['user_id' => $existing->id, 'nim' => '999065']);
+        $calon = Mahasiswa::create(['nim' => '999066']);
+        $payload = ['role' => 'mahasiswa', 'selected' => [['id' => $calon->id, 'name' => 'Nama Sama', 'angkatan' => 2022]]];
+
+        $this->actingAs($admin)->postJson('/data-master/users/people', $payload)
+            ->assertStatus(409)
+            ->assertJsonPath('duplicate_confirmation_required', true);
+        $this->assertSame(1, User::where('role', 'mahasiswa')->count());
+
+        $this->actingAs($admin)->postJson('/data-master/users/people', $payload + ['confirm_duplicates' => true])
+            ->assertOk()
+            ->assertJsonPath('created', 1);
+        $this->assertSame(2, User::where('role', 'mahasiswa')->count());
+    }
+
+    public function test_kemahasiswaan_meminta_konfirmasi_sebelum_menyimpan_duplikat_persis(): void
+    {
+        $admin = $this->admin();
+        $user = User::create(['name' => 'Budi', 'nim_nidn' => '999070', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        $mahasiswa = Mahasiswa::create(['user_id' => $user->id, 'nim' => '999070']);
+        $data = [
+            'mahasiswa_id' => $mahasiswa->id,
+            'jenis' => 'kemahasiswaan',
+            'tab' => 'akademik',
+            'tingkat' => 'nasional',
+            'tahun' => 2025,
+            'nama_kegiatan' => 'Juara Lomba Karya Tulis',
+            'bukti_kegiatan' => 'https://example.com/bukti',
+        ];
+        Kemahasiswaan::create($data);
+
+        $this->actingAs($admin)->postJson('/kemahasiswaan', $data)
+            ->assertStatus(409)
+            ->assertJsonPath('duplicate_confirmation_required', true);
+        $this->assertSame(1, Kemahasiswaan::count());
+
+        $this->actingAs($admin)->postJson('/kemahasiswaan', $data + ['confirm_duplicates' => true])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+        $this->assertSame(2, Kemahasiswaan::count());
+    }
+
+    public function test_kemahasiswaan_mengembalikan_peringatan_jika_namanya_mirip(): void
+    {
+        $admin = $this->admin();
+        $user = User::create(['name' => 'Budi', 'nim_nidn' => '999071', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        $mahasiswa = Mahasiswa::create(['user_id' => $user->id, 'nim' => '999071']);
+        Kemahasiswaan::create([
+            'mahasiswa_id' => $mahasiswa->id,
+            'jenis' => 'kemahasiswaan',
+            'tab' => 'akademik',
+            'tingkat' => 'nasional',
+            'tahun' => 2025,
+            'nama_kegiatan' => 'Juara Lomba Karya Tulis',
+            'bukti_kegiatan' => 'https://example.com/bukti-lama',
+        ]);
+
+        $this->actingAs($admin)->postJson('/kemahasiswaan', [
+            'mahasiswa_id' => $mahasiswa->id,
+            'jenis' => 'kemahasiswaan',
+            'tab' => 'akademik',
+            'tingkat' => 'nasional',
+            'tahun' => 2025,
+            'nama_kegiatan' => 'Juara Lomba Karya Tuli',
+            'bukti_kegiatan' => 'https://example.com/bukti-baru',
+        ])->assertOk()->assertJsonCount(1, 'warnings');
+    }
+
+    public function test_impor_kemahasiswaan_meminta_konfirmasi_untuk_duplikat_persis(): void
+    {
+        $admin = $this->admin();
+        $user = User::create(['name' => 'Budi', 'nim_nidn' => '999072', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        $mahasiswa = Mahasiswa::create(['user_id' => $user->id, 'nim' => '999072']);
+        Kemahasiswaan::create([
+            'mahasiswa_id' => $mahasiswa->id,
+            'jenis' => 'kemahasiswaan',
+            'tab' => 'akademik',
+            'tingkat' => 'nasional',
+            'tahun' => 2025,
+            'nama_kegiatan' => 'Juara Lomba Karya Tulis',
+            'bukti_kegiatan' => 'https://example.com/bukti-lama',
+        ]);
+        $csv = "nim,jenis_divisi,jenis_prestasi,skala,tahun,nama_kegiatan,bukti_kegiatan\n"
+             . "999072,kemahasiswaan,akademik,nasional,2025,Juara Lomba Karya Tulis,https://example.com/bukti-baru\n";
+
+        $this->actingAs($admin)->post('/kemahasiswaan/import', [
+            'file' => UploadedFile::fake()->createWithContent('kemahasiswaan.csv', $csv),
+        ], ['Accept' => 'application/json'])
+            ->assertStatus(409)
+            ->assertJsonPath('duplicate_confirmation_required', true);
+        $this->assertSame(1, Kemahasiswaan::count());
+
+        $this->actingAs($admin)->post('/kemahasiswaan/import', [
+            'file' => UploadedFile::fake()->createWithContent('kemahasiswaan.csv', $csv),
+            'confirm_duplicates' => '1',
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+        $this->assertSame(2, Kemahasiswaan::count());
+    }
+
+    public function test_impor_data_master_mengembalikan_peringatan_nama_mirip(): void
+    {
+        $admin = $this->admin();
+        User::create(['name' => 'Siti Maharani', 'nim_nidn' => '999092', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        $csv = "nim_nidn,nama,role,angkatan,status,password\n"
+             . "999093,Siti Maharan,mahasiswa,2022,aktif,secret123\n";
+
+        $this->actingAs($admin)->post('/data-master/users/import', [
+            'file' => UploadedFile::fake()->createWithContent('users.csv', $csv),
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(1, 'warnings');
+    }
+
+    public function test_edit_akun_meminta_konfirmasi_nama_persis_sama(): void
+    {
+        $admin = $this->admin();
+        $target = User::create(['name' => 'Nama Lama', 'nim_nidn' => '999080', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        User::create(['name' => 'Nama Sama', 'nim_nidn' => '999081', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        $payload = [
+            'name' => 'Nama Sama',
+            'role' => 'mahasiswa',
+            'identifier' => $target->nim_nidn,
+            'angkatan' => 2022,
+            'status' => 'aktif',
+            'password' => '',
+        ];
+
+        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, $payload)
+            ->assertStatus(409)
+            ->assertJsonPath('duplicate_confirmation_required', true);
+        $this->assertSame('Nama Lama', $target->fresh()->name);
+
+        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, $payload + ['confirm_duplicates' => true])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+        $this->assertSame('Nama Sama', $target->fresh()->name);
+    }
+
+    public function test_edit_akun_mengembalikan_peringatan_nama_mirip(): void
+    {
+        $admin = $this->admin();
+        $target = User::create(['name' => 'Nama Lama', 'nim_nidn' => '999090', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+        User::create(['name' => 'Siti Maharani', 'nim_nidn' => '999091', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
+
+        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, [
+            'name' => 'Siti Maharani',
+            'role' => 'mahasiswa',
+            'identifier' => $target->nim_nidn,
+            'angkatan' => 2022,
+            'status' => 'aktif',
+            'password' => '',
+        ])->assertStatus(409);
+
+        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, [
+            'name' => 'Siti Maharan',
+            'role' => 'mahasiswa',
+            'identifier' => $target->nim_nidn,
+            'angkatan' => 2022,
+            'status' => 'aktif',
+            'password' => '',
+        ])->assertOk()->assertJsonCount(1, 'warnings');
     }
 }

@@ -1,10 +1,11 @@
-{{-- Modal detail (progres verifikasi + data + Edit/Hapus). Diisi oleh public/js/mahasiswa-view.js --}}
+{{-- Modal detail (progres verifikasi + data + Edit/Hapus). Diisi oleh public/js/mahasiswa-view.js
+     Opsional: $detailSubtitle (default: teks pemantauan verifikasi; dosen memakai teks lain) --}}
 <div class="modal-backdrop" id="mvDetailBackdrop"></div>
 <div class="modal-card mv-detail" id="mvDetailModal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-drag-handle">
         <div>
             <h3 class="modal-title">Detail</h3>
-            <p class="modal-subtitle">Pantau status verifikasi pengajuanmu</p>
+            <p class="modal-subtitle">{{ $detailSubtitle ?? 'Pantau status verifikasi pengajuanmu' }}</p>
         </div>
         <button type="button" class="modal-close-btn" id="mvDetailClose" aria-label="Tutup">
             <span class="material-symbols-outlined">close</span>

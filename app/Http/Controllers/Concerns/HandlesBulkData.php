@@ -586,6 +586,39 @@ trait HandlesBulkData
         );
     }
 
+    protected function normalizeDuplicateText(string $value): string
+    {
+        $value = mb_strtolower(trim($value), 'UTF-8');
+        $value = preg_replace('/[^\p{L}\p{N}]+/u', ' ', $value) ?? $value;
+
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+    }
+
+    protected function isSimilarDuplicateText(string $first, string $second): bool
+    {
+        $first = $this->normalizeDuplicateText($first);
+        $second = $this->normalizeDuplicateText($second);
+        if ($first === '' || $second === '' || $first === $second) {
+            return false;
+        }
+
+        similar_text($first, $second, $similarity);
+
+        return $similarity >= 85;
+    }
+
+    /** Minta konfirmasi eksplisit sebelum menyimpan data yang persis sama. */
+    protected function bulkDuplicateConfirmationRequired(array $duplicates): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'duplicate_confirmation_required' => true,
+            'message' => 'Data yang persis sama ditemukan.',
+            'duplicates' => array_slice($duplicates, 0, 10),
+            'more_duplicates' => max(0, count($duplicates) - 10),
+        ], 409);
+    }
+
     // =====================================================================
     // UNGGAH: SIMPAN & LAPORKAN
     // =====================================================================
@@ -666,20 +699,22 @@ trait HandlesBulkData
         }
     }
 
-    protected function bulkSuccess(int $created, int $updated, int $unchanged, int $newOwners = 0, string $newOwnerLabel = ''): JsonResponse
+    protected function bulkSuccess(int $created, int $updated, int $unchanged, int $newOwners = 0, string $newOwnerLabel = '', array $warnings = []): JsonResponse
     {
         $message = "Berhasil: {$created} data ditambahkan, {$updated} diperbarui, {$unchanged} tidak berubah.";
         if ($newOwners > 0) {
             $message .= " {$newOwners} {$newOwnerLabel} baru belum punya akun — lengkapi lewat Data Master (Tambah {$newOwnerLabel}).";
         }
 
-        return response()->json([
+        return response()->json(array_filter([
             'success'    => true,
             'created'    => $created,
             'updated'    => $updated,
             'unchanged'  => $unchanged,
             'new_owners' => $newOwners,
             'message'    => $message,
-        ]);
+            'warnings'   => $warnings ? array_slice($warnings, 0, 10) : null,
+            'warning_count' => $warnings ? count($warnings) : null,
+        ], static fn ($value) => $value !== null));
     }
 }

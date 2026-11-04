@@ -36,6 +36,22 @@ class PrintReports
         return $v === null || $v === '' ? '-' : ucwords(str_replace('_', ' ', $v));
     }
 
+    /** Ringkasan detail karya Rekognisi: jurnal, HKI, buku, prosiding, atau paten. */
+    private static function detailKarya($item): string
+    {
+        $statusPaten = ['terdaftar' => 'Terdaftar (Filed)', 'granted' => 'Granted (Bersertifikat)'];
+        $join = fn (array $parts) => implode(' · ', array_filter($parts, fn ($v) => filled($v))) ?: '-';
+
+        return match ($item->jenis) {
+            'jurnal', 'sinta' => $join([$item->nama_jurnal, $item->peringkat]),
+            'hki'             => self::label($item->jenis_hki),
+            'book'            => self::label($item->kategori_buku),
+            'prosiding'       => $join([$item->nama_konferensi, $item->nomor_issn_isbn]),
+            'paten'           => $join([$statusPaten[$item->status_paten] ?? null, $item->nomor_paten]),
+            default           => '-',
+        };
+    }
+
     private static function period($item): string
     {
         $a = optional($item->tanggal_mulai)->translatedFormat('d M Y');
@@ -95,6 +111,7 @@ class PrintReports
                     ['Penulis',    fn ($i) => $i->penulis ?: '-', 'wrap'],
                     ['Mitra',      fn ($i) => $i->mitra ?: '-', 'wrap'],
                     ['Jenis',      fn ($i) => self::label($i->jenis)],
+                    ['Detail Karya', fn ($i) => self::detailKarya($i), 'wrap'],
                     ['Skala',      fn ($i) => self::label($i->skala ?: '-')],
                     ['Jabatan',    fn ($i) => $i->jabatan_efektif ?: '-'],
                     ['Periode',    fn ($i) => self::period($i)],

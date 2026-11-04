@@ -55,7 +55,7 @@
                 <div class="title-bar">
                     <div>
                         <h1 class="page-title">Persetujuan Pengajuan</h1>
-                        <p class="page-subtitle">Verifikasi prestasi &amp; publikasi mahasiswa &middot; diajukan &rarr; diproses Prodi &rarr; terverifikasi &middot; hanya data terverifikasi yang tampil di laporan</p>
+                        <p class="page-subtitle">Verifikasi prestasi, publikasi &amp; kerja sama mahasiswa dan dosen &middot; diajukan &rarr; diproses Prodi &rarr; terverifikasi &middot; hanya data terverifikasi yang tampil di laporan</p>
                     </div>
                 </div>
 
@@ -240,7 +240,7 @@
 
                     <div class="appr-pane" data-pane="komentar" id="apprPaneKomentar" hidden>
                         <form class="appr-cm-form" id="apprCommentForm" novalidate>
-                            <label class="appr-sec-h" for="apprCommentBody">Tulis komentar untuk mahasiswa</label>
+                            <label class="appr-sec-h" for="apprCommentBody">Tulis komentar untuk pengaju</label>
                             <textarea id="apprCommentBody" class="appr-note-input" maxlength="1000" rows="3" placeholder="Mis. bukti perlu dilengkapi, atau tautan tidak bisa dibuka..."></textarea>
                             <span class="appr-comment-err" id="apprCommentErr" hidden></span>
                         </form>

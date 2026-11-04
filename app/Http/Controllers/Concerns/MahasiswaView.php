@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Support\Approval;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -15,6 +16,24 @@ trait MahasiswaView
     protected function isMahasiswaView(Request $request, bool $ownScope): bool
     {
         return $ownScope && $request->user()->role === 'mahasiswa';
+    }
+
+    /**
+     * True = tampilkan versi sederhana "Saya" untuk akses "biasa" milik MAHASISWA atau DOSEN
+     * (menu Rekognisi & Kerja Sama, yang dipakai kedua role). Kemahasiswaan tetap memakai isMahasiswaView().
+     */
+    protected function isSelfServiceView(Request $request, bool $ownScope): bool
+    {
+        return $ownScope && in_array($request->user()->role, ['mahasiswa', 'dosen'], true);
+    }
+
+    /**
+     * Apakah data pengguna ini melewati antrean verifikasi Prodi? Mahasiswa & dosen (lihat Approval::SUBMITTER_ROLES);
+     * peran lain langsung "disetujui", jadi tampilannya tanpa progres/kartu status.
+     */
+    protected function needsVerification(Request $request): bool
+    {
+        return in_array($request->user()->role, Approval::SUBMITTER_ROLES, true);
     }
 
     /** Filter ?status=disetujui|diproses|ditolak (kosong / "semua" = tanpa filter). */

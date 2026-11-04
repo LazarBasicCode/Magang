@@ -142,6 +142,8 @@
                                     <button type="button" class="dropdown-option" data-value="jurnal">Jurnal</button>
                                     <button type="button" class="dropdown-option" data-value="hki">HKI</button>
                                     <button type="button" class="dropdown-option" data-value="book">Buku</button>
+                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
+                                    <button type="button" class="dropdown-option" data-value="proceeding">Proceeding</button>
                                     <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                                     <button type="button" class="dropdown-option" data-value="conference">Conference</button>
                                     <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
@@ -229,6 +231,8 @@
                                 'book' => 'Buku',
                                 'sinta' => 'Publikasi SINTA',
                                 'conference' => 'Conference',
+                                'paten' => 'Paten',
+                                'proceeding' => 'Proceeding',
                                 'nasional' => 'Nasional',
                                 'internasional' => 'Internasional',
                                 'alumni' => 'Alumni',
@@ -245,6 +249,7 @@
                                     'jurnal', 'sinta' => trim(($item->nama_jurnal ?? '') . ($item->peringkat ? ' · ' . $item->peringkat : '')) ?: '-',
                                     'hki' => \Illuminate\Support\Str::headline((string) $item->jenis_hki),
                                     'book' => \Illuminate\Support\Str::headline((string) $item->kategori_buku),
+                                    'proceeding' => $item->nama_jurnal ?: '-',
                                     default => '-',
                                 };
                                 @endphp
@@ -386,6 +391,8 @@
                             <button type="button" class="dropdown-option is-selected" data-value="jurnal">Jurnal</button>
                             <button type="button" class="dropdown-option" data-value="hki">Hak Kekayaan Intelektual</button>
                             <button type="button" class="dropdown-option" data-value="book">Buku</button>
+                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
+                                    <button type="button" class="dropdown-option" data-value="proceeding">Proceeding</button>
                             <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
                             <button type="button" class="dropdown-option" data-value="conference">Conference</button>
                             <button type="button" class="dropdown-option" data-value="rekognisi">Rekognisi</button>
@@ -446,12 +453,12 @@
 
             <div class="field-row hidden" id="row-jurnal">
                 <div class="field">
-                    <label class="field-label" for="form-nama_jurnal">Nama Jurnal</label>
+                    <label class="field-label" for="form-nama_jurnal" id="label-nama_jurnal">Nama Jurnal</label>
                     <div class="field-control">
                         <input id="form-nama_jurnal" type="text" maxlength="255" placeholder="Nama jurnal">
                     </div>
                 </div>
-                <div class="field">
+                <div class="field" id="field-peringkat">
                     <label class="field-label" for="form-peringkat">Peringkat</label>
                     <div class="field-control">
                         <input id="form-peringkat" type="text" maxlength="100" placeholder="Contoh: Q2 atau S3">
@@ -588,7 +595,7 @@
             'updateLabel'  => 'Rekognisi',
             'updateFields' => [
                 ['name' => 'jenis',   'label' => 'Jenis Karya', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
-                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'rekognisi' => 'Rekognisi']],
+                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'paten' => 'Paten', 'proceeding' => 'Proceeding', 'rekognisi' => 'Rekognisi']],
                 ['name' => 'skala',   'label' => 'Skala', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
                     'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional']],
                 ['name' => 'mitra',   'label' => 'Mitra / Instansi', 'type' => 'text',   'row' => 'a', 'col' => 3, 'target' => '.activity-title'],
@@ -632,12 +639,12 @@
         // ---- Field kondisional (khusus halaman ini) ----
         const userDropdown = document.getElementById('dd-user');
         const kindOptions = {
-            dosen: ['jurnal', 'hki', 'book', 'rekognisi'],
+            dosen: ['jurnal', 'hki', 'book', 'paten', 'proceeding', 'rekognisi'],   // Paten & Proceeding khusus dosen
             mahasiswa: ['sinta', 'conference', 'jurnal'],
             alumni: ['sinta', 'conference', 'jurnal', 'rekognisi'],
         };
         const defaultKindByType = { dosen: 'jurnal', mahasiswa: 'sinta', alumni: 'sinta' };
-        const scalableKinds = ['jurnal', 'sinta', 'conference'];
+        const scalableKinds = ['jurnal', 'sinta', 'conference', 'proceeding'];
         const userOptionButtons = Array.from(userDropdown.querySelectorAll('.dropdown-option'));
         const kindOptionButtons = Array.from(document.querySelectorAll('#dd-jenis .dropdown-option'));
         let lastSelectedType = null;
@@ -692,6 +699,8 @@
             const kind = document.getElementById('form-jenis').value;
             const isPublication = hasUser && kind !== 'rekognisi';
             const hasJournalFields = hasUser && ['jurnal', 'sinta'].includes(kind);
+            const isProceeding = hasUser && kind === 'proceeding';
+            const showJournalRow = hasJournalFields || isProceeding;   // proceeding: nama prosiding + tautan (opsional), tanpa peringkat
             const hasScale = hasUser && (scalableKinds.includes(kind) || (kind === 'rekognisi' && type !== 'alumni'));
             const isAlumni = hasUser && type === 'alumni';
             const isMahasiswa = hasUser && type === 'mahasiswa';
@@ -709,8 +718,11 @@
             document.getElementById('row-judul-wide').classList.toggle('hidden', !(isPublication && isMahasiswa));
             document.getElementById('row-tahun-penulis').classList.toggle('hidden', !(isPublication && isMahasiswa));
             document.getElementById('field-tahun').classList.toggle('hidden', !isPublication);
-            document.getElementById('row-jurnal').classList.toggle('hidden', !hasJournalFields);
-            document.getElementById('field-link_doi').classList.toggle('hidden', !hasJournalFields);
+            document.getElementById('row-jurnal').classList.toggle('hidden', !showJournalRow);
+            document.getElementById('field-link_doi').classList.toggle('hidden', !showJournalRow);
+            document.getElementById('field-peringkat').classList.toggle('hidden', isProceeding);
+            document.getElementById('label-nama_jurnal').textContent = isProceeding ? 'Nama Prosiding' : 'Nama Jurnal';
+            document.getElementById('form-nama_jurnal').placeholder = isProceeding ? 'Nama prosiding / seminar' : 'Nama jurnal';
             document.getElementById('field-jenis_hki').classList.toggle('hidden', kind !== 'hki');
             document.getElementById('field-kategori_buku').classList.toggle('hidden', kind !== 'book');
             document.getElementById('field-jabatan').classList.toggle('hidden', !isAlumni);
@@ -746,6 +758,8 @@
             book: 'Buku',
             sinta: 'Publikasi SINTA',
             conference: 'Conference',
+            paten: 'Paten',
+            proceeding: 'Proceeding',
             nasional: 'Nasional',
             internasional: 'Internasional',
             alumni: 'Alumni',
@@ -800,7 +814,9 @@
                     ? (item.jenis_hki || '-').replaceAll('_', ' ')
                     : item.jenis === 'book'
                         ? (item.kategori_buku || '-').replaceAll('_', ' ')
-                        : '-';
+                        : item.jenis === 'proceeding'
+                            ? (item.nama_jurnal || '-')
+                            : '-';
             return `
             <tr data-id="${item.id}" data-jenis="${item.jenis}" data-tipe_user="${item.tipe_user}">
                 <td><span class="nim-code">${esc(item.nim_nidn)}</span></td>

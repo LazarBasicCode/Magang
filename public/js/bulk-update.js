@@ -70,10 +70,31 @@
     // Kolom ber-"showWhen" hanya tampil bila kolom pemicunya bernilai yang cocok; yang disembunyikan dikosongkan.
     function syncVisibility() {
         fields.forEach((f) => {
-            if (!f.showWhen) return;
-            const show = Object.entries(f.showWhen).every(([name, values]) => values.includes(valueOf(name)));
+            const showWhen = !f.showWhen
+                || Object.entries(f.showWhen).every(([name, values]) => values.includes(valueOf(name)));
+            // "follow": bila kolom itu (mis. jenis) sedang diisi, nilainya dipakai menggantikan atribut baris terpilih.
+            const showFor = !f.showFor || (() => {
+                const { attr, values, follow } = f.showFor;
+                const chosen = follow ? valueOf(follow) : '';
+                const kinds = chosen ? [chosen] : (current?.ids.map((id) => rowOf(id)?.dataset[attr]).filter(Boolean) || []);
+                return kinds.length > 0 && kinds.every((kind) => values.includes(kind));
+            })();
+            const show = showWhen && showFor;
             wrapOf(f.name).style.display = show ? '' : 'none';
             if (!show) clearField(f.name);
+        });
+        tidyRows();
+    }
+
+    // Pembungkus ".field-row" yang semua isinya tersembunyi ikut disembunyikan (kalau tidak: gap kosong);
+    // bila tinggal satu kolom yang tampil, kolom itu dibuat selebar baris.
+    function tidyRows() {
+        form.querySelectorAll('.field-row').forEach((row) => {
+            const shown = [...row.children].filter((el) => el.style.display !== 'none');
+            const single = shown.length === 1;
+            row.style.display = shown.length ? '' : 'none';
+            row.style.gridTemplateColumns = single ? '1fr' : '';
+            shown.forEach((el) => { el.style.flex = single ? '1 1 100%' : ''; });
         });
     }
 
@@ -86,16 +107,24 @@
             const lists = [...kinds].map((k) => allowed[k]).filter(Boolean);
             const ok = lists.length ? lists.reduce((a, b) => a.filter((v) => b.includes(v))) : null;
 
-            wrapOf(f.name).querySelectorAll('.dropdown-option').forEach((opt) => {
+            const options = wrapOf(f.name).querySelectorAll('.dropdown-option');
+            options.forEach((opt) => {
                 const v = opt.dataset.value;
                 opt.style.display = (!v || !ok || ok.includes(v)) ? '' : 'none';
             });
+
+            const selected = valueOf(f.name);
+            if (selected && [...options].some((opt) => opt.dataset.value === selected && opt.style.display === 'none')) {
+                clearField(f.name);
+            }
         });
     }
 
-    // Pilihan dropdown berubah -> sesuaikan kolom yang bergantung padanya (nilai hidden diisi script.js lebih dulu).
-    form.addEventListener('click', (e) => {
-        if (e.target.closest('.dropdown-option')) setTimeout(syncVisibility, 0);
+    // Dropdown modal di-portal ke body; dengarkan change pada input tersembunyi, bukan klik option di form.
+    form.addEventListener('change', (e) => {
+        if (!e.target.name || !fields.some((f) => f.name === e.target.name)) return;
+        restrictOptions(current?.ids || []);
+        syncVisibility();
     });
 
     function collect() {
@@ -106,6 +135,19 @@
             if (v !== '') out[f.name] = v;
         });
         return out;
+    }
+
+    // Kolom ber-"showFor.require" ({when, haveIn}): wajib diisi bila kolom pemicunya dipilih salah satu nilai "when"
+    // dan tidak semua baris terpilih sudah termasuk "haveIn" (artinya datanya sudah dimiliki baris itu).
+    function missingRequired() {
+        return fields.filter((f) => {
+            const rule = f.showFor && f.showFor.require;
+            if (!rule || !f.showFor.follow || wrapOf(f.name).style.display === 'none') return false;
+            const chosen = valueOf(f.showFor.follow);
+            if (!chosen || !rule.when.includes(chosen)) return false;
+            const have = (current?.ids || []).every((id) => rule.haveIn.includes(rowOf(id)?.dataset[f.showFor.attr]));
+            return !have && valueOf(f.name).trim() === '';
+        }).map((f) => (wrapOf(f.name).querySelector('.field-label')?.textContent || f.name).trim());
     }
 
     // ---------- Tampilkan hasil di baris tabel ----------
@@ -158,6 +200,13 @@
         if (!Object.keys(changes).length) {
             showError('Isi minimal satu kolom yang ingin diubah.');
             toast('error', 'Isi minimal satu kolom yang ingin diubah.');
+            return;
+        }
+        const missing = missingRequired();
+        if (missing.length) {
+            const msg = 'Lengkapi kolom wajib: ' + missing.join(', ') + '.';
+            showError(msg);
+            toast('error', msg);
             return;
         }
         showError('');

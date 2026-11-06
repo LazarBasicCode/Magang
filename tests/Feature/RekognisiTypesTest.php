@@ -42,6 +42,26 @@ class RekognisiTypesTest extends TestCase
         return $this->user('superadmin', '900001');
     }
 
+    private function rekognisiRecord(User $owner, array $overrides = []): Rekognisi
+    {
+        return Rekognisi::create(array_merge([
+            'mahasiswa_id' => $owner->mahasiswa?->id,
+            'dosen_id' => $owner->dosen?->id,
+            'tipe_user' => $owner->role,
+            'jenis' => 'jurnal',
+            'skala' => 'nasional',
+            'judul' => 'Publication',
+            'penulis' => $owner->name,
+            'nama_jurnal' => 'Journal of Testing',
+            'peringkat' => 'Q2',
+            'tahun' => 2026,
+            'mitra' => $owner->role === 'dosen' ? 'Penerbit Tes' : null,
+            'tanggal_mulai' => '2026-01-01',
+            'tanggal_selesai' => '2026-01-02',
+            'bukti_kegiatan' => 'https://example.com/evidence',
+        ], $overrides));
+    }
+
     public function test_dosen_can_save_journal_with_scale_and_required_mitra(): void
     {
         $dosen = $this->user('dosen', '100001');
@@ -206,6 +226,192 @@ class RekognisiTypesTest extends TestCase
             ->assertSee('data-status="lulus"', false)
             ->assertDontSee('data-value="rekognisi"', false)
             ->assertSee('Alumni', false);
+    }
+
+    public function test_bulk_update_kind_options_follow_selected_owner_types(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/lppm/rekognisi')->assertOk();
+
+        $response->assertViewHas('jenisByTipe', \App\Http\Controllers\LppmRekognisiController::JENIS_BY_TIPE);
+        foreach (['jenis', 'judul', 'skala', 'mitra', 'jabatan'] as $field) {
+            $response->assertSee('data-field="' . $field . '"', false);
+        }
+        foreach ([
+            'nama_jurnal', 'peringkat', 'jenis_hki', 'kategori_buku',
+            'nama_konferensi', 'nomor_issn_isbn', 'link_doi', 'status_paten', 'nomor_paten',
+        ] as $field) {
+            $response->assertDontSee('data-field="' . $field . '"', false);
+        }
+    }
+
+    public function test_bulk_update_rejects_kind_not_shared_by_selected_owner_types(): void
+    {
+        $mahasiswa = $this->user('mahasiswa', '710001');
+        $dosen = $this->user('dosen', '710002');
+        $studentRecord = $this->rekognisiRecord($mahasiswa);
+        $lecturerRecord = $this->rekognisiRecord($dosen);
+
+        $this->actingAs($this->admin())->postJson('/pilihan/rekognisi/ubah', [
+            'ids' => [$studentRecord->id, $lecturerRecord->id],
+            'jenis' => 'hki',
+        ])->assertUnprocessable()
+            ->assertJsonFragment(['Jenis karya tidak sesuai dengan tipe pengguna mahasiswa.']);
+
+        $this->assertDatabaseHas('rekognisi', ['id' => $studentRecord->id, 'jenis' => 'jurnal']);
+        $this->assertDatabaseHas('rekognisi', ['id' => $lecturerRecord->id, 'jenis' => 'jurnal']);
+
+        $this->actingAs($this->admin())->postJson('/pilihan/rekognisi/ubah', [
+            'ids' => [$studentRecord->id, $lecturerRecord->id],
+            'jenis' => 'jurnal',
+        ])->assertOk();
+    }
+
+    public function test_bulk_scale_update_accepts_prosiding_and_does_not_require_unchanged_journal_fields(): void
+    {
+        $admin = $this->admin();
+        $dosen = $this->user('dosen', '710003');
+        $prosiding = $this->rekognisiRecord($dosen, [
+            'jenis' => 'prosiding',
+            'nama_konferensi' => 'Conference Testing',
+            'nomor_issn_isbn' => '1234-5678',
+            'link_doi' => 'https://doi.org/10.1234/conference',
+        ]);
+        $incompleteJournal = $this->rekognisiRecord($dosen, [
+            'nama_jurnal' => null,
+            'peringkat' => null,
+        ]);
+
+        $this->actingAs($admin)->postJson('/pilihan/rekognisi/ubah', [
+            'ids' => [$prosiding->id],
+            'skala' => 'internasional',
+        ])->assertOk();
+
+        $this->actingAs($admin)->postJson('/pilihan/rekognisi/ubah', [
+            'ids' => [$incompleteJournal->id],
+            'skala' => 'internasional',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('rekognisi', ['id' => $prosiding->id, 'skala' => 'internasional']);
+        $this->assertDatabaseHas('rekognisi', ['id' => $incompleteJournal->id, 'skala' => 'internasional']);
+    }
+
+    public function test_bulk_update_book_requires_and_saves_book_category(): void
+    {
+        $admin = $this->admin();
+        $dosen = $this->user('dosen', '710004');
+        $record = $this->rekognisiRecord($dosen);
+
+        $this->actingAs($admin)->postJson('/pilihan/rekognisi/ubah', [
+            'ids' => [$record->id],
+            'jenis' => 'book',
+        ])->assertUnprocessable()
+            ->assertJsonFragment(['Kategori buku wajib diisi untuk jenis Buku.']);
+
+        $this->actingAs($admin)->postJson('/pilihan/rekognisi/ubah', [
+            'ids' => [$record->id],
+            'jenis' => 'book',
+            'kategori_buku' => 'referensi',
+        ])->assertOk()
+            ->assertJsonPath('rows.0.kategori_buku', 'referensi');
+
+        $this->assertDatabaseHas('rekognisi', [
+            'id' => $record->id,
+            'jenis' => 'book',
+            'kategori_buku' => 'referensi',
+            'skala' => null,
+        ]);
+    }
+
+    public function test_bulk_update_title_on_book_does_not_require_scale_or_category_changes(): void
+    {
+        $admin = $this->admin();
+        $dosen = $this->user('dosen', '710005');
+        $record = $this->rekognisiRecord($dosen, [
+            'jenis' => 'book',
+            'skala' => null,
+            'kategori_buku' => 'ajar',
+        ]);
+
+        $this->actingAs($admin)->postJson('/pilihan/rekognisi/ubah', [
+            'ids' => [$record->id],
+            'judul' => 'Judul Buku Baru',
+        ])->assertOk()->assertJsonPath('rows.0.judul', 'Judul Buku Baru');
+
+        $this->assertDatabaseHas('rekognisi', [
+            'id' => $record->id,
+            'judul' => 'Judul Buku Baru',
+            'jenis' => 'book',
+            'kategori_buku' => 'ajar',
+            'skala' => null,
+        ]);
+    }
+
+    public function test_bulk_update_supports_all_kind_specific_required_fields(): void
+    {
+        $admin = $this->admin();
+        $dosen = $this->user('dosen', '710006');
+        $mahasiswa = $this->user('mahasiswa', '710007');
+        $updates = [
+            'jurnal' => [
+                'jenis' => 'jurnal',
+                'skala' => 'nasional',
+                'nama_jurnal' => 'Jurnal Bulk',
+                'peringkat' => 'S2',
+            ],
+            'sinta' => [
+                'jenis' => 'sinta',
+                'skala' => 'nasional',
+                'nama_jurnal' => 'Jurnal SINTA Bulk',
+                'peringkat' => 'S3',
+            ],
+            'hki' => ['jenis' => 'hki', 'jenis_hki' => 'hak_cipta'],
+            'book' => ['jenis' => 'book', 'kategori_buku' => 'referensi'],
+            'prosiding' => [
+                'jenis' => 'prosiding',
+                'skala' => 'internasional',
+                'nama_konferensi' => 'Konferensi Bulk',
+                'nomor_issn_isbn' => '1234-5678',
+                'link_doi' => 'https://doi.org/10.1234/bulk',
+            ],
+            'paten' => [
+                'jenis' => 'paten',
+                'skala' => 'nasional',
+                'status_paten' => 'terdaftar',
+                'nomor_paten' => 'P00202600001',
+            ],
+        ];
+
+        foreach ($updates as $kind => $changes) {
+            $owner = $kind === 'sinta' ? $mahasiswa : $dosen;
+            $record = $this->rekognisiRecord($owner, [
+                'jenis' => 'jurnal',
+                'skala' => null,
+                'nama_jurnal' => null,
+                'peringkat' => null,
+                'jenis_hki' => null,
+                'kategori_buku' => null,
+                'link_doi' => null,
+                'nama_konferensi' => null,
+                'nomor_issn_isbn' => null,
+                'status_paten' => null,
+                'nomor_paten' => null,
+            ]);
+
+            $this->actingAs($admin)->postJson('/pilihan/rekognisi/ubah', [
+                'ids' => [$record->id],
+                ...$changes,
+            ])->assertOk()
+                ->assertJsonPath('rows.0.jenis', $kind);
+
+            $this->assertDatabaseHas('rekognisi', [
+                'id' => $record->id,
+                'jenis' => $kind,
+                ...array_intersect_key($changes, array_flip([
+                    'skala', 'nama_jurnal', 'peringkat', 'jenis_hki', 'kategori_buku',
+                    'link_doi', 'nama_konferensi', 'nomor_issn_isbn', 'status_paten', 'nomor_paten',
+                ])),
+            ]);
+        }
     }
 
     public function test_rekognisi_kind_and_related_records_are_deleted(): void

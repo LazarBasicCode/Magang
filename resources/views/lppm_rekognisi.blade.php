@@ -123,9 +123,9 @@
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Tipe</button>
-                                    <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
-                                    <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
                                     <button type="button" class="dropdown-option" data-value="alumni">Alumni</button>
+                                    <button type="button" class="dropdown-option" data-value="dosen">Dosen</button>
+                                    <button type="button" class="dropdown-option" data-value="mahasiswa">Mahasiswa</button>
                                 </div>
                             </div>
                         </div>
@@ -139,15 +139,9 @@
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Jenis</button>
-                                    <button type="button" class="dropdown-option" data-value="jurnal">Jurnal</button>
-                                    <button type="button" class="dropdown-option" data-value="hki">HKI</button>
-                                    <button type="button" class="dropdown-option" data-value="book">Buku</button>
-                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
-                                    <button type="button" class="dropdown-option" data-value="proceeding">Proceeding</button>
-                                    <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
-                                    <button type="button" class="dropdown-option" data-value="conference">Conference</button>
-                                    <button type="button" class="dropdown-option" data-value="prosiding">Prosiding</button>
-                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
+                                    @foreach($jenisOptions as $v => $l)
+                                        <button type="button" class="dropdown-option" data-value="{{ $v }}">{{ $l }}</button>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
@@ -161,8 +155,9 @@
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Skala</button>
-                                    <button type="button" class="dropdown-option" data-value="nasional">Nasional</button>
-                                    <button type="button" class="dropdown-option" data-value="internasional">Internasional</button>
+                                    @foreach($skalaOptions as $v => $l)
+                                        <button type="button" class="dropdown-option" data-value="{{ $v }}">{{ $l }}</button>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
@@ -396,15 +391,9 @@
                             <span class="material-symbols-outlined caret">expand_more</span>
                         </button>
                         <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="jurnal">Jurnal</button>
-                            <button type="button" class="dropdown-option" data-value="hki">Hak Kekayaan Intelektual</button>
-                            <button type="button" class="dropdown-option" data-value="book">Buku</button>
-                                    <button type="button" class="dropdown-option" data-value="paten">Paten</button>
-                                    <button type="button" class="dropdown-option" data-value="proceeding">Proceeding</button>
-                            <button type="button" class="dropdown-option" data-value="sinta">Publikasi SINTA</button>
-                            <button type="button" class="dropdown-option" data-value="conference">Conference</button>
-                            <button type="button" class="dropdown-option" data-value="prosiding">Prosiding</button>
-                            <button type="button" class="dropdown-option" data-value="paten">Paten</button>
+                            @foreach($jenisOptions as $v => $l)
+                                <button type="button" class="dropdown-option{{ $v === 'jurnal' ? ' is-selected' : '' }}" data-value="{{ $v }}">{{ $v === 'hki' ? 'Hak Kekayaan Intelektual' : $l }}</button>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -417,8 +406,9 @@
                             <span class="material-symbols-outlined caret">expand_more</span>
                         </button>
                         <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="nasional">Nasional</button>
-                            <button type="button" class="dropdown-option" data-value="internasional">Internasional</button>
+                            @foreach($skalaOptions as $v => $l)
+                                <button type="button" class="dropdown-option{{ $v === 'nasional' ? ' is-selected' : '' }}" data-value="{{ $v }}">{{ $l }}</button>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -506,8 +496,9 @@
                         <input type="hidden" id="form-status_paten" value="terdaftar" />
                         <button type="button" class="dropdown-trigger"><span class="dropdown-value">Terdaftar (Filed)</span><span class="material-symbols-outlined caret">expand_more</span></button>
                         <div class="dropdown-panel">
-                            <button type="button" class="dropdown-option is-selected" data-value="terdaftar">Terdaftar (Filed)</button>
-                            <button type="button" class="dropdown-option" data-value="granted">Granted (Bersertifikat)</button>
+                            @foreach($statusPatenOptions as $v => $l)
+                                <button type="button" class="dropdown-option{{ $v === 'terdaftar' ? ' is-selected' : '' }}" data-value="{{ $v }}">{{ $l }}</button>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -525,9 +516,9 @@
                     <input type="hidden" id="form-jenis_hki" value="hak_cipta" />
                     <button type="button" class="dropdown-trigger"><span class="dropdown-value">Hak Cipta</span><span class="material-symbols-outlined caret">expand_more</span></button>
                     <div class="dropdown-panel">
-                        <button type="button" class="dropdown-option is-selected" data-value="hak_cipta">Hak Cipta</button>
-                        <button type="button" class="dropdown-option" data-value="paten">Paten</button>
-                        <button type="button" class="dropdown-option" data-value="merek">Merek</button>
+                        @foreach($jenisHkiOptions as $v => $l)
+                            <button type="button" class="dropdown-option{{ $v === 'hak_cipta' ? ' is-selected' : '' }}" data-value="{{ $v }}">{{ $l }}</button>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -538,9 +529,9 @@
                     <input type="hidden" id="form-kategori_buku" value="ajar" />
                     <button type="button" class="dropdown-trigger"><span class="dropdown-value">Buku Ajar</span><span class="material-symbols-outlined caret">expand_more</span></button>
                     <div class="dropdown-panel">
-                        <button type="button" class="dropdown-option is-selected" data-value="ajar">Buku Ajar</button>
-                        <button type="button" class="dropdown-option" data-value="referensi">Referensi</button>
-                        <button type="button" class="dropdown-option" data-value="chapter">Chapter</button>
+                        @foreach($kategoriBukuOptions as $v => $l)
+                            <button type="button" class="dropdown-option{{ $v === 'ajar' ? ' is-selected' : '' }}" data-value="{{ $v }}">{{ $l }}</button>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -638,16 +629,42 @@
     @endif
 
     @if($showBulk && $bulkWrite)
-        {{-- Modal Update Massal (data terpilih). Kolom NIM/NIDN, Nama, Tipe, Tanggal & Bukti sengaja tidak ada: khas per baris. --}}
+        {{-- Modal Update Massal (data terpilih). Pilih Jenis Karya -> kolom metadata jenis itu muncul (wajib bila data belum punya).
+             Opsi Jenis dibatasi irisan jenis tiap tipe pemilik. NIM/NIDN, Nama, Tipe, Penulis, Tanggal & Bukti khas per baris (lewat Edit). --}}
+        @php
+            // Tampil sesuai jenis yang dipilih (atau jenis baris bila belum dipilih). $need = jenis yang membuatnya wajib;
+            // wajib diisi kecuali semua baris terpilih sudah berjenis tsb (sudah punya datanya).
+            $mk = fn ($values, $need = null) => ['attr' => 'jenis', 'values' => $values, 'follow' => 'jenis']
+                + ($need ? ['require' => ['when' => $need, 'haveIn' => $need]] : []);
+            $req = 'Wajib diisi bila data belum punya';
+            $scaled = ['jurnal', 'sinta', 'conference', 'prosiding', 'paten'];
+        @endphp
         @include('partials.bulk-update-modal', [
             'updateLabel'  => 'Rekognisi',
             'updateFields' => [
-                ['name' => 'jenis',   'label' => 'Jenis Karya', 'type' => 'select', 'row' => 'a', 'col' => 4, 'target' => '.plain-text',
-                    'options' => ['jurnal' => 'Jurnal', 'hki' => 'HKI', 'book' => 'Buku', 'sinta' => 'Publikasi SINTA', 'conference' => 'Conference', 'prosiding' => 'Prosiding', 'paten' => 'Paten']],
-                ['name' => 'skala',   'label' => 'Skala', 'type' => 'select', 'row' => 'a', 'col' => 3, 'target' => '.plain-text',
-                    'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional']],
-                ['name' => 'mitra',   'label' => 'Mitra / Instansi', 'type' => 'text',   'row' => 'a', 'col' => 3, 'target' => '.activity-title'],
-                ['name' => 'jabatan', 'label' => 'Jabatan (Alumni)', 'type' => 'text',   'col' => 2, 'target' => '.plain-text'],
+                ['name' => 'judul', 'label' => 'Judul Karya', 'type' => 'text'],
+                ['name' => 'jenis', 'label' => 'Jenis Karya', 'type' => 'select',
+                    'options' => $jenisOptions,
+                    'optionsBy' => ['attr' => 'tipe_user', 'allowed' => $jenisByTipe]],
+                ['name' => 'skala', 'label' => 'Skala', 'type' => 'select',
+                    'showFor' => $mk($scaled, $scaled),
+                    'options' => $skalaOptions],
+                ['name' => 'nama_jurnal', 'label' => 'Nama Jurnal', 'type' => 'text', 'row' => 'jr', 'placeholder' => $req, 'showFor' => $mk(['jurnal', 'sinta'], ['jurnal', 'sinta'])],
+                ['name' => 'peringkat', 'label' => 'Peringkat', 'type' => 'text', 'row' => 'jr', 'placeholder' => $req, 'showFor' => $mk(['jurnal', 'sinta'], ['jurnal', 'sinta'])],
+                ['name' => 'link_doi', 'label' => 'Link DOI', 'type' => 'text', 'placeholder' => 'https://... (wajib untuk Prosiding)', 'showFor' => $mk(['jurnal', 'sinta', 'prosiding']) + ['require' => ['when' => ['prosiding'], 'haveIn' => ['prosiding']]]],
+                ['name' => 'nama_konferensi', 'label' => 'Nama Konferensi / Seminar', 'type' => 'text', 'row' => 'pr', 'placeholder' => $req, 'showFor' => $mk(['prosiding'], ['prosiding'])],
+                ['name' => 'nomor_issn_isbn', 'label' => 'Nomor ISSN / ISBN', 'type' => 'text', 'row' => 'pr', 'placeholder' => $req, 'showFor' => $mk(['prosiding'], ['prosiding'])],
+                ['name' => 'status_paten', 'label' => 'Status Paten', 'type' => 'select', 'row' => 'pt', 'showFor' => $mk(['paten'], ['paten']),
+                    'options' => $statusPatenOptions],
+                ['name' => 'nomor_paten', 'label' => 'Nomor Permohonan / Paten', 'type' => 'text', 'row' => 'pt', 'placeholder' => $req, 'showFor' => $mk(['paten'], ['paten'])],
+                ['name' => 'jenis_hki', 'label' => 'Jenis HKI', 'type' => 'select', 'showFor' => $mk(['hki'], ['hki']),
+                    'options' => $jenisHkiOptions],
+                ['name' => 'kategori_buku', 'label' => 'Kategori Buku', 'type' => 'select', 'showFor' => $mk(['book'], ['book']),
+                    'options' => $kategoriBukuOptions],
+                ['name' => 'mitra', 'label' => 'Mitra / Instansi', 'type' => 'text', 'row' => 'mj',
+                    'showFor' => ['attr' => 'tipe_user', 'values' => ['dosen', 'alumni']]],
+                ['name' => 'jabatan', 'label' => 'Jabatan (Alumni)', 'type' => 'text', 'row' => 'mj',
+                    'showFor' => ['attr' => 'tipe_user', 'values' => ['alumni']]],
             ],
         ])
     @endif
@@ -814,35 +831,6 @@
             internasional: 'Internasional',
             alumni: 'Alumni',
             rekognisi: 'Rekognisi'
-        };
-
-        // ---- Tampilkan hasil Update Massal di baris tabel (khusus halaman ini) ----
-        // Beda dari default bulk-update.js: jenis tampil sebagai label, dan jabatan hanya tampil untuk alumni.
-        SIDA.bulkUpdateApply = function(rows) {
-            const body = document.getElementById('rekognisiTableBody') || document.querySelector('table[data-selectable] tbody');
-            (rows || []).forEach((r) => {
-                const tr = body && body.querySelector(`tr[data-id="${r.id}"]`);
-                if (!tr) return;
-                const cells = Array.from(tr.children).filter((td) => !td.classList.contains('sel-col'));
-                const mitraEl = cells[5] && cells[5].querySelector('.activity-title');
-                if (mitraEl) { mitraEl.textContent = r.mitra; mitraEl.title = r.mitra; }
-                const jenisEl = cells[6] && cells[6].querySelector('.plain-text');
-                if (jenisEl) jenisEl.textContent = jenisLabel[r.jenis] || r.jenis;
-                const jabEl = cells[9] && cells[9].querySelector('.plain-text');
-                if (jabEl) jabEl.textContent = r.jabatan_tampil || '-';
-
-                const edit = tr.querySelector('.btn-edit-row');
-                ['jenis', 'mitra', 'jabatan'].forEach((k) => {
-                    const v = r[k] == null ? '' : String(r[k]);
-                    if (tr.hasAttribute('data-' + k)) tr.setAttribute('data-' + k, v);
-                    if (edit && edit.hasAttribute('data-' + k)) edit.setAttribute('data-' + k, v);
-                });
-
-                tr.classList.remove('is-updated-flash');
-                void tr.offsetWidth;
-                tr.classList.add('is-updated-flash');
-                setTimeout(() => tr.classList.remove('is-updated-flash'), 1800);
-            });
         };
 
         // ---- Bangun HTML baris tabel dari data JSON (khusus halaman ini) ----

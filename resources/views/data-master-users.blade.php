@@ -54,7 +54,7 @@
             <div class="page-wrap is-loading" id="pageWrap" aria-busy="true">
 
                 <!-- PAGE TITLE + ACTION -->
-                <div class="title-bar">
+                <div class="title-bar data-master-title-bar">
                     <div>
                         <h1 class="page-title">Data Master Pengguna</h1>
                         <p class="page-subtitle">Kelola akun pengguna sistem: Superadmin, Admin, Dosen, dan Mahasiswa</p>
@@ -68,7 +68,7 @@
                         $showBulk = $bulkRole && in_array($bulkLevel, ['readonly', 'penuh'], true);
                         $bulkWrite = $bulkRole && $bulkLevel === 'penuh';
                     @endphp
-                    <div class="title-actions">
+                    <div class="title-actions{{ $showBulk ? ' has-bulk-menu' : '' }}">
                         <button type="button" class="ap-open-btn" data-ap-open="mahasiswa">
                             <span class="material-symbols-outlined">school</span>
                             <span>Tambah Mahasiswa</span>
@@ -88,6 +88,7 @@
                                 'bulkImport'   => $bulkWrite ? route('data-master.users.import') : null,
                                 'bulkExport'   => route('data-master.users.export'),
                                 'bulkPrint'    => route('cetak.show', 'data-master'),
+                                'bulkQuickActions' => true,
                             ])
                         @endif
                     </div>

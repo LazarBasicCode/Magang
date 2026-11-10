@@ -24,6 +24,7 @@
     $defaultJenis = $allowedJenis[0] ?? 'conference_internasional';
 @endphp
 @include('partials.mhs-head', ['pageTitle' => 'Kerja Sama Saya'])
+    <link rel="stylesheet" href="{{ asset('css/bukti-tambahan.css') }}?v={{ @filemtime(public_path('css/bukti-tambahan.css')) }}">
 
     @include('partials.sidebar', ['active' => 'kerja_sama'])
 
@@ -158,6 +159,9 @@
                 </div>
                 <p class="mv-help">Tempel link Google Drive berisi bukti kegiatan (pastikan bisa dibuka).</p>
             </div>
+            <div class="field">
+                <div id="buktiTambahanList"></div>
+            </div>
 
             <div class="modal-error" id="mvFormError" hidden></div>
 
@@ -174,8 +178,10 @@
     @include('partials.duplicate-confirm-modal')
     @include('partials.mhs-scripts')
     <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
+    <script src="{{ asset('js/bukti-tambahan.js') }}?v={{ @filemtime(public_path('js/bukti-tambahan.js')) }}"></script>
     <script>
         const $v = (id) => document.getElementById(id);
+        const buktiTambahan = BuktiTambahan.mount($v('buktiTambahanList'));
         const HAS_ARAH = !!$v('field-arah');
         const DEFAULT_JENIS = @json($defaultJenis);
 
@@ -226,7 +232,10 @@
                 ['Periode', i.tanggal_mulai ? fmtDate(i.tanggal_mulai) + ' – ' + fmtDate(i.tanggal_selesai) : null],
                 ['Diajukan', i.diajukan],
             ],
-            linksOf: (i) => [{ label: 'Lihat Bukti', url: i.bukti_kegiatan }],
+            linksOf: (i) => [
+                { label: 'Lihat Bukti', url: i.bukti_kegiatan },
+                ...(i.bukti_tambahan || []).map((b, n, all) => ({ label: b.nama || (all.length > 1 ? 'Bukti Tambahan ' + (n + 1) : 'Bukti Tambahan'), url: b.url })),
+            ],
             fillForm: (i) => {
                 SIDA.dropdown.select($v('dd-jenis'), i?.jenis || DEFAULT_JENIS);
                 SIDA.dropdown.select($v('dd-skala'), i?.skala || 'nasional');
@@ -238,6 +247,7 @@
                 dpSelesai.setMinDate(i?.tanggal_mulai || null);
                 dpSelesai.setValue(i?.tanggal_selesai || '');
                 $v('form-bukti_kegiatan').value = i?.bukti_kegiatan || '';
+                buktiTambahan.set(i?.bukti_tambahan);
                 syncJenis();
             },
             readForm: () => {
@@ -254,6 +264,7 @@
                     tanggal_mulai: $v('form-tanggal_mulai').value,
                     tanggal_selesai: $v('form-tanggal_selesai').value,
                     bukti_kegiatan: $v('form-bukti_kegiatan').value,
+                bukti_tambahan: buktiTambahan.get(),
                 };
             },
         });

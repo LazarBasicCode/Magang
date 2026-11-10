@@ -1,0 +1,19 @@
+/* Bukti Tambahan dinamis (public/js/bukti-tambahan.js):
+   tiap blok = judul "Link Bukti Tambahan N", baris link, lalu baris nama bukti + tombol hapus. */
+.bt-list { display: flex; flex-direction: column; gap: 14px; }
+.bt-rows { display: flex; flex-direction: column; gap: 14px; }
+.bt-rows:empty { display: none; }
+.bt-row { display: flex; flex-direction: column; gap: 6px; }
+.bt-foot { display: flex; align-items: stretch; gap: 6px; }
+.bt-foot .bt-name { flex: 1; min-width: 0; }
+.bt-remove, .bt-add {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 2px solid var(--border-strong, #d9dee7); background: transparent; color: inherit;
+    border-radius: 10px; cursor: pointer; font: inherit; font-weight: 600;
+}
+.bt-remove { width: 40px; flex: none; }
+.bt-remove:hover { border-color: #dc2626; color: #dc2626; }
+.bt-add { align-self: flex-start; padding: 8px 14px 8px 10px; font-size: 13px; }
+.bt-add:hover { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); }
+.bt-remove .material-symbols-outlined, .bt-add .material-symbols-outlined { font-size: 20px; }
+.bt-remove[hidden], .bt-add[hidden] { display: none; }

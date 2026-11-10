@@ -4,6 +4,7 @@
     Data: $initial (items+meta+summary), $summary, $mahasiswa
 --}}
 @include('partials.mhs-head', ['pageTitle' => 'Prestasi Saya'])
+    <link rel="stylesheet" href="{{ asset('css/bukti-tambahan.css') }}?v={{ @filemtime(public_path('css/bukti-tambahan.css')) }}">
 
     @include('partials.sidebar', ['active' => 'kemahasiswaan'])
 
@@ -119,6 +120,9 @@
                 </div>
                 <p class="mv-help">Tempel link Google Drive berisi sertifikat atau foto kegiatan (pastikan bisa dibuka).</p>
             </div>
+            <div class="field">
+                <div id="buktiTambahanList"></div>
+            </div>
 
             <div class="modal-error" id="mvFormError" hidden></div>
 
@@ -135,8 +139,10 @@
     @include('partials.duplicate-confirm-modal')
     @include('partials.mhs-scripts')
     <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
+    <script src="{{ asset('js/bukti-tambahan.js') }}?v={{ @filemtime(public_path('js/bukti-tambahan.js')) }}"></script>
     <script>
         const $v = (id) => document.getElementById(id);
+        const buktiTambahan = BuktiTambahan.mount($v('buktiTambahanList'));
         const L = {
             jenis: { kemahasiswaan: 'Kemahasiswaan', inbis: 'Inbis' },
             tab: { akademik: 'Akademik', non_akademik: 'Non Akademik' },
@@ -160,7 +166,10 @@
                 ['Tahun', i.tahun],
                 ['Diajukan', i.diajukan],
             ],
-            linksOf: (i) => [{ label: 'Lihat Bukti', url: i.bukti_kegiatan }],
+            linksOf: (i) => [
+                { label: 'Lihat Bukti', url: i.bukti_kegiatan },
+                ...(i.bukti_tambahan || []).map((b, n, all) => ({ label: b.nama || (all.length > 1 ? 'Bukti Tambahan ' + (n + 1) : 'Bukti Tambahan'), url: b.url })),
+            ],
             fillForm: (i) => {
                 SIDA.dropdown.select($v('dd-tingkat'), i?.tingkat || 'lokal');
                 SIDA.dropdown.select($v('dd-tab'), i?.tab || 'akademik');
@@ -168,6 +177,7 @@
                 $v('form-tahun').value = i?.tahun || new Date().getFullYear();
                 $v('form-nama_kegiatan').value = i?.nama_kegiatan || '';
                 $v('form-bukti_kegiatan').value = i?.bukti_kegiatan || '';
+                buktiTambahan.set(i?.bukti_tambahan);
             },
             readForm: () => ({
                 mahasiswa_id: $v('form-mahasiswa_id').value,
@@ -177,6 +187,7 @@
                 tahun: $v('form-tahun').value,
                 nama_kegiatan: $v('form-nama_kegiatan').value,
                 bukti_kegiatan: $v('form-bukti_kegiatan').value,
+                bukti_tambahan: buktiTambahan.get(),
             }),
         });
     </script>

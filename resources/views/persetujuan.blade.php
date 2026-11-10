@@ -183,7 +183,7 @@
                                 <tr>
                                     <th class="sel-col sel-head" id="apprHeadSel"></th>
                                     <th>Pengajuan</th>
-                                    <th>Pengaju</th>
+                                    <th>Yang Mengajukan</th>
                                     <th class="center">Status</th>
                                     <th id="apprTimeHead">Diajukan</th>
                                     <th class="center">Aksi</th>
@@ -212,7 +212,7 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    {{-- Modal Periksa. Ukuran TETAP: judul | isi 2 kolom (kiri: tab + konten yang di-scroll, kanan: ringkasan) | footer.
+    {{-- Modal Periksa. Ukuran TETAP: judul | isi 2 kolom (kiri: tab Detail/Komentar, kanan: ringkasan + bukti + riwayat) | footer.
          Membuka pengajuan baru = otomatis "Diproses Prodi". --}}
     <div class="modal-backdrop" id="apprRevBackdrop"></div>
     <div class="modal-card" id="apprRevModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="apprRevName">
@@ -233,7 +233,6 @@
                 <div class="appr-mtabs" role="tablist">
                     <button type="button" class="appr-mtab is-active" data-pane="detail" role="tab">Detail</button>
                     <button type="button" class="appr-mtab" data-pane="komentar" role="tab">Komentar <span class="appr-mtab-count" id="apprMtabComments">0</span></button>
-                    <button type="button" class="appr-mtab" data-pane="riwayat" role="tab">Riwayat</button>
                 </div>
 
                 <div class="appr-rv-scroll">
@@ -241,7 +240,7 @@
 
                     <div class="appr-pane" data-pane="komentar" id="apprPaneKomentar" hidden>
                         <form class="appr-cm-form" id="apprCommentForm" novalidate>
-                            <label class="appr-sec-h" for="apprCommentBody">Tulis komentar untuk pengaju</label>
+                            <label class="appr-sec-h" for="apprCommentBody">Tulis komentar</label>
                             <textarea id="apprCommentBody" class="appr-note-input" maxlength="1000" rows="3" placeholder="Mis. bukti perlu dilengkapi, atau tautan tidak bisa dibuka..."></textarea>
                             <span class="appr-comment-err" id="apprCommentErr" hidden></span>
                         </form>
@@ -250,10 +249,6 @@
                         <button type="button" class="appr-more" id="apprCommentMore" hidden>
                             <span class="material-symbols-outlined">expand_more</span><span>Tampilkan lebih banyak</span>
                         </button>
-                    </div>
-
-                    <div class="appr-pane" data-pane="riwayat" id="apprPaneRiwayat" hidden>
-                        <ol class="appr-tl" id="apprHistList"></ol>
                     </div>
                 </div>
             </section>

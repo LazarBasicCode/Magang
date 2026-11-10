@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/skeleton.css') }}?v={{ @filemtime(public_path('css/skeleton.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/bukti-tambahan.css') }}?v={{ @filemtime(public_path('css/bukti-tambahan.css')) }}">
     <title>LPPM Rekognisi &middot; SIDA</title>
 </head>
 
@@ -306,7 +307,7 @@
                                                 data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
                                                 data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
                                                 data-bukti_kegiatan="{{ $item->bukti_kegiatan }}"
-                                                data-bukti_tambahan="{{ $item->bukti_tambahan ?? '' }}">
+                                                data-bukti_tambahan="{{ json_encode($item->bukti_tambahan, JSON_UNESCAPED_SLASHES) }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
@@ -600,10 +601,7 @@
             </div>
 
             <div class="field hidden" id="field-bukti_tambahan">
-                <label class="field-label" for="form-bukti_tambahan">Link Bukti Tambahan (opsional)</label>
-                <div class="field-control">
-                    <input id="form-bukti_tambahan" type="url" placeholder="https://drive.google.com/...">
-                </div>
+                <div id="buktiTambahanList"></div>
             </div>
 
             <div class="modal-error" id="modalError" hidden></div>
@@ -672,6 +670,7 @@
     <script src="{{ asset('js/approval-chip.js') }}?v={{ @filemtime(public_path('js/approval-chip.js')) }}"></script>
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
+    <script src="{{ asset('js/bukti-tambahan.js') }}?v={{ @filemtime(public_path('js/bukti-tambahan.js')) }}"></script>
     <script>
         // ================================================================
         // Bagian ini KHUSUS halaman LPPM Rekognisi:
@@ -682,6 +681,7 @@
         // ditangani public/js/script.js via SIDA.
         // ================================================================
         const csrfToken = SIDA.util.csrfToken();
+        const buktiTambahan = BuktiTambahan.mount(document.getElementById('buktiTambahanList'));
         const {
             esc,
             initials,
@@ -896,7 +896,7 @@
                             data-tanggal_mulai="${item.tanggal_mulai || ''}"
                             data-tanggal_selesai="${item.tanggal_selesai || ''}"
                             data-bukti_kegiatan="${esc(item.bukti_kegiatan)}"
-                            data-bukti_tambahan="${esc(item.bukti_tambahan || '')}">
+                            data-bukti_tambahan="${esc(JSON.stringify(item.bukti_tambahan || []))}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -1064,7 +1064,7 @@
             dpSelesai.setMinDate(data.tanggal_mulai || null);
             dpSelesai.setValue(data.tanggal_selesai || '');
             document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
-            document.getElementById('form-bukti_tambahan').value = data.bukti_tambahan || '';
+            buktiTambahan.set(data.bukti_tambahan);
 
             openModalBase();
         }
@@ -1100,7 +1100,7 @@
                 tanggal_mulai: document.getElementById('form-tanggal_mulai').value,
                 tanggal_selesai: document.getElementById('form-tanggal_selesai').value,
                 bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
-                bukti_tambahan: document.getElementById('form-bukti_tambahan').value || null,
+                bukti_tambahan: buktiTambahan.get(),
             };
 
             if (!payload.owner_ref) {

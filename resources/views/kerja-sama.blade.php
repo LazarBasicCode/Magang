@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/bukti-tambahan.css') }}?v={{ @filemtime(public_path('css/bukti-tambahan.css')) }}">
     <title>Kerja Sama &middot; SIDA</title>
 </head>
 
@@ -156,15 +157,9 @@
                                 </button>
                                 <div class="dropdown-panel">
                                     <button type="button" class="dropdown-option is-selected" data-value="semua">Semua Jenis</button>
-                                    <button type="button" class="dropdown-option" data-value="conference_internasional">Conference Internasional</button>
-                                    <button type="button" class="dropdown-option" data-value="pkl">PKL (Output)</button>
-                                    <button type="button" class="dropdown-option" data-value="fgd">FGD</button>
-                                    <button type="button" class="dropdown-option" data-value="keynote_session">Keynote Speaker</button>
-                                    <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
-                                    <button type="button" class="dropdown-option" data-value="pengabdian">Pengabdian</button>
-                                    <button type="button" class="dropdown-option" data-value="penelitian">Penelitian</button>
-                                    <button type="button" class="dropdown-option" data-value="pertukaran_pelajar">Pertukaran Pelajar</button>
-                                    <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
+                                    @foreach($jenisOptions as $value => $label)
+                                        <button type="button" class="dropdown-option" data-value="{{ $value }}">{{ $label }}</button>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
@@ -341,7 +336,8 @@
                                                 data-judul_kegiatan="{{ $item->judul_kegiatan }}"
                                                 data-tanggal_mulai="{{ optional($item->tanggal_mulai)->format('Y-m-d') }}"
                                                 data-tanggal_selesai="{{ optional($item->tanggal_selesai)->format('Y-m-d') }}"
-                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}">
+                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}"
+                                                data-bukti_tambahan="{{ json_encode($item->bukti_tambahan, JSON_UNESCAPED_SLASHES) }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="{{ $item->id }}">
@@ -433,15 +429,9 @@
                         <span class="material-symbols-outlined caret">expand_more</span>
                     </button>
                     <div class="dropdown-panel">
-                        <button type="button" class="dropdown-option is-selected" data-value="conference_internasional">Conference Internasional</button>
-                        <button type="button" class="dropdown-option" data-value="pkl">PKL (Output)</button>
-                        <button type="button" class="dropdown-option" data-value="fgd">FGD</button>
-                        <button type="button" class="dropdown-option" data-value="keynote_session">Keynote Speaker</button>
-                        <button type="button" class="dropdown-option" data-value="guest_lecture">Guest Lecture</button>
-                        <button type="button" class="dropdown-option" data-value="pengabdian">Pengabdian</button>
-                        <button type="button" class="dropdown-option" data-value="penelitian">Penelitian</button>
-                        <button type="button" class="dropdown-option" data-value="pertukaran_pelajar">Pertukaran Pelajar</button>
-                        <button type="button" class="dropdown-option" data-value="lainnya">Lainnya</button>
+                        @foreach($jenisOptions as $value => $label)
+                            <button type="button" class="dropdown-option{{ $value === 'conference_internasional' ? ' is-selected' : '' }}" data-value="{{ $value }}">{{ $label }}</button>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -575,6 +565,10 @@
                 </div>
             </div>
 
+            <div class="field">
+                <div id="buktiTambahanList"></div>
+            </div>
+
             <div class="modal-error" id="modalError" hidden></div>
 
             <div class="modal-footer">
@@ -604,17 +598,7 @@
             'updateFields' => [
                 ['name' => 'jenis',          'label' => 'Jenis Kerja Sama',  'type' => 'select', 'row' => 'a',
                     'optionsBy' => ['attr' => 'tipe_user', 'allowed' => $jenisByTipe],
-                    'options' => [
-                        'conference_internasional' => 'Conference Internasional',
-                        'pkl'                      => 'PKL (Output)',
-                        'pertukaran_pelajar'       => 'Pertukaran Pelajar',
-                        'fgd'                      => 'FGD',
-                        'keynote_session'          => 'Keynote Speaker',
-                        'guest_lecture'            => 'Guest Lecture',
-                        'pengabdian'               => 'Pengabdian',
-                        'penelitian'               => 'Penelitian',
-                        'lainnya'                  => 'Lainnya',
-                    ]],
+                    'options' => $jenisOptions],
                 ['name' => 'skala',          'label' => 'Skala',              'type' => 'select',
                     'options' => ['nasional' => 'Nasional', 'internasional' => 'Internasional']],
                 ['name' => 'arah',           'label' => 'Arah (Guest Lecture)', 'type' => 'select', 'row' => 'a',
@@ -632,6 +616,7 @@
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/lock-swap.js') }}?v={{ @filemtime(public_path('js/lock-swap.js')) }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
+    <script src="{{ asset('js/bukti-tambahan.js') }}?v={{ @filemtime(public_path('js/bukti-tambahan.js')) }}"></script>
     <script>
         // ================================================================
         // KHUSUS halaman Kerja Sama.
@@ -640,6 +625,7 @@
         // util csrfToken/esc/initials/avatarColor) dipindah ke script.js.
         // ================================================================
         const csrfToken = SIDA.util.csrfToken();
+        const buktiTambahan = BuktiTambahan.mount(document.getElementById('buktiTambahanList'));
         const {
             esc,
             initials,
@@ -923,6 +909,7 @@
             dpSelesai.setMinDate(data.tanggal_mulai || null);
             dpSelesai.setValue(data.tanggal_selesai || '');
             document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
+            buktiTambahan.set(data.bukti_tambahan);
 
             openModalBase();
         }
@@ -1024,7 +1011,8 @@
                             data-mitra="${esc(item.mitra)}"
                             data-judul_kegiatan="${esc(item.judul_kegiatan)}"
                             data-tanggal_mulai="${item.tanggal_mulai}" data-tanggal_selesai="${item.tanggal_selesai}"
-                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}">
+                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}"
+                            data-bukti_tambahan="${esc(JSON.stringify(item.bukti_tambahan || []))}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -1063,6 +1051,7 @@
                 tanggal_mulai: document.getElementById('form-tanggal_mulai').value,
                 tanggal_selesai: document.getElementById('form-tanggal_selesai').value,
                 bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
+                bukti_tambahan: buktiTambahan.get(),
             };
 
             if (jenis === 'lainnya' && !payload.jenis_lainnya) {

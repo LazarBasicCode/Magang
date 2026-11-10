@@ -22,6 +22,25 @@ class KerjaSamaController extends Controller
     /** Jumlah baris per halaman (disamakan dengan Data Master Pengguna). */
     private const PER_PAGE = 50;
 
+    private const JENIS_LABELS = [
+        'conference_internasional' => 'Conference Internasional',
+        'pkl'                      => 'PKL (Output)',
+        'pertukaran_pelajar'       => 'Pertukaran Pelajar',
+        'fgd'                      => 'FGD',
+        'keynote_session'          => 'Keynote Speaker',
+        'guest_lecture'            => 'Guest Lecture',
+        'pengabdian'               => 'Pengabdian',
+        'penelitian'               => 'Penelitian',
+        'lainnya'                  => 'Lainnya',
+    ];
+
+    /** Urutkan pilihan dropdown berdasarkan label A-Z, tanpa mengubah kuncinya. */
+    private function sortedOptions(array $options): array
+    {
+        asort($options, SORT_NATURAL | SORT_FLAG_CASE);
+        return $options;
+    }
+
     /** Aturan validasi yang sama dipakai form (store/update) dan unggah massal. */
     private const RULES = [
         'user_id'          => ['required', 'exists:users,id'],
@@ -35,6 +54,10 @@ class KerjaSamaController extends Controller
         'tanggal_mulai'    => ['required', 'date'],
         'tanggal_selesai'  => ['required', 'date', 'after_or_equal:tanggal_mulai'],
         'bukti_kegiatan'   => ['required', 'url', 'max:2048'],
+        'bukti_tambahan'   => ['nullable', 'array', 'max:10'],
+        'bukti_tambahan.*'      => ['array'],
+        'bukti_tambahan.*.nama' => ['nullable', 'string', 'max:100'],
+        'bukti_tambahan.*.url'  => ['required', 'url', 'max:2048'],
     ];
 
     /** Jenis kerja sama yang boleh dipilih tiap tipe pengguna. Satu sumber untuk server (jenisRestriction) & UI (filter, form, update massal). */
@@ -156,6 +179,7 @@ class KerjaSamaController extends Controller
 
         return view('kerja-sama', compact('items', 'userList', 'stats') + [
             'jenisByTipe' => self::JENIS_BY_TIPE,
+            'jenisOptions' => $this->sortedOptions(self::JENIS_LABELS),
             'filterTipeUser' => $ownScope && in_array($user->role, ['mahasiswa', 'dosen'], true) ? $user->role : 'semua',
             'filterOwnRole' => $ownScope && in_array($user->role, ['mahasiswa', 'dosen'], true),
         ]);
@@ -363,6 +387,7 @@ class KerjaSamaController extends Controller
                 'tanggal_mulai'   => ['required' => 'Ya', 'example' => '2026-03-01', 'width' => 18, 'note' => 'Tanggal mulai kegiatan.'],
                 'tanggal_selesai' => ['required' => 'Ya', 'example' => '2026-03-03', 'width' => 18, 'note' => 'Tanggal selesai. Tidak boleh sebelum tanggal_mulai.'],
                 'bukti_kegiatan'  => ['required' => 'Ya', 'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
+                'bukti_tambahan'  => ['required' => 'Tidak', 'example' => '', 'width' => 46, 'note' => 'Link bukti tambahan (opsional). Satu bukti per baris (Alt+Enter di sel yang sama), format: Nama bukti | https://link  (nama boleh dikosongkan, cukup link).'],
             ],
             [
                 'Isi data di sheet "Data Kerja Sama", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
@@ -382,8 +407,8 @@ class KerjaSamaController extends Controller
         return $this->bulkXlsxExportResponse(
             'kerja-sama-' . now()->format('Ymd-His') . '.xlsx',
             self::SHEET,
-            ['id', 'nim_nidn', 'nama', 'jenis', 'jenis_lainnya', 'skala', 'arah', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan'],
-            [10, 18, 28, 28, 26, 18, 14, 30, 36, 18, 18, 46],
+            ['id', 'nim_nidn', 'nama', 'jenis', 'jenis_lainnya', 'skala', 'arah', 'mitra', 'judul_kegiatan', 'tanggal_mulai', 'tanggal_selesai', 'bukti_kegiatan', 'bukti_tambahan'],
+            [10, 18, 28, 28, 26, 18, 14, 30, 36, 18, 18, 46, 46],
             KerjaSama::class,
             fn (KerjaSama $item) => [
                 $item->id,
@@ -398,6 +423,7 @@ class KerjaSamaController extends Controller
                 optional($item->tanggal_mulai)->format('Y-m-d'),
                 optional($item->tanggal_selesai)->format('Y-m-d'),
                 $item->bukti_kegiatan,
+                KerjaSama::formatBuktiTambahan($item->bukti_tambahan),
             ]
         );
     }
@@ -441,6 +467,7 @@ class KerjaSamaController extends Controller
                 'mitra'          => trim((string) ($d['mitra'] ?? '')),
                 'judul_kegiatan' => trim((string) ($d['judul_kegiatan'] ?? '')),
                 'bukti_kegiatan' => trim((string) ($d['bukti_kegiatan'] ?? '')),
+                'bukti_tambahan' => KerjaSama::parseBuktiTambahan((string) ($d['bukti_tambahan'] ?? '')),
             ] + $dates;
 
             // user_id sudah ditangani pesan di bulkResolveTarget; hindari pesan ganda.
@@ -572,6 +599,7 @@ class KerjaSamaController extends Controller
             'tanggal_mulai'    => optional($item->tanggal_mulai)->format('Y-m-d'),
             'tanggal_selesai'  => optional($item->tanggal_selesai)->format('Y-m-d'),
             'bukti_kegiatan'   => $item->bukti_kegiatan,
+            'bukti_tambahan'   => $item->bukti_tambahan,
             'approval_status' => $item->approval_status,
             'approval_label'  => $item->approvalLabel(),
             'approval_badge'  => $item->approvalBadge(),

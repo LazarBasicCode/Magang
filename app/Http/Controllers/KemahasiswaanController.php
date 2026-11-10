@@ -316,6 +316,7 @@ class KemahasiswaanController extends Controller
                 'tahun'          => ['required' => 'Ya',             'example' => '2026',                         'width' => 10, 'note' => 'Tahun 4 digit, antara 2000 dan 2100.'],
                 'nama_kegiatan'  => ['required' => 'Ya',             'example' => 'Juara 1 Lomba Karya Tulis',    'width' => 38, 'note' => 'Nama kegiatan atau prestasi, mis. "Juara 1 Lomba Karya Tulis".'],
                 'bukti_kegiatan' => ['required' => 'Ya',             'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
+                'bukti_tambahan' => ['required' => 'Tidak',          'example' => '',                             'width' => 46, 'note' => 'Link bukti tambahan (opsional). Satu bukti per baris (Alt+Enter di sel yang sama), format: Nama bukti | https://link  (nama boleh dikosongkan, cukup link).'],
             ],
             [
                 'Isi data di sheet "Data Kemahasiswaan", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
@@ -335,8 +336,8 @@ class KemahasiswaanController extends Controller
         return $this->bulkXlsxExportResponse(
             'kemahasiswaan-' . now()->format('Ymd-His') . '.xlsx',
             self::SHEET,
-            ['id', 'nim', 'nama', 'jenis_divisi', 'jenis_prestasi', 'skala', 'tahun', 'nama_kegiatan', 'bukti_kegiatan'],
-            [10, 18, 28, 18, 16, 16, 10, 38, 46],
+            ['id', 'nim', 'nama', 'jenis_divisi', 'jenis_prestasi', 'skala', 'tahun', 'nama_kegiatan', 'bukti_kegiatan', 'bukti_tambahan'],
+            [10, 18, 28, 18, 16, 16, 10, 38, 46, 46],
             Kemahasiswaan::class,
             fn (Kemahasiswaan $item) => [
                 $item->id,
@@ -348,6 +349,7 @@ class KemahasiswaanController extends Controller
                 $item->tahun,
                 $item->nama_kegiatan,
                 $item->bukti_kegiatan,
+                Kemahasiswaan::formatBuktiTambahan($item->bukti_tambahan),
             ]
         );
     }
@@ -385,6 +387,7 @@ class KemahasiswaanController extends Controller
                 'tahun'          => $this->bulkYear($d['tahun'] ?? ''),
                 'nama_kegiatan'  => trim((string) ($d['nama_kegiatan'] ?? '')),
                 'bukti_kegiatan' => trim((string) ($d['bukti_kegiatan'] ?? '')),
+                'bukti_tambahan' => Kemahasiswaan::parseBuktiTambahan((string) ($d['bukti_tambahan'] ?? '')),
             ];
 
             // Pemilik sudah ditangani pesan di bulkResolveTarget; hindari pesan ganda.
@@ -476,6 +479,10 @@ class KemahasiswaanController extends Controller
             'tahun'          => ['required', 'integer', 'min:2000', 'max:2100'],
             'nama_kegiatan'  => ['required', 'string', 'max:255'],
             'bukti_kegiatan' => ['required', 'url', 'max:2048'],
+            'bukti_tambahan'   => ['nullable', 'array', 'max:10'],
+            'bukti_tambahan.*'      => ['array'],
+            'bukti_tambahan.*.nama' => ['nullable', 'string', 'max:100'],
+            'bukti_tambahan.*.url'  => ['required', 'url', 'max:2048'],
         ];
     }
 
@@ -501,6 +508,7 @@ class KemahasiswaanController extends Controller
             'tahun'          => $item->tahun,
             'nama_kegiatan'  => $item->nama_kegiatan,
             'bukti_kegiatan' => $item->bukti_kegiatan,
+            'bukti_tambahan' => $item->bukti_tambahan,
             'approval_status' => $item->approval_status,
             'approval_label'  => $item->approvalLabel(),
             'approval_badge'  => $item->approvalBadge(),

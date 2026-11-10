@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/bukti-tambahan.css') }}?v={{ @filemtime(public_path('css/bukti-tambahan.css')) }}">
     <title>Kemahasiswaan &middot; SIDA</title>
 </head>
 
@@ -292,7 +293,8 @@
                                                 data-tingkat="{{ $item->tingkat }}"
                                                 data-tahun="{{ $item->tahun }}"
                                                 data-nama_kegiatan="{{ $item->nama_kegiatan }}"
-                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}">
+                                                data-bukti_kegiatan="{{ $item->bukti_kegiatan }}"
+                                                data-bukti_tambahan="{{ json_encode($item->bukti_tambahan, JSON_UNESCAPED_SLASHES) }}">
                                                 <span class="material-symbols-outlined">edit</span>
                                             </button>
                                             <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row"
@@ -439,6 +441,10 @@
                 </div>
             </div>
 
+            <div class="field">
+                <div id="buktiTambahanList"></div>
+            </div>
+
             <div class="modal-error" id="modalError" hidden></div>
 
             <div class="modal-footer">
@@ -479,6 +485,7 @@
     <script src="{{ asset('js/approval-chip.js') }}?v={{ @filemtime(public_path('js/approval-chip.js')) }}"></script>
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
+    <script src="{{ asset('js/bukti-tambahan.js') }}?v={{ @filemtime(public_path('js/bukti-tambahan.js')) }}"></script>
     <script>
         // ================================================================
         // Bagian ini KHUSUS halaman Kemahasiswaan:
@@ -488,6 +495,7 @@
         // public/js/script.js lewat objek global SIDA.
         // ================================================================
         const csrfToken = SIDA.util.csrfToken();
+        const buktiTambahan = BuktiTambahan.mount(document.getElementById('buktiTambahanList'));
         const {
             esc,
             initials,
@@ -534,7 +542,8 @@
                             data-id="${item.id}" data-mahasiswa_id="${item.mahasiswa_id}" data-jenis="${item.jenis}"
                             data-tab="${item.tab}" data-tingkat="${item.tingkat}" data-tahun="${item.tahun}"
                             data-nama_kegiatan="${esc(item.nama_kegiatan)}"
-                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}">
+                            data-bukti_kegiatan="${esc(item.bukti_kegiatan)}"
+                            data-bukti_tambahan="${esc(JSON.stringify(item.bukti_tambahan || []))}">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <button type="button" title="Hapus" class="row-action-btn is-secondary btn-delete-row" data-id="${item.id}">
@@ -673,6 +682,7 @@
             document.getElementById('form-tahun').value = data.tahun || new Date().getFullYear();
             document.getElementById('form-nama_kegiatan').value = data.nama_kegiatan || '';
             document.getElementById('form-bukti_kegiatan').value = data.bukti_kegiatan || '';
+            buktiTambahan.set(data.bukti_tambahan);
 
             openModalBase();
         }
@@ -694,6 +704,7 @@
                 tahun: document.getElementById('form-tahun').value,
                 nama_kegiatan: document.getElementById('form-nama_kegiatan').value,
                 bukti_kegiatan: document.getElementById('form-bukti_kegiatan').value,
+                bukti_tambahan: buktiTambahan.get(),
             };
 
             if (!payload.mahasiswa_id) {

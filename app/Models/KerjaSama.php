@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasApproval;
+use App\Models\Concerns\HasBuktiTambahan;
 use Illuminate\Database\Eloquent\Model;
 
 class KerjaSama extends Model
 {
-    use HasApproval;
+    use HasApproval, HasBuktiTambahan;
 
     protected $table = 'kerja_sama';
 
@@ -23,6 +24,7 @@ class KerjaSama extends Model
         'tanggal_mulai',
         'tanggal_selesai',
         'bukti_kegiatan',
+        'bukti_tambahan',
         'approval_status',
         'approval_note',
     ];

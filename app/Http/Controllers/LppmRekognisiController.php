@@ -104,7 +104,10 @@ class LppmRekognisiController extends Controller
         'tanggal_selesai' => ['required', 'date', 'after_or_equal:tanggal_mulai'],
         'tahun'           => ['required', 'integer', 'between:2000,2100'],
         'bukti_kegiatan'  => ['required', 'url', 'max:2048'],
-        'bukti_tambahan'  => ['nullable', 'url', 'max:2048'],
+        'bukti_tambahan'   => ['nullable', 'array', 'max:10'],
+        'bukti_tambahan.*'      => ['array'],
+        'bukti_tambahan.*.nama' => ['nullable', 'string', 'max:100'],
+        'bukti_tambahan.*.url'  => ['required', 'url', 'max:2048'],
     ];
 
     /**
@@ -487,7 +490,7 @@ class LppmRekognisiController extends Controller
                 'tanggal_mulai'   => ['required' => 'Ya', 'example' => '2026-03-01', 'width' => 18, 'note' => 'Tanggal mulai kegiatan / rekognisi.'],
                 'tanggal_selesai' => ['required' => 'Ya', 'example' => '2026-03-03', 'width' => 18, 'note' => 'Tanggal selesai. Tidak boleh sebelum tanggal_mulai.'],
                 'bukti_kegiatan'  => ['required' => 'Ya', 'example' => 'https://drive.google.com/...', 'width' => 46, 'note' => 'Link lengkap diawali https://'],
-                'bukti_tambahan'  => ['required' => 'Tidak', 'example' => '', 'width' => 46, 'note' => 'Link bukti tambahan (opsional).'],
+                'bukti_tambahan'  => ['required' => 'Tidak', 'example' => '', 'width' => 46, 'note' => 'Link bukti tambahan (opsional). Satu bukti per baris (Alt+Enter di sel yang sama), format: Nama bukti | https://link  (nama boleh dikosongkan, cukup link).'],
             ],
             [
                 'Isi data di sheet "Data Rekognisi", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
@@ -534,7 +537,7 @@ class LppmRekognisiController extends Controller
                 optional($item->tanggal_mulai)->format('Y-m-d'),
                 optional($item->tanggal_selesai)->format('Y-m-d'),
                 $item->bukti_kegiatan,
-                $item->bukti_tambahan,
+                Rekognisi::formatBuktiTambahan($item->bukti_tambahan),
             ]
         );
     }
@@ -628,7 +631,7 @@ class LppmRekognisiController extends Controller
                 'mitra'          => trim((string) ($d['mitra'] ?? '')) ?: null,
                 'jabatan'        => trim((string) ($d['jabatan'] ?? '')) ?: null,
                 'bukti_kegiatan' => trim((string) ($d['bukti_kegiatan'] ?? '')),
-                'bukti_tambahan' => trim((string) ($d['bukti_tambahan'] ?? '')) ?: null,
+                'bukti_tambahan' => Rekognisi::parseBuktiTambahan((string) ($d['bukti_tambahan'] ?? '')),
             ] + $dates;
 
             [$messages] = $this->bulkValidate($payload, self::RULES, $badDates);

@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasApproval;
+use App\Models\Concerns\HasBuktiTambahan;
 use Illuminate\Database\Eloquent\Model;
 
 class Rekognisi extends Model
 {
-    use HasApproval;
+    use HasApproval, HasBuktiTambahan;
 
     protected $table = 'rekognisi';
 

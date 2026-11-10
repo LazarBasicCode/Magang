@@ -17,6 +17,7 @@
     $mitraRequired = $isDosen || $isAlumni;
 @endphp
 @include('partials.mhs-head', ['pageTitle' => 'Rekognisi Saya'])
+    <link rel="stylesheet" href="{{ asset('css/bukti-tambahan.css') }}?v={{ @filemtime(public_path('css/bukti-tambahan.css')) }}">
 
     @include('partials.sidebar', ['active' => 'rekognisi'])
 
@@ -237,10 +238,7 @@
                 <p class="mv-help">Tempel link Google Drive berisi bukti karya atau publikasi (pastikan bisa dibuka).</p>
             </div>
             <div class="field">
-                <label class="field-label" for="form-bukti_tambahan">Link Bukti Tambahan (opsional)</label>
-                <div class="field-control">
-                    <input id="form-bukti_tambahan" type="url" placeholder="https://drive.google.com/...">
-                </div>
+                <div id="buktiTambahanList"></div>
             </div>
 
             <div class="modal-error" id="mvFormError" hidden></div>
@@ -258,8 +256,10 @@
     @include('partials.duplicate-confirm-modal')
     @include('partials.mhs-scripts')
     <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
+    <script src="{{ asset('js/bukti-tambahan.js') }}?v={{ @filemtime(public_path('js/bukti-tambahan.js')) }}"></script>
     <script>
         const $v = (id) => document.getElementById(id);
+        const buktiTambahan = BuktiTambahan.mount($v('buktiTambahanList'));
         const IS_DOSEN = @json($isDosen);
         const IS_ALUMNI = @json($isAlumni);
         const DEFAULT_KIND = @json($defaultKind);
@@ -342,7 +342,7 @@
             ],
             linksOf: (i) => [
                 { label: 'Lihat Bukti', url: i.bukti_kegiatan },
-                { label: 'Bukti Tambahan', url: i.bukti_tambahan },
+                ...(i.bukti_tambahan || []).map((b, n, all) => ({ label: b.nama || (all.length > 1 ? 'Bukti Tambahan ' + (n + 1) : 'Bukti Tambahan'), url: b.url })),
                 { label: 'DOI', url: i.link_doi, icon: 'open_in_new' },
             ],
             fillForm: (i) => {
@@ -368,7 +368,7 @@
                 dpSelesai.setMinDate(i?.tanggal_mulai || null);
                 dpSelesai.setValue(i?.tanggal_selesai || '');
                 $v('form-bukti_kegiatan').value = i?.bukti_kegiatan || '';
-                $v('form-bukti_tambahan').value = i?.bukti_tambahan || '';
+                buktiTambahan.set(i?.bukti_tambahan);
                 syncKind();
             },
             readForm: () => {
@@ -397,7 +397,7 @@
                     tanggal_mulai: $v('form-tanggal_mulai').value,
                     tanggal_selesai: $v('form-tanggal_selesai').value,
                     bukti_kegiatan: $v('form-bukti_kegiatan').value,
-                    bukti_tambahan: $v('form-bukti_tambahan').value || null,
+                    bukti_tambahan: buktiTambahan.get(),
                 };
             },
         });

@@ -1,7 +1,7 @@
 /**
  * Halaman Persetujuan (resources/views/persetujuan.blade.php).
  *  - Daftar berhalaman (server), filter menu/tahun, pencarian, tab Menunggu / Riwayat
- *  - Modal Periksa: Detail | Komentar | Riwayat  (membuka pengajuan baru = otomatis "Diproses Prodi")
+ *  - Modal Periksa: tab Detail | Komentar; sidebar kanan: ringkasan, bukti (+ bukti tambahan), riwayat  (membuka pengajuan baru = otomatis "Diproses Prodi")
  *  - Aksi: Verifikasi, Tolak (alasan wajib), Batalkan verifikasi, Verifikasi massal
  * Butuh: script.js (SIDA.modal, SIDA.dropdown, SIDA.util.csrfToken), pager.js, toast.js (opsional).
  */
@@ -296,7 +296,7 @@
         backdrop: $('apprRevBackdrop'), card: $('apprRevModal'), closeBtn: $('apprRevClose'),
         cancelBtn: $('apprRevCancel'), dragHandle: $('apprRevDrag'),
     });
-    const loaded = { komentar: null, riwayat: null }; // key item yang panelnya sudah dimuat
+    const loaded = { komentar: null };                // key item yang panel komentarnya sudah dimuat
     const cm = { items: [], shown: 0 };               // komentar (terbaru di atas) & jumlah yang ditampilkan
     const CM_STEP = 4;
 
@@ -311,11 +311,25 @@
             ? `<span class="appr-wait ${i.waiting >= 3 ? 'is-late' : ''}">Menunggu ${i.waiting} hari</span>` : '';
         return `<span class="appr-menu"><span class="material-symbols-outlined">${esc(i.icon)}</span>${esc(i.menu_label)}</span>${chip(i)}${late}`;
     }
+    function proofLink(url, label) {
+        return `<a class="appr-proof" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+                    <span class="material-symbols-outlined">open_in_new</span>
+                    <span>${esc(label)}<small>${esc(hostOf(url))}</small></span></a>`;
+    }
     function asideHTML(i) {
-        const url = safeUrl(i.bukti);
+        const main = safeUrl(i.bukti);
+        // Bukti tambahan: {nama, url}. Nama diisi pengisi data supaya verifikator tahu itu bukti apa.
+        const extra = (i.bukti_tambahan || [])
+            .map((b) => ({ nama: String((b && b.nama) || '').trim(), url: safeUrl(b && typeof b === 'object' ? b.url : b) }))
+            .filter((b) => b.url);
         const decided = i.status === 'disetujui' || i.status === 'ditolak';
+        const proofs = [
+            main ? proofLink(main, 'Lihat bukti kegiatan')
+                 : '<div class="appr-proof is-none"><span class="material-symbols-outlined">link_off</span><span>Tidak ada tautan bukti yang valid</span></div>',
+            ...extra.map((b, n) => proofLink(b.url, b.nama || (extra.length > 1 ? 'Bukti tambahan ' + (n + 1) : 'Bukti tambahan'))),
+        ].join('');
         return `<section>
-                <h4 class="appr-as-h">Pengaju</h4>
+                <h4 class="appr-as-h">Yang Mengajukan</h4>
                 <div class="appr-who"><span class="appr-ava">${esc(initials(i.name))}</span>
                     <div><b>${esc(i.name)}</b>${i.nim ? `<small>${esc(i.id_label || 'NIM')} ${esc(i.nim)}</small>` : ''}</div></div>
             </section>
@@ -328,10 +342,11 @@
             </section>
             <section>
                 <h4 class="appr-as-h">Bukti</h4>
-                ${url ? `<a class="appr-proof" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
-                            <span class="material-symbols-outlined">open_in_new</span>
-                            <span>Lihat bukti kegiatan<small>${esc(hostOf(url))}</small></span></a>`
-                      : '<div class="appr-proof is-none"><span class="material-symbols-outlined">link_off</span><span>Tidak ada tautan bukti yang valid</span></div>'}
+                <div class="appr-proofs">${proofs}</div>
+            </section>
+            <section class="appr-as-hist">
+                <h4 class="appr-as-h">Riwayat</h4>
+                <ol class="appr-tl" id="apprHistList"></ol>
             </section>`;
     }
     function detailHTML(i) {
@@ -370,7 +385,6 @@
         if (!i) return;
         syncFooter(i);
         if (name === 'komentar' && loaded.komentar !== keyOf(i)) loadComments(i);
-        if (name === 'riwayat' && loaded.riwayat !== keyOf(i)) loadHistory(i);
     }
     document.querySelectorAll('#apprRevModal .appr-mtab').forEach((t) => t.addEventListener('click', () => setPane(t.dataset.pane)));
 
@@ -385,17 +399,17 @@
 
     function openReview(item, pane) {
         state.current = item;
-        loaded.komentar = loaded.riwayat = null;
+        loaded.komentar = null;
         cm.items = []; cm.shown = 0;
         renderHead(item);
         $('apprPaneDetail').innerHTML = detailHTML(item);
         $('apprCommentList').innerHTML = '';
         $('apprCommentMore').hidden = true;
-        $('apprHistList').innerHTML = '';
         $('apprCommentBody').value = '';
         $('apprCommentErr').hidden = true;
         setCommentCount(item);
         setPane(pane || 'detail'); // juga mengatur footer
+        loadHistory(item);         // riwayat tampil di sidebar kanan
         revModal.open();
         if (item.status === 'diajukan') startReview(item);
     }
@@ -411,7 +425,7 @@
             if (rowChip) rowChip.outerHTML = chip(item);
             setCounts(json.counts);
             setPending(json.pending);
-            loaded.riwayat = null; // linimasa bertambah satu baris
+            if (state.current === item) loadHistory(item); // linimasa bertambah satu baris
         } catch (_) { /* status tetap Diajukan; keputusan tetap bisa diambil */ }
     }
 
@@ -491,9 +505,10 @@
         }
     });
 
-    // ---- riwayat (linimasa kronologis; entri terakhir ditandai)
+    // ---- riwayat (linimasa kronologis; entri terakhir ditandai) di sidebar kanan modal
     async function loadHistory(i) {
         const list = $('apprHistList');
+        if (!list) return;
         list.innerHTML = empty('hourglass_empty', 'Memuat…');
         try {
             const res = await fetch(`${base}/${i.menu}/${i.id}/riwayat`, { headers: { 'Accept': 'application/json' } });
@@ -506,7 +521,6 @@
                     <small>${esc(l.actor)}${l.role ? ' &middot; ' + esc(ROLE[l.role] || l.role) : ''} &middot; ${esc(l.at)}</small>
                     ${l.note ? `<p>${esc(l.note)}</p>` : ''}</div></li>`).join('')
                 : empty('history', 'Belum ada riwayat tercatat<br>(data lama sebelum fitur persetujuan).');
-            loaded.riwayat = keyOf(i);
         } catch (_) {
             list.innerHTML = empty('error', 'Gagal memuat riwayat.');
         }

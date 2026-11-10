@@ -74,6 +74,7 @@ class Approval
                 'title'     => fn ($i) => $i->nama_kegiatan,
                 'owner'     => fn ($i) => $i->mahasiswa?->user,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
+                'bukti_tambahan' => fn ($i) => $i->bukti_tambahan, // array link
                 'detail'    => fn ($i) => [
                     'Jenis'   => $pretty($i->jenis),
                     'Bidang'  => $pretty($i->tab),
@@ -90,6 +91,7 @@ class Approval
                 'title'     => fn ($i) => $i->judul ?: ($i->jabatan ?: ($i->mitra ?: 'Rekognisi')),
                 'owner'     => fn ($i) => $i->owner_user,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
+                'bukti_tambahan' => fn ($i) => $i->bukti_tambahan, // array link
                 'detail'    => fn ($i) => array_filter([
                     'Tipe'     => $pretty($i->tipe_user_efektif),
                     'Jenis'    => $pretty($i->jenis),
@@ -111,6 +113,7 @@ class Approval
                 'title'     => fn ($i) => $i->judul_kegiatan,
                 'owner'     => fn ($i) => $i->user,
                 'bukti'     => fn ($i) => $i->bukti_kegiatan,
+                'bukti_tambahan' => fn ($i) => $i->bukti_tambahan, // array link
                 'detail'    => fn ($i) => array_filter([
                     'Jenis'   => $i->jenis === 'lainnya' ? ($i->jenis_lainnya ?: 'Lainnya') : $pretty($i->jenis),
                     'Arah'    => $i->arah ? ucfirst($i->arah) : null,
@@ -525,6 +528,7 @@ class Approval
             'owner_role' => $isRekognisi ? $item->tipe_user_efektif : $owner?->role,
             'detail'     => $cfg['detail']($item),
             'bukti'      => $cfg['bukti']($item),
+            'bukti_tambahan' => isset($cfg['bukti_tambahan']) ? array_values($cfg['bukti_tambahan']($item)) : [],
             'status'     => $status,
             'status_label' => self::STATUS[$status]['label'] ?? $status,
             'badge'      => self::STATUS[$status]['badge'] ?? 'badge-neutral',

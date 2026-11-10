@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasApproval;
+use App\Models\Concerns\HasBuktiTambahan;
 use Illuminate\Database\Eloquent\Model;
 
 class Kemahasiswaan extends Model
 {
-    use HasApproval;
+    use HasApproval, HasBuktiTambahan;
 
     protected $table = 'kemahasiswaan';
 
@@ -19,6 +20,7 @@ class Kemahasiswaan extends Model
         'tahun',
         'nama_kegiatan',
         'bukti_kegiatan',
+        'bukti_tambahan',
         'approval_status',
         'approval_note',
     ];

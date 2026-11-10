@@ -932,9 +932,10 @@ class UserController extends Controller
             'name'       => ['required', 'string', 'max:255'],
             'role'       => ['required', 'in:superadmin,admin,dosen,mahasiswa'],
             'password'   => [$isUpdate ? 'nullable' : 'required', 'string', 'min:6'],
-            // Wajib untuk SEMUA role: kolom ini (users.nim_nidn) dipakai sebagai
-            // kredensial login. Admin/superadmin tanpa nilai ini tidak akan
-            // pernah bisa login. Harus unik supaya login tidak ambigu.
+            // Wajib untuk SEMUA role: kolom ini dipakai sebagai username admin/
+            // superadmin dan NIM/NIDN mahasiswa/dosen. Nama akun juga bisa
+            // dipakai admin/superadmin untuk login. Harus unik supaya login
+            // dengan username atau NIM/NIDN tidak ambigu.
             'identifier' => [
                 'required', 'string', 'max:50',
                 Rule::unique('users', 'nim_nidn')->ignore($user?->id),

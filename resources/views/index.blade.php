@@ -634,11 +634,11 @@
             <form id="loginForm" method="POST" action="{{ url('/login-process') }}" class="rise" style="--i:4">
                 @csrf
                 <div class="field">
-                    <label for="usernameInput">User / NIM / NIDN</label>
+                    <label for="usernameInput">Username / NIM / NIDN</label>
                     <div class="field-wrap">
                         <i class="fa-regular fa-user icon-left"></i>
                         <input id="usernameInput" name="username"
-                            placeholder="Contoh: 222011005 atau admin.kemahasiswaan" required type="text"
+                            placeholder="Username admin/superadmin atau NIM/NIDN" required type="text"
                             autocomplete="username" value="{{ old('username') }}">
                     </div>
                 </div>

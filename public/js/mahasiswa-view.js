@@ -288,14 +288,9 @@
         render(cfg.initial);
         const focusId = $('mhsPage')?.dataset.focusId;
         const focusTarget = focusId && [...list.querySelectorAll('.mv-row')].find((row) => row.dataset.id === focusId);
-        if (focusTarget) {
-            focusTarget.classList.add('is-focus-target');
-            $('mhsPage').classList.add('is-focus-mode');
-            focusTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-                focusTarget.classList.remove('is-focus-target');
-                $('mhsPage').classList.remove('is-focus-mode');
-            }, 1800);
+        if (focusTarget && window.FocusHighlight) {
+            // Sorotan dari notifikasi: blur halus + baris melayang bergelombang (public/js/focus-highlight.js)
+            window.FocusHighlight.run({ page: $('mhsPage'), target: focusTarget });
         }
     }
 

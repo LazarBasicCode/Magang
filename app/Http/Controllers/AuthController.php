@@ -61,7 +61,9 @@ class AuthController extends Controller
         //   terkunci meski penyerang mengganti-ganti password;
         // - IP yang sama masih bisa login ke akun LAIN tanpa ikut terkunci
         //   gara-gara akun lain sedang diserang.
-        $throttleKey = Str::lower($request->input('username')).'|'.$request->ip();
+        // Field "username" berisi username admin/superadmin atau NIM/NIDN.
+        $identity = trim((string) $request->input('username'));
+        $throttleKey = Str::lower($identity).'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -73,19 +75,24 @@ class AuthController extends Controller
             ])->onlyInput('username');
         }
 
-        // Cari user berdasarkan nama ATAU nim_nidn (case-insensitive untuk nama)
-        $user = User::where('nim_nidn', $request->username)
-            ->orWhereRaw('LOWER(name) = ?', [strtolower($request->username)])
-            ->first();
+        // Mahasiswa & dosen HANYA bisa login dengan NIM / NIDN (kolom nim_nidn) + password:
+        // nama lengkap / username tidak lagi dikenali untuk dua role ini.
+        // Admin & superadmin tetap boleh memakai nim_nidn-nya ATAU nama akunnya
+        // (case-insensitive), karena identitas mereka bukan NIM/NIDN.
+        $user = User::where('nim_nidn', $identity)->first()
+            ?? User::whereIn('role', ['admin', 'superadmin'])
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($identity)])
+                ->first();
 
-        // Login pakai kolom unik user tsb (nim_nidn) + password yang diinput,
-        // supaya proses verifikasi password tetap lewat Auth::attempt (hashing aman)
-        $credentials = [
-            'nim_nidn' => $user->nim_nidn ?? $request->username,
+        // Cari akun berdasarkan identitas yang diizinkan, lalu autentikasi
+        // berdasarkan ID agar akun admin tanpa nim_nidn tetap bisa login.
+        // Password tetap diverifikasi oleh provider Laravel.
+        $authenticated = $user && Auth::attempt([
+            'id' => $user->getAuthIdentifier(),
             'password' => $request->password,
-        ];
+        ]);
 
-        if (Auth::attempt($credentials)) {
+        if ($authenticated) {
             // Login berhasil: hapus riwayat percobaan gagal untuk kombinasi ini
             RateLimiter::clear($throttleKey);
 
@@ -132,7 +139,7 @@ class AuthController extends Controller
 
         // Jika gagal, kembalikan ke halaman index dengan pesan error
         return back()->withErrors([
-            'username' => 'User, NIM, atau Password tidak ditemukan.',
+            'username' => 'Username/NIM/NIDN atau password salah.',
         ])->onlyInput('username');
     }
 

@@ -1,0 +1,94 @@
+/*
+ * Sorotan baris setelah membuka halaman dari notifikasi (?focus_id=...).
+ * Dipakai bersama oleh halaman mahasiswa (#mhsPage) dan Persetujuan (#apprPage).
+ * Dijalankan oleh public/js/focus-highlight.js, yang mengatur 3 durasi lewat variabel CSS:
+ *   --fx-in    blur masuk      --fx-hold  lama sorotan (blur & gelombang berakhir bersamaan)
+ *   --fx-out   blur & baris kembali halus
+ * Naik-turun dan lengkung gelombang baris digerakkan JS per frame; CSS mengurus blur, bayangan, cincin cahaya.
+ */
+
+.fx-armed { --fx-in: 500ms; --fx-hold: 3000ms; --fx-out: 900ms; }
+
+/* ---------- 1) Elemen lain: blur + meredup ---------- */
+/* Transisi dipasang di kondisi AWAL (selama .fx-armed), bukan hanya saat sorotan aktif.
+   Kalau tidak, begitu .is-focus-mode dilepas blurnya langsung hilang tanpa transisi. */
+.fx-armed > :not(.table-card),
+.fx-armed .table-card > :not(.table-scroll),
+.fx-armed thead,
+.fx-armed tbody tr {
+    transition: filter var(--fx-out) cubic-bezier(.4, 0, .2, 1),
+                opacity var(--fx-out) cubic-bezier(.4, 0, .2, 1);
+}
+.is-focus-mode > :not(.table-card),
+.is-focus-mode .table-card > :not(.table-scroll),
+.is-focus-mode thead,
+.is-focus-mode tbody tr:not(.is-focus-target) {
+    filter: blur(3px);
+    opacity: .5;
+    transition-duration: var(--fx-in);   /* masuk lebih cepat dari keluar */
+}
+
+/* Angkat kartu dan baris target di atas konten lain selama animasi. */
+.fx-armed .table-card {
+    position: relative;
+    z-index: 4;
+}
+.is-focus-target {
+    position: relative;
+    z-index: 10;
+    isolation: isolate;
+    scroll-margin-block: 28px;
+}
+
+/* ---------- 2) Baris yang disorot: bayangan & cincin cahaya ---------- */
+/* transform sel TIDAK ditransisikan: digerakkan per frame oleh focus-highlight.js (gelombang melengkung) */
+.fx-armed tbody tr > td {
+    transition: box-shadow var(--fx-out) ease,
+                background-color var(--fx-out) ease,
+                border-radius var(--fx-out) ease;
+}
+
+.is-focus-target > td {
+    --fx-edge: var(--primary);
+    --fx-glow: rgba(79, 70, 229, .45);
+    --fx-l: transparent;                 /* sisi kiri/kanan hanya untuk sel pertama/terakhir */
+    --fx-r: transparent;
+    --fx-shadow:
+        inset 0 2px 0 var(--fx-edge),
+        inset 0 -2px 0 var(--fx-edge),
+        inset 2px 0 0 var(--fx-l),
+        inset -2px 0 0 var(--fx-r),
+        0 16px 26px -12px var(--fx-glow);   /* bayangan = kesan melayang */
+
+    position: relative;
+    z-index: 1;
+    background-color: var(--primary-soft);
+    transform-origin: 50% 50%;
+    will-change: transform;
+    box-shadow: var(--fx-shadow), 0 0 0 0 transparent;
+    transition-duration: var(--fx-in);
+
+    /* Periode & jeda cincin tiap sel dihitung JS: merambat kiri -> kanan dan SELESAI tepat saat blur selesai. */
+    animation: fxRing var(--fx-period, 1000ms) ease-out var(--fx-delay, 0ms) 3;
+}
+@supports (color: color-mix(in srgb, red, blue)) {
+    .is-focus-target > td { --fx-glow: color-mix(in srgb, var(--primary) 45%, transparent); }
+}
+.is-focus-target > td:first-child { --fx-l: var(--primary); border-radius: 12px 0 0 12px; }
+.is-focus-target > td:last-child  { --fx-r: var(--primary); border-radius: 0 12px 12px 0; }
+
+/* Cincin cahaya yang membesar lalu memudar */
+@keyframes fxRing {
+    0%   { box-shadow: var(--fx-shadow), 0 0 0 0 var(--fx-glow); }
+    60%  { box-shadow: var(--fx-shadow), 0 0 0 10px color-mix(in srgb, var(--fx-glow) 35%, transparent); }
+    100% { box-shadow: var(--fx-shadow), 0 0 0 16px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fx-armed > :not(.table-card),
+    .fx-armed .table-card > :not(.table-scroll),
+    .fx-armed thead,
+    .fx-armed tbody tr,
+    .fx-armed tbody tr > td { transition-duration: .01ms; }
+    .is-focus-target > td { animation: none; }
+}

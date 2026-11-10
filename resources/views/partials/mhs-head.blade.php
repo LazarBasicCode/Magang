@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ asset('css/delete-confirm.css') }}?v={{ @filemtime(public_path('css/delete-confirm.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/notifications.css') }}?v={{ @filemtime(public_path('css/notifications.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/mahasiswa-view.css') }}?v={{ @filemtime(public_path('css/mahasiswa-view.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/focus-highlight.css') }}?v={{ @filemtime(public_path('css/focus-highlight.css')) }}">
     <title>{{ $pageTitle }} &middot; SIDA</title>
 </head>
 

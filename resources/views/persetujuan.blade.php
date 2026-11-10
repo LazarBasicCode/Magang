@@ -21,6 +21,7 @@
         })();
     </script>
     <link rel="stylesheet" href="{{ asset('css/approval.css') }}?v={{ @filemtime(public_path('css/approval.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/focus-highlight.css') }}?v={{ @filemtime(public_path('css/focus-highlight.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/pager.css') }}?v={{ @filemtime(public_path('css/pager.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/row-select.css') }}?v={{ @filemtime(public_path('css/row-select.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ @filemtime(public_path('css/toast.css')) }}">
@@ -300,6 +301,7 @@
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>
     <script>window.__APPR_INITIAL = @json($initial);</script>
+    <script src="{{ asset('js/focus-highlight.js') }}?v={{ @filemtime(public_path('js/focus-highlight.js')) }}"></script>
     <script src="{{ asset('js/approval.js') }}?v={{ @filemtime(public_path('js/approval.js')) }}"
         data-url-base="{{ url('/persetujuan') }}"></script>
 </body>

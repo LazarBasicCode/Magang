@@ -46,7 +46,7 @@ trait HandlesBulkData
     }
 
     /** Relasi yang di-eager-load (boleh bertingkat, mis. 'mahasiswa.user'). */
-    protected function bulkOwnerWith(): string
+    protected function bulkOwnerWith(): array|string
     {
         return $this->bulkOwnerRelation();
     }
@@ -584,39 +584,6 @@ trait HandlesBulkData
             array_slice($errors, 0, 50),
             max(0, count($errors) - 50)
         );
-    }
-
-    protected function normalizeDuplicateText(string $value): string
-    {
-        $value = mb_strtolower(trim($value), 'UTF-8');
-        $value = preg_replace('/[^\p{L}\p{N}]+/u', ' ', $value) ?? $value;
-
-        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
-    }
-
-    protected function isSimilarDuplicateText(string $first, string $second): bool
-    {
-        $first = $this->normalizeDuplicateText($first);
-        $second = $this->normalizeDuplicateText($second);
-        if ($first === '' || $second === '' || $first === $second) {
-            return false;
-        }
-
-        similar_text($first, $second, $similarity);
-
-        return $similarity >= 85;
-    }
-
-    /** Minta konfirmasi eksplisit sebelum menyimpan data yang persis sama. */
-    protected function bulkDuplicateConfirmationRequired(array $duplicates): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'duplicate_confirmation_required' => true,
-            'message' => 'Data yang persis sama ditemukan.',
-            'duplicates' => array_slice($duplicates, 0, 10),
-            'more_duplicates' => max(0, count($duplicates) - 10),
-        ], 409);
     }
 
     // =====================================================================

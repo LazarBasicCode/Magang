@@ -8,6 +8,7 @@
       $bulkImport    string  URL unggah Excel/CSV
       $bulkExport    string  URL unduh data Excel
       $bulkPrint     string  URL isi laporan (route cetak.show) — dimuat ke MODAL "Cetak Laporan", bukan tab baru
+      $bulkQuickActions bool tampilkan aksi cepat khusus halaman Data Master
     JS-nya: public/js/bulk-import.js (modal upload: partials/bulk-import-modal.blade.php)
     Modal cetak ada di bawah ini (dipindah ke <body> oleh JS). Isinya: resources/views/cetak-laporan.blade.php
 --}}
@@ -18,6 +19,26 @@
     </button>
 
     <div class="bulk-menu-panel" role="menu" aria-labelledby="bulkMenuBtn">
+        @if(!empty($bulkQuickActions))
+            <div class="bulk-menu-data-master-actions">
+                <button type="button" role="menuitem" class="bulk-menu-item" data-ap-open="mahasiswa">
+                    <span class="bulk-menu-icon"><span class="material-symbols-outlined">school</span></span>
+                    <span class="bulk-menu-text">
+                        <span class="bulk-menu-label">Tambah Mahasiswa</span>
+                        <span class="bulk-menu-hint">Buat akun mahasiswa dari data NIM</span>
+                    </span>
+                </button>
+                <button type="button" role="menuitem" class="bulk-menu-item" data-ap-open="dosen">
+                    <span class="bulk-menu-icon"><span class="material-symbols-outlined">badge</span></span>
+                    <span class="bulk-menu-text">
+                        <span class="bulk-menu-label">Tambah Dosen</span>
+                        <span class="bulk-menu-hint">Buat akun dosen dari data NIDN</span>
+                    </span>
+                </button>
+            </div>
+            <div class="bulk-menu-sep bulk-menu-data-master-sep" role="separator"></div>
+        @endif
+
         @if(!empty($bulkTemplate))
             <a role="menuitem" class="bulk-menu-item" href="{{ $bulkTemplate }}" download>
                 <span class="bulk-menu-icon"><span class="material-symbols-outlined">description</span></span>

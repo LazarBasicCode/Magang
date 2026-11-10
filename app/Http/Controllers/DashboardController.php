@@ -37,14 +37,18 @@ class DashboardController extends Controller
      */
     private function mahasiswa($user): array
     {
+        $user->loadMissing('mahasiswa');
         $mahasiswa = $user->mahasiswa;
 
         $kemahasiswaan = $mahasiswa
             ? Kemahasiswaan::approved()->where('mahasiswa_id', $mahasiswa->id)->get()
             : collect();
         $effectiveType = $mahasiswa?->status === 'lulus' ? 'alumni' : 'mahasiswa';
-        $rekognisi = Rekognisi::with('user.mahasiswa')->approved()->where('user_id', $user->id)->get()
-            ->filter(fn ($item) => $item->tipe_user_efektif === $effectiveType)->values();
+        $rekognisi = $mahasiswa
+            ? Rekognisi::with(['mahasiswa.user', 'dosen.user'])->approved()
+                ->where('mahasiswa_id', $mahasiswa->id)->get()
+                ->filter(fn ($item) => $item->tipe_user_efektif === $effectiveType)->values()
+            : collect();
         $kerjaSama = KerjaSama::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'mahasiswa')->get();
 
@@ -113,8 +117,13 @@ class DashboardController extends Controller
      */
     private function dosen($user): array
     {
-        $rekognisi = Rekognisi::with('user.mahasiswa')->approved()->where('user_id', $user->id)->get()
-            ->filter(fn ($item) => $item->tipe_user_efektif === 'dosen')->values();
+        $user->loadMissing('dosen');
+        $dosen = $user->dosen;
+        $rekognisi = $dosen
+            ? Rekognisi::with(['mahasiswa.user', 'dosen.user'])->approved()
+                ->where('dosen_id', $dosen->id)->get()
+                ->filter(fn ($item) => $item->tipe_user_efektif === 'dosen')->values()
+            : collect();
         $kerjaSama = KerjaSama::approved()->where('user_id', $user->id)
             ->where('tipe_user', 'dosen')->get();
 

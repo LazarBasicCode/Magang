@@ -15,6 +15,7 @@
           'row'         (opsional) field dengan nilai 'row' sama ditaruh sejajar 1 baris
           'showWhen'    (opsional) ['nama_field' => [nilai, ...]] kolom hanya tampil jika kolom lain sedang bernilai salah satunya;
                         saat disembunyikan isinya dikosongkan (tidak ikut dikirim). Mis. ['jenis' => ['guest_lecture']]
+          'showFor'     (opsional) ['attr' => 'tipe_user', 'values' => [...]] kolom hanya tampil jika semua baris terpilih cocok
           'optionsBy'   (opsional, select) ['attr' => 'tipe_user', 'allowed' => [nilai_attr => [opsi yang boleh]]]
                         opsi dibatasi sesuai atribut data-* baris terpilih; bila atributnya beragam, dipakai IRISAN-nya
     Kolom khas per baris (NIM, nama, tahun, bukti, dsb.) cukup tidak dimasukkan ke $updateFields.
@@ -38,6 +39,7 @@
         'target'    => $f['target'] ?? null,
         'type'      => $f['type'] ?? 'text',
         'showWhen'  => $f['showWhen'] ?? null,
+        'showFor'   => $f['showFor'] ?? null,
         'optionsBy' => $f['optionsBy'] ?? null,
     ])->values();
 @endphp

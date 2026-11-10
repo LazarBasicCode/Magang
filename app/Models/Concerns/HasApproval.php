@@ -6,8 +6,8 @@ use App\Support\Approval;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Dipakai model yang melewati alur persetujuan (Kemahasiswaan, LppmMahasiswa,
- * Rekognisi, KerjaSama). Wajib punya kolom approval_status & approval_note.
+ * Dipakai model yang melewati alur persetujuan (Kemahasiswaan, Rekognisi,
+ * KerjaSama). Wajib punya kolom approval_status & approval_note.
  */
 trait HasApproval
 {

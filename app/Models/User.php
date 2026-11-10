@@ -51,12 +51,6 @@ class User extends Authenticatable
         return $this->hasOne(Dosen::class);
     }
 
-    // Relasi ke tabel Rekognisi (1 User bisa punya banyak Rekognisi)
-    public function rekognisi()
-    {
-        return $this->hasMany(Rekognisi::class);
-    }
-
     // Relasi ke tabel Kerja_Sama (1 User bisa menginput banyak Kerja Sama)
     public function kerjaSama()
     {

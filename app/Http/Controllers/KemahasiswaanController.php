@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\HandlesBulkData;
 use App\Http\Controllers\Concerns\MahasiswaView;
 use App\Http\Controllers\Concerns\NotifiesOwner;
 use App\Support\Approval;
+use App\Support\DuplicateDetector;
 use Illuminate\Http\Request;
 use App\Support\Csv;
 use Illuminate\Http\JsonResponse;
@@ -131,9 +132,9 @@ class KemahasiswaanController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnMahasiswa($request, $data);
 
-        $duplicates = $this->findActivityDuplicates($data);
-        if ($duplicates['exact'] && !$request->boolean('confirm_duplicates')) {
-            return $this->bulkDuplicateConfirmationRequired($duplicates['exact']);
+        $duplicates = DuplicateDetector::for('kegiatan')->check($data);
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
         }
 
         // Mahasiswa yang mengisi sendiri -> masuk antrean persetujuan dosen wali (lihat App\Support\Approval).
@@ -147,8 +148,7 @@ class KemahasiswaanController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($item),
-            'warnings' => array_slice($duplicates['similar'], 0, 5),
-            'warning_count' => count($duplicates['similar']),
+            ...DuplicateDetector::warnings($duplicates),
         ]);
     }
 
@@ -164,9 +164,9 @@ class KemahasiswaanController extends Controller
         $data = $this->validated($request);
         $this->enforceOwnMahasiswa($request, $data);
 
-        $duplicates = $this->findActivityDuplicates($data, $kemahasiswaan->id);
-        if ($duplicates['exact'] && !$request->boolean('confirm_duplicates')) {
-            return $this->bulkDuplicateConfirmationRequired($duplicates['exact']);
+        $duplicates = DuplicateDetector::for('kegiatan')->check($data, $kemahasiswaan->id);
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
         }
 
         // Edit oleh mahasiswa mengembalikan data ke antrean persetujuan (admin/dosen tidak mengubah status).
@@ -182,8 +182,7 @@ class KemahasiswaanController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($kemahasiswaan),
-            'warnings' => array_slice($duplicates['similar'], 0, 5),
-            'warning_count' => count($duplicates['similar']),
+            ...DuplicateDetector::warnings($duplicates),
         ]);
     }
 
@@ -404,36 +403,13 @@ class KemahasiswaanController extends Controller
             return $this->bulkRejected($errors);
         }
 
-        $ownerIds = array_values(array_unique(array_column(array_column($plan, 'payload'), 'mahasiswa_id')));
-        $candidates = collect();
-        foreach (array_chunk($ownerIds, 500) as $ownerChunk) {
-            $candidates = $candidates->concat(Kemahasiswaan::whereIn('mahasiswa_id', $ownerChunk)
-                ->get(['id', 'mahasiswa_id', 'jenis', 'tab', 'tingkat', 'tahun', 'nama_kegiatan']));
-        }
-        $candidatesByOwner = $candidates->groupBy('mahasiswa_id');
-
-        $exactDuplicates = [];
-        $similarWarnings = [];
-        $stagedByOwner = [];
-        foreach ($plan as &$entry) {
-            $ownerId = (int) $entry['payload']['mahasiswa_id'];
-            $duplicates = $this->findActivityDuplicates(
-                $entry['payload'],
-                $entry['existing']?->id,
-                $candidatesByOwner->get($ownerId, collect())->concat($stagedByOwner[$ownerId] ?? [])
-            );
-            foreach ($duplicates['exact'] as $duplicate) {
-                $exactDuplicates[] = $duplicate + ['row' => $entry['row']];
-            }
-            foreach ($duplicates['similar'] as $warning) {
-                $similarWarnings[] = "Baris {$entry['row']}: {$warning}";
-            }
-            $stagedByOwner[$ownerId][] = (object) ($entry['payload'] + ['id' => null]);
-        }
-        unset($entry);
-
-        if ($exactDuplicates && !$request->boolean('confirm_duplicates')) {
-            return $this->bulkDuplicateConfirmationRequired($exactDuplicates);
+        $duplicates = DuplicateDetector::for('kegiatan')->checkBatch(array_map(static fn ($entry) => [
+            'data' => $entry['payload'],
+            'row' => $entry['row'],
+            'ignore_id' => $entry['existing']?->id,
+        ], $plan));
+        if ($blocked = DuplicateDetector::guard($request, $duplicates)) {
+            return $blocked;
         }
 
         $result = $this->bulkSave(Kemahasiswaan::class, $plan);
@@ -443,49 +419,8 @@ class KemahasiswaanController extends Controller
             $result['created'],
             $result['updated'],
             $result['unchanged'],
-            warnings: array_values(array_unique($similarWarnings))
+            warnings: $duplicates['similar']
         );
-    }
-
-    /**
-     * Duplikat hanya dibandingkan dalam konteks pemilik, jenis kegiatan, tab, tingkat, dan tahun yang sama.
-     *
-     * @return array{exact: array<int,array{name:string,id?:int}>,similar: string[]}
-     */
-    private function findActivityDuplicates(array $data, ?int $ignoreId = null, ?iterable $candidates = null): array
-    {
-        $candidates ??= Kemahasiswaan::where('mahasiswa_id', $data['mahasiswa_id'])
-            ->where('jenis', $data['jenis'])
-            ->where('tab', $data['tab'])
-            ->where('tingkat', $data['tingkat'])
-            ->where('tahun', $data['tahun'])
-            ->when($ignoreId, fn ($query) => $query->where('id', '<>', $ignoreId))
-            ->get(['id', 'mahasiswa_id', 'jenis', 'tab', 'tingkat', 'tahun', 'nama_kegiatan']);
-
-        $exact = [];
-        $similar = [];
-        $name = (string) $data['nama_kegiatan'];
-        $normalized = $this->normalizeDuplicateText($name);
-
-        foreach ($candidates as $candidate) {
-            if (($ignoreId !== null && (int) ($candidate->id ?? 0) === $ignoreId)
-                || (int) $candidate->mahasiswa_id !== (int) $data['mahasiswa_id']
-                || $candidate->jenis !== $data['jenis']
-                || $candidate->tab !== $data['tab']
-                || $candidate->tingkat !== $data['tingkat']
-                || (int) $candidate->tahun !== (int) $data['tahun']) {
-                continue;
-            }
-
-            $candidateName = (string) $candidate->nama_kegiatan;
-            if ($normalized === $this->normalizeDuplicateText($candidateName)) {
-                $exact[] = array_filter(['name' => $candidateName, 'id' => $candidate->id ?? null], fn ($value) => $value !== null);
-            } elseif ($this->isSimilarDuplicateText($name, $candidateName)) {
-                $similar[] = "Nama kegiatan “{$name}” mirip dengan “{$candidateName}”.";
-            }
-        }
-
-        return ['exact' => $exact, 'similar' => array_values(array_unique($similar))];
     }
 
     private function notifyKegiatan(Request $request, Kemahasiswaan $item, string $aksi): void

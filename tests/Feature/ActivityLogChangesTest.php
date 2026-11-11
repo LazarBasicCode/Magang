@@ -19,6 +19,7 @@ class ActivityLogChangesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['session.driver' => 'database']);
 
         // Tangkap konteks yang ditulis ke channel "activity" (tanpa menulis file).
         $channel = \Mockery::mock();
@@ -76,12 +77,12 @@ class ActivityLogChangesTest extends TestCase
         $mhs = $this->mahasiswa();
 
         $this->actingAs($actor)
-            ->putJson('/data-master/users/' . $mhs->id, $this->form($mhs, ['password' => 'rahasiaBaru123']))
+            ->putJson('/data-master/users/' . $mhs->id, $this->form($mhs, ['password' => 'Ab4!xy']))
             ->assertOk();
 
         $this->assertSame(['input' => '••••••', 'output' => '••••••'], $this->logged['update']['password']);
         $json = json_encode($this->logged);
-        $this->assertStringNotContainsString('rahasiaBaru123', $json);
+        $this->assertStringNotContainsString('Ab4!xy', $json);
         $this->assertStringNotContainsString('$2y$', $json, 'hash password juga tidak boleh masuk log');
     }
 
@@ -104,7 +105,7 @@ class ActivityLogChangesTest extends TestCase
 
         $this->actingAs($actor)->postJson('/data-master/users', [
             'name' => 'Sari Dewi', 'role' => 'mahasiswa', 'identifier' => '2002',
-            'angkatan' => 2023, 'status' => 'aktif', 'password' => 'secret123',
+            'angkatan' => 2023, 'status' => 'aktif',
         ])->assertSuccessful();
 
         $user = User::where('nim_nidn', '2002')->firstOrFail();

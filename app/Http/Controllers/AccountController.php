@@ -6,11 +6,13 @@ use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\NotificationPrefs;
+use App\Support\RandomAccountPassword;
 use App\Support\SessionRevoker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,35 +26,62 @@ use Illuminate\Validation\Rule;
  */
 class AccountController extends Controller
 {
+    public function generatePassword(): JsonResponse
+    {
+        return response()->json([
+            'password' => RandomAccountPassword::generateUnique(),
+        ]);
+    }
+
     public function changePassword(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'current_password'      => ['required', 'string'],
-            'password'              => ['required', 'string', 'min:8', 'confirmed', 'different:current_password'],
+            'password' => ['required', 'string', 'size:' . RandomAccountPassword::LENGTH],
         ], [
-            'current_password.required' => 'Password lama wajib diisi.',
-            'password.required'         => 'Password baru wajib diisi.',
-            'password.min'              => 'Password baru minimal 8 karakter.',
-            'password.confirmed'        => 'Konfirmasi password tidak cocok.',
-            'password.different'        => 'Password baru tidak boleh sama dengan password lama.',
+            'password.required' => 'Buat password baru dengan tombol generate.',
+            'password.size'     => 'Password harus tepat 6 karakter.',
         ]);
 
         /** @var User $user */
         $user = $request->user();
 
-        if (!Hash::check($data['current_password'], $user->password)) {
+        if (!RandomAccountPassword::isValid($data['password'])) {
             return response()->json([
-                'message' => 'Password lama salah.',
-                'errors'  => ['current_password' => ['Password lama salah.']],
+                'message' => 'Password harus memuat huruf besar, huruf kecil, angka, dan simbol.',
+                'errors'  => ['password' => ['Password harus memuat huruf besar, huruf kecil, angka, dan simbol.']],
+            ], 422);
+        }
+
+        if (Hash::check($data['password'], $user->password)) {
+            return response()->json([
+                'message' => 'Password baru harus berbeda dari password saat ini.',
+                'errors'  => ['password' => ['Password baru harus berbeda dari password saat ini.']],
+            ], 422);
+        }
+
+        if (RandomAccountPassword::isUsedByAnotherUser($data['password'], $user->id)) {
+            return response()->json([
+                'message' => 'Password ini sudah digunakan akun lain. Silakan buat password baru.',
+                'errors'  => ['password' => ['Password ini sudah digunakan akun lain. Silakan generate ulang.']],
             ], 422);
         }
 
         // Ganti password + keluarkan SEMUA sesi akun ini (semua perangkat, termasuk yang sedang dipakai),
         // supaya orang lain yang sempat masuk tidak bisa terus memakai akun. Perangkat lain melihat
         // pemberitahuan di halaman login (SessionRevoker); perangkat ini diarahkan ke login oleh JS.
-        DB::transaction(function () use ($user, $data) {
+        DB::transaction(function () use ($user, $data, $request) {
             $user->forceFill(['password' => Hash::make($data['password'])])->save();
             SessionRevoker::revoke($user, SessionRevoker::PASSWORD_CHANGED);
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            $request->session()->flash('loginPrefill', Crypt::encryptString(json_encode([
+                'username' => in_array($user->role, ['mahasiswa', 'dosen'], true)
+                    ? $user->nim_nidn
+                    : ($user->nim_nidn ?: $user->name),
+                'password' => $data['password'],
+            ], JSON_THROW_ON_ERROR)));
+            $request->session()->flash('status', 'Password berhasil diganti. Semua perangkat dikeluarkan — silakan masuk dengan password baru.');
         });
 
         // Catatan keamanan di daftar notifikasi: terlihat setelah login ulang. Pelengkap saja.
@@ -66,12 +95,6 @@ class AccountController extends Controller
         } catch (\Throwable $e) {
             report($e);
         }
-
-        // Sesi ini juga diakhiri (baris sesinya sudah dihapus di atas; tanpa ini sesi akan tersimpan ulang di akhir request).
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        $request->session()->flash('status', 'Password berhasil diganti. Semua perangkat dikeluarkan — silakan masuk dengan password baru.');
 
         return response()->json([
             'message'  => 'Password berhasil diganti. Semua perangkat dikeluarkan, silakan masuk lagi.',

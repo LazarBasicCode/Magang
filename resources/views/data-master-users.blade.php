@@ -13,6 +13,7 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/add-people.css') }}?v={{ @filemtime(public_path('css/add-people.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/credentials-dialog.css') }}?v={{ @filemtime(public_path('css/credentials-dialog.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/user-form.css') }}?v={{ @filemtime(public_path('css/user-form.css')) }}">
     <script>
         (function() {
@@ -349,10 +350,10 @@
                 <p class="field-hint">Opsional. Dipakai untuk mengirim tautan reset password ke pengguna ini.</p>
             </div>
 
-            <div class="field">
-                <label class="field-label" for="form-password">Password</label>
+            <div class="field" id="field-form-password">
+                <label class="field-label" for="form-password">Password baru (opsional)</label>
                 <div class="field-control">
-                    <input id="form-password" type="password" placeholder="Kosongkan jika tidak diubah (saat edit)">
+                    <input id="form-password" type="password" maxlength="6" placeholder="Isi 6 karakter untuk mengganti saat edit">
                 </div>
             </div>
 
@@ -406,8 +407,7 @@
                         <div class="field-control"><input id="ap-email" type="email" placeholder="Opsional" autocomplete="off"></div>
                     </div>
                     <div class="field">
-                        <label class="field-label" for="ap-password">Password</label>
-                        <div class="field-control"><input id="ap-password" type="text" placeholder="Kosong = nama depan + angkatan" autocomplete="off"></div>
+                        <p class="field-hint">Password acak tepat 6 karakter dibuat otomatis dan ditampilkan sekali setelah akun disimpan.</p>
                     </div>
                 </div>
             </section>
@@ -465,6 +465,7 @@
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
     <script src="{{ asset('js/never-login.js') }}?v={{ @filemtime(public_path('js/never-login.js')) }}"></script>
     <script id="apInit" type="application/json">{!! json_encode(['mahasiswa' => \App\Models\Mahasiswa::STATUS, 'dosen' => \App\Models\Dosen::STATUS], JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+    <script src="{{ asset('js/credentials-dialog.js') }}?v={{ @filemtime(public_path('js/credentials-dialog.js')) }}"></script>
     <script src="{{ asset('js/add-people.js') }}?v={{ @filemtime(public_path('js/add-people.js')) }}"></script>
     <script src="{{ asset('js/duplicate-confirm.js') }}?v={{ @filemtime(public_path('js/duplicate-confirm.js')) }}"></script>
     <script>
@@ -878,7 +879,8 @@
             document.getElementById('form-email').value = data.email || '';
 
             document.getElementById('form-password').value = '';
-            document.getElementById('form-password').required = mode !== 'edit';
+            document.getElementById('field-form-password').hidden = mode !== 'edit';
+            document.getElementById('form-password').required = false;
 
             openModalBase();
         }
@@ -931,8 +933,8 @@
                 role: document.getElementById('form-role').value,
                 identifier: document.getElementById('form-identifier').value,
                 email: document.getElementById('form-email').value,
-                password: document.getElementById('form-password').value,
             };
+            if (id) payload.password = document.getElementById('form-password').value;
             // Angkatan & status hanya dikirim untuk role yang memilikinya.
             payload.angkatan = payload.role === 'mahasiswa' ? inputAngkatan.value.trim() : null;
             payload.dosen_wali_id = payload.role === 'mahasiswa' ? (inputWali.value || null) : null;
@@ -957,13 +959,6 @@
                 modalSubmitBtn.disabled = false;
                 return;
             }
-            if (!id && !payload.password) {
-                modalError.textContent = 'Password wajib diisi untuk pengguna baru.';
-                modalError.hidden = false;
-                modalSubmitBtn.disabled = false;
-                return;
-            }
-
             const url = id ? `/data-master/users/${id}` : '/data-master/users';
             const method = id ? 'PUT' : 'POST';
 
@@ -1016,6 +1011,9 @@
                     type: 'success',
                     message: id ? 'Data pengguna berhasil diperbarui.' : 'Pengguna baru berhasil ditambahkan.',
                 });
+                if (!id && result.credentials && window.SIDACredentials) {
+                    window.SIDACredentials.show([result.credentials]);
+                }
                 if (result.warnings?.length) {
                     const warningCount = result.warning_count || result.warnings.length;
                     const more = warningCount > result.warnings.length ? ` Dan ${warningCount - result.warnings.length} kemiripan lainnya.` : '';
@@ -1075,6 +1073,7 @@
         syncViewUI();
     </script>
     <script src="{{ asset('js/delete-confirm.js') }}?v={{ @filemtime(public_path('js/delete-confirm.js')) }}"></script>
+    <script src="{{ asset('js/notification-sound.js') }}?v={{ @filemtime(public_path('js/notification-sound.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>

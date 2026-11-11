@@ -32,6 +32,8 @@
         <link rel="stylesheet" href="{{ asset('css/laporan.css') }}?v={{ @filemtime(public_path('css/laporan.css')) }}">
     @endif
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ @filemtime(public_path('css/dashboard.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/page-loader.css') }}?v={{ @filemtime(public_path('css/page-loader.css')) }}">
+    <noscript><style>.page-loader{display:none!important}</style></noscript>
     <title>{{ $pageTitle ?? 'Dashboard' }} &middot; SIDA</title>
 </head>
 
@@ -41,6 +43,9 @@
             if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         } catch (e) {}
     </script>
+
+    {{-- Loading screen: hanya muncul bila datang dari login (lihat public/js/page-loader.js) --}}
+    @include('partials.page-loader', ['autoHide' => true])
 
     <!-- Definisi ikon SIDA (dipakai di logo sidebar) -->
     <svg class="svg-defs" aria-hidden="true" focusable="false">

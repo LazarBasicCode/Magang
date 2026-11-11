@@ -62,6 +62,7 @@ Route::middleware(['auth', 'log.activity'])->group(function () {
     Route::get('/persetujuan/{menu}/{id}/riwayat', [ApprovalController::class, 'history'])
         ->whereNumber('id')->name('persetujuan.riwayat');
     // ---- Pengaturan akun sendiri (menu profil kanan atas) ----
+    Route::post('/account/password/generate', [AccountController::class, 'generatePassword'])->name('account.password.generate');
     Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
     Route::post('/account/recovery-email', [AccountController::class, 'updateRecoveryEmail'])->name('account.recovery-email');
     // Halaman Profil: Kontak Cadangan, Riwayat Login (perangkat), Preferensi Notifikasi

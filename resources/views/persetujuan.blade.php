@@ -298,6 +298,7 @@
 
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/pager.js') }}?v={{ @filemtime(public_path('js/pager.js')) }}"></script>
+    <script src="{{ asset('js/notification-sound.js') }}?v={{ @filemtime(public_path('js/notification-sound.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>
     <script>window.__APPR_INITIAL = @json($initial);</script>

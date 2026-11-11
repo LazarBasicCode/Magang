@@ -7,6 +7,7 @@ use App\Models\Kemahasiswaan;
 use App\Models\Mahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
+use App\Support\RandomAccountPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -27,8 +28,8 @@ class TambahMahasiswaDosenTest extends TestCase
     public function test_import_rekognisi_dengan_nim_belum_terdaftar_membuat_profil_tanpa_akun(): void
     {
         $csv = "nim_nidn,tipe_user,jenis,skala,judul,penulis,bukti_kegiatan,tahun,tanggal_mulai,tanggal_selesai\n"
-             . "999123,mahasiswa,conference,internasional,Judul A,Penulis A,https://example.com/a,2025,2025-01-01,2025-01-02\n"
-             . "999123,mahasiswa,conference,internasional,Judul B,Penulis A,https://example.com/b,2025,2025-02-01,2025-02-02\n";
+             ."999123,mahasiswa,conference,internasional,Judul A,Penulis A,https://example.com/a,2025,2025-01-01,2025-01-02\n"
+             ."999123,mahasiswa,conference,internasional,Judul B,Penulis A,https://example.com/b,2025,2025-02-01,2025-02-02\n";
 
         $res = $this->actingAs($this->admin())->post('/lppm/mahasiswa/import', [
             'file' => UploadedFile::fake()->createWithContent('lppm.csv', $csv),
@@ -57,7 +58,7 @@ class TambahMahasiswaDosenTest extends TestCase
 
     public function test_nama_di_tabel_terisi_otomatis_dari_kolom_penulis_rekognisi(): void
     {
-        $satu   = Mahasiswa::create(['nim' => '999010']);
+        $satu = Mahasiswa::create(['nim' => '999010']);
         $banyak = Mahasiswa::create(['nim' => '999011']);
         $kosong = Mahasiswa::create(['nim' => '999012']);
 
@@ -82,42 +83,48 @@ class TambahMahasiswaDosenTest extends TestCase
         $this->assertNull($rows['999012']['hint']);
     }
 
-    public function test_simpan_baris_terpilih_membuat_akun_dengan_password_nama_depan_plus_angkatan(): void
+    public function test_simpan_baris_terpilih_membuat_akun_dengan_password_acak_unik(): void
     {
         $a = Mahasiswa::create(['nim' => '999001']);
         $b = Mahasiswa::create(['nim' => '999002']);
 
-        $this->actingAs($this->admin())->postJson('/data-master/users/people', [
-            'role'     => 'mahasiswa',
+        $response = $this->actingAs($this->admin())->postJson('/data-master/users/people', [
+            'role' => 'mahasiswa',
             'selected' => [
                 ['id' => $a->id, 'name' => 'Budi Santoso', 'angkatan' => 2022],
                 ['id' => $b->id, 'name' => 'Sari Dewi'], // tanpa angkatan -> tahun terbaru
             ],
-        ])->assertOk()->assertJson(['success' => true, 'created' => 2]);
+        ])->assertOk()->assertJson(['success' => true, 'created' => 2])->assertJsonCount(2, 'credentials');
+        $credentials = collect($response->json('credentials'))->keyBy('id');
 
         $ua = User::where('nim_nidn', '999001')->first();
         $this->assertSame('mahasiswa', $ua->role);
-        $this->assertTrue(Hash::check('budi2022', $ua->password));
+        $this->assertTrue(RandomAccountPassword::isValid($credentials['999001']['password']));
+        $this->assertTrue(Hash::check($credentials['999001']['password'], $ua->password));
         $this->assertSame($ua->id, $a->fresh()->user_id);
         $this->assertSame(2022, (int) $a->fresh()->angkatan);
 
         $ub = User::where('nim_nidn', '999002')->first();
-        $this->assertTrue(Hash::check('sari' . now()->year, $ub->password));
+        $this->assertTrue(RandomAccountPassword::isValid($credentials['999002']['password']));
+        $this->assertTrue(Hash::check($credentials['999002']['password'], $ub->password));
+        $this->assertNotSame($credentials['999001']['password'], $credentials['999002']['password']);
         $this->assertSame(now()->year, (int) $b->fresh()->angkatan);
     }
 
-    public function test_tambah_dosen_memakai_tahun_terbaru_untuk_password(): void
+    public function test_tambah_dosen_menghasilkan_password_acak(): void
     {
         $d = Dosen::create(['nidn' => '0712048901']);
 
-        $this->actingAs($this->admin())->postJson('/data-master/users/people', [
+        $response = $this->actingAs($this->admin())->postJson('/data-master/users/people', [
             'role' => 'dosen',
             'selected' => [['id' => $d->id, 'name' => 'Dr. Ani Lestari']],
-        ])->assertOk();
+        ])->assertOk()->assertJsonCount(1, 'credentials');
 
         $u = User::where('nim_nidn', '0712048901')->first();
         $this->assertSame('dosen', $u->role);
-        $this->assertTrue(Hash::check('ani' . now()->year, $u->password));
+        $password = $response->json('credentials.0.password');
+        $this->assertTrue(RandomAccountPassword::isValid($password));
+        $this->assertTrue(Hash::check($password, $u->password));
         $this->assertSame($u->id, $d->fresh()->user_id);
     }
 
@@ -125,15 +132,15 @@ class TambahMahasiswaDosenTest extends TestCase
     {
         $calon = Mahasiswa::create(['nim' => '999050']);
 
-        $this->actingAs($this->admin())->postJson('/data-master/users/people', [
-            'role'   => 'mahasiswa',
+        $response = $this->actingAs($this->admin())->postJson('/data-master/users/people', [
+            'role' => 'mahasiswa',
             'manual' => ['name' => 'Rina Putri', 'identifier' => '999050', 'angkatan' => 2023, 'status' => 'aktif'],
-        ])->assertOk();
+        ])->assertOk()->assertJsonCount(1, 'credentials');
 
         $this->assertSame(1, Mahasiswa::where('nim', '999050')->count());
         $user = User::where('nim_nidn', '999050')->first();
         $this->assertSame($user->id, $calon->fresh()->user_id);
-        $this->assertTrue(Hash::check('rina2023', $user->password));
+        $this->assertTrue(Hash::check($response->json('credentials.0.password'), $user->password));
     }
 
     public function test_tambah_pengguna_biasa_dengan_nim_calon_juga_menyambung(): void
@@ -142,7 +149,7 @@ class TambahMahasiswaDosenTest extends TestCase
 
         $this->actingAs($this->admin())->postJson('/data-master/users', [
             'name' => 'Tono', 'role' => 'mahasiswa', 'identifier' => '999060',
-            'angkatan' => 2021, 'status' => 'aktif', 'password' => 'secret123',
+            'angkatan' => 2021, 'status' => 'aktif',
         ])->assertOk();
 
         $this->assertSame(1, Mahasiswa::where('nim', '999060')->count());
@@ -271,7 +278,7 @@ class TambahMahasiswaDosenTest extends TestCase
             'bukti_kegiatan' => 'https://example.com/bukti-lama',
         ]);
         $csv = "nim,jenis_divisi,jenis_prestasi,skala,tahun,nama_kegiatan,bukti_kegiatan\n"
-             . "999072,kemahasiswaan,akademik,nasional,2025,Juara Lomba Karya Tulis,https://example.com/bukti-baru\n";
+             ."999072,kemahasiswaan,akademik,nasional,2025,Juara Lomba Karya Tulis,https://example.com/bukti-baru\n";
 
         $this->actingAs($admin)->post('/kemahasiswaan/import', [
             'file' => UploadedFile::fake()->createWithContent('kemahasiswaan.csv', $csv),
@@ -294,14 +301,20 @@ class TambahMahasiswaDosenTest extends TestCase
         $admin = $this->admin();
         User::create(['name' => 'Siti Maharani', 'nim_nidn' => '999092', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
         $csv = "nim_nidn,nama,role,angkatan,status,password\n"
-             . "999093,Siti Maharan,mahasiswa,2022,aktif,secret123\n";
+             ."999093,Siti Maharan,mahasiswa,2022,aktif,secret123\n";
 
-        $this->actingAs($admin)->post('/data-master/users/import', [
+        $response = $this->actingAs($admin)->post('/data-master/users/import', [
             'file' => UploadedFile::fake()->createWithContent('users.csv', $csv),
         ], ['Accept' => 'application/json'])
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonCount(1, 'warnings');
+            ->assertJsonCount(1, 'warnings')
+            ->assertJsonCount(1, 'credentials');
+
+        $created = User::where('nim_nidn', '999093')->firstOrFail();
+        $password = $response->json('credentials.0.password');
+        $this->assertTrue(RandomAccountPassword::isValid($password));
+        $this->assertTrue(Hash::check($password, $created->password));
     }
 
     public function test_edit_akun_meminta_konfirmasi_nama_persis_sama(): void
@@ -318,12 +331,12 @@ class TambahMahasiswaDosenTest extends TestCase
             'password' => '',
         ];
 
-        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, $payload)
+        $this->actingAs($admin)->putJson('/data-master/users/'.$target->id, $payload)
             ->assertStatus(409)
             ->assertJsonPath('duplicate_confirmation_required', true);
         $this->assertSame('Nama Lama', $target->fresh()->name);
 
-        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, $payload + ['confirm_duplicates' => true])
+        $this->actingAs($admin)->putJson('/data-master/users/'.$target->id, $payload + ['confirm_duplicates' => true])
             ->assertOk()
             ->assertJsonPath('success', true);
         $this->assertSame('Nama Sama', $target->fresh()->name);
@@ -335,7 +348,7 @@ class TambahMahasiswaDosenTest extends TestCase
         $target = User::create(['name' => 'Nama Lama', 'nim_nidn' => '999090', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
         User::create(['name' => 'Siti Maharani', 'nim_nidn' => '999091', 'password' => Hash::make('secret123'), 'role' => 'mahasiswa']);
 
-        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, [
+        $this->actingAs($admin)->putJson('/data-master/users/'.$target->id, [
             'name' => 'Siti Maharani',
             'role' => 'mahasiswa',
             'identifier' => $target->nim_nidn,
@@ -344,7 +357,7 @@ class TambahMahasiswaDosenTest extends TestCase
             'password' => '',
         ])->assertStatus(409);
 
-        $this->actingAs($admin)->putJson('/data-master/users/' . $target->id, [
+        $this->actingAs($admin)->putJson('/data-master/users/'.$target->id, [
             'name' => 'Siti Maharan',
             'role' => 'mahasiswa',
             'identifier' => $target->nim_nidn,

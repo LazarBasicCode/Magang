@@ -294,7 +294,11 @@
                     const more = warningCount > 3 ? ` Dan ${warningCount - 3} kemiripan lainnya.` : '';
                     Toast.show({ type: 'warning', title: 'Kemiripan data ditemukan', message: examples + more });
                 }
-                setTimeout(() => location.reload(), json.warning_count ? 5200 : 1400);
+                if (json.credentials?.length && window.SIDACredentials) {
+                    window.SIDACredentials.show(json.credentials, () => location.reload());
+                } else {
+                    setTimeout(() => location.reload(), json.warning_count ? 5200 : 1400);
+                }
                 return;
             }
 

@@ -1,0 +1,161 @@
+/* Loading screen (roket/speeder) — hanya untuk transisi login -> dashboard.
+   Dasar animasi: Uiverse.io by anand_4957. Kelas diberi awalan "pl-" supaya
+   tidak bentrok dengan CSS lain. Warna ikut tema terang/gelap. */
+.page-loader {
+    --pl-bg: #eceef8;
+    --pl-ink: #2f3349;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+    overflow: hidden;
+    background: var(--pl-bg);
+    /* Muncul/hilang lewat opacity + visibility (bukan display) supaya bisa transisi halus */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .45s cubic-bezier(.4, 0, .2, 1), visibility 0s linear .45s;
+}
+.page-loader.is-active { display: block; }
+.page-loader.is-shown {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .35s cubic-bezier(.4, 0, .2, 1), visibility 0s;
+}
+/* Di dashboard loader sudah penuh sejak paint pertama (tanpa fade-in) */
+.page-loader.is-instant, .page-loader.is-instant.is-shown { transition-duration: 0s, 0s; }
+.page-loader.is-leaving {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .6s cubic-bezier(.4, 0, .2, 1), visibility 0s linear .6s;
+}
+/* Konten halaman ikut muncul pelan saat loader memudar (cross-fade) */
+body.pl-enter .app-content { animation: pl-enter .7s cubic-bezier(.4, 0, .2, 1) backwards; }
+@keyframes pl-enter { from { opacity: 0; } to { opacity: 1; } }
+
+/* Tema hanya mengikuti pilihan user (localStorage 'theme'), BUKAN pengaturan sistem:
+   dashboard memakai body.dark-mode, login memakai :root[data-theme]. */
+body.dark-mode .page-loader,
+:root[data-theme="dark"] .page-loader {
+    --pl-bg: #21273c;
+    --pl-ink: #e6ebf7;
+}
+
+.pl-loader {
+    position: absolute;
+    top: 50%;
+    margin-left: -50px;
+    left: 50%;
+    animation: pl-speeder 0.4s linear infinite;
+}
+.pl-loader > span {
+    height: 5px;
+    width: 35px;
+    background: var(--pl-ink);
+    position: absolute;
+    top: -19px;
+    left: 60px;
+    border-radius: 2px 10px 1px 0;
+}
+.pl-base span {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-right: 100px solid var(--pl-ink);
+    border-bottom: 6px solid transparent;
+}
+.pl-base span:before {
+    content: "";
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: var(--pl-ink);
+    position: absolute;
+    right: -110px;
+    top: -16px;
+}
+.pl-base span:after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-top: 0 solid transparent;
+    border-right: 55px solid var(--pl-ink);
+    border-bottom: 16px solid transparent;
+    top: -16px;
+    right: -98px;
+}
+.pl-face {
+    position: absolute;
+    height: 12px;
+    width: 20px;
+    background: var(--pl-ink);
+    border-radius: 20px 20px 0 0;
+    transform: rotate(-40deg);
+    right: -125px;
+    top: -15px;
+}
+.pl-face:after {
+    content: "";
+    height: 12px;
+    width: 12px;
+    background: var(--pl-ink);
+    right: 4px;
+    top: 7px;
+    position: absolute;
+    transform: rotate(40deg);
+    transform-origin: 50% 50%;
+    border-radius: 0 0 0 2px;
+}
+.pl-loader > span > span:nth-child(1),
+.pl-loader > span > span:nth-child(2),
+.pl-loader > span > span:nth-child(3),
+.pl-loader > span > span:nth-child(4) {
+    width: 30px;
+    height: 1px;
+    background: var(--pl-ink);
+    position: absolute;
+    animation: pl-fazer1 0.2s linear infinite;
+}
+.pl-loader > span > span:nth-child(2) { top: 3px; animation: pl-fazer2 0.4s linear infinite; }
+.pl-loader > span > span:nth-child(3) { top: 1px; animation: pl-fazer3 0.4s linear infinite; animation-delay: -1s; }
+.pl-loader > span > span:nth-child(4) { top: 4px; animation: pl-fazer4 1s linear infinite; animation-delay: -1s; }
+
+@keyframes pl-fazer1 { 0% { left: 0; } 100% { left: -80px;  opacity: 0; } }
+@keyframes pl-fazer2 { 0% { left: 0; } 100% { left: -100px; opacity: 0; } }
+@keyframes pl-fazer3 { 0% { left: 0; } 100% { left: -50px;  opacity: 0; } }
+@keyframes pl-fazer4 { 0% { left: 0; } 100% { left: -150px; opacity: 0; } }
+
+@keyframes pl-speeder {
+    0%   { transform: translate(2px, 1px) rotate(0deg); }
+    10%  { transform: translate(-1px, -3px) rotate(-1deg); }
+    20%  { transform: translate(-2px, 0px) rotate(1deg); }
+    30%  { transform: translate(1px, 2px) rotate(0deg); }
+    40%  { transform: translate(1px, -1px) rotate(1deg); }
+    50%  { transform: translate(-1px, 3px) rotate(-1deg); }
+    60%  { transform: translate(-1px, 1px) rotate(0deg); }
+    70%  { transform: translate(3px, 1px) rotate(-1deg); }
+    80%  { transform: translate(-2px, -1px) rotate(1deg); }
+    90%  { transform: translate(2px, 1px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.pl-longfazers { position: absolute; width: 100%; height: 100%; }
+.pl-longfazers span { position: absolute; height: 2px; width: 20%; background: var(--pl-ink); }
+.pl-longfazers span:nth-child(1) { top: 20%; animation: pl-lf  0.6s linear infinite; animation-delay: -5s; }
+.pl-longfazers span:nth-child(2) { top: 40%; animation: pl-lf2 0.8s linear infinite; animation-delay: -1s; }
+.pl-longfazers span:nth-child(3) { top: 60%; animation: pl-lf3 0.6s linear infinite; }
+.pl-longfazers span:nth-child(4) { top: 80%; animation: pl-lf4 0.5s linear infinite; animation-delay: -3s; }
+
+@keyframes pl-lf  { 0% { left: 200%; } 100% { left: -200%; opacity: 0; } }
+@keyframes pl-lf2 { 0% { left: 200%; } 100% { left: -200%; opacity: 0; } }
+@keyframes pl-lf3 { 0% { left: 200%; } 100% { left: -100%; opacity: 0; } }
+@keyframes pl-lf4 { 0% { left: 200%; } 100% { left: -100%; opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .pl-loader, .pl-loader span, .pl-longfazers span { animation: none !important; }
+    .pl-longfazers { display: none; }
+    .page-loader, .page-loader.is-shown, .page-loader.is-leaving { transition-duration: .01s, 0s; }
+    body.pl-enter .app-content { animation: none; }
+}

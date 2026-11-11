@@ -39,36 +39,43 @@
     function mount(root) {
         if (!root) return null;
         root.classList.add('bt-list');
-        root.innerHTML = '<div class="bt-rows"></div>'
-            + '<button type="button" class="bt-add"><span class="material-symbols-outlined">add</span><span>Tambah Bukti</span></button>';
+        root.innerHTML = '<button type="button" class="bt-add bt-initial-add"><span class="material-symbols-outlined">add</span><span>Tambah Bukti</span></button>'
+            + '<div class="bt-rows"></div>';
         const rows = root.querySelector('.bt-rows');
         const addBtn = root.querySelector('.bt-add');
 
         // Judul tiap blok dinomori ulang (1, 2, 3, ...) setiap ada tambah / hapus.
         const sync = () => {
-            [...rows.children].forEach((row, i) => { row.querySelector('.field-label').textContent = 'Link Bukti Tambahan ' + (i + 1); });
-            addBtn.hidden = rows.children.length >= MAX;
+            [...rows.children].forEach((row, i) => {
+                row.querySelector('.field-label').textContent = 'Link Bukti Tambahan ' + (i + 1);
+                row.querySelector('.bt-row-add').hidden = rows.children.length >= MAX;
+            });
+            addBtn.hidden = rows.children.length > 0 || rows.children.length >= MAX;
         };
         function addRow(b = { nama: '', url: '' }, focus = false) {
             if (rows.children.length >= MAX) return;
             const row = document.createElement('div');
             row.className = 'bt-row';
-            row.innerHTML = '<label class="field-label"></label>'
+            row.innerHTML = '<div class="bt-row-heading"><label class="field-label"></label>'
+                + '<div class="bt-actions">'
+                + '<button type="button" class="bt-add bt-row-add" title="Tambah bukti" aria-label="Tambah bukti">+</button>'
+                + '<button type="button" class="bt-remove" title="Hapus bukti ini" aria-label="Hapus bukti ini">-</button>'
+                + '</div></div>'
                 + '<div class="field-control"><input type="url" class="bt-link" required placeholder="https://drive.google.com/..." value="' + esc(b.url) + '"></div>'
-                + '<div class="bt-foot">'
-                + '<div class="field-control bt-name"><input type="text" class="bt-nama" maxlength="100" placeholder="Nama bukti (opsional)" aria-label="Nama bukti (opsional)" value="' + esc(b.nama) + '"></div>'
-                + '<button type="button" class="bt-remove" title="Hapus bukti ini" aria-label="Hapus bukti ini"><span class="material-symbols-outlined">remove</span></button>'
-                + '</div>';
+                + '<div class="field-control bt-name"><input type="text" class="bt-nama" maxlength="100" placeholder="Nama bukti (opsional)" aria-label="Nama bukti (opsional)" value="' + esc(b.nama) + '"></div>';
             rows.appendChild(row);
             if (focus) row.querySelector('.bt-link').focus();
             sync();
         }
 
-        addBtn.addEventListener('click', () => addRow(undefined, true));
-        rows.addEventListener('click', (e) => {
-            const btn = e.target.closest('.bt-remove');
-            if (!btn) return;
-            btn.closest('.bt-row').remove(); // boleh sampai habis: bukti tambahan bersifat opsional
+        root.addEventListener('click', (e) => {
+            const btn = e.target.closest('.bt-add, .bt-remove');
+            if (!btn || !root.contains(btn)) return;
+            if (btn.classList.contains('bt-add')) {
+                addRow(undefined, true);
+                return;
+            }
+            btn.closest('.bt-row').remove(); // bukti tambahan bersifat opsional
             sync();
         });
 

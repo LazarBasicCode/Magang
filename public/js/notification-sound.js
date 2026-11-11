@@ -16,9 +16,11 @@
             ],
         },
         error: {
-            volume: 0.12,
+            volume: 0.4,
             notes: [
-                { frequency: 770, start: 0, duration: 0.16, wave: 'square' },
+                { frequency: 523.25, start: 0, duration: 0.16, wave: 'sine' },
+                { frequency: 493.88, start: 0.12, duration: 0.16, wave: 'sine' },
+                { frequency: 466.16, start: 0.24, duration: 0.28, wave: 'sine' },
             ],
         },
         info: {
@@ -30,18 +32,9 @@
         warning: {
             volume: 0.16,
             notes: [
-                // { frequency: 770, start: 0, duration: 0.16, wave: 'triangle' },
-                // { frequency: 550, start: 0.12, duration: 0.16, wave: 'triangle' },
-                { frequency: 20, start: 0, duration: 0.5, wave: 'square' },
-                { frequency: 120, start: 0.1, duration: 0.5, wave: 'square' },
-                { frequency: 220, start: 0.2, duration: 0.5, wave: 'square' },
-                { frequency: 330, start: 0.3, duration: 0.5, wave: 'square' },
-                { frequency: 440, start: 0.4, duration: 0.5, wave: 'square' },
-                { frequency: 550, start: 0.5, duration: 0.5, wave: 'square' },
-                { frequency: 660, start: 0.6, duration: 0.5, wave: 'square' },
-                { frequency: 770, start: 0.7, duration: 0.5, wave: 'square' },
-                { frequency: 880, start: 0.8, duration: 0.5, wave: 'square' },
-                { frequency: 990, start: 0.9, duration: 0.5, wave: 'square' },
+                { frequency: 523.25, start: 0, duration: 0.16, wave: 'sine' },
+                { frequency: 523.25, start: 0.12, duration: 0.16, wave: 'sine' },
+                { frequency: 523.25, start: 0.24, duration: 0.28, wave: 'sine' },
             ],
         },
     };

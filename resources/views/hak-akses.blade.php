@@ -857,6 +857,7 @@
         })();
         applyFilters();
     </script>
+    <script src="{{ asset('js/notification-sound.js') }}?v={{ @filemtime(public_path('js/notification-sound.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>

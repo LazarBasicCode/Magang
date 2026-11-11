@@ -3866,6 +3866,62 @@ body.dark-mode {
     cursor: progress;
 }
 
+.pa-password-modal {
+    width: min(540px, calc(100vw - 32px));
+}
+
+.pa-password-modal .pa-password-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pa-password-modal .pa-password-control input[readonly] {
+    flex: 1;
+    min-width: 0;
+    padding-right: 12px;
+    background: var(--canvas, #f7f8fc);
+    cursor: not-allowed;
+    pointer-events: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+
+.pa-password-action {
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border, #dde1f1);
+    border-radius: 10px;
+    background: var(--canvas, #f7f8fc);
+    color: var(--ink, #1f2937);
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+
+.pa-password-action:hover {
+    color: var(--primary, #5b5fef);
+    border-color: var(--primary-border, #b8baff);
+    background: var(--primary-soft, #e2e2fd);
+}
+
+.pa-password-action:disabled {
+    opacity: .6;
+    cursor: progress;
+}
+
+.pa-password-modal .pa-foot {
+    display: block;
+}
+
+.pa-password-modal .pa-foot .pa-btn-primary {
+    width: 100%;
+}
+
 @keyframes paShake {
     25% {
         transform: translateX(-4px);

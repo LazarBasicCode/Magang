@@ -2,7 +2,7 @@
  * Ganti Password & Email Pemulihan dari menu profil kanan atas.
  * - Modal dibuat dinamis, ditaruh di <body> (menu profil tetap terbuka).
  * - Modal bisa digeser lewat header, latar diburamkan.
- * - Suara sukses/error dibuat lewat Web Audio (tanpa file tambahan).
+ * - Suara notifikasi dikelola terpusat oleh notification-sound.js.
  */
 (function () {
     'use strict';
@@ -15,19 +15,14 @@
             url: '/account/password',
             submit: 'Simpan Password',
             success: 'Password berhasil diganti.',
+            generateUrl: '/account/password/generate',
             fields: [
-                { name: 'current_password', label: 'Password Lama', type: 'password', autocomplete: 'current-password' },
-                { name: 'password', label: 'Password Baru', type: 'password', autocomplete: 'new-password' },
-                { name: 'password_confirmation', label: 'Konfirmasi Password Baru', type: 'password', autocomplete: 'new-password' },
+                { name: 'password', label: 'Password Baru (tepat 6 karakter)', type: 'text', readonly: true, generate: true },
             ],
             validate(v) {
                 const e = {};
-                if (!v.current_password) e.current_password = 'Password lama wajib diisi.';
-                if (!v.password) e.password = 'Password baru wajib diisi.';
-                else if (v.password.length < 8) e.password = 'Password baru minimal 8 karakter.';
-                else if (v.password === v.current_password) e.password = 'Password baru tidak boleh sama dengan password lama.';
-                if (!v.password_confirmation) e.password_confirmation = 'Konfirmasi password wajib diisi.';
-                else if (v.password && v.password !== v.password_confirmation) e.password_confirmation = 'Konfirmasi password tidak cocok.';
+                if (!v.password) e.password = 'Klik tombol generate untuk membuat password.';
+                else if (v.password.length !== 6) e.password = 'Password harus tepat 6 karakter.';
                 return e;
             },
         },
@@ -53,37 +48,9 @@
         },
     };
 
-    // ---------- Suara ----------
-    let ctx = null;
-    function tone(freq, start, dur, type, vol) {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = type; o.frequency.value = freq;
-        g.gain.setValueAtTime(0.0001, ctx.currentTime + start);
-        g.gain.exponentialRampToValueAtTime(vol, ctx.currentTime + start + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(ctx.currentTime + start);
-        o.stop(ctx.currentTime + start + dur + 0.05);
-    }
-    function playSound(kind) {
-        try {
-            ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-            if (ctx.state === 'suspended') ctx.resume();
-            if (kind === 'success') {           // naik, cerah: C5 - E5 - G5
-                tone(523.25, 0, 0.18, 'sine', 0.25);
-                tone(659.25, 0.12, 0.18, 'sine', 0.25);
-                tone(783.99, 0.24, 0.35, 'sine', 0.25);
-            } else {                            // turun, kasar: dua dengung rendah
-                tone(220, 0, 0.16, 'sawtooth', 0.18);
-                tone(165, 0.18, 0.28, 'sawtooth', 0.18);
-            }
-        } catch (e) { /* audio tidak tersedia -> abaikan */ }
-    }
-
     function notify(type, message) {
-        playSound(type === 'success' ? 'success' : 'error');
-        if (window.Toast) Toast.show({ type, message, sound: false });
+        if (window.Toast) Toast.show({ type, message });
+        else window.NotificationSound?.play(type);
     }
 
     // ---------- Modal ----------
@@ -94,8 +61,9 @@
         const cfg = CONFIGS[key];
         const overlay = document.createElement('div');
         overlay.className = 'pa-overlay';
+        const modalClass = key === 'password' ? ' pa-password-modal' : '';
         overlay.innerHTML = `
-            <div class="pa-modal" role="dialog" aria-modal="true" aria-label="${cfg.title}">
+            <div class="pa-modal${modalClass}" role="dialog" aria-modal="true" aria-label="${cfg.title}">
                 <div class="pa-head">
                     <span class="material-symbols-outlined">${cfg.icon}</span>
                     <span class="pa-title">${cfg.title}</span>
@@ -106,18 +74,20 @@
                         ${cfg.fields.map((f) => `
                         <div class="pa-field" data-field="${f.name}">
                             <label for="pa-${key}-${f.name}">${f.label}</label>
-                            <div class="pa-input-wrap">
+                            <div class="pa-input-wrap${f.generate ? ' pa-password-control' : ''}">
                                 <input id="pa-${key}-${f.name}" name="${f.name}" type="${f.type}"
                                     autocomplete="${f.autocomplete || 'off'}"
+                                    ${f.readonly ? 'readonly tabindex="-1" aria-readonly="true"' : ''}
                                     ${f.inputmode ? `inputmode="${f.inputmode}"` : ''}
                                     ${f.placeholder ? `placeholder="${f.placeholder}"` : ''}>
+                                ${f.generate ? '<button type="button" class="pa-password-action" data-gen aria-label="Buat password baru" title="Buat password baru"><span class="material-symbols-outlined">autorenew</span></button><button type="button" class="pa-password-action" data-copy aria-label="Salin password" title="Salin password"><span class="material-symbols-outlined">content_copy</span></button>' : ''}
                                 ${f.type === 'password' ? '<button type="button" class="pa-eye" tabindex="-1" aria-label="Tampilkan password"><span class="material-symbols-outlined">visibility</span></button>' : ''}
                             </div>
                             <div class="pa-error"></div>
                         </div>`).join('')}
                     </div>
                     <div class="pa-foot">
-                        <button type="button" class="pa-btn pa-btn-ghost" data-cancel>Batal</button>
+                        ${key === 'password' ? '' : '<button type="button" class="pa-btn pa-btn-ghost" data-cancel>Batal</button>'}
                         <button type="submit" class="pa-btn pa-btn-primary">${cfg.submit}</button>
                     </div>
                 </form>
@@ -128,7 +98,7 @@
         // menu profil (yang tertutup saat klik di luar) ikut tertutup.
         overlay.addEventListener('click', (e) => e.stopPropagation());
         overlay.querySelector('.pa-close').addEventListener('click', close);
-        overlay.querySelector('[data-cancel]').addEventListener('click', close);
+        overlay.querySelector('[data-cancel]')?.addEventListener('click', close);
 
         overlay.querySelectorAll('.pa-eye').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -140,6 +110,41 @@
         });
         overlay.querySelectorAll('input').forEach((inp) =>
             inp.addEventListener('input', () => setError(overlay, inp.name, '')));
+
+        overlay.querySelector('[data-gen]')?.addEventListener('click', async (e) => {
+            const button = e.currentTarget;
+            button.disabled = true;
+            try {
+                const res = await fetch(cfg.generateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    credentials: 'same-origin',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.password) throw new Error(data.message || 'Password gagal dibuat. Coba lagi.');
+                overlay.querySelector('[name="password"]').value = data.password;
+                setError(overlay, 'password', '');
+                notify('success', 'Password unik berhasil dibuat. Salin atau unduh sebelum menyimpan.');
+            } catch (err) {
+                notify('error', err.message || 'Password gagal dibuat. Coba lagi.');
+            } finally {
+                button.disabled = false;
+            }
+        });
+        overlay.querySelector('[data-copy]')?.addEventListener('click', async () => {
+            const password = overlay.querySelector('[name="password"]').value;
+            if (!password) return notify('error', 'Buat password terlebih dahulu.');
+            try {
+                await navigator.clipboard.writeText(password);
+                notify('success', 'Password disalin.');
+            } catch (e) {
+                notify('error', 'Tidak dapat menyalin password dari browser ini.');
+            }
+        });
 
         makeDraggable(overlay.querySelector('.pa-modal'), overlay.querySelector('.pa-head'));
         overlay.querySelector('form').addEventListener('submit', (e) => {
@@ -211,7 +216,7 @@
         active = overlay;
         requestAnimationFrame(() => {
             overlay.classList.add('is-open');
-            overlay.querySelector('input').focus();
+            (overlay.querySelector('[data-gen]') || overlay.querySelector('input')).focus();
         });
     }
 

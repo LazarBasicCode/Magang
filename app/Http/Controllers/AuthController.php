@@ -10,6 +10,7 @@ use App\Support\ActivityLog;
 use App\Support\SessionRevoker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -36,8 +37,13 @@ class AuthController extends Controller
      */
     public function showLogin(Request $request)
     {
+        $prefill = $request->session()->pull('loginPrefill');
+
         return view('index', [
             'sessionNotice' => SessionRevoker::pullNotice($request->session()->getId()),
+            'loginPrefill' => $prefill
+                ? json_decode(Crypt::decryptString($prefill), true, flags: JSON_THROW_ON_ERROR)
+                : null,
         ]);
     }
 

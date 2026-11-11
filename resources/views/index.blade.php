@@ -493,6 +493,7 @@
             .fill { width: 100%; animation: none !important; }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/page-loader.css') }}?v={{ @filemtime(public_path('css/page-loader.css')) }}">
 </head>
 <body>
 
@@ -843,6 +844,29 @@
     });
 </script>
 <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
+
+{{-- Loading screen transisi login -> dashboard: muncul saat form login dikirim.
+     Kalau login gagal, server memuat ulang halaman ini (dengan toast error) sehingga loader hilang sendiri. --}}
+@include('partials.page-loader')
+<script>
+    // Tampilkan loader dengan fade-in dulu (~350ms), baru kirim form, supaya
+    // transisinya halus dan tidak terpotong saat server membalas cepat.
+    (function () {
+        var form = document.getElementById('loginForm');
+        var sending = false;
+        form.addEventListener('submit', function (e) {
+            if (sending) { e.preventDefault(); return; }
+            if (!window.PageLoader) return;
+            e.preventDefault();
+            sending = true;
+            PageLoader.markLogin();
+            PageLoader.show();
+            setTimeout(function () { form.submit(); }, 380);
+        });
+        // Kembali ke halaman ini lewat Back: izinkan kirim lagi
+        window.addEventListener('pageshow', function () { sending = false; });
+    })();
+</script>
 <script>
     // Kalau halaman login ini dipulihkan dari back-forward cache (mis. user
     // login lalu menekan Back), muat ulang supaya server memutuskan:

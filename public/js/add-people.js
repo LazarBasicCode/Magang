@@ -33,7 +33,7 @@
             pendingTitle: 'NIM dari LPPM yang belum punya akun',
             hasAngkatan: true,
             empty: 'Tidak ada NIM yang menunggu akun. NIM muncul di sini setelah data LPPM Mahasiswa diimpor dengan NIM yang belum terdaftar.',
-            note: 'Nama terisi otomatis dari kolom penulis data LPPM (ubah jika perlu; kosong = isi sendiri). Password awal = nama depan + angkatan (contoh: budi2022); angkatan kosong memakai tahun ' + YEAR + '.',
+            note: 'Nama terisi otomatis dari kolom penulis data LPPM (ubah jika perlu; kosong = isi sendiri). Password acak tepat 6 karakter dibuat dan ditampilkan sekali setelah akun disimpan. Angkatan kosong memakai tahun ' + YEAR + '.',
         },
         dosen: {
             title: 'Tambah Dosen',
@@ -42,7 +42,7 @@
             pendingTitle: 'NIDN dari LPPM yang belum punya akun',
             hasAngkatan: false,
             empty: 'Tidak ada NIDN yang menunggu akun. NIDN muncul di sini setelah data LPPM Dosen diimpor dengan NIDN yang belum terdaftar.',
-            note: 'Nama terisi otomatis dari kolom penulis data LPPM (ubah jika perlu; kosong = isi sendiri). Password awal = nama depan + tahun ' + YEAR + ' (dosen tidak punya angkatan), contoh: budi' + YEAR + '.',
+            note: 'Nama terisi otomatis dari kolom penulis data LPPM (ubah jika perlu; kosong = isi sendiri). Password acak tepat 6 karakter dibuat dan ditampilkan sekali setelah akun disimpan.',
         },
     };
 
@@ -306,7 +306,6 @@
                 email: $('ap-email').value.trim() || null,
                 angkatan: c.hasAngkatan && angkatanManual ? Number(angkatanManual) : null,
                 status: $('ap-status').value || 'aktif',
-                password: $('ap-password').value || null,
             } : null,
             selected,
         };

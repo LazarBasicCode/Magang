@@ -9,7 +9,7 @@ use App\Models\UserNotification;
 use App\Http\Controllers\Concerns\HandlesBulkData;
 use App\Support\DuplicateDetector;
 use App\Support\Csv;
-use App\Support\DefaultPassword;
+use App\Support\RandomAccountPassword;
 use App\Support\SessionRevoker;
 use App\Support\Xlsx;
 use Illuminate\Http\JsonResponse;
@@ -156,12 +156,13 @@ class UserController extends Controller
             return $blocked;
         }
 
-        $user = DB::transaction(function () use ($data) {
+        $password = RandomAccountPassword::generateUnique();
+        $user = DB::transaction(function () use ($data, $password) {
             $user = User::create([
                 'name'     => $data['name'],
                 'nim_nidn' => $data['identifier'] ?? null,
                 'email'    => $data['email'] ?? null,
-                'password' => Hash::make($data['password']),
+                'password' => Hash::make($password),
                 'role'     => $data['role'],
             ]);
 
@@ -173,6 +174,11 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($user),
+            'credentials' => [
+                'nama' => $user->name,
+                'id' => (string) $user->nim_nidn,
+                'password' => $password,
+            ],
             ...DuplicateDetector::warnings($duplicates),
         ]);
     }
@@ -252,10 +258,10 @@ class UserController extends Controller
      * Simpan akun mahasiswa/dosen sekaligus: isian manual (opsional) + baris NIM yang dipilih dari tabel.
      * POST /data-master/users/people
      *   role: mahasiswa|dosen
-     *   manual:   {name, identifier, email?, angkatan?, status?, password?}   (opsional)
+     *   manual:   {name, identifier, email?, angkatan?, status?}               (opsional)
      *   selected: [{id, name, angkatan?}, ...]                                 (opsional)
-     * Role dipaksa sesuai tombol (tidak bisa diubah dari form). Password awal = nama depan + angkatan
-     * (tanpa angkatan = tahun terbaru). Semua-atau-tidak-sama-sekali (satu transaksi).
+     * Role dipaksa sesuai tombol (tidak bisa diubah dari form). Password akun dibuat acak dan dikembalikan
+     * sekali di credentials. Semua-atau-tidak-sama-sekali (satu transaksi).
      */
     public function storePeople(Request $request): JsonResponse
     {
@@ -302,7 +308,6 @@ class UserController extends Controller
                 'manual.email'      => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
                 'manual.angkatan'   => ['nullable', 'integer', 'between:1990,' . $maxYear],
                 'manual.status'     => ['nullable', Rule::in(array_keys($role === 'mahasiswa' ? Mahasiswa::STATUS : Dosen::STATUS))],
-                'manual.password'   => ['nullable', 'string', 'min:6'],
             ], [
                 'manual.name.required'       => 'Nama lengkap wajib diisi.',
                 'manual.identifier.required' => "{$idLabel} wajib diisi karena dipakai untuk login.",
@@ -310,7 +315,6 @@ class UserController extends Controller
                 'manual.email.unique'        => 'Email ini sudah dipakai akun lain.',
                 'manual.angkatan.integer'    => 'Angkatan harus berupa tahun 4 digit (contoh: 2022).',
                 'manual.angkatan.between'    => 'Angkatan harus di antara 1990 dan ' . $maxYear . '.',
-                'manual.password.min'        => 'Password minimal 6 karakter.',
             ])->validate();
         }
 
@@ -352,15 +356,14 @@ class UserController extends Controller
         $similarWarnings = $duplicates['similar'];
 
         // ---- Simpan ----
+        $credentials = [];
         try {
-            $created = DB::transaction(function () use ($role, $manual, $hasManual, $selected, $model, $col) {
+            $created = DB::transaction(function () use ($role, $manual, $hasManual, $selected, $model, $col, &$credentials) {
                 $count = 0;
 
                 if ($hasManual) {
                     $angkatan = $role === 'mahasiswa' ? ((int) $manual->get('angkatan') ?: now()->year) : null;
-                    $password = filled($manual->get('password'))
-                        ? $manual->get('password')
-                        : DefaultPassword::make($manual->get('name'), $angkatan);
+                    $password = RandomAccountPassword::generateUnique();
 
                     $user = User::create([
                         'name'     => $manual->get('name'),
@@ -373,6 +376,7 @@ class UserController extends Controller
                         'angkatan' => $angkatan,
                         'status'   => $manual->get('status') ?: 'aktif',
                     ]);
+                    $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
                     $count++;
                 }
 
@@ -383,12 +387,14 @@ class UserController extends Controller
                         ? ((int) ($row['angkatan'] ?? 0) ?: ((int) $c->angkatan ?: now()->year))
                         : null;
 
+                    $password = RandomAccountPassword::generateUnique();
                     $user = User::create([
                         'name'     => trim($row['name']),
                         'nim_nidn' => $c->{$col},
-                        'password' => Hash::make(DefaultPassword::make($row['name'], $angkatan)),
+                        'password' => Hash::make($password),
                         'role'     => $role,
                     ]);
+                    $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
 
                     $c->user_id = $user->id;
                     if ($role === 'mahasiswa') {
@@ -416,6 +422,7 @@ class UserController extends Controller
             'role'    => $role,
             'created' => $created,
             'message' => "{$created} akun {$label} berhasil ditambahkan.",
+            'credentials' => $credentials,
             'warnings' => array_slice(array_values(array_unique($similarWarnings)), 0, 5),
             'warning_count' => count(array_unique($similarWarnings)),
         ]);
@@ -456,6 +463,30 @@ class UserController extends Controller
         }
 
         $data = $this->validated($request, isUpdate: true, user: $user);
+
+        if (filled($data['password'] ?? null)) {
+            if (!RandomAccountPassword::isValid($data['password'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password harus memuat huruf besar, huruf kecil, angka, dan simbol.',
+                    'errors' => ['password' => ['Password harus memuat huruf besar, huruf kecil, angka, dan simbol.']],
+                ], 422);
+            }
+            if (Hash::check($data['password'], $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password baru harus berbeda dari password saat ini.',
+                    'errors' => ['password' => ['Password baru harus berbeda dari password saat ini.']],
+                ], 422);
+            }
+            if (RandomAccountPassword::isUsedByAnotherUser($data['password'], $user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password ini sudah digunakan akun lain.',
+                    'errors' => ['password' => ['Password ini sudah digunakan akun lain.']],
+                ], 422);
+            }
+        }
 
         // (3) Admin hanya boleh menempatkan/mempertahankan target sebagai
         // dosen/mahasiswa — mencegah admin "menaikkan" user lain menjadi
@@ -653,14 +684,14 @@ class UserController extends Controller
                 'email'    => ['required' => 'Tidak',          'example' => '',                'width' => 30, 'note' => 'Email pemulihan password (opsional). Kalau diisi harus unik.'],
                 'angkatan' => ['required' => 'Ya (mahasiswa)', 'example' => '2022',            'width' => 12, 'note' => 'Hanya untuk role mahasiswa. Tahun 4 digit (1990–' . $maxYear . '). Kosongkan untuk dosen/admin/superadmin.'],
                 'status'   => ['required' => 'Ya (mhs/dosen)', 'example' => 'aktif',           'width' => 14, 'options' => $statusOptions, 'note' => 'Wajib untuk mahasiswa/dosen (pilihan: ' . implode(' | ', $statusOptions) . '). Kosongkan untuk admin/superadmin.'],
-                'password' => ['required' => 'Ya (akun baru)', 'example' => 'rahasia123',      'width' => 20, 'note' => 'Minimal 6 karakter. Saat edit: kosongkan kalau password tidak diganti.'],
+                'password' => ['required' => 'Tidak',          'example' => '',                'width' => 20, 'note' => 'Akun baru mendapat password acak 6 karakter; saat edit boleh isi tepat 6 karakter untuk mengganti.'],
             ],
             [
                 'Isi data di sheet "' . self::SHEET . '", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
                 'Kolom id: kosongkan untuk akun baru, isi id (dari hasil Download) untuk mengedit akun.',
                 'Kolom angkatan & status: WAJIB untuk mahasiswa/dosen, kosongkan untuk admin/superadmin.',
                 'Jangan mengubah judul kolom. Simpan tetap sebagai .xlsx.',
-                'File ini berisi password asli: hapus file setelah diunggah dan jangan dibagikan.',
+                'Password akun baru dibuat acak dan ditampilkan satu kali setelah unggahan berhasil.',
                 'Maksimal ' . $this->bulkMaxRows() . ' baris per unggahan, ukuran file maksimal 2 MB.',
             ]
         );
@@ -725,6 +756,7 @@ class UserController extends Controller
         $errors = [];
         $seenNim = [];
         $seenEmail = [];
+        $seenPasswords = [];
 
         foreach ($rows as $row) {
             $d = $row['data'];
@@ -746,7 +778,7 @@ class UserController extends Controller
                 'email'    => strtolower(trim((string) ($d['email'] ?? ''))) ?: null,
                 'angkatan' => trim((string) ($d['angkatan'] ?? '')),
                 'status'   => Csv::normalizeKey($d['status'] ?? ''),
-                'password' => (string) ($d['password'] ?? ''),
+                'password' => $existing ? (string) ($d['password'] ?? '') : '',
             ];
 
             // Aturan angkatan/status mengikuti role di baris itu.
@@ -768,7 +800,7 @@ class UserController extends Controller
                 'email'    => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($existing?->id)],
                 'angkatan' => $angkatanRule,
                 'status'   => $statusRule,
-                'password' => [$existing ? 'nullable' : 'required', 'string', 'min:6'],
+                'password' => ['nullable', 'string', 'size:' . RandomAccountPassword::LENGTH],
             ], [
                 'required'          => ':attribute wajib diisi.',
                 'in'                => ':attribute tidak valid atau tidak boleh Anda buat (boleh: ' . implode(', ', $roles) . ').',
@@ -787,6 +819,20 @@ class UserController extends Controller
             $rowErrors = array_merge($rowErrors, $validator->errors()->all());
 
             if ($existing) {
+                if ($payload['password'] !== '' && strlen($payload['password']) === RandomAccountPassword::LENGTH) {
+                    if (!RandomAccountPassword::isValid($payload['password'])) {
+                        $rowErrors[] = 'Password harus memuat huruf besar, huruf kecil, angka, dan simbol.';
+                    } elseif (Hash::check($payload['password'], $existing->password)) {
+                        $rowErrors[] = 'Password baru harus berbeda dari password saat ini.';
+                    } elseif (RandomAccountPassword::isUsedByAnotherUser($payload['password'], $existing->id)) {
+                        $rowErrors[] = 'Password ini sudah digunakan akun lain.';
+                    }
+                    if (isset($seenPasswords[$payload['password']])) {
+                        $rowErrors[] = "Password sama dengan password pada baris {$seenPasswords[$payload['password']]}.";
+                    } else {
+                        $seenPasswords[$payload['password']] = $row['line'];
+                    }
+                }
                 if ($payload['role'] !== '' && $payload['role'] !== $existing->role) {
                     $rowErrors[] = "Role tidak bisa diubah lewat unggah massal (role saat ini: {$existing->role}). Ubah lewat form edit.";
                 }
@@ -835,8 +881,9 @@ class UserController extends Controller
 
         $created = $updated = $unchanged = 0;
         $notify = [];
+        $credentials = [];
 
-        DB::transaction(function () use ($plan, $actor, $request, &$created, &$updated, &$unchanged, &$notify) {
+        DB::transaction(function () use ($plan, $actor, $request, &$created, &$updated, &$unchanged, &$notify, &$credentials) {
             foreach ($plan as $p) {
                 $pl = $p['payload'];
 
@@ -872,13 +919,15 @@ class UserController extends Controller
                         $unchanged++;
                     }
                 } else {
+                    $password = RandomAccountPassword::generateUnique();
                     $user = User::create([
                         'name'     => $pl['name'],
                         'nim_nidn' => $pl['nim_nidn'],
                         'email'    => $pl['email'],
-                        'password' => Hash::make($pl['password']),
+                        'password' => Hash::make($password),
                         'role'     => $pl['role'],
                     ]);
+                    $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
                     $this->syncIdentifier($user, $pl['role'], $pl['nim_nidn'], [
                         'angkatan' => $pl['angkatan'] !== '' ? $pl['angkatan'] : null,
                         'status'   => $pl['status']   !== '' ? $pl['status']   : null,
@@ -897,12 +946,13 @@ class UserController extends Controller
             ]);
         }
 
-        return $this->bulkSuccess(
+        $response = $this->bulkSuccess(
             $created,
             $updated,
             $unchanged,
             warnings: array_values(array_unique($similarWarnings))
         );
+        return response()->json([...$response->getData(true), 'credentials' => $credentials]);
     }
 
     private function validated(Request $request, bool $isUpdate, ?User $user = null): array
@@ -931,7 +981,7 @@ class UserController extends Controller
             'dosen_wali_id' => $role === 'mahasiswa' ? ['nullable', 'integer', 'exists:dosen,id'] : ['nullable'],
             'name'       => ['required', 'string', 'max:255'],
             'role'       => ['required', 'in:superadmin,admin,dosen,mahasiswa'],
-            'password'   => [$isUpdate ? 'nullable' : 'required', 'string', 'min:6'],
+            'password'   => $isUpdate ? ['nullable', 'string', 'size:' . RandomAccountPassword::LENGTH] : ['prohibited'],
             // Wajib untuk SEMUA role: kolom ini dipakai sebagai username admin/
             // superadmin dan NIM/NIDN mahasiswa/dosen. Nama akun juga bisa
             // dipakai admin/superadmin untuk login. Harus unik supaya login
@@ -952,6 +1002,8 @@ class UserController extends Controller
             'angkatan.between'  => 'Angkatan harus di antara 1990 dan ' . $maxYear . '.',
             'status.required'   => 'Status wajib dipilih.',
             'status.in'         => 'Status yang dipilih tidak valid.',
+            'password.size'     => 'Password harus tepat 6 karakter.',
+            'password.prohibited' => 'Password akun baru dibuat otomatis oleh sistem.',
             'dosen_wali_id.exists' => 'Dosen wali yang dipilih tidak ditemukan.',
         ]);
     }

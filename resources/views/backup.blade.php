@@ -201,6 +201,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <script src="{{ asset('js/script.js') }}"></script>
+    <script src="{{ asset('js/notification-sound.js') }}?v={{ @filemtime(public_path('js/notification-sound.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script>
         @if(session('backup_status')) Toast.show({ type: 'success', message: @json(session('backup_status')) }); @endif

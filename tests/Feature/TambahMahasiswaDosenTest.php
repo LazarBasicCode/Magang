@@ -7,7 +7,6 @@ use App\Models\Kemahasiswaan;
 use App\Models\Mahasiswa;
 use App\Models\Rekognisi;
 use App\Models\User;
-use App\Support\RandomAccountPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -83,7 +82,7 @@ class TambahMahasiswaDosenTest extends TestCase
         $this->assertNull($rows['999012']['hint']);
     }
 
-    public function test_simpan_baris_terpilih_membuat_akun_dengan_password_acak_unik(): void
+    public function test_simpan_baris_terpilih_membuat_akun_dengan_password_default_nim(): void
     {
         $a = Mahasiswa::create(['nim' => '999001']);
         $b = Mahasiswa::create(['nim' => '999002']);
@@ -94,37 +93,35 @@ class TambahMahasiswaDosenTest extends TestCase
                 ['id' => $a->id, 'name' => 'Budi Santoso', 'angkatan' => 2022],
                 ['id' => $b->id, 'name' => 'Sari Dewi'], // tanpa angkatan -> tahun terbaru
             ],
-        ])->assertOk()->assertJson(['success' => true, 'created' => 2])->assertJsonCount(2, 'credentials');
-        $credentials = collect($response->json('credentials'))->keyBy('id');
+        ])->assertOk()->assertJson(['success' => true, 'created' => 2])->assertJsonCount(0, 'credentials');
 
+        // Password awal = NIM masing-masing, dan wajib diganti saat pertama kali masuk.
         $ua = User::where('nim_nidn', '999001')->first();
         $this->assertSame('mahasiswa', $ua->role);
-        $this->assertTrue(RandomAccountPassword::isValid($credentials['999001']['password']));
-        $this->assertTrue(Hash::check($credentials['999001']['password'], $ua->password));
+        $this->assertTrue(Hash::check('999001', $ua->password));
+        $this->assertTrue($ua->must_change_password);
         $this->assertSame($ua->id, $a->fresh()->user_id);
         $this->assertSame(2022, (int) $a->fresh()->angkatan);
 
         $ub = User::where('nim_nidn', '999002')->first();
-        $this->assertTrue(RandomAccountPassword::isValid($credentials['999002']['password']));
-        $this->assertTrue(Hash::check($credentials['999002']['password'], $ub->password));
-        $this->assertNotSame($credentials['999001']['password'], $credentials['999002']['password']);
+        $this->assertTrue(Hash::check('999002', $ub->password));
+        $this->assertTrue($ub->must_change_password);
         $this->assertSame(now()->year, (int) $b->fresh()->angkatan);
     }
 
-    public function test_tambah_dosen_menghasilkan_password_acak(): void
+    public function test_tambah_dosen_memakai_nidn_sebagai_password_default(): void
     {
         $d = Dosen::create(['nidn' => '0712048901']);
 
         $response = $this->actingAs($this->admin())->postJson('/data-master/users/people', [
             'role' => 'dosen',
             'selected' => [['id' => $d->id, 'name' => 'Dr. Ani Lestari']],
-        ])->assertOk()->assertJsonCount(1, 'credentials');
+        ])->assertOk()->assertJsonCount(0, 'credentials');
 
         $u = User::where('nim_nidn', '0712048901')->first();
         $this->assertSame('dosen', $u->role);
-        $password = $response->json('credentials.0.password');
-        $this->assertTrue(RandomAccountPassword::isValid($password));
-        $this->assertTrue(Hash::check($password, $u->password));
+        $this->assertTrue(Hash::check('0712048901', $u->password));
+        $this->assertTrue($u->must_change_password);
         $this->assertSame($u->id, $d->fresh()->user_id);
     }
 
@@ -132,15 +129,15 @@ class TambahMahasiswaDosenTest extends TestCase
     {
         $calon = Mahasiswa::create(['nim' => '999050']);
 
-        $response = $this->actingAs($this->admin())->postJson('/data-master/users/people', [
+        $this->actingAs($this->admin())->postJson('/data-master/users/people', [
             'role' => 'mahasiswa',
             'manual' => ['name' => 'Rina Putri', 'identifier' => '999050', 'angkatan' => 2023, 'status' => 'aktif'],
-        ])->assertOk()->assertJsonCount(1, 'credentials');
+        ])->assertOk()->assertJsonCount(0, 'credentials');
 
         $this->assertSame(1, Mahasiswa::where('nim', '999050')->count());
         $user = User::where('nim_nidn', '999050')->first();
         $this->assertSame($user->id, $calon->fresh()->user_id);
-        $this->assertTrue(Hash::check($response->json('credentials.0.password'), $user->password));
+        $this->assertTrue(Hash::check('999050', $user->password));
     }
 
     public function test_tambah_pengguna_biasa_dengan_nim_calon_juga_menyambung(): void
@@ -303,18 +300,18 @@ class TambahMahasiswaDosenTest extends TestCase
         $csv = "nim_nidn,nama,role,angkatan,status,password\n"
              ."999093,Siti Maharan,mahasiswa,2022,aktif,secret123\n";
 
-        $response = $this->actingAs($admin)->post('/data-master/users/import', [
+        $this->actingAs($admin)->post('/data-master/users/import', [
             'file' => UploadedFile::fake()->createWithContent('users.csv', $csv),
         ], ['Accept' => 'application/json'])
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonCount(1, 'warnings')
-            ->assertJsonCount(1, 'credentials');
+            ->assertJsonCount(0, 'credentials');
 
+        // Akun baru mahasiswa dari impor: password awal = NIM, wajib diganti.
         $created = User::where('nim_nidn', '999093')->firstOrFail();
-        $password = $response->json('credentials.0.password');
-        $this->assertTrue(RandomAccountPassword::isValid($password));
-        $this->assertTrue(Hash::check($password, $created->password));
+        $this->assertTrue(Hash::check('999093', $created->password));
+        $this->assertTrue($created->must_change_password);
     }
 
     public function test_edit_akun_meminta_konfirmasi_nama_persis_sama(): void

@@ -45,3 +45,43 @@
 @media (max-width: 480px) {
     #userForm { grid-template-columns: 1fr; }
 }
+
+
+/* ---- Tombol "Reset ke password default" (hanya edit mahasiswa/dosen) ---- */
+#userForm > .reset-default-field { order: 8; }   /* sama dengan .modal-error; field ini lebih dulu di DOM, jadi tampil di atasnya */
+.btn-reset-default {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    padding: 10px 14px;
+    border: 1.5px dashed var(--warning, #d97706);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--warning, #b45309);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, color .2s, border-color .2s, transform .15s;
+}
+.btn-reset-default:hover { background: rgba(217, 119, 6, .08); }
+.btn-reset-default:active { transform: scale(.98); }
+.btn-reset-default .material-symbols-outlined { font-size: 20px; transition: transform .45s cubic-bezier(.34, 1.56, .64, 1); }
+.btn-reset-default:hover .material-symbols-outlined { transform: rotate(-25deg) scale(1.1); }
+.btn-reset-default.is-armed {
+    border-style: solid;
+    background: var(--warning, #d97706);
+    color: #fff;
+    animation: resetArmedPulse 1s ease-in-out infinite;
+}
+.btn-reset-default.is-loading { opacity: .75; cursor: progress; }
+.btn-reset-default.is-loading .material-symbols-outlined { animation: resetSpin .8s linear infinite; }
+@keyframes resetArmedPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, .45); }
+    50%      { box-shadow: 0 0 0 7px rgba(217, 119, 6, 0); }
+}
+@keyframes resetSpin { to { transform: rotate(-360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .btn-reset-default, .btn-reset-default * { animation: none !important; transition: none !important; }
+}

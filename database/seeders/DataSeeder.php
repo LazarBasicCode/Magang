@@ -44,7 +44,9 @@ class DataSeeder extends Seeder
             $userId = DB::table('users')->insertGetId([
                 'name'       => $m['name'],
                 'email'      => $m['email'],
-                'password'   => Hash::make('password123'),
+                'nim_nidn'   => $m['nim'],
+                'password'   => Hash::make($m['nim']), // password awal = NIM, wajib diganti saat pertama masuk
+                'must_change_password' => true,
                 'role'       => 'mahasiswa',
                 'created_at' => $now,
                 'updated_at' => $now,

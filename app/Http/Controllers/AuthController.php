@@ -331,6 +331,8 @@ class AuthController extends Controller
             function (User $user, string $password) {
                 $user->forceFill([
                     'password'       => Hash::make($password),
+                    // Password dipilih sendiri lewat tautan reset -> bukan password default lagi.
+                    'must_change_password' => false,
                     // Sekalian di-random ulang, supaya cookie "remember me"
                     // lama (kalau ada) juga ikut tidak berlaku lagi.
                     'remember_token' => Str::random(60),

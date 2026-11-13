@@ -357,6 +357,16 @@
                 </div>
             </div>
 
+            {{-- Reset ke password default (NIM/NIDN): hanya tampil saat mengedit mahasiswa/dosen --}}
+            <div class="field reset-default-field" id="field-form-reset" hidden>
+                <span class="field-label">Reset password</span>
+                <button type="button" class="btn-reset-default" id="btnResetDefault">
+                    <span class="material-symbols-outlined">lock_reset</span>
+                    <span id="btnResetDefaultLabel">Reset ke password default</span>
+                </button>
+                <p class="field-hint" id="resetDefaultHint">Password dikembalikan ke NIM/NIDN. Pengguna wajib menggantinya lewat pop-up saat masuk ke dashboard.</p>
+            </div>
+
             <div class="modal-error" id="modalError" hidden></div>
 
             <div class="modal-footer">
@@ -407,7 +417,7 @@
                         <div class="field-control"><input id="ap-email" type="email" placeholder="Opsional" autocomplete="off"></div>
                     </div>
                     <div class="field">
-                        <p class="field-hint">Password acak tepat 6 karakter dibuat otomatis dan ditampilkan sekali setelah akun disimpan.</p>
+                        <p class="field-hint">Password awal akun = NIM/NIDN. Pengguna wajib menggantinya lewat pop-up saat pertama kali masuk ke dashboard.</p>
                     </div>
                 </div>
             </section>
@@ -847,6 +857,66 @@
             });
         });
 
+        // ---- Reset ke password default (konfirmasi dua klik, tanpa dialog bawaan browser) ----
+        const resetDefaultField = document.getElementById('field-form-reset');
+        const resetDefaultBtn = document.getElementById('btnResetDefault');
+        const resetDefaultLabel = document.getElementById('btnResetDefaultLabel');
+        const resetDefaultHint = document.getElementById('resetDefaultHint');
+        const resetDefaultState = {
+            timer: null,
+            armed: false,
+            reset() {
+                clearTimeout(this.timer);
+                this.armed = false;
+                resetDefaultBtn.classList.remove('is-armed', 'is-loading');
+                resetDefaultBtn.disabled = false;
+            },
+        };
+
+        resetDefaultBtn?.addEventListener('click', async () => {
+            const id = document.getElementById('form-id').value;
+            if (!id) return;
+
+            if (!resetDefaultState.armed) {
+                resetDefaultState.armed = true;
+                resetDefaultBtn.classList.add('is-armed');
+                resetDefaultLabel.textContent = 'Klik lagi untuk konfirmasi reset';
+                resetDefaultState.timer = setTimeout(() => {
+                    resetDefaultState.reset();
+                    resetDefaultLabel.textContent = 'Reset ke password default';
+                }, 4000);
+                return;
+            }
+
+            clearTimeout(resetDefaultState.timer);
+            resetDefaultBtn.disabled = true;
+            resetDefaultBtn.classList.add('is-loading');
+            resetDefaultLabel.textContent = 'Mereset…';
+            try {
+                const res = await fetch(`/data-master/users/${id}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    credentials: 'same-origin',
+                });
+                const result = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    Toast.show({ type: 'error', title: 'Gagal mereset', message: result.message || 'Terjadi kesalahan, coba lagi.' });
+                    return;
+                }
+                Toast.show({ type: 'success', title: 'Password direset', message: result.message });
+                closeModal();
+            } catch (err) {
+                Toast.show({ type: 'error', title: 'Gagal mereset', message: 'Tidak bisa terhubung ke server. Coba lagi.' });
+            } finally {
+                resetDefaultState.reset();
+                resetDefaultLabel.textContent = 'Reset ke password default';
+            }
+        });
+
         function openModal(mode, data = {}) {
             modalForm.reset();
             modalError.hidden = true;
@@ -881,6 +951,12 @@
             document.getElementById('form-password').value = '';
             document.getElementById('field-form-password').hidden = mode !== 'edit';
             document.getElementById('form-password').required = false;
+
+            // Reset ke default hanya untuk akun mahasiswa/dosen yang sudah ada.
+            resetDefaultState.reset();
+            resetDefaultField.hidden = !(mode === 'edit' && data.id && (role === 'mahasiswa' || role === 'dosen'));
+            resetDefaultLabel.textContent = 'Reset ke password default';
+            resetDefaultHint.textContent = `Password dikembalikan ke ${role === 'dosen' ? 'NIDN' : 'NIM'}. Pengguna wajib menggantinya lewat pop-up saat masuk ke dashboard.`;
 
             openModalBase();
         }
@@ -1013,6 +1089,12 @@
                 });
                 if (!id && result.credentials && window.SIDACredentials) {
                     window.SIDACredentials.show([result.credentials]);
+                } else if (!id && result.default_password) {
+                    Toast.show({
+                        type: 'info',
+                        title: 'Password awal = NIM/NIDN',
+                        message: 'Pengguna wajib menggantinya lewat pop-up saat pertama kali masuk.',
+                    });
                 }
                 if (result.warnings?.length) {
                     const warningCount = result.warning_count || result.warnings.length;

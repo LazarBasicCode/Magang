@@ -7,6 +7,7 @@ use App\Models\Mahasiswa;
 use App\Models\Dosen;
 use App\Models\UserNotification;
 use App\Http\Controllers\Concerns\HandlesBulkData;
+use App\Support\DefaultPassword;
 use App\Support\DuplicateDetector;
 use App\Support\Csv;
 use App\Support\RandomAccountPassword;
@@ -156,14 +157,17 @@ class UserController extends Controller
             return $blocked;
         }
 
-        $password = RandomAccountPassword::generateUnique();
-        $user = DB::transaction(function () use ($data, $password) {
+        // Mahasiswa/dosen: password awal = NIM/NIDN, wajib diganti saat pertama kali masuk.
+        // Admin/superadmin: tetap password acak 6 karakter yang ditampilkan sekali.
+        [$password, $isDefault] = $this->initialPassword($data['role'], $data['identifier'] ?? null);
+        $user = DB::transaction(function () use ($data, $password, $isDefault) {
             $user = User::create([
                 'name'     => $data['name'],
                 'nim_nidn' => $data['identifier'] ?? null,
                 'email'    => $data['email'] ?? null,
                 'password' => Hash::make($password),
                 'role'     => $data['role'],
+                'must_change_password' => $isDefault,
             ]);
 
             $this->syncIdentifier($user, $data['role'], $data['identifier'] ?? null, $data);
@@ -174,11 +178,13 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'data'    => $this->format($user),
-            'credentials' => [
+            // Password default (NIM/NIDN) tidak perlu ditampilkan: cukup diberi tahu lewat 'default_password'.
+            'credentials' => $isDefault ? null : [
                 'nama' => $user->name,
                 'id' => (string) $user->nim_nidn,
                 'password' => $password,
             ],
+            'default_password' => $isDefault,
             ...DuplicateDetector::warnings($duplicates),
         ]);
     }
@@ -363,7 +369,7 @@ class UserController extends Controller
 
                 if ($hasManual) {
                     $angkatan = $role === 'mahasiswa' ? ((int) $manual->get('angkatan') ?: now()->year) : null;
-                    $password = RandomAccountPassword::generateUnique();
+                    [$password, $isDefault] = $this->initialPassword($role, (string) $manual->get('identifier'));
 
                     $user = User::create([
                         'name'     => $manual->get('name'),
@@ -371,12 +377,15 @@ class UserController extends Controller
                         'email'    => $manual->get('email') ?: null,
                         'password' => Hash::make($password),
                         'role'     => $role,
+                        'must_change_password' => $isDefault,
                     ]);
                     $this->syncIdentifier($user, $role, $manual->get('identifier'), [
                         'angkatan' => $angkatan,
                         'status'   => $manual->get('status') ?: 'aktif',
                     ]);
-                    $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
+                    if (! $isDefault) {
+                        $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
+                    }
                     $count++;
                 }
 
@@ -387,14 +396,17 @@ class UserController extends Controller
                         ? ((int) ($row['angkatan'] ?? 0) ?: ((int) $c->angkatan ?: now()->year))
                         : null;
 
-                    $password = RandomAccountPassword::generateUnique();
+                    [$password, $isDefault] = $this->initialPassword($role, (string) $c->{$col});
                     $user = User::create([
                         'name'     => trim($row['name']),
                         'nim_nidn' => $c->{$col},
                         'password' => Hash::make($password),
                         'role'     => $role,
+                        'must_change_password' => $isDefault,
                     ]);
-                    $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
+                    if (! $isDefault) {
+                        $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
+                    }
 
                     $c->user_id = $user->id;
                     if ($role === 'mahasiswa') {
@@ -421,11 +433,83 @@ class UserController extends Controller
             'success' => true,
             'role'    => $role,
             'created' => $created,
-            'message' => "{$created} akun {$label} berhasil ditambahkan.",
+            'message' => "{$created} akun {$label} berhasil ditambahkan. Password awal = {$idLabel} masing-masing; wajib diganti saat pertama kali masuk.",
             'credentials' => $credentials,
             'warnings' => array_slice(array_values(array_unique($similarWarnings)), 0, 5),
             'warning_count' => count(array_unique($similarWarnings)),
         ]);
+    }
+
+    /**
+     * Reset password mahasiswa/dosen ke default (= NIM/NIDN). Akun ditandai wajib ganti password,
+     * sehingga pop-up ganti password muncul di dashboard pada login berikutnya, dan semua sesi
+     * akun itu dikeluarkan. POST /data-master/users/{user}/reset-password
+     */
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $actor = $request->user();
+
+        if ($actor->id === $user->id || ! $actor->canManageTargetUser($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak untuk mereset password pengguna ini.',
+            ], 403);
+        }
+
+        if (! DefaultPassword::appliesTo($user->role)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reset ke password default hanya untuk akun Mahasiswa dan Dosen.',
+            ], 422);
+        }
+
+        if (! filled($user->nim_nidn)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun ini belum punya NIM/NIDN, jadi password default tidak bisa dibuat.',
+            ], 422);
+        }
+
+        $idLabel = $user->role === 'dosen' ? 'NIDN' : 'NIM';
+
+        DB::transaction(function () use ($user) {
+            $user->forceFill([
+                'password' => Hash::make(DefaultPassword::forIdentifier((string) $user->nim_nidn)),
+                'must_change_password' => true,
+            ])->save();
+
+            SessionRevoker::revoke($user, SessionRevoker::PASSWORD_ADMIN);
+        });
+
+        try {
+            UserNotification::send($user->id, 'password_reset_default', [
+                'title'       => 'Password akun Anda direset',
+                'description' => "Direset ke default oleh {$actor->name} ({$actor->role}). Masuk dengan {$idLabel} sebagai password, lalu buat password baru.",
+                'data'        => ['actor_id' => $actor->id, 'actor_name' => $actor->name],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Password {$user->name} direset ke default ({$idLabel}). Wajib diganti saat login berikutnya.",
+        ]);
+    }
+
+    /**
+     * Password awal akun baru: mahasiswa/dosen memakai NIM/NIDN-nya (wajib ganti saat pertama masuk),
+     * role lain (admin/superadmin) memakai password acak 6 karakter.
+     *
+     * @return array{0: string, 1: bool} [password polos, apakah password default NIM/NIDN]
+     */
+    private function initialPassword(string $role, ?string $identifier): array
+    {
+        if (DefaultPassword::appliesTo($role) && filled($identifier)) {
+            return [DefaultPassword::forIdentifier((string) $identifier), true];
+        }
+
+        return [RandomAccountPassword::generateUnique(), false];
     }
 
     public function update(Request $request, User $user)
@@ -524,6 +608,16 @@ class UserController extends Controller
             $passwordChanged = !empty($data['password']);
             if ($passwordChanged) {
                 $user->password = Hash::make($data['password']);
+                // Admin menetapkan password sendiri -> bukan password default lagi.
+                $user->must_change_password = false;
+            } elseif ($user->must_change_password
+                && DefaultPassword::appliesTo($user->role)
+                && filled($user->nim_nidn)
+                && $user->isDirty('nim_nidn')) {
+                // Akun masih memakai password default tetapi NIM/NIDN-nya dikoreksi:
+                // password default ikut disamakan dengan NIM/NIDN yang baru.
+                $user->password = Hash::make(DefaultPassword::forIdentifier((string) $user->nim_nidn));
+                $passwordChanged = true;
             }
             $user->save();
 
@@ -684,7 +778,7 @@ class UserController extends Controller
                 'email'    => ['required' => 'Tidak',          'example' => '',                'width' => 30, 'note' => 'Email pemulihan password (opsional). Kalau diisi harus unik.'],
                 'angkatan' => ['required' => 'Ya (mahasiswa)', 'example' => '2022',            'width' => 12, 'note' => 'Hanya untuk role mahasiswa. Tahun 4 digit (1990–' . $maxYear . '). Kosongkan untuk dosen/admin/superadmin.'],
                 'status'   => ['required' => 'Ya (mhs/dosen)', 'example' => 'aktif',           'width' => 14, 'options' => $statusOptions, 'note' => 'Wajib untuk mahasiswa/dosen (pilihan: ' . implode(' | ', $statusOptions) . '). Kosongkan untuk admin/superadmin.'],
-                'password' => ['required' => 'Tidak',          'example' => '',                'width' => 20, 'note' => 'Akun baru mendapat password acak 6 karakter; saat edit boleh isi tepat 6 karakter untuk mengganti.'],
+                'password' => ['required' => 'Tidak',          'example' => '',                'width' => 20, 'note' => 'Akun baru mahasiswa/dosen mendapat password default = NIM/NIDN (wajib diganti saat pertama masuk); admin mendapat password acak. Saat edit boleh isi tepat 6 karakter untuk mengganti.'],
             ],
             [
                 'Isi data di sheet "' . self::SHEET . '", mulai dari baris di bawah judul kolom. Baris "# CONTOH" boleh dihapus.',
@@ -895,6 +989,14 @@ class UserController extends Controller
                     $passwordChanged = $pl['password'] !== '';
                     if ($passwordChanged) {
                         $user->password = Hash::make($pl['password']);
+                        $user->must_change_password = false; // password ditetapkan admin, bukan default lagi
+                    } elseif ($user->must_change_password
+                        && DefaultPassword::appliesTo($user->role)
+                        && filled($pl['nim_nidn'])
+                        && $user->isDirty('nim_nidn')) {
+                        // Masih password default tetapi NIM/NIDN dikoreksi: password default ikut disamakan.
+                        $user->password = Hash::make(DefaultPassword::forIdentifier((string) $pl['nim_nidn']));
+                        $passwordChanged = true;
                     }
                     if ($user->isDirty()) {
                         $user->save();
@@ -919,15 +1021,18 @@ class UserController extends Controller
                         $unchanged++;
                     }
                 } else {
-                    $password = RandomAccountPassword::generateUnique();
+                    [$password, $isDefault] = $this->initialPassword($pl['role'], (string) $pl['nim_nidn']);
                     $user = User::create([
                         'name'     => $pl['name'],
                         'nim_nidn' => $pl['nim_nidn'],
                         'email'    => $pl['email'],
                         'password' => Hash::make($password),
                         'role'     => $pl['role'],
+                        'must_change_password' => $isDefault,
                     ]);
-                    $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
+                    if (! $isDefault) {
+                        $credentials[] = ['nama' => $user->name, 'id' => (string) $user->nim_nidn, 'password' => $password];
+                    }
                     $this->syncIdentifier($user, $pl['role'], $pl['nim_nidn'], [
                         'angkatan' => $pl['angkatan'] !== '' ? $pl['angkatan'] : null,
                         'status'   => $pl['status']   !== '' ? $pl['status']   : null,

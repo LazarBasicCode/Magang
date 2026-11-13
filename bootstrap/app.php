@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'menu.access' => \App\Http\Middleware\EnsureMenuAccess::class,
             'log.activity' => \App\Http\Middleware\LogActivity::class,
+            'force.password' => \App\Http\Middleware\ForcePasswordChange::class,
         ]);
 
         // Pengguna yang SUDAH login dan mencoba membuka route khusus tamu

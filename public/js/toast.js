@@ -20,14 +20,23 @@
     let container = null;
 
     function getContainer() {
-        if (!container) {
+        // Buat ulang bila container belum ada ATAU sudah terlepas dari DOM (mis. body diganti),
+        // kalau tidak toast ditambahkan ke elemen yang tak terlihat dan terasa "tidak muncul".
+        if (!container || !container.isConnected) {
             container = document.createElement('div');
             container.className = 'toast-container';
             container.setAttribute('aria-live', 'polite');
-            document.body.appendChild(container);
+            (document.body || document.documentElement).appendChild(container);
         }
         return container;
     }
+
+    const DEFAULT_MESSAGE = {
+        success: 'Berhasil.',
+        info: 'Informasi.',
+        warning: 'Perhatian.',
+        error: 'Terjadi kesalahan. Coba lagi.',
+    };
 
     /**
      * FLIP: catat posisi semua toast yang sedang tampil SEBELUM DOM berubah,
@@ -65,7 +74,7 @@
                     el.classList.remove('is-shifting', 'is-blur-pulse');
                     el.style.transition = '';
                     el.style.transform = '';
-                }, 340);
+                }, 220);
             });
         });
     }
@@ -94,7 +103,9 @@
     }
 
     function show({ type = 'info', title = '', message = '', duration = DURATION, sound: withSound = true, onClick = null } = {}) {
-        if (!message && !title) return null;
+        // Sebelumnya toast DIBUANG diam-diam kalau pesan kosong (mis. respons server tanpa `message`).
+        // Sekarang tetap tampil dengan pesan bawaan sesuai tipe.
+        if (!message && !title) message = DEFAULT_MESSAGE[type] || DEFAULT_MESSAGE.info;
 
         const cont = getContainer();
         const oldRects = captureRects();
@@ -134,10 +145,12 @@
 
         playShiftAnimation(oldRects);
 
-        if (withSound) window.NotificationSound?.play(type);
-
-        // Auto-dismiss: toast hilang sendiri setelah `duration` ms.
+        // Auto-dismiss dipasang DULU, sebelum suara, supaya error audio tidak bisa membuat toast menggantung.
         el._toastTimer = setTimeout(() => dismiss(el), duration);
+
+        if (withSound) {
+            try { window.NotificationSound?.play(type); } catch (e) { /* suara opsional */ }
+        }
 
         return el;
     }

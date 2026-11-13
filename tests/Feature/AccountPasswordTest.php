@@ -84,7 +84,7 @@ class AccountPasswordTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_new_data_master_account_receives_a_unique_random_password(): void
+    public function test_new_data_master_student_account_uses_nim_as_default_password(): void
     {
         $superadmin = $this->makeUser('root-account', 'Root Account', 'superadmin');
 
@@ -96,10 +96,31 @@ class AccountPasswordTest extends TestCase
             'status' => 'aktif',
         ]);
 
+        $response->assertOk()->assertJson(['default_password' => true]);
+        $this->assertNull($response->json('credentials'));
+
+        $user = User::where('nim_nidn', '233011009')->firstOrFail();
+        $this->assertTrue(Hash::check('233011009', $user->password));
+        $this->assertTrue($user->must_change_password);
+    }
+
+    public function test_new_data_master_admin_account_still_receives_a_random_password(): void
+    {
+        $superadmin = $this->makeUser('root-account', 'Root Account', 'superadmin');
+
+        $response = $this->actingAs($superadmin)->postJson('/data-master/users', [
+            'name' => 'Admin Baru',
+            'role' => 'admin',
+            'identifier' => 'admin-baru',
+        ]);
+
         $response->assertOk();
         $password = $response->json('credentials.password');
         $this->assertSame(6, strlen($password));
-        $this->assertTrue(Hash::check($password, User::where('nim_nidn', '233011009')->firstOrFail()->password));
+
+        $user = User::where('nim_nidn', 'admin-baru')->firstOrFail();
+        $this->assertTrue(Hash::check($password, $user->password));
+        $this->assertFalse($user->must_change_password);
     }
 
     private function makeUser(string $identifier, string $name, string $role): User

@@ -70,7 +70,11 @@ class AccountController extends Controller
         // supaya orang lain yang sempat masuk tidak bisa terus memakai akun. Perangkat lain melihat
         // pemberitahuan di halaman login (SessionRevoker); perangkat ini diarahkan ke login oleh JS.
         DB::transaction(function () use ($user, $data, $request) {
-            $user->forceFill(['password' => Hash::make($data['password'])])->save();
+            // must_change_password dimatikan: password default (NIM/NIDN) sudah diganti, pop-up wajib ganti tidak muncul lagi.
+            $user->forceFill([
+                'password' => Hash::make($data['password']),
+                'must_change_password' => false,
+            ])->save();
             SessionRevoker::revoke($user, SessionRevoker::PASSWORD_CHANGED);
             Auth::guard('web')->logout();
             $request->session()->invalidate();

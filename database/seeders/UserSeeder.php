@@ -22,14 +22,14 @@ class UserSeeder extends Seeder
         // 2. Akun Mahasiswa
         $mahasiswa = User::firstOrCreate(
             ['role' => 'mahasiswa', 'nim_nidn' => '222011005'],
-            ['name' => 'Fauzi', 'password' => Hash::make('password123')]
+            ['name' => 'Fauzi', 'password' => Hash::make('222011005'), 'must_change_password' => true] // password awal = NIM
         );
         $this->ensureMahasiswaProfile($mahasiswa);
 
         // 3. Akun Dosen
         $dosen = User::firstOrCreate(
             ['role' => 'dosen', 'nim_nidn' => '0712048901'],
-            ['name' => 'Budi', 'password' => Hash::make('password123')]
+            ['name' => 'Budi', 'password' => Hash::make('0712048901'), 'must_change_password' => true] // password awal = NIDN
         );
         $this->ensureDosenProfile($dosen);
     }

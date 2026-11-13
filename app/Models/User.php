@@ -18,11 +18,23 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'must_change_password',
     ];
 
     protected $casts = [
-        'notification_prefs' => 'array',
+        'notification_prefs'   => 'array',
+        'must_change_password' => 'boolean',
     ];
+
+    /**
+     * True kalau akun ini (mahasiswa/dosen) masih memakai password default (NIM/NIDN)
+     * dan wajib menggantinya — dipakai dashboard (pop-up) & middleware ForcePasswordChange.
+     */
+    public function mustChangePassword(): bool
+    {
+        return (bool) $this->must_change_password
+            && in_array($this->role, ['mahasiswa', 'dosen'], true);
+    }
 
     /**
      * Kirim notifikasi reset password memakai template SIDA sendiri

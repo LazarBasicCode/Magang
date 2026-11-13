@@ -45,7 +45,9 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->name('logout');
 
 // Rute yang dilindungi (Hanya bisa diakses jika sudah login)
-Route::middleware(['auth', 'log.activity'])->group(function () {
+// 'force.password': mahasiswa/dosen yang masih memakai password default (NIM/NIDN) hanya bisa
+// membuka dashboard (pop-up wajib ganti password) sampai password diganti.
+Route::middleware(['auth', 'force.password', 'log.activity'])->group(function () {
 
     // ---- Persetujuan pengajuan mahasiswa (mahasiswa -> dosen wali -> superadmin) ----
     // Tidak lewat menu.access: aksesnya ditentukan role di ApprovalController (Prodi; komentar juga bisa dibaca mahasiswa pemilik).
@@ -155,6 +157,9 @@ Route::middleware(['auth', 'log.activity'])->group(function () {
             ->whereIn('type', ['mahasiswa', 'dosen'])->name('data-master.users.calon');
         Route::post('/data-master/users/people', [UserController::class, 'storePeople'])->name('data-master.users.people');
         Route::put('/data-master/users/{user}', [UserController::class, 'update'])->name('data-master.users.update');
+        // Reset password mahasiswa/dosen kembali ke default (NIM/NIDN); wajib ganti saat login berikutnya.
+        Route::post('/data-master/users/{user}/reset-password', [UserController::class, 'resetPassword'])
+            ->whereNumber('user')->name('data-master.users.reset-password');
         Route::delete('/data-master/users/{user}', [UserController::class, 'destroy'])->name('data-master.users.destroy');
     });
 

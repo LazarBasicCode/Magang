@@ -10,7 +10,7 @@
  * toast tiap kali buka halaman.
  */
 (function () {
-    const POLL_INTERVAL = 20000; // 20 detik
+    const POLL_INTERVAL = 5000; // 5 detik (sebelumnya 20 detik -> notifikasi terasa telat)
 
     const dropdown = document.getElementById('notifDropdown');
     const toggleBtn = document.getElementById('notifToggleBtn');
@@ -343,5 +343,26 @@
     window.SIDANotif = { open: openDetailModal, poll, markRead };
 
     poll();
-    setInterval(poll, POLL_INTERVAL);
+    setInterval(() => { if (!document.hidden) poll(); }, POLL_INTERVAL);
+
+    // Segarkan segera saat tab kembali aktif.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+
+    // Setelah aksi apa pun yang mengubah data (POST/PUT/PATCH/DELETE ke server sendiri),
+    // cek notifikasi sebentar lagi, jadi toast-nya muncul cepat, tidak menunggu interval.
+    const origFetch = window.fetch;
+    if (typeof origFetch === 'function' && !window.__sidaFetchPatched) {
+        window.__sidaFetchPatched = true;
+        window.fetch = function (input, init) {
+            const p = origFetch.apply(this, arguments);
+            try {
+                const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+                const url = String(typeof input === 'string' ? input : (input && input.url) || '');
+                if (method !== 'GET' && !/\/notifications(\/|$|\?)/.test(url)) {
+                    p.then(() => setTimeout(poll, 400), () => {});
+                }
+            } catch (e) { /* abaikan */ }
+            return p;
+        };
+    }
 })();

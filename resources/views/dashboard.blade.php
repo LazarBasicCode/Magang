@@ -6,6 +6,8 @@
 --}}
 @php
     $isAdmin   = $role === 'admin';
+    // Mahasiswa/dosen yang masih memakai password default (NIM/NIDN) dipaksa ganti lewat pop-up.
+    $forcePasswordChange = auth()->user()?->mustChangePassword() ?? false;
     $pageTitle = $isAdmin ? 'Dashboard ' . $meta['title'] : 'Dashboard';
 @endphp
 <!DOCTYPE html>
@@ -33,6 +35,9 @@
     @endif
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ @filemtime(public_path('css/dashboard.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/page-loader.css') }}?v={{ @filemtime(public_path('css/page-loader.css')) }}">
+    @if($forcePasswordChange)
+        <link rel="stylesheet" href="{{ asset('css/force-password.css') }}?v={{ @filemtime(public_path('css/force-password.css')) }}">
+    @endif
     <noscript><style>.page-loader{display:none!important}</style></noscript>
     <title>{{ $pageTitle ?? 'Dashboard' }} &middot; SIDA</title>
 </head>
@@ -72,11 +77,18 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="chart-tooltip" id="chartTooltip"></div>
 
+    @if($forcePasswordChange)
+        @include('partials.force-password-modal')
+    @endif
+
     <script src="{{ asset('js/script.js') }}"></script>
     <script src="{{ asset('js/dashboard-charts.js') }}?v={{ @filemtime(public_path('js/dashboard-charts.js')) }}"></script>
     <script src="{{ asset('js/toast.js') }}?v={{ @filemtime(public_path('js/toast.js')) }}"></script>
     <script src="{{ asset('js/profile-account.js') }}?v={{ @filemtime(public_path('js/profile-account.js')) }}"></script>
     <script src="{{ asset('js/notifications.js') }}?v={{ @filemtime(public_path('js/notifications.js')) }}"></script>
+    @if($forcePasswordChange)
+        <script src="{{ asset('js/force-password.js') }}?v={{ @filemtime(public_path('js/force-password.js')) }}"></script>
+    @endif
 </body>
 
 </html>

@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Http;
  * Foto profil (pengguna yang sedang login).
  *
  * Alurnya sengaja sederhana:
- *   1. Browser mengecilkan foto jadi ±256x256 WebP (±20 KB) — public/js/avatar-upload.js.
+ *   1. Pengguna memilih bagian foto yang dipakai (kotak crop persegi); browser memotongnya & mengecilkan jadi
+ *      ±256x256 WebP (±20 KB) — public/js/avatar-upload.js.
  *   2. File kecil itu dikirim ke sini; Laravel meneruskannya ke ImgBB dan menerima LINK gambar.
  *      (Kunci API ada di .env, jadi tidak bocor ke browser.)
  *   3. Hanya link itu yang disimpan di kolom users.avatar_url. Di mana pun foto tampil (header, tabel, profil),

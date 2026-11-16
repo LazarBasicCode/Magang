@@ -106,5 +106,76 @@
 .av-card.is-busy .av-btn:not(.is-primary), .av-card.is-busy .av-x, .av-card.is-busy .av-drop { pointer-events: none; opacity: .55; }
 @keyframes av-rot { to { transform: rotate(360deg); } }
 
+/* ---------- Atur bagian foto (crop) ---------- */
+.av-stage[hidden], .av-cropper[hidden] { display: none; }
+.av-card { transition: width .25s ease; }
+.av-card.is-cropping { width: min(500px, 100%); }
+
+.av-cropper { display: grid; gap: 14px; }
+.av-crop-wrap { display: flex; justify-content: center; }
+.av-crop-wrap { padding: 8px 0; }                 /* ruang agar pegangan di tepi foto tetap bisa digenggam */
+.av-crop-stage {
+    position: relative;                              /* TIDAK overflow:hidden: pegangan sudut keluar sedikit dari foto */
+    touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.av-crop-clip { position: absolute; inset: 0; overflow: hidden; border-radius: 12px; background: #1b1f33; }
+.av-crop-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.av-crop-shade { position: absolute; left: 0; top: 0; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55); will-change: transform; }
+
+/* Kotak crop: garis tepi putih utuh (foto di luar kotak digelapkan oleh .av-crop-shade). */
+.av-crop-box {
+    position: absolute; left: 0; top: 0;
+    box-sizing: border-box;
+    border: 2px solid #fff;                        /* garis tepi: putih, tidak putus */
+    cursor: move; touch-action: none; outline: none;
+    will-change: transform;
+}
+.av-crop-box:focus-visible { box-shadow: 0 0 0 3px var(--primary, #5b5fef); }
+.av-crop-box.is-drag { cursor: grabbing; }
+.av-crop-inner { position: absolute; inset: 0; overflow: hidden; pointer-events: none; filter: drop-shadow(0 0 1px rgba(0, 0, 0, .45)); }
+
+/* Lingkaran di tengah = bagian yang terlihat pada avatar bulat; di luar lingkaran sedikit digelapkan. */
+.av-crop-circle {
+    position: absolute; inset: 0; box-sizing: border-box; border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, .9);
+    box-shadow: 0 0 0 999px rgba(0, 0, 0, .32);
+}
+/* Garis bantu di dalam kotak: putus-putus (aturan sepertiga). */
+.av-gl { position: absolute; display: block; }
+.av-gl-v1, .av-gl-v2 { top: 0; bottom: 0; width: 0; border-left: 1px dashed rgba(255, 255, 255, .85); }
+.av-gl-h1, .av-gl-h2 { left: 0; right: 0; height: 0; border-top: 1px dashed rgba(255, 255, 255, .85); }
+.av-gl-v1 { left: 33.333%; } .av-gl-v2 { left: 66.666%; }
+.av-gl-h1 { top: 33.333%; }  .av-gl-h2 { top: 66.666%; }
+
+/* Pegangan di empat sudut (area sentuh dibuat lebih besar dari tampilannya). */
+.av-handle {
+    position: absolute; width: 14px; height: 14px; margin: -8px;
+    border-radius: 4px; background: #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .25), 0 2px 6px rgba(0, 0, 0, .35);
+    transition: transform .12s;
+}
+.av-handle::before { content: ""; position: absolute; inset: -12px; }
+.av-handle:hover, .av-crop-box.is-resizing .av-handle { transform: scale(1.2); }
+.av-handle[data-h="nw"] { left: 0; top: 0; cursor: nwse-resize; }
+.av-handle[data-h="se"] { right: 0; bottom: 0; cursor: nwse-resize; }
+.av-handle[data-h="ne"] { right: 0; top: 0; cursor: nesw-resize; }
+.av-handle[data-h="sw"] { left: 0; bottom: 0; cursor: nesw-resize; }
+
+.av-crop-foot { display: flex; align-items: center; gap: 12px; }
+.av-live {
+    flex: none; width: 64px; height: 64px; border-radius: 50%;
+    background: var(--canvas, #eceef8);
+    box-shadow: 0 0 0 3px var(--primary-soft, #e2e2fd), 0 4px 12px rgba(0, 0, 0, .15);
+}
+.av-crop-help { flex: 1; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-muted, #6b7280); }
+.av-crop-help strong { display: block; margin-bottom: 1px; font-size: 13.5px; color: var(--ink, #12204a); }
+.av-card.is-busy .av-cropper { pointer-events: none; opacity: .7; }
+
 @media (max-width: 480px) { .av-stage { grid-template-columns: 1fr; justify-items: center; } .av-drop { width: 100%; } }
-@media (prefers-reduced-motion: reduce) { .av-card, .av-backdrop, .av-img, .av-drop, .av-drop-icon { animation: none !important; transition: none !important; } }
+@media (max-width: 480px) {
+    /* Layar kecil: pratinjau + tombol "Ganti" di satu baris, teks bantuan di baris bawahnya (lebar penuh). */
+    .av-crop-foot { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; }
+    .av-crop-foot .av-btn { justify-self: end; }
+    .av-crop-help { grid-column: 1 / -1; order: 3; }
+}
+@media (prefers-reduced-motion: reduce) { .av-card, .av-backdrop, .av-img, .av-drop, .av-drop-icon, .av-handle { animation: none !important; transition: none !important; } }

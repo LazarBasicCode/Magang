@@ -35,6 +35,9 @@ Route::middleware('guest')->group(function () {
 
     // ---- Lupa Password ----
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
+    // Kembalikan ke password default (NIM/NIDN) — wajib konfirmasi NIM/NIDN; dibatasi 5x/menit per IP.
+    Route::post('/forgot-password/default', [AuthController::class, 'resetToDefault'])
+        ->middleware('throttle:5,1')->name('password.default');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });

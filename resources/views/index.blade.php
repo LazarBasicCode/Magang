@@ -426,6 +426,36 @@
         }
         .info-box i { color: var(--primary); margin-top: .18rem; }
 
+        .info-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+        .info-warn i { color: #d97706; }
+        :root[data-theme="dark"] .info-warn { background: #3a2a08; border-color: #7a5a14; color: #fcd98a; }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .info-warn { background: #3a2a08; border-color: #7a5a14; color: #fcd98a; }
+        }
+
+        /* Pilihan cara pemulihan password */
+        .method-group { display: flex; flex-direction: column; gap: .5rem; }
+        .method { display: block; cursor: pointer; }
+        .method input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .method-box {
+            display: flex; align-items: center; gap: .8rem;
+            padding: .65rem .85rem; border-radius: 12px;
+            background: var(--field); border: 1.5px solid var(--field-line);
+            transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+        .method-box > i { color: var(--ink-soft); font-size: 1rem; width: 1.2rem; text-align: center; }
+        .method-box strong { display: block; font-size: .84rem; font-weight: 700; }
+        .method-box small { display: block; margin-top: 1px; font-size: .72rem; color: var(--ink-soft); line-height: 1.4; }
+        .method:hover .method-box { border-color: var(--primary); }
+        .method input:checked + .method-box {
+            border-color: var(--primary); background: var(--chip-bg, var(--field)); box-shadow: 0 0 0 3px var(--focus);
+        }
+        .method input:checked + .method-box > i { color: var(--primary); }
+        .method input:focus-visible + .method-box { outline: 3px solid var(--focus); outline-offset: 2px; }
+        .confirm-box { display: flex; flex-direction: column; gap: .75rem; }
+        .confirm-box[hidden] { display: none; }
+        #emailInfoBox[hidden] { display: none; }
+
         .back-link {
             display: inline-flex; align-items: center; gap: .45rem;
             border: 0; background: none; padding: 0;
@@ -669,7 +699,7 @@
 
             <div id="forgotSection" class="fade-switch fade-hidden">
                 <h2>Lupa password?</h2>
-                <p class="sub-title">Masukkan NIM, NIDN, atau email terdaftar untuk menerima tautan pemulihan kata sandi.</p>
+                <p class="sub-title">Masukkan NIM/NIDN Anda, lalu pilih cara memulihkan password.</p>
 
                 <form id="forgotForm">
                     <div id="forgotAlert" class="alert" style="display:none;"></div>
@@ -677,16 +707,49 @@
                     <div class="field">
                         <label for="recoveryIdentity">NIM / NIDN / Email kampus</label>
                         <div class="field-wrap">
-                            <i class="fa-regular fa-envelope icon-left"></i>
-                            <input id="recoveryIdentity" name="identity"
-                                placeholder="Contoh: mahasiswa@asia.ac.id atau 222011005" required type="text">
+                            <i class="fa-regular fa-id-card icon-left"></i>
+                            <input id="recoveryIdentity" name="identity" autocomplete="off"
+                                placeholder="Contoh: 222011005 atau mahasiswa@asia.ac.id" required type="text">
                         </div>
                     </div>
 
-                    <div class="info-box">
+                    <div class="method-group" role="radiogroup" aria-label="Cara pemulihan password">
+                        <label class="method">
+                            <input type="radio" name="method" value="email" checked>
+                            <span class="method-box">
+                                <i class="fa-regular fa-envelope"></i>
+                                <span><strong>Lewat email</strong><small>Buat password baru sendiri dari tautan di email</small></span>
+                            </span>
+                        </label>
+                        <label class="method">
+                            <input type="radio" name="method" value="default">
+                            <span class="method-box">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                <span><strong>Kembalikan ke default</strong><small>Password menjadi NIM/NIDN (khusus mahasiswa &amp; dosen)</small></span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div id="confirmDefaultBox" class="confirm-box" hidden>
+                        <div class="info-box info-warn">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>Password akan <strong>diganti dengan NIM/NIDN</strong> dan semua perangkat yang sedang masuk akan
+                                dikeluarkan. Setelah masuk, Anda wajib membuat password baru.</span>
+                        </div>
+                        <div class="field">
+                            <label for="confirmIdentity">Konfirmasi: ketik ulang NIM/NIDN</label>
+                            <div class="field-wrap">
+                                <i class="fa-solid fa-check-double icon-left"></i>
+                                <input id="confirmIdentity" name="confirm_identity" autocomplete="off"
+                                    placeholder="Ketik ulang NIM/NIDN yang sama" type="text">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="emailInfoBox" class="info-box">
                         <i class="fa-solid fa-circle-info"></i>
-                        <span>Tautan verifikasi reset password akan dikirim otomatis ke email resmi kampus yang
-                            terhubung dengan akun Anda.</span>
+                        <span>Tautan verifikasi reset password akan dikirim ke email yang terhubung dengan akun Anda.
+                            Dari tautan itu Anda bisa membuat password baru + konfirmasi.</span>
                     </div>
 
                     <button class="btn-primary" id="forgotSubmitBtn" type="submit">
@@ -800,40 +863,94 @@
 
     function showForgotAlert(kind, message) {
         forgotAlert.className = 'alert ' + (kind === 'ok' ? 'alert-ok' : '');
-        forgotAlert.innerHTML = '<i class="fa-solid ' +
-            (kind === 'ok' ? 'fa-circle-check' : 'fa-circle-exclamation') + '"></i><span>' +
-            message + '</span>';
+        forgotAlert.textContent = '';
+        var icon = document.createElement('i');
+        icon.className = 'fa-solid ' + (kind === 'ok' ? 'fa-circle-check' : 'fa-circle-exclamation');
+        var text = document.createElement('span');
+        text.textContent = message;
+        forgotAlert.appendChild(icon);
+        forgotAlert.appendChild(text);
         forgotAlert.style.display = 'flex';
     }
+
+    // Pilihan cara pemulihan: "email" (tautan + password baru) atau "default" (kembali ke NIM/NIDN).
+    const methodRadios = Array.from(forgotForm.querySelectorAll('input[name="method"]'));
+    const confirmBox = document.getElementById('confirmDefaultBox');
+    const emailInfoBox = document.getElementById('emailInfoBox');
+    const confirmInput = document.getElementById('confirmIdentity');
+    const identityInput = document.getElementById('recoveryIdentity');
+
+    const SUBMIT_LABEL = {
+        email:   { icon: 'fa-regular fa-paper-plane', text: 'Kirim tautan reset password' },
+        default: { icon: 'fa-solid fa-rotate-left',   text: 'Kembalikan ke password default' },
+    };
+    const currentMethod = () => (methodRadios.find((r) => r.checked) || {}).value || 'email';
+
+    function applyMethod() {
+        const method = currentMethod();
+        const isDefault = method === 'default';
+        confirmBox.hidden = !isDefault;
+        emailInfoBox.hidden = isDefault;
+        confirmInput.required = isDefault;
+        if (!isDefault) confirmInput.value = '';
+        forgotSubmitBtn.innerHTML = '<i class="' + SUBMIT_LABEL[method].icon + '"></i><span>' + SUBMIT_LABEL[method].text + '</span>';
+        forgotAlert.style.display = 'none';
+    }
+    methodRadios.forEach((r) => r.addEventListener('change', applyMethod));
+    applyMethod();
 
     forgotForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         forgotAlert.style.display = 'none';
 
-        const identity = document.getElementById('recoveryIdentity').value.trim();
+        const method = currentMethod();
+        const identity = identityInput.value.trim();
         if (!identity) return;
+
+        let url = '{{ url('/forgot-password') }}';
+        let payload = { identity };
+
+        if (method === 'default') {
+            const confirmIdentity = confirmInput.value.trim();
+            if (!confirmIdentity) {
+                showForgotAlert('err', 'Ketik ulang NIM/NIDN untuk mengonfirmasi reset.');
+                confirmInput.focus();
+                return;
+            }
+            if (confirmIdentity !== identity) {
+                showForgotAlert('err', 'Konfirmasi NIM/NIDN tidak sama. Ketik ulang NIM/NIDN yang sama persis.');
+                confirmInput.focus();
+                return;
+            }
+            url = '{{ url('/forgot-password/default') }}';
+            payload = { identity, confirm_identity: confirmIdentity };
+        }
 
         forgotSubmitBtn.disabled = true;
         const originalHtml = forgotSubmitBtn.innerHTML;
-        forgotSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Mengirim...</span>';
+        forgotSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Memproses...</span>';
 
         try {
-            const res = await fetch('{{ url('/forgot-password') }}', {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                 },
-                body: JSON.stringify({ identity }),
+                body: JSON.stringify(payload),
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
 
             if (res.ok && data.success) {
                 showForgotAlert('ok', data.message);
                 forgotForm.reset();
+                applyMethod();
+            } else if (res.status === 429) {
+                showForgotAlert('err', 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.');
             } else {
-                showForgotAlert('err', data.message || 'Terjadi kesalahan. Silakan coba lagi.');
+                const firstError = data.errors ? Object.values(data.errors)[0][0] : null;
+                showForgotAlert('err', firstError || data.message || 'Terjadi kesalahan. Silakan coba lagi.');
             }
         } catch (err) {
             showForgotAlert('err', 'Tidak bisa terhubung ke server. Periksa koneksi internet Anda.');

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\ActivityDescriber;
 use App\Support\ActivityLog;
+use App\Support\DefaultPassword;
 use App\Support\SessionRevoker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -301,6 +302,80 @@ class AuthController extends Controller
                 ? $generic
                 : 'Permintaan reset baru saja dikirim untuk akun ini. Silakan cek email Anda atau coba lagi dalam beberapa saat.',
         ]);
+    }
+
+    /**
+     * "Lupa password" -> kembalikan ke password default (NIM/NIDN).
+     *
+     * Khusus mahasiswa & dosen. Pengguna WAJIB mengonfirmasi dengan mengetik ulang NIM/NIDN-nya
+     * (field `confirm_identity`) sebagai tanda memang berniat mereset. Setelah reset, akun
+     * ditandai must_change_password sehingga pop-up wajib ganti password muncul saat login,
+     * semua sesi lama dikeluarkan, dan pemilik akun dicatat di notifikasi + log aktivitas.
+     *
+     * Respons sengaja generik bila NIM/NIDN tidak ditemukan, agar tidak bisa dipakai menebak
+     * daftar akun yang terdaftar.
+     */
+    public function resetToDefault(Request $request)
+    {
+        $data = $request->validate([
+            'identity'         => ['required', 'string', 'max:255'],
+            'confirm_identity' => ['required', 'string', 'max:255'],
+        ], [
+            'identity.required'         => 'NIM/NIDN wajib diisi.',
+            'confirm_identity.required' => 'Ketik ulang NIM/NIDN untuk konfirmasi reset.',
+        ]);
+
+        $identity = trim($data['identity']);
+
+        if (!hash_equals($identity, trim($data['confirm_identity']))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Konfirmasi NIM/NIDN tidak sama. Ketik ulang NIM/NIDN yang sama persis.',
+            ], 422);
+        }
+
+        $generic = 'Jika NIM/NIDN tersebut terdaftar sebagai mahasiswa/dosen, password sudah dikembalikan ke default '
+            .'(sama dengan NIM/NIDN). Silakan masuk, lalu buat password baru.';
+
+        $user = User::where('nim_nidn', $identity)
+            ->whereIn('role', DefaultPassword::ROLES)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['success' => true, 'message' => $generic]);
+        }
+
+        DB::transaction(function () use ($user) {
+            $user->forceFill([
+                'password'             => Hash::make(DefaultPassword::forIdentifier((string) $user->nim_nidn)),
+                'must_change_password' => true,
+                'remember_token'       => Str::random(60),
+            ])->save();
+
+            SessionRevoker::revoke($user, SessionRevoker::PASSWORD_RESET);
+        });
+
+        ActivityLog::record(
+            'password.reset_default',
+            'mengembalikan password ke default (NIM/NIDN) lewat Lupa password',
+            ['akun_id' => $user->id],
+            'info',
+            $user
+        );
+
+        try {
+            UserNotification::send($user->id, 'password_changed', [
+                'title'       => 'Password dikembalikan ke default',
+                'description' => 'Password akun dikembalikan ke NIM/NIDN lewat menu Lupa password pada '
+                    .now()->format('d/m/Y H:i').' dari IP '.$request->ip()
+                    .'. Segera buat password baru. Kalau bukan Anda, hubungi Admin.',
+                'data'        => ['ip' => $request->ip(), 'user_agent' => $request->userAgent()],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return response()->json(['success' => true, 'message' => $generic]);
     }
 
     /**

@@ -26,6 +26,8 @@
     const passInput = $('fpPassword');
     const confInput = $('fpConfirm');
     const matchEl = $('fpMatch');
+    const genBtn = $('fpGen');
+    const copyBtn = $('fpCopy');
     const submitBtn = $('fpSubmit');
     const submitText = submitBtn.querySelector('.fp-submit-text');
     const errEl = $('fpError');
@@ -107,7 +109,7 @@
     });
 
     // ---------- Tampilkan / sembunyikan password ----------
-    overlay.querySelectorAll('.fp-eye').forEach((btn) => {
+    overlay.querySelectorAll('.fp-eye[data-target]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const input = $(btn.dataset.target);
             if (!input) return;
@@ -122,6 +124,45 @@
     [passInput, confInput].forEach((input) => {
         input.addEventListener('input', () => { setError(''); render(); });
     });
+
+    // ---------- Password acak: langsung terisi di kolom 1, tanpa animasi ----------
+    async function generate(focusConfirm) {
+        if (busy || finished || genBtn.disabled) return;
+        genBtn.disabled = true;
+        try {
+            const { res, data } = await post('/account/password/generate');
+            if (!res.ok || !data.password) throw new Error(data.message || 'Password acak gagal dibuat.');
+            passInput.type = 'text';
+            passInput.value = data.password;
+            confInput.value = '';
+            setError('');
+            const eye = overlay.querySelector('.fp-eye[data-target="fpPassword"] .material-symbols-outlined');
+            if (eye) eye.textContent = 'visibility_off';
+            if (focusConfirm) confInput.focus({ preventScroll: true });
+        } catch (err) {
+            if (focusConfirm) passInput.focus({ preventScroll: true }); // gagal: pengguna bisa mengetik sendiri
+            else notify('error', err.message || 'Password acak gagal dibuat.');
+        } finally {
+            genBtn.disabled = false;
+            render();
+        }
+    }
+
+    async function copyPassword() {
+        if (!passInput.value) return notify('error', 'Belum ada password untuk disalin.');
+        let ok = false;
+        try {
+            await navigator.clipboard.writeText(passInput.value);
+            ok = true;
+        } catch (e) {
+            passInput.select();
+            try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+        }
+        notify(ok ? 'success' : 'error', ok ? 'Password disalin.' : 'Tidak dapat menyalin. Catat password secara manual.');
+    }
+
+    genBtn.addEventListener('click', () => generate(true));
+    copyBtn.addEventListener('click', copyPassword);
 
     // ---------- Simpan ----------
     async function submit(e) {
@@ -265,7 +306,7 @@
         overlay.classList.add('is-open');
         render();
 
-        setTimeout(() => passInput.focus({ preventScroll: true }), reduceMotion ? 0 : 700);
+        generate(true); // isi kolom 1 dengan password acak, fokus ke kolom konfirmasi
 
         const notice = overlay.dataset.notice;
         if (notice) setTimeout(() => notify('warning', notice), 900);

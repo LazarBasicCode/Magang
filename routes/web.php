@@ -40,6 +40,8 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:5,1')->name('password.default');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    Route::post('/reset-password/generate', [AuthController::class, 'generateResetPassword'])
+        ->middleware('throttle:10,1')->name('password.generate');
 });
 
 // Logout hanya untuk user yang sedang login (POST + CSRF, bukan GET).

@@ -718,7 +718,7 @@
                             <input type="radio" name="method" value="email" checked>
                             <span class="method-box">
                                 <i class="fa-regular fa-envelope"></i>
-                                <span><strong>Lewat email</strong><small>Buat password baru sendiri dari tautan di email</small></span>
+                                <span><strong>Lewat email</strong><small>Konfirmasi &ldquo;Ya, ini saya&rdquo; di email, lalu buat password baru</small></span>
                             </span>
                         </label>
                         <label class="method">
@@ -748,8 +748,7 @@
 
                     <div id="emailInfoBox" class="info-box">
                         <i class="fa-solid fa-circle-info"></i>
-                        <span>Tautan verifikasi reset password akan dikirim ke email yang terhubung dengan akun Anda.
-                            Dari tautan itu Anda bisa membuat password baru + konfirmasi.</span>
+                        <span>Kami mengirim email berisi tombol <strong>&ldquo;Ya, ini saya&rdquo;</strong> ke email akun Anda. Setelah ditekan, pop-up akan terbuka di SIDA untuk membuat password baru + konfirmasi.</span>
                     </div>
 
                     <button class="btn-primary" id="forgotSubmitBtn" type="submit">

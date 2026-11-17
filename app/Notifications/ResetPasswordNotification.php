@@ -28,12 +28,14 @@ class ResetPasswordNotification extends Notification
         ]);
         $minutes = (int) config('auth.passwords.' . config('auth.defaults.passwords') . '.expire', 60);
 
+        // Email hanya berisi konfirmasi. Password TIDAK dibuat di email: setelah tombol diklik,
+        // sistem SIDA membuka pop-up untuk membuat & mengonfirmasi password baru.
         return (new MailMessage)
-            ->subject('Atur ulang password akun SIDA')
+            ->subject('Konfirmasi reset password akun SIDA')
             ->greeting('Halo, ' . $notifiable->name . '!')
-            ->line('Kami menerima permintaan untuk mengatur ulang password akun SIDA Anda.')
-            ->action('Buat password baru', $url)
-            ->line("Tautan ini berlaku selama {$minutes} menit.")
-            ->line('Jika Anda tidak merasa meminta reset password, abaikan email ini. Password Anda tidak akan berubah.');
+            ->line('Seseorang meminta reset password untuk akun SIDA Anda. Apakah itu Anda?')
+            ->action('✔ Ya, ini saya', $url)
+            ->line("Setelah Anda menekan tombol, halaman SIDA akan terbuka dan Anda bisa membuat password baru di sana. Tautan berlaku {$minutes} menit.")
+            ->line('Jika bukan Anda, abaikan email ini. Password Anda tidak akan berubah.');
     }
 }

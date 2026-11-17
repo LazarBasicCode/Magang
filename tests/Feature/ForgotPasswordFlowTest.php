@@ -160,4 +160,87 @@ class ForgotPasswordFlowTest extends TestCase
 
         $this->assertTrue(Hash::check('Rahasia99', $user->fresh()->password));
     }
+
+    // ---------- Lupa password lewat email: konfirmasi "Ya, ini saya" -> pop-up buat password ----------
+
+    private function tokenFor(User $user): string
+    {
+        return \Illuminate\Support\Facades\Password::broker()->createToken($user);
+    }
+
+    public function test_tautan_email_valid_langsung_membuka_popup_buat_password(): void
+    {
+        $user = $this->person('mahasiswa', '222011005');
+        $user->forceFill(['email' => 'mhs@example.com'])->save();
+        $token = $this->tokenFor($user);
+
+        $this->get('/reset-password/' . $token . '?email=mhs@example.com')
+            ->assertOk()
+            ->assertSee('id="fpOverlay"', false)
+            ->assertSee('id="fpConfirm"', false)
+            ->assertSee('id="fpGen"', false);
+    }
+
+    public function test_tautan_email_tidak_valid_kembali_ke_login(): void
+    {
+        $user = $this->person('mahasiswa', '222011005');
+        $user->forceFill(['email' => 'mhs@example.com'])->save();
+
+        $this->get('/reset-password/salah?email=mhs@example.com')->assertRedirect(route('login'));
+    }
+
+    public function test_generate_password_acak_butuh_token_valid(): void
+    {
+        $user = $this->person('mahasiswa', '222011005');
+        $user->forceFill(['email' => 'mhs@example.com'])->save();
+
+        $this->postJson('/reset-password/generate', ['token' => 'salah', 'email' => 'mhs@example.com'])
+            ->assertStatus(403);
+
+        $this->postJson('/reset-password/generate', ['token' => $this->tokenFor($user), 'email' => 'mhs@example.com'])
+            ->assertOk()->assertJsonStructure(['password']);
+    }
+
+    public function test_simpan_password_baru_dari_popup_reset(): void
+    {
+        $user = $this->person('mahasiswa', '222011005', mustChange: true);
+        $user->forceFill(['email' => 'mhs@example.com'])->save();
+
+        $this->postJson('/reset-password', [
+            'token' => $this->tokenFor($user),
+            'email' => 'mhs@example.com',
+            'password' => 'katasandi1',
+            'password_confirmation' => 'katasandi1',
+        ])->assertOk()->assertJson(['success' => true, 'redirect' => route('login')]);
+
+        $user->refresh();
+        $this->assertTrue(Hash::check('katasandi1', $user->password));
+        $this->assertFalse($user->must_change_password);
+    }
+
+    public function test_simpan_password_baru_gagal_bila_konfirmasi_beda(): void
+    {
+        $user = $this->person('mahasiswa', '222011005');
+        $user->forceFill(['email' => 'mhs@example.com'])->save();
+
+        $this->postJson('/reset-password', [
+            'token' => $this->tokenFor($user),
+            'email' => 'mhs@example.com',
+            'password' => 'katasandi1',
+            'password_confirmation' => 'katasandi2',
+        ])->assertStatus(422)->assertJsonValidationErrors('password');
+    }
+
+    public function test_simpan_password_baru_tidak_boleh_sama_dengan_nim(): void
+    {
+        $user = $this->person('mahasiswa', '222011005');
+        $user->forceFill(['email' => 'mhs@example.com'])->save();
+
+        $this->postJson('/reset-password', [
+            'token' => $this->tokenFor($user),
+            'email' => 'mhs@example.com',
+            'password' => '222011005',
+            'password_confirmation' => '222011005',
+        ])->assertStatus(422);
+    }
 }

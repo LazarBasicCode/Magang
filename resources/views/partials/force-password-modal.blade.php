@@ -29,7 +29,7 @@
             <h2 class="fp-title fp-rise" style="--i:1" id="fpTitle">Buat password baru</h2>
             <p class="fp-desc fp-rise" style="--i:2" id="fpDesc">
                 Halo, <strong>{{ $fpUser->name }}</strong>. Ini pertama kalinya Anda masuk dengan password awal
-                (<strong>{{ $fpLabel }}</strong>). Buat password baru lalu konfirmasi untuk melanjutkan.
+                (<strong>{{ $fpLabel }}</strong>). Kami sudah menyiapkan password acak, Anda boleh memakainya atau menggantinya sendiri. Ketik ulang di kolom konfirmasi untuk melanjutkan.
             </p>
 
             <ol class="fp-steps fp-rise" style="--i:3" aria-label="Langkah">
@@ -41,10 +41,16 @@
             <div class="fp-field fp-rise" style="--i:4" id="fpField">
                 <label class="fp-label" for="fpPassword">Password baru</label>
                 <div class="fp-input-text">
-                    <input type="password" id="fpPassword" name="password" minlength="6" maxlength="64"
-                           placeholder="Minimal 6 karakter" autocomplete="new-password" spellcheck="false">
-                    <button type="button" class="fp-eye" data-target="fpPassword" aria-label="Tampilkan password" title="Tampilkan password">
-                        <span class="material-symbols-outlined">visibility</span>
+                    <input type="text" id="fpPassword" name="password" class="fp-pad3" minlength="6" maxlength="64"
+                           placeholder="Password acak dibuat otomatis" autocomplete="new-password" spellcheck="false">
+                    <button type="button" class="fp-eye fp-r3" id="fpGen" aria-label="Buat password acak baru" title="Buat password acak baru">
+                        <span class="material-symbols-outlined">autorenew</span>
+                    </button>
+                    <button type="button" class="fp-eye fp-r2" id="fpCopy" aria-label="Salin password" title="Salin password">
+                        <span class="material-symbols-outlined">content_copy</span>
+                    </button>
+                    <button type="button" class="fp-eye" data-target="fpPassword" aria-label="Sembunyikan password" title="Sembunyikan password">
+                        <span class="material-symbols-outlined">visibility_off</span>
                     </button>
                 </div>
 

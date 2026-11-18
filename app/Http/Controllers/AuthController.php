@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\ActivityDescriber;
 use App\Support\ActivityLog;
+use App\Support\DefaultPassword;
 use App\Support\SessionRevoker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -304,15 +305,120 @@ class AuthController extends Controller
     }
 
     /**
+     * "Lupa password" -> kembalikan ke password default (NIM/NIDN).
+     *
+     * Khusus mahasiswa & dosen. Pengguna WAJIB mengonfirmasi dengan mengetik ulang NIM/NIDN-nya
+     * (field `confirm_identity`) sebagai tanda memang berniat mereset. Setelah reset, akun
+     * ditandai must_change_password sehingga pop-up wajib ganti password muncul saat login,
+     * semua sesi lama dikeluarkan, dan pemilik akun dicatat di notifikasi + log aktivitas.
+     *
+     * Respons sengaja generik bila NIM/NIDN tidak ditemukan, agar tidak bisa dipakai menebak
+     * daftar akun yang terdaftar.
+     */
+    public function resetToDefault(Request $request)
+    {
+        $data = $request->validate([
+            'identity'         => ['required', 'string', 'max:255'],
+            'confirm_identity' => ['required', 'string', 'max:255'],
+        ], [
+            'identity.required'         => 'NIM/NIDN wajib diisi.',
+            'confirm_identity.required' => 'Ketik ulang NIM/NIDN untuk konfirmasi reset.',
+        ]);
+
+        $identity = trim($data['identity']);
+
+        if (!hash_equals($identity, trim($data['confirm_identity']))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Konfirmasi NIM/NIDN tidak sama. Ketik ulang NIM/NIDN yang sama persis.',
+            ], 422);
+        }
+
+        $generic = 'Jika NIM/NIDN tersebut terdaftar sebagai mahasiswa/dosen, password sudah dikembalikan ke default '
+            .'(sama dengan NIM/NIDN). Silakan masuk, lalu buat password baru.';
+
+        $user = User::where('nim_nidn', $identity)
+            ->whereIn('role', DefaultPassword::ROLES)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['success' => true, 'message' => $generic]);
+        }
+
+        DB::transaction(function () use ($user) {
+            $user->forceFill([
+                'password'             => Hash::make(DefaultPassword::forIdentifier((string) $user->nim_nidn)),
+                'must_change_password' => true,
+                'remember_token'       => Str::random(60),
+            ])->save();
+
+            SessionRevoker::revoke($user, SessionRevoker::PASSWORD_RESET);
+        });
+
+        ActivityLog::record(
+            'password.reset_default',
+            'mengembalikan password ke default (NIM/NIDN) lewat Lupa password',
+            ['akun_id' => $user->id],
+            'info',
+            $user
+        );
+
+        try {
+            UserNotification::send($user->id, 'password_changed', [
+                'title'       => 'Password dikembalikan ke default',
+                'description' => 'Password akun dikembalikan ke NIM/NIDN lewat menu Lupa password pada '
+                    .now()->format('d/m/Y H:i').' dari IP '.$request->ip()
+                    .'. Segera buat password baru. Kalau bukan Anda, hubungi Admin.',
+                'data'        => ['ip' => $request->ip(), 'user_agent' => $request->userAgent()],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return response()->json(['success' => true, 'message' => $generic]);
+    }
+
+    /**
      * Tampilkan halaman untuk memasukkan password baru (dibuka dari tautan
      * di email).
      */
     public function showResetForm(Request $request, string $token)
     {
+        $email = (string) $request->query('email', '');
+        $user = $email !== '' ? User::where('email', $email)->first() : null;
+
+        // Tautan dari email = konfirmasi "Ya, ini saya". Token diperiksa di server (tanpa dihabiskan);
+        // kalau valid, pop-up pembuatan password langsung dibuka. Kalau tidak, kembali ke login.
+        if (!$user || !Password::broker()->tokenExists($user, $token)) {
+            return redirect()->route('login')->withErrors([
+                'username' => 'Tautan reset password tidak valid atau sudah kedaluwarsa. Silakan minta tautan baru.',
+            ]);
+        }
+
         return view('reset-password', [
-            'token' => $token,
-            'email' => $request->query('email', ''),
+            'token'     => $token,
+            'email'     => $user->email,
+            'userName'  => $user->name,
+            'isDefault' => DefaultPassword::appliesTo($user->role),
         ]);
+    }
+
+    /**
+     * Password acak (6 karakter) untuk pop-up reset. Hanya untuk pemegang token reset yang valid.
+     */
+    public function generateResetPassword(Request $request)
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+        if (!$user || !Password::broker()->tokenExists($user, $data['token'])) {
+            return response()->json(['message' => 'Tautan reset tidak valid atau sudah kedaluwarsa.'], 403);
+        }
+
+        return response()->json(['password' => \App\Support\RandomAccountPassword::generateUnique()]);
     }
 
     /**
@@ -321,10 +427,20 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'token'                 => ['required'],
-            'email'                 => ['required', 'email'],
-            'password'              => ['required', 'string', 'min:6', 'confirmed'],
+            'token'    => ['required'],
+            'email'    => ['required', 'email'],
+            'password' => ['required', 'string', 'min:6', 'max:64', 'confirmed'],
+        ], [
+            'password.required'  => 'Password baru wajib diisi.',
+            'password.min'       => 'Password minimal 6 karakter.',
+            'password.max'       => 'Password maksimal 64 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak sama dengan password baru.',
         ]);
+
+        $target = User::where('email', $request->input('email'))->first();
+        if ($target && filled($target->nim_nidn) && hash_equals((string) $target->nim_nidn, (string) $request->input('password'))) {
+            throw ValidationException::withMessages(['password' => 'Password tidak boleh sama dengan NIM/NIDN Anda.']);
+        }
 
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
@@ -349,8 +465,14 @@ class AuthController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return redirect()->route('login')
-                ->with('status', 'Password berhasil diperbarui. Silakan masuk dengan password baru Anda.');
+            $message = 'Password berhasil disimpan. Silakan masuk dengan password baru Anda.';
+            if ($request->expectsJson()) {
+                $request->session()->flash('status', $message);
+
+                return response()->json(['success' => true, 'message' => $message, 'redirect' => route('login')]);
+            }
+
+            return redirect()->route('login')->with('status', $message);
         }
 
         throw ValidationException::withMessages([

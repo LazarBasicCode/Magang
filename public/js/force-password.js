@@ -1,12 +1,12 @@
 /**
  * Pop-up WAJIB ganti password di dashboard mahasiswa/dosen (password default = NIM/NIDN).
  *
+ * - Pengguna mengetik password baru + konfirmasi password (bukan lagi password acak).
  * - Efek animasi sengaja dibuat halus.
  * - Tidak bisa ditutup: tanpa tombol close, Esc diabaikan, klik latar hanya menggetarkan kartu.
  * - Fokus dikunci di dalam pop-up (Tab berputar) dan isi halaman di belakangnya dibuat `inert`.
- * - Memakai endpoint yang sama dengan menu "Ganti Password" di header (AccountController):
- *     POST /account/password/generate  -> { password }   (6 karakter acak, unik)
- *     POST /account/password           -> { message, logout, redirect }
+ * - Endpoint (AccountController):
+ *     POST /account/password  { password, password_confirmation } -> { message, logout, redirect }
  *   Setelah berhasil server mengeluarkan semua sesi, jadi pop-up menampilkan animasi sukses
  *   lalu mengarahkan ke halaman login.
  * - Penguncian sesungguhnya ada di server (middleware ForcePasswordChange); ini hanya antarmuka.
@@ -23,11 +23,11 @@
     const $ = (id) => document.getElementById(id);
     const card = $('fpCard');
     const field = $('fpField');
-    const tilesEl = $('fpTiles');
-    const tiles = Array.from(tilesEl.children);
+    const passInput = $('fpPassword');
+    const confInput = $('fpConfirm');
+    const matchEl = $('fpMatch');
     const genBtn = $('fpGen');
     const copyBtn = $('fpCopy');
-    const savedChk = $('fpSaved');
     const submitBtn = $('fpSubmit');
     const submitText = submitBtn.querySelector('.fp-submit-text');
     const errEl = $('fpError');
@@ -36,14 +36,12 @@
     const formView = $('fpFormView');
     const successView = $('fpSuccessView');
 
-    const CHARS = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*?+=';
+    const MIN_LENGTH = 6;
     const REDIRECT_MS = 3200;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    let password = '';
     let busy = false;
     let finished = false;
-    let scrambleTimers = [];
     let lastBackdropNudge = 0;
 
     const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -69,9 +67,12 @@
     }
 
     // ---------- Status tampilan ----------
+    const passOk = () => passInput.value.length >= MIN_LENGTH;
+    const confirmed = () => passOk() && confInput.value === passInput.value;
+
     function currentStep() {
-        if (!password) return 1;
-        return savedChk.checked ? 3 : 2;
+        if (!passOk()) return 1;
+        return confirmed() ? 3 : 2;
     }
 
     function render() {
@@ -82,7 +83,14 @@
             li.classList.toggle('is-active', n === step);
         });
         stepsEl.style.setProperty('--fp-p', String(Math.min(step - 1, 2) / 2));
-        submitBtn.disabled = busy || finished || !(password && savedChk.checked);
+
+        // Petunjuk kecocokan password saat mengetik konfirmasi.
+        const typing = confInput.value.length > 0;
+        matchEl.classList.toggle('is-ok', typing && confirmed());
+        matchEl.classList.toggle('is-bad', typing && !confirmed());
+        matchEl.textContent = !typing ? '' : (confirmed() ? 'Password cocok' : 'Konfirmasi belum sama dengan password baru');
+
+        submitBtn.disabled = busy || finished || !confirmed();
     }
 
     function setError(message) {
@@ -100,96 +108,78 @@
         if (e.animationName === 'fpShake') card.classList.remove('is-shaking');
     });
 
-    // ---------- Animasi kotak password: acak lalu terkunci satu per satu ----------
-    function showPassword(value) {
-        scrambleTimers.forEach(clearInterval);
-        scrambleTimers = [];
-
-        tiles.forEach((tile, i) => {
-            tile.classList.remove('is-set', 'is-spinning');
-            const finalChar = value[i] || '•';
-
-            if (reduceMotion) {
-                tile.textContent = finalChar;
-                tile.classList.add('is-set');
-                return;
-            }
-
-            const frames = 5 + i * 2; // kotak kanan berhenti sedikit lebih lambat
-            let frame = 0;
-            tile.classList.add('is-spinning');
-            const timer = setInterval(() => {
-                frame += 1;
-                if (frame >= frames) {
-                    clearInterval(timer);
-                    tile.textContent = finalChar;
-                    tile.classList.remove('is-spinning');
-                    void tile.offsetWidth;
-                    tile.classList.add('is-set');
-                } else {
-                    tile.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
-                }
-            }, 40);
-            scrambleTimers.push(timer);
+    // ---------- Tampilkan / sembunyikan password ----------
+    overlay.querySelectorAll('.fp-eye[data-target]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const input = $(btn.dataset.target);
+            if (!input) return;
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.querySelector('.material-symbols-outlined').textContent = show ? 'visibility_off' : 'visibility';
+            btn.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
+            input.focus({ preventScroll: true });
         });
+    });
 
-        tilesEl.removeAttribute('aria-labelledby');
-        tilesEl.setAttribute('aria-label', 'Password baru: ' + value.split('').join(' '));
-    }
+    [passInput, confInput].forEach((input) => {
+        input.addEventListener('input', () => { setError(''); render(); });
+    });
 
-    // ---------- Aksi ----------
-    async function generate() {
-        if (busy || finished || genBtn.classList.contains('is-busy')) return;
-        genBtn.classList.add('is-busy');
-        genBtn.classList.remove('is-hint');
+    // ---------- Password acak: langsung terisi di kolom 1, tanpa animasi ----------
+    async function generate(focusConfirm) {
+        if (busy || finished || genBtn.disabled) return;
         genBtn.disabled = true;
         try {
             const { res, data } = await post('/account/password/generate');
-            if (!res.ok || !data.password) throw new Error(data.message || 'Password gagal dibuat. Coba lagi.');
-
-            password = data.password;
-            showPassword(password);
+            if (!res.ok || !data.password) throw new Error(data.message || 'Password acak gagal dibuat.');
+            passInput.type = 'text';
+            passInput.value = data.password;
+            confInput.value = '';
             setError('');
-            copyBtn.disabled = false;
-            copyBtn.classList.remove('is-copied');
-            savedChk.disabled = false;
-            savedChk.checked = false;
+            const eye = overlay.querySelector('.fp-eye[data-target="fpPassword"] .material-symbols-outlined');
+            if (eye) eye.textContent = 'visibility_off';
+            if (focusConfirm) confInput.focus({ preventScroll: true });
         } catch (err) {
-            notify('error', err.message || 'Password gagal dibuat. Coba lagi.');
+            if (focusConfirm) passInput.focus({ preventScroll: true }); // gagal: pengguna bisa mengetik sendiri
+            else notify('error', err.message || 'Password acak gagal dibuat.');
         } finally {
-            genBtn.classList.remove('is-busy');
             genBtn.disabled = false;
             render();
         }
     }
 
     async function copyPassword() {
-        if (!password) return notify('error', 'Buat password terlebih dahulu.');
+        if (!passInput.value) return notify('error', 'Belum ada password untuk disalin.');
         let ok = false;
         try {
-            await navigator.clipboard.writeText(password);
+            await navigator.clipboard.writeText(passInput.value);
             ok = true;
         } catch (e) {
-            // Cadangan untuk peramban/konteks tanpa Clipboard API.
-            const area = document.createElement('textarea');
-            area.value = password;
-            area.setAttribute('readonly', '');
-            area.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
-            document.body.appendChild(area);
-            area.select();
+            passInput.select();
             try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
-            area.remove();
-            copyBtn.focus({ preventScroll: true });
         }
-
-        if (!ok) return notify('error', 'Tidak dapat menyalin dari peramban ini. Catat password secara manual.');
-        copyBtn.classList.add('is-copied');
-        notify('success', 'Password disalin.');
-        setTimeout(() => copyBtn.classList.remove('is-copied'), 2400);
+        notify(ok ? 'success' : 'error', ok ? 'Password disalin.' : 'Tidak dapat menyalin. Catat password secara manual.');
     }
 
-    async function submit() {
-        if (busy || finished || !password || !savedChk.checked) return;
+    genBtn.addEventListener('click', () => generate(true));
+    copyBtn.addEventListener('click', copyPassword);
+
+    // ---------- Simpan ----------
+    async function submit(e) {
+        if (e) e.preventDefault();
+        if (busy || finished) return;
+
+        if (!passOk()) {
+            const msg = 'Password minimal ' + MIN_LENGTH + ' karakter.';
+            setError(msg); shake(); passInput.focus();
+            return;
+        }
+        if (!confirmed()) {
+            const msg = 'Konfirmasi password tidak sama dengan password baru.';
+            setError(msg); shake(); confInput.focus();
+            return;
+        }
+
         setError('');
         busy = true;
         submitBtn.classList.add('is-loading');
@@ -198,7 +188,10 @@
 
         let success = false;
         try {
-            const { res, data } = await post('/account/password', { password });
+            const { res, data } = await post('/account/password', {
+                password: passInput.value,
+                password_confirmation: confInput.value,
+            });
 
             if (res.ok) {
                 success = true;
@@ -209,7 +202,6 @@
             let message;
             if (res.status === 422 && data.errors) {
                 message = Object.values(data.errors)[0][0];
-                genBtn.classList.add('is-hint'); // arahkan ke tombol generate untuk membuat ulang
             } else if (res.status === 419) {
                 message = 'Sesi habis. Muat ulang halaman lalu coba lagi.';
             } else {
@@ -302,17 +294,11 @@
         const now = Date.now();
         if (now - lastBackdropNudge > 2500) {
             lastBackdropNudge = now;
-            notify('info', 'Ganti password terlebih dahulu untuk melanjutkan.');
+            notify('info', 'Buat password baru terlebih dahulu untuk melanjutkan.');
         }
     });
 
-    genBtn.addEventListener('click', generate);
-    copyBtn.addEventListener('click', copyPassword);
-    savedChk.addEventListener('change', render);
-    submitBtn.addEventListener('click', submit);
-    overlay.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target === savedChk) { e.preventDefault(); savedChk.click(); }
-    });
+    formView.addEventListener('submit', submit);
 
     // ---------- Buka: setelah loading screen login selesai ----------
     function open() {
@@ -320,10 +306,7 @@
         overlay.classList.add('is-open');
         render();
 
-        setTimeout(() => {
-            genBtn.classList.add('is-hint');
-            genBtn.focus({ preventScroll: true });
-        }, reduceMotion ? 0 : 1100);
+        generate(true); // isi kolom 1 dengan password acak, fokus ke kolom konfirmasi
 
         const notice = overlay.dataset.notice;
         if (notice) setTimeout(() => notify('warning', notice), 900);

@@ -34,6 +34,7 @@ class AccountPasswordTest extends TestCase
         $user = $this->makeUser('222011005', 'Mahasiswa', 'mahasiswa');
 
         $this->actingAs($user)
+            ->withSession(['pw_change_verified_until' => time() + 300])
             ->postJson('/account/password', ['password' => 'Ab4!xy'])
             ->assertOk()
             ->assertJsonPath('logout', true);
@@ -59,6 +60,7 @@ class AccountPasswordTest extends TestCase
             ]);
 
             $this->actingAs($superadmin)
+                ->withSession(['pw_change_verified_until' => time() + 300])
                 ->postJson('/account/password', ['password' => 'Ab4!xy'])
                 ->assertOk();
 
@@ -77,6 +79,7 @@ class AccountPasswordTest extends TestCase
         $other->forceFill(['password' => Hash::make('Ab4!xy')])->save();
 
         $this->actingAs($user)
+            ->withSession(['pw_change_verified_until' => time() + 300])
             ->postJson('/account/password', ['password' => 'Ab4!xy'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('password');

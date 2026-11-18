@@ -18,6 +18,7 @@ use App\Http\Controllers\LoginAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AvatarController;
+use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\ProfilController;
 
 // ---- Route khusus TAMU (belum login) ----
@@ -35,9 +36,19 @@ Route::middleware('guest')->group(function () {
 
     // ---- Lupa Password ----
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
+    // Kembalikan ke password default (NIM/NIDN) — wajib konfirmasi NIM/NIDN; dibatasi 5x/menit per IP.
+    Route::post('/forgot-password/default', [AuthController::class, 'resetToDefault'])
+        ->middleware('throttle:5,1')->name('password.default');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    Route::post('/reset-password/generate', [AuthController::class, 'generateResetPassword'])
+        ->middleware('throttle:10,1')->name('password.generate');
 });
+
+// Tautan "Ya, ini saya" di email konfirmasi ganti password (menu profil). Tanpa login karena emailnya bisa dibuka di
+// perangkat lain; keamanannya: tanda tangan URL + token acak sekali pakai yang hanya ada di email.
+Route::get('/account/password/confirm/{user}/{token}', [PasswordChangeController::class, 'confirm'])
+    ->middleware(['signed', 'throttle:20,1'])->whereNumber('user')->name('account.password.confirm');
 
 // Logout hanya untuk user yang sedang login (POST + CSRF, bukan GET).
 Route::post('/logout', [AuthController::class, 'logout'])
@@ -66,6 +77,10 @@ Route::middleware(['auth', 'force.password', 'log.activity'])->group(function ()
     // ---- Pengaturan akun sendiri (menu profil kanan atas) ----
     Route::post('/account/password/generate', [AccountController::class, 'generatePassword'])->name('account.password.generate');
     Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
+    // Ganti password dari menu profil: persetujuan lewat email (kirim -> tunggu -> buat password baru) atau kembali ke default.
+    Route::post('/account/password/verify', [PasswordChangeController::class, 'request'])->middleware('throttle:6,1')->name('account.password.verify');
+    Route::get('/account/password/verify/status', [PasswordChangeController::class, 'status'])->middleware('throttle:90,1')->name('account.password.verify.status');
+    Route::post('/account/password/default', [PasswordChangeController::class, 'resetToDefault'])->middleware('throttle:5,1')->name('account.password.default');
     Route::post('/account/recovery-email', [AccountController::class, 'updateRecoveryEmail'])->name('account.recovery-email');
     // Halaman Profil: Kontak Cadangan, Riwayat Login (perangkat), Preferensi Notifikasi
     Route::post('/account/contact', [AccountController::class, 'updateContact'])->name('account.contact');

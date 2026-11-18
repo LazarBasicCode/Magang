@@ -172,3 +172,4 @@ $__roleLabel = !empty($isProfil) ? ucfirst($__user->role) : $__user->accessLabel
 
 
 @include('partials.avatar-modal')
+@include('partials.password-change-modal')

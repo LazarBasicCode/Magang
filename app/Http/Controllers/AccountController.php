@@ -6,6 +6,7 @@ use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Support\NotificationPrefs;
+use App\Support\PasswordChangeVerification;
 use App\Support\RandomAccountPassword;
 use App\Support\SessionRevoker;
 use Illuminate\Http\JsonResponse;
@@ -35,17 +36,50 @@ class AccountController extends Controller
 
     public function changePassword(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'password' => ['required', 'string', 'size:' . RandomAccountPassword::LENGTH],
-        ], [
-            'password.required' => 'Buat password baru dengan tombol generate.',
-            'password.size'     => 'Password harus tepat 6 karakter.',
-        ]);
+        // Ganti password dari menu profil wajib disetujui lewat email lebih dulu (PasswordChangeController).
+        // Satu-satunya pengecualian: pop-up wajib ganti password saat pertama kali masuk dengan password default.
+        if (! $request->user()->mustChangePassword() && ! PasswordChangeVerification::isVerified()) {
+            return response()->json([
+                'message'               => 'Konfirmasi lewat email diperlukan sebelum mengganti password.',
+                'verification_required' => true,
+            ], 403);
+        }
+
+        // Dua mode:
+        //  - manual    : pengguna mengetik sendiri password + konfirmasi (pop-up login pertama kali).
+        //  - generate  : password acak 6 karakter dari tombol generate (menu profil, perilaku lama).
+        $manual = $request->has('password_confirmation');
+
+        if ($manual) {
+            $data = $request->validate([
+                'password' => ['required', 'string', 'min:6', 'max:64', 'confirmed'],
+            ], [
+                'password.required'  => 'Password baru wajib diisi.',
+                'password.min'       => 'Password minimal 6 karakter.',
+                'password.max'       => 'Password maksimal 64 karakter.',
+                'password.confirmed' => 'Konfirmasi password tidak sama dengan password baru.',
+            ]);
+        } else {
+            $data = $request->validate([
+                'password' => ['required', 'string', 'size:' . RandomAccountPassword::LENGTH],
+            ], [
+                'password.required' => 'Buat password baru dengan tombol generate.',
+                'password.size'     => 'Password harus tepat 6 karakter.',
+            ]);
+        }
 
         /** @var User $user */
         $user = $request->user();
 
-        if (!RandomAccountPassword::isValid($data['password'])) {
+        // Password buatan sendiri tidak boleh sama dengan NIM/NIDN (password default).
+        if ($manual && filled($user->nim_nidn) && hash_equals((string) $user->nim_nidn, $data['password'])) {
+            return response()->json([
+                'message' => 'Password tidak boleh sama dengan NIM/NIDN Anda.',
+                'errors'  => ['password' => ['Password tidak boleh sama dengan NIM/NIDN Anda.']],
+            ], 422);
+        }
+
+        if (!$manual && !RandomAccountPassword::isValid($data['password'])) {
             return response()->json([
                 'message' => 'Password harus memuat huruf besar, huruf kecil, angka, dan simbol.',
                 'errors'  => ['password' => ['Password harus memuat huruf besar, huruf kecil, angka, dan simbol.']],
@@ -59,7 +93,7 @@ class AccountController extends Controller
             ], 422);
         }
 
-        if (RandomAccountPassword::isUsedByAnotherUser($data['password'], $user->id)) {
+        if (!$manual && RandomAccountPassword::isUsedByAnotherUser($data['password'], $user->id)) {
             return response()->json([
                 'message' => 'Password ini sudah digunakan akun lain. Silakan buat password baru.',
                 'errors'  => ['password' => ['Password ini sudah digunakan akun lain. Silakan generate ulang.']],

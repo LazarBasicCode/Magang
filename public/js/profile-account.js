@@ -1,5 +1,6 @@
 /**
- * Ganti Password & Email Pemulihan dari menu profil kanan atas.
+ * Email Pemulihan dari menu profil kanan atas.
+ * (Ganti Password punya alur sendiri dengan konfirmasi email: public/js/password-change.js)
  * - Modal dibuat dinamis, ditaruh di <body> (menu profil tetap terbuka).
  * - Modal bisa digeser lewat header, latar diburamkan.
  * - Suara notifikasi dikelola terpusat oleh notification-sound.js.
@@ -8,24 +9,6 @@
     'use strict';
 
     const CONFIGS = {
-        password: {
-            trigger: 'btnGantiPassword',
-            icon: 'key',
-            title: 'Ganti Password',
-            url: '/account/password',
-            submit: 'Simpan Password',
-            success: 'Password berhasil diganti.',
-            generateUrl: '/account/password/generate',
-            fields: [
-                { name: 'password', label: 'Password Baru (tepat 6 karakter)', type: 'text', readonly: true, generate: true },
-            ],
-            validate(v) {
-                const e = {};
-                if (!v.password) e.password = 'Klik tombol generate untuk membuat password.';
-                else if (v.password.length !== 6) e.password = 'Password harus tepat 6 karakter.';
-                return e;
-            },
-        },
         email: {
             trigger: 'btnEmailPemulihan',
             icon: 'mark_email_unread',

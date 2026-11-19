@@ -2,7 +2,7 @@
     SEMUA KARTU dashboard (dipakai bersama oleh partials admin, dosen, mahasiswa).
     Jangan taruh teks/angka khusus role di sini; itu diatur di partial role masing-masing.
     Parameter yang diterima:
-      $brand $subtitle $action? $hero[] $cards[] $cards2[] $donuts[] $widgets[]
+      $brand $subtitle $action? $hero[] $cards[] $cardsClass? $cards2[] $donuts[] $widgets[]
       Kartu ringkasan: ['label','value','icon','color'] — opsional 'options' => [['label','value','icon'], ...]
       membuat kartu "gabungan": pemilih di tempat label, opsi pertama jadi tampilan awal (lihat dashboard-charts.js).
       $trendSub $trendDatasets $barSub $barDatasets $recentSub $recent[] $showWho
@@ -65,7 +65,7 @@
 
 {{-- ===== KARTU RINGKASAN (1 atau 2 baris) ===== --}}
 @foreach(array_filter([$cards, $cards2]) as $row)
-    <div class="stat-grid" @if(!$loop->first) style="margin-top:18px;" @endif>
+    <div class="stat-grid {{ $cardsClass ?? '' }}" @if(!$loop->first) style="margin-top:18px;" @endif>
         @foreach($row as $card)
             @php $opts = $card['options'] ?? []; $first = $opts[0] ?? null; @endphp
             <div class="stat-card"@if($opts) data-stat-switch @endif>

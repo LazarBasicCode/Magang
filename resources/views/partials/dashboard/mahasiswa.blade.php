@@ -13,6 +13,7 @@
         ['label' => 'Rekognisi',      'value' => $stats['rekognisi'],      'color' => 'warning', 'icon' => 'workspace_premium'],
         ['label' => 'Kerja Sama',     'value' => $stats['kerja_sama'],     'color' => 'primary', 'icon' => 'handshake'],
     ],
+    'cardsClass' => 'stat-grid--three',
     'cards2'   => [],
     'donuts'   => [
         ['title' => 'Distribusi Kegiatan per Kategori', 'sub' => 'Sebaran kegiatanmu di 3 menu', 'caption' => 'Kegiatan', 'data' => $kategoriDonut],

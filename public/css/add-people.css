@@ -245,10 +245,6 @@
         display: inline-flex;
     }
 
-    .data-master-title-bar .title-actions.has-bulk-menu .bulk-menu-data-master-actions {
-        display: none;
-    }
-
     .data-master-title-bar .title-actions:not(.has-bulk-menu) {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -289,6 +285,7 @@
     .data-master-title-bar .bulk-menu-data-master-actions {
         display: flex;
         flex-direction: column;
+        gap: 2px;
     }
 
     .data-master-title-bar .bulk-menu-data-master-sep {

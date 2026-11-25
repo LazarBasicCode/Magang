@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Masuk · SIDA</title>
 
@@ -157,6 +157,7 @@
         .page {
             display: grid;
             grid-template-columns: 3fr 2fr;
+            position: relative;
             height: 100vh;
             height: 100dvh;
             overflow: hidden;
@@ -328,6 +329,10 @@
             overflow: hidden;
             min-height: 0;
         }
+        .sheet-handle { display: none; }
+        .accent { color: #8fdcff; }
+        .hero-more { display: contents; }
+        .hero-chips { display: none; }
         .auth-inner { width: 100%; max-width: 380px; margin: 0 auto; flex: 1 1 auto; align-content: center; }
         .auth h2 { margin: 0; font-size: clamp(1.8rem, 2.2vw, 1.75rem); font-weight: 800; letter-spacing: -.02em; text-align: center;}
         .auth .sub-title { margin: .35rem 0 1.5rem; color: var(--ink-soft); font-size: .88rem; line-height: 1.5; text-align: center;}
@@ -338,6 +343,7 @@
             position: absolute; top: clamp(.9rem, 2.4vh, 1.4rem); right: clamp(.9rem, 2vw, 1.4rem);
             width: 2.5rem; height: 2.5rem; border-radius: 50%;
             border: 0; background: var(--field); color: var(--ink-soft); cursor: pointer;
+            z-index: 5;
             transition: color .2s;
         }
         .theme-toggle:hover { color: var(--primary); }
@@ -418,52 +424,42 @@
             transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
         }
 
-        .info-box {
-            display: flex; align-items: flex-start; gap: .65rem;
-            background: var(--field); border: 1px solid var(--field-line);
-            border-radius: 12px; padding: .75rem .9rem;
-            color: var(--ink-soft); font-size: .78rem; line-height: 1.55;
-        }
-        .info-box i { color: var(--primary); margin-top: .18rem; }
-
-        .info-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
-        .info-warn i { color: #d97706; }
-        :root[data-theme="dark"] .info-warn { background: #3a2a08; border-color: #7a5a14; color: #fcd98a; }
-        @media (prefers-color-scheme: dark) {
-            :root:not([data-theme="light"]) .info-warn { background: #3a2a08; border-color: #7a5a14; color: #fcd98a; }
-        }
-
-        /* Pilihan cara pemulihan password */
-        .method-group { display: flex; flex-direction: column; gap: .5rem; }
-        .method { display: block; cursor: pointer; }
-        .method input { position: absolute; opacity: 0; width: 0; height: 0; }
-        .method-box {
-            display: flex; align-items: center; gap: .8rem;
-            padding: .65rem .85rem; border-radius: 12px;
+        /* tombol netral (Batal) */
+        .btn-secondary {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 100%; padding: .85rem 1rem; border-radius: 12px; cursor: pointer;
             background: var(--field); border: 1.5px solid var(--field-line);
-            transition: border-color .2s, box-shadow .2s, background .2s;
+            color: var(--primary); font-weight: 600; font-size: .9rem;
+            transition: background .2s, border-color .2s, transform .2s;
         }
-        .method-box > i { color: var(--ink-soft); font-size: 1rem; width: 1.2rem; text-align: center; }
-        .method-box strong { display: block; font-size: .84rem; font-weight: 700; }
-        .method-box small { display: block; margin-top: 1px; font-size: .72rem; color: var(--ink-soft); line-height: 1.4; }
-        .method:hover .method-box { border-color: var(--primary); }
-        .method input:checked + .method-box {
-            border-color: var(--primary); background: var(--chip-bg, var(--field)); box-shadow: 0 0 0 3px var(--focus);
-        }
-        .method input:checked + .method-box > i { color: var(--primary); }
-        .method input:focus-visible + .method-box { outline: 3px solid var(--focus); outline-offset: 2px; }
-        .confirm-box { display: flex; flex-direction: column; gap: .75rem; }
-        .confirm-box[hidden] { display: none; }
-        #emailInfoBox[hidden] { display: none; }
+        .btn-secondary:hover { border-color: var(--primary); }
+        .btn-secondary:active { transform: translateY(1px); }
+        #forgotSection .btn-primary { margin-top: .25rem; }
 
-        .back-link {
-            display: inline-flex; align-items: center; gap: .45rem;
-            border: 0; background: none; padding: 0;
-            color: var(--primary); font-weight: 500; font-size: .8rem; cursor: pointer;
+        /* langkah: pilih cara -> isi data */
+        .step { display: flex; flex-direction: column; gap: clamp(.7rem, 1.8vh, 1rem); animation: stepIn .3s cubic-bezier(.22, 1, .36, 1) both; }
+        .step[hidden] { display: none; }
+        @keyframes stepIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+        /* tombol pilihan cara pemulihan (polos: ikon + judul) */
+        .method-group { display: flex; flex-direction: column; gap: .65rem; }
+        .method-card {
+            display: flex; align-items: center; gap: .85rem; width: 100%;
+            padding: .9rem 1rem; border-radius: 14px; text-align: left;
+            background: var(--field); border: 1.5px solid var(--field-line);
+            color: var(--ink); font: inherit; cursor: pointer;
+            transition: border-color .2s, background .2s, transform .15s;
         }
-        .back-link:hover { text-decoration: underline; }
-        .back-link i { transition: transform .2s; }
-        .back-link:hover i { transform: translateX(-3px); }
+        .method-card:hover { border-color: var(--primary); }
+        .method-card:active { transform: scale(.985); }
+        .method-card > i:first-child { width: 1.3rem; text-align: center; color: var(--primary); font-size: 1.05rem; }
+        .method-txt { flex: 1; min-width: 0; }
+        .method-txt strong { display: block; font-size: .92rem; font-weight: 700; }
+        .method-txt small { display: block; margin-top: 2px; font-size: .75rem; color: var(--ink-soft); line-height: 1.4; }
+        .method-card .method-go { flex: none; width: auto; color: var(--ink-soft); font-size: .72rem; transition: transform .2s, color .2s; }
+        .method-card:hover .method-go { color: var(--primary); transform: translateX(3px); }
+        .confirm-box { display: flex; flex-direction: column; gap: 1rem; }
+        .confirm-box[hidden] { display: none; }
 
         .about { display: none; position: relative; z-index: 2; margin: .75rem 0 0; max-width: 34rem;
             font-size: .86rem; line-height: 1.65; color: var(--hero-ink-soft); }
@@ -490,36 +486,122 @@
             .badge.b1 { right: -3%; } .badge.b2 { right: -4%; }
             .badge.b3 { left: -3%; } 
         }
+        /* ==========================================================
+           MOBILE · satu layar yang dibagi dua: hero (atas) + form (bawah)
+           Tinggi form dikendalikan JS (ikut jari, lalu menempel ke
+           posisi "form" atau "hero"). --p: 1 = form penuh, 0 = hero penuh.
+        ========================================================== */
         @media (max-width: 900px) {
-            html, body { height: auto; }
-            .page { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; display: flow-root; }
-            .hero { padding: 1.25rem 1.5rem 3.25rem; }
-            .stage, .headline p, .hero-foot { display: none; }
-            .about { display: block; }
-            .headline { margin-top: 1rem; }
-            /* form mengambang: terpisah dari tepi kiri/kanan/bawah layar */
-            .auth {
-                width: calc(100% - 2rem); max-width: 520px;
-                margin: -24px auto 1.5rem; border-radius: 26px;
-                box-shadow: 0 24px 48px -18px rgba(6, 14, 60, .55), 0 6px 16px -6px rgba(6, 14, 60, .3);
-                padding: 2.25rem 1.75rem 1.5rem; overflow: visible;
+            html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+            .page { display: flex; flex-direction: column; }
+
+            /* hero: mengisi sisa layar di atas form */
+            .hero {
+                flex: 1 1 0; min-height: 0; z-index: 0;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                text-align: center; touch-action: none;
+                padding: calc(1.25rem + env(safe-area-inset-top)) 1.5rem 1rem;
             }
-            .auth-foot { max-width: none; }
+            .hero::before {
+                content: ""; position: absolute; inset: 0; pointer-events: none;
+                background: radial-gradient(circle at 50% 38%, rgba(255, 255, 255, .20), transparent 62%);
+            }
+            .stage, .hero-foot, .headline p, .brand-text { display: none; }
+            .brand { justify-content: center; }
+            .brand svg { width: 64px; height: 64px; }
+            .headline { margin-top: 1rem; max-width: none; }
+            .headline h1 { font-size: clamp(1.65rem, 7vw, 2.05rem); }
+            .ring.r1 { width: 240px; height: 240px; top: -120px; }
+
+            /* bagian yang memudar saat form naik */
+            .hero-more {
+                display: block; position: relative; z-index: 2; overflow: hidden;
+                max-height: calc((1 - var(--p, 1)) * 24rem);
+                opacity: calc(1 - var(--p, 1) * 1.8);
+            }
+            .about { display: block; margin: .9rem auto 0; max-width: 30rem; font-size: .95rem; line-height: 1.65; }
+            .hero-chips {
+                display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem;
+                margin: 1.15rem 0 .25rem; padding: 0; list-style: none;
+            }
+            .hero-chips li {
+                display: inline-flex; align-items: center; gap: .45rem;
+                padding: .45rem .85rem; border-radius: 999px;
+                background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .24);
+                color: #fff; font-size: .8rem; font-weight: 600;
+            }
+
+            /* tombol tema melayang di atas hero */
+            .theme-toggle {
+                top: calc(1rem + env(safe-area-inset-top)); right: 1.25rem;
+                width: 2.6rem; height: 2.6rem;
+                background: rgba(255, 255, 255, .18); color: #fff;
+            }
+            .theme-toggle:hover { color: #fff; }
+
+            /* form: menyatu di bawah hero (bukan melayang) */
+            .auth {
+                --sheet-px: 1.75rem;
+                position: relative; flex: 0 0 auto; z-index: 3;
+                width: auto; max-width: none; margin: 0;
+                padding: 0 var(--sheet-px) calc(1.1rem + env(safe-area-inset-bottom));
+                border-radius: 30px 30px 0 0;
+                box-shadow: 0 -12px 32px -14px rgba(6, 14, 60, .5);
+                overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+            }
+            .page[data-focus="hero"] .auth { touch-action: none; cursor: pointer; }
+            .page.is-snapping .auth { transition: height .5s cubic-bezier(.22, 1, .36, 1); }
+            .page.is-snapping .hero-more { transition: max-height .5s cubic-bezier(.22, 1, .36, 1), opacity .4s ease; }
+            .page.is-dragging, .page.is-dragging * { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+
+            /* area geser di tepi atas form (tanpa teks) */
+            .sheet-handle {
+                display: block; position: sticky; top: 0; z-index: 2;
+                width: calc(100% + var(--sheet-px) * 2); height: 2rem; flex: 0 0 auto;
+                margin: 0 calc(var(--sheet-px) * -1);
+                border: 0; border-radius: 30px 30px 0 0; background: var(--panel);
+                cursor: grab; touch-action: none;
+            }
+
+            /* hanya satu bagian yang menentukan tinggi; yang lain keluar dari alur */
+            .auth-inner { position: relative; max-width: none; flex: 0 0 auto; }
+            .fade-hidden { position: absolute; left: 0; right: 0; top: 0; }
+
+            /* isi form: lega & terbaca */
+            .auth h2 { font-size: 1.7rem; }
+            .auth .sub-title { margin: .4rem 0 1rem; font-size: .95rem; line-height: 1.55; }
+            #loginForm, #forgotForm { margin-top: .75rem; gap: 1.15rem; }
+            .field { gap: .5rem; }
+            .field label { font-size: .88rem; }
+            .field-wrap input { font-size: 1rem; padding: .95rem 1rem .95rem 2.9rem; }
+            .field-wrap input.has-toggle { padding-right: 3.2rem; }
+            .icon-left { left: 1.1rem; font-size: .95rem; }
+            .btn-primary { margin-top: .5rem; padding: 1rem; font-size: 1rem; }
+            .btn-secondary { padding: 1rem; font-size: 1rem; }
+            .link-line { font-size: .88rem; }
+            .alert { font-size: .85rem; padding: .7rem .9rem; }
+            #forgotSection .sub-title { margin: .4rem 0 1.1rem; }
+            #forgotSection .btn-primary { margin-top: .35rem; }
+            .method-group { gap: .8rem; }
+            .method-card { padding: 1rem 1.1rem; gap: 1rem; }
+            .method-txt strong { font-size: 1rem; }
+            .method-txt small { font-size: .82rem; }
+            .auth-foot { max-width: none; margin-top: 1.1rem; padding-top: .9rem; font-size: .78rem; }
         }
         @media (max-width: 480px) {
-            .hero { padding: 1.1rem 1.25rem 3rem; }
-            .brand svg { width: 40px; height: 40px; }
-            .brand span { font-size: 1.35rem; }
+            .auth { --sheet-px: 1.5rem; }
+        }
+        @media (max-width: 900px) and (max-height: 700px) {
+            .brand svg { width: 52px; height: 52px; }
+            .headline { margin-top: .6rem; }
             .headline h1 { font-size: 1.5rem; }
-            .about { font-size: .8rem; line-height: 1.6; }
-            .auth { width: calc(100% - 1.5rem); margin-bottom: 1rem; padding: 2rem 1.25rem 1.25rem; border-radius: 22px; }
-            .auth h2 { font-size: 1.5rem; }
-            .field-wrap input { font-size: 1rem; }   /* cegah auto-zoom iOS */
-            .ring.r1 { width: 220px; height: 220px; top: -120px; }
+            .about { font-size: .88rem; }
+            #loginForm, #forgotForm { gap: .9rem; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .rise, .row.is-active .line, .float, .badge { animation: none !important; }
+            .rise, .row.is-active .line, .float, .badge, .step { animation: none !important; }
+            .auth, .hero-more { transition: none !important; }
             .fill { width: 100%; animation: none !important; }
         }
     </style>
@@ -547,7 +629,11 @@
     </defs>
 </svg>
 
-<main class="page">
+<main class="page" data-focus="form">
+
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ganti tema">
+        <i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i>
+    </button>
 
     <!-- ================= KIRI (60%) ================= -->
     <section class="hero" aria-label="Ringkasan modul SIDA">
@@ -563,15 +649,22 @@
         </div>
 
         <div class="headline rise" style="--i:1">
-            <h1>Capaian kampus, dalam satu pandangan.</h1>
+            <h1>Selamat Datang di <span class="accent">SIDA</span></h1>
             <p>Prestasi mahasiswa, riset dosen, dan kerja sama, tertata rapi dan mudah dicari.</p>
         </div>
 
-        <p class="about rise" style="--i:2">
+        <div class="hero-more">
+            <p class="about rise" style="--i:2">
             <strong>Sistem Informasi Data Akademik &amp; Akreditasi</strong> yang dikelola oleh Program Studi Teknik Informatika,
             Institut Teknologi dan Bisnis ASIA Malang — menghimpun data prestasi kemahasiswaan, penelitian &amp; pengabdian (LPPM),
             rekognisi, dan kerja sama secara terintegrasi untuk kebutuhan akreditasi.
         </p>
+            <ul class="hero-chips rise" style="--i:3" aria-label="Cakupan data SIDA">
+                <li><i class="fa-solid fa-graduation-cap"></i>Kemahasiswaan</li>
+                <li><i class="fa-solid fa-book-open"></i>LPPM</li>
+                <li><i class="fa-solid fa-handshake"></i>Kerja Sama</li>
+            </ul>
+        </div>
 
         <div class="stage">
             <span class="orb"></span>
@@ -642,16 +735,14 @@
     </section>
 
     <!-- ================= KANAN (40%) ================= -->
-    <section class="auth" aria-label="Form login">
-        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ganti tema">
-            <i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i>
-        </button>
+    <section class="auth" id="authSheet" aria-label="Form login">
+        <button class="sheet-handle" id="sheetHandle" type="button" aria-expanded="true" aria-controls="authSheet" aria-label="Geser untuk menampilkan atau menyembunyikan form masuk"></button>
 
         <div class="auth-inner">
             <div id="loginSection" class="fade-switch">
             <div class="rise" style="--i:3">
-                <h2>Selamat Datang</h2>
-                <p class="sub-title">Masuk ke akun kampus Anda untuk melanjutkan.</p>
+                <h2>Masuk</h2>
+                <p class="sub-title">Gunakan akun kampus Anda untuk melanjutkan.</p>
             </div>
 
             @if (!empty($sessionNotice))
@@ -699,67 +790,51 @@
 
             <div id="forgotSection" class="fade-switch fade-hidden">
                 <h2>Lupa password?</h2>
-                <p class="sub-title">Masukkan NIM/NIDN Anda, lalu pilih cara memulihkan password.</p>
+                <p class="sub-title" id="forgotSubtitle">Pilih cara untuk memulihkan akses akun Anda.</p>
 
-                <form id="forgotForm">
-                    <div id="forgotAlert" class="alert" style="display:none;"></div>
-
-                    <div class="field">
-                        <label for="recoveryIdentity">NIM / NIDN / Email kampus</label>
-                        <div class="field-wrap">
-                            <i class="fa-regular fa-id-card icon-left"></i>
-                            <input id="recoveryIdentity" name="identity" autocomplete="off"
-                                placeholder="Contoh: 222011005 atau mahasiswa@asia.ac.id" required type="text">
+                <form id="forgotForm" novalidate>
+                    <!-- Langkah 1: pilih cara -->
+                    <div id="stepMethod" class="step">
+                        <div class="method-group">
+                            <button class="method-card" type="button" data-method="email">
+                                <i class="fa-regular fa-envelope"></i><span class="method-txt"><strong>Reset lewat email</strong><small>Konfirmasi &ldquo;Ya, ini saya&rdquo; di email, lalu buat password baru</small></span><i class="fa-solid fa-chevron-right method-go"></i>
+                            </button>
+                            <button class="method-card" type="button" data-method="default">
+                                <i class="fa-solid fa-rotate-left"></i><span class="method-txt"><strong>Kembalikan ke default</strong><small>Password menjadi NIM/NIDN (khusus mahasiswa &amp; dosen)</small></span><i class="fa-solid fa-chevron-right method-go"></i>
+                            </button>
                         </div>
+                        <button class="btn-secondary" id="backToLoginBtn" type="button">Batal</button>
                     </div>
 
-                    <div class="method-group" role="radiogroup" aria-label="Cara pemulihan password">
-                        <label class="method">
-                            <input type="radio" name="method" value="email" checked>
-                            <span class="method-box">
-                                <i class="fa-regular fa-envelope"></i>
-                                <span><strong>Lewat email</strong><small>Konfirmasi &ldquo;Ya, ini saya&rdquo; di email, lalu buat password baru</small></span>
-                            </span>
-                        </label>
-                        <label class="method">
-                            <input type="radio" name="method" value="default">
-                            <span class="method-box">
-                                <i class="fa-solid fa-rotate-left"></i>
-                                <span><strong>Kembalikan ke default</strong><small>Password menjadi NIM/NIDN (khusus mahasiswa &amp; dosen)</small></span>
-                            </span>
-                        </label>
-                    </div>
+                    <!-- Langkah 2: isi data -->
+                    <div id="stepDetail" class="step" hidden>
+                        <div id="forgotAlert" class="alert" style="display:none;" role="alert"></div>
 
-                    <div id="confirmDefaultBox" class="confirm-box" hidden>
-                        <div class="info-box info-warn">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>Password akan <strong>diganti dengan NIM/NIDN</strong> dan semua perangkat yang sedang masuk akan
-                                dikeluarkan. Setelah masuk, Anda wajib membuat password baru.</span>
-                        </div>
                         <div class="field">
-                            <label for="confirmIdentity">Konfirmasi: ketik ulang NIM/NIDN</label>
+                            <label for="recoveryIdentity" id="identityLabel">NIM / NIDN / Email kampus</label>
                             <div class="field-wrap">
-                                <i class="fa-solid fa-check-double icon-left"></i>
-                                <input id="confirmIdentity" name="confirm_identity" autocomplete="off"
-                                    placeholder="Ketik ulang NIM/NIDN yang sama" type="text">
+                                <i class="fa-regular fa-id-card icon-left"></i>
+                                <input id="recoveryIdentity" name="identity" autocomplete="off"
+                                    placeholder="NIM, NIDN, atau email kampus" required type="text">
                             </div>
                         </div>
-                    </div>
 
-                    <div id="emailInfoBox" class="info-box">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <span>Kami mengirim email berisi tombol <strong>&ldquo;Ya, ini saya&rdquo;</strong> ke email akun Anda. Setelah ditekan, pop-up akan terbuka di SIDA untuk membuat password baru + konfirmasi.</span>
-                    </div>
+                        <div id="confirmDefaultBox" class="confirm-box" hidden>
+                            <div class="field">
+                                <label for="confirmIdentity">Ketik ulang NIM/NIDN</label>
+                                <div class="field-wrap">
+                                    <i class="fa-solid fa-check-double icon-left"></i>
+                                    <input id="confirmIdentity" name="confirm_identity" autocomplete="off"
+                                        placeholder="Ketik ulang NIM/NIDN yang sama" type="text">
+                                </div>
+                            </div>
+                        </div>
 
-                    <button class="btn-primary" id="forgotSubmitBtn" type="submit">
-                        <i class="fa-regular fa-paper-plane"></i>
-                        <span>Kirim tautan reset password</span>
-                    </button>
-
-                    <div class="link-line">
-                        <button class="back-link" id="backToLoginBtn" type="button">
-                            <i class="fa-solid fa-arrow-left"></i> Kembali ke halaman login
+                        <button class="btn-primary" id="forgotSubmitBtn" type="submit">
+                            <i class="fa-regular fa-paper-plane"></i>
+                            <span>Kirim tautan reset password</span>
                         </button>
+                        <button class="btn-secondary" id="backToMethodBtn" type="button">Pilih cara lain</button>
                     </div>
                 </form>
             </div>
@@ -841,24 +916,228 @@
         });
     })();
 
+
+    /* ---------- Mobile: hero + form berbagi satu layar ----------
+       Form mengikuti jari saat digeser, tertahan di mana jari berada,
+       lalu menempel ke "form" (terbuka) atau "hero" (tertutup) saat dilepas. */
+    (function () {
+        var page = document.querySelector('.page');
+        var hero = document.querySelector('.hero');
+        var auth = document.getElementById('authSheet');
+        var handle = document.getElementById('sheetHandle');
+        var inner = auth.querySelector('.auth-inner');
+        var foot = auth.querySelector('.auth-foot');
+        var mq = window.matchMedia('(max-width: 900px)');
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+        var MIN_HERO = 152;            // tinggi minimum hero (logo + judul) saat form terbuka
+        var state = 'form', curH = 0, m = { c: 0, e: 0 };
+        var drag = null, noClick = false, ready = false, snapTimer = null;
+
+        function measure() {
+            var padB = parseFloat(getComputedStyle(auth).paddingBottom) || 0;
+            var footH = foot.offsetHeight + (parseFloat(getComputedStyle(foot).marginTop) || 0);
+            var natural = handle.offsetHeight + inner.offsetHeight + footH + padB;
+            var h2 = inner.querySelector('.fade-switch:not(.fade-hidden) h2');
+            var e = Math.max(120, Math.min(natural, page.clientHeight - MIN_HERO));
+            var sab = Math.max(0, padB - 1.1 * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16));
+            var c = handle.offsetHeight + (h2 ? h2.offsetHeight : 32) + sab + 8;   // judul saja + area home-indicator
+            m = { c: Math.min(c, e), e: e };
+        }
+
+        function apply(h) {
+            curH = h;
+            auth.style.height = h + 'px';
+            var p = m.e > m.c ? (h - m.c) / (m.e - m.c) : 1;
+            page.style.setProperty('--p', Math.max(0, Math.min(1, p)).toFixed(3));
+        }
+
+        function snapTo(s, animate) {
+            state = s;
+            page.setAttribute('data-focus', s);
+            handle.setAttribute('aria-expanded', s === 'form');
+            measure();
+            clearTimeout(snapTimer);
+            if (animate && !reduce.matches) {
+                page.classList.add('is-snapping');
+                snapTimer = setTimeout(function () { page.classList.remove('is-snapping'); }, 650);
+            } else {
+                page.classList.remove('is-snapping');
+            }
+            apply(s === 'form' ? m.e : m.c);
+        }
+
+        /* ----- geser ----- */
+        function down(e) {
+            if (!mq.matches || (e.pointerType === 'mouse' && e.button !== 0)) return;
+            if (e.currentTarget === auth && state !== 'hero' && !handle.contains(e.target)) return;
+            drag = { id: e.pointerId, y0: e.clientY, h0: curH, el: e.currentTarget, moved: false,
+                     s: [{ y: e.clientY, t: e.timeStamp }] };
+        }
+        function move(e) {
+            if (!drag || e.pointerId !== drag.id) return;
+            var dy = e.clientY - drag.y0;
+            if (!drag.moved) {
+                if (Math.abs(dy) < 6) return;
+                drag.moved = true;
+                try { drag.el.setPointerCapture(e.pointerId); } catch (err) {}
+                clearTimeout(snapTimer);
+                page.classList.remove('is-snapping');
+                page.classList.add('is-dragging');
+                measure();
+            }
+            apply(Math.max(m.c, Math.min(m.e, drag.h0 - dy)));
+            drag.s.push({ y: e.clientY, t: e.timeStamp });
+            if (drag.s.length > 8) drag.s.shift();
+        }
+        function up(e) {
+            if (!drag || e.pointerId !== drag.id) return;
+            var d = drag; drag = null;
+            if (!d.moved) return;                      // ketukan biasa -> biarkan event click bekerja
+            page.classList.remove('is-dragging');
+            try { d.el.releasePointerCapture(e.pointerId); } catch (err) {}
+            // kecepatan hanya dari 100 ms terakhir; jari yang ditahan = 0 (lepas -> pilih posisi terdekat)
+            var recent = d.s.filter(function (q) { return e.timeStamp - q.t <= 100; });
+            var v = recent.length > 1
+                ? (recent[recent.length - 1].y - recent[0].y) / Math.max(1, recent[recent.length - 1].t - recent[0].t)
+                : 0;                                                      // px/ms, + = ke bawah
+            var target = Math.abs(v) > 0.4 ? (v < 0 ? 'form' : 'hero')
+                                           : (curH > (m.c + m.e) / 2 ? 'form' : 'hero');
+            noClick = true; setTimeout(function () { noClick = false; }, 350);
+            snapTo(target, true);
+        }
+        [hero, auth].forEach(function (el) {
+            el.addEventListener('pointerdown', down);
+            el.addEventListener('pointermove', move);
+            el.addEventListener('pointerup', up);
+            el.addEventListener('pointercancel', up);
+        });
+
+        /* ----- ketukan ----- */
+        handle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (noClick || !mq.matches) return;
+            snapTo(state === 'form' ? 'hero' : 'form', true);
+        });
+        auth.addEventListener('click', function (e) {
+            if (noClick || !mq.matches || handle.contains(e.target)) return;
+            if (state === 'hero') snapTo('form', true);
+        });
+        hero.addEventListener('click', function () {
+            if (noClick || !mq.matches) return;
+            if (state === 'form') snapTo('hero', true);
+        });
+        auth.addEventListener('focusin', function (e) {
+            if (mq.matches && state === 'hero' && !handle.contains(e.target)) snapTo('form', true);
+        });
+
+        /* ----- ukuran berubah: ganti form, putar layar, keyboard ----- */
+        if (window.ResizeObserver) {
+            new ResizeObserver(function () {
+                if (ready && mq.matches && !drag) snapTo(state, true);
+            }).observe(inner);
+        }
+        window.addEventListener('resize', function () {
+            if (ready && mq.matches && !drag) snapTo(state, false);
+        });
+
+        function init() {
+            if (!mq.matches) {
+                ready = false;
+                auth.style.height = '';
+                page.style.removeProperty('--p');
+                page.classList.remove('is-snapping', 'is-dragging');
+                return;
+            }
+            measure();
+            page.setAttribute('data-focus', 'hero');
+            apply(m.c);
+            ready = true;
+            setTimeout(function () { snapTo('form', true); }, reduce.matches ? 0 : 160);
+        }
+        var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+        fontsReady.then(init);
+        if (mq.addEventListener) mq.addEventListener('change', init);
+    })();
+
     // Smooth cross-fade between login and forgot-password forms
     const loginSection = document.getElementById('loginSection');
     const forgotSection = document.getElementById('forgotSection');
     const goToForgotBtn = document.getElementById('goToForgotBtn');
     const backToLoginBtn = document.getElementById('backToLoginBtn');
+    const backToMethodBtn = document.getElementById('backToMethodBtn');
+
+    const forgotForm = document.getElementById('forgotForm');
+    const forgotAlert = document.getElementById('forgotAlert');
+    const forgotSubmitBtn = document.getElementById('forgotSubmitBtn');
+    const forgotSubtitle = document.getElementById('forgotSubtitle');
+    const stepMethod = document.getElementById('stepMethod');
+    const stepDetail = document.getElementById('stepDetail');
+    const confirmBox = document.getElementById('confirmDefaultBox');
+    const confirmInput = document.getElementById('confirmIdentity');
+    const identityInput = document.getElementById('recoveryIdentity');
+    const identityLabel = document.getElementById('identityLabel');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    const STEP1_SUBTITLE = 'Pilih cara untuk memulihkan akses akun Anda.';
+    const METHOD = {
+        email: {
+            subtitle: 'Masukkan NIM/NIDN atau email kampus Anda. Kami akan mengirim tautan untuk membuat password baru ke email akun Anda.',
+            label: 'NIM / NIDN / Email kampus', placeholder: 'NIM, NIDN, atau email kampus',
+            submitIcon: 'fa-regular fa-paper-plane', submitText: 'Kirim tautan reset password',
+        },
+        default: {
+            subtitle: 'Password akan diganti dengan NIM/NIDN Anda dan semua perangkat yang sedang masuk akan dikeluarkan. Masukkan NIM/NIDN lalu ketik ulang untuk konfirmasi.',
+            label: 'NIM / NIDN', placeholder: 'Contoh: 222011005',
+            submitIcon: 'fa-solid fa-rotate-left', submitText: 'Kembalikan ke password default',
+        },
+    };
+    let currentMethod = 'email';
 
     function swap(show, hide) {
         hide.classList.add('fade-hidden');
         show.classList.remove('fade-hidden');
     }
-    goToForgotBtn.addEventListener('click', (e) => { e.preventDefault(); swap(forgotSection, loginSection); });
-    backToLoginBtn.addEventListener('click', () => { swap(loginSection, forgotSection); });
 
-    // Kirim permintaan reset password lewat fetch, tanpa reload halaman
-    const forgotForm = document.getElementById('forgotForm');
-    const forgotAlert = document.getElementById('forgotAlert');
-    const forgotSubmitBtn = document.getElementById('forgotSubmitBtn');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    function showStepMethod() {
+        stepDetail.hidden = true;
+        stepMethod.hidden = false;
+        forgotAlert.style.display = 'none';
+        forgotSubtitle.textContent = STEP1_SUBTITLE;
+    }
+
+    function showStepDetail(method) {
+        const m = METHOD[method];
+        const isDefault = method === 'default';
+        currentMethod = method;
+        forgotSubtitle.textContent = m.subtitle;
+        identityLabel.textContent = m.label;
+        identityInput.placeholder = m.placeholder;
+        confirmBox.hidden = !isDefault;
+        confirmInput.required = isDefault;
+        if (!isDefault) confirmInput.value = '';
+        forgotSubmitBtn.innerHTML = '<i class="' + m.submitIcon + '"></i><span>' + m.submitText + '</span>';
+        forgotAlert.style.display = 'none';
+        stepMethod.hidden = true;
+        stepDetail.hidden = false;
+        identityInput.focus({ preventScroll: true });
+    }
+
+    goToForgotBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        forgotForm.reset();
+        showStepMethod();
+        swap(forgotSection, loginSection);
+    });
+    backToLoginBtn.addEventListener('click', () => { swap(loginSection, forgotSection); });
+    backToMethodBtn.addEventListener('click', () => {
+        showStepMethod();
+        const btn = stepMethod.querySelector('.method-card[data-method="' + currentMethod + '"]');
+        if (btn) btn.focus({ preventScroll: true });
+    });
+    stepMethod.querySelectorAll('.method-card').forEach((btn) => {
+        btn.addEventListener('click', () => showStepDetail(btn.dataset.method));
+    });
 
     function showForgotAlert(kind, message) {
         forgotAlert.className = 'alert ' + (kind === 'ok' ? 'alert-ok' : '');
@@ -872,39 +1151,18 @@
         forgotAlert.style.display = 'flex';
     }
 
-    // Pilihan cara pemulihan: "email" (tautan + password baru) atau "default" (kembali ke NIM/NIDN).
-    const methodRadios = Array.from(forgotForm.querySelectorAll('input[name="method"]'));
-    const confirmBox = document.getElementById('confirmDefaultBox');
-    const emailInfoBox = document.getElementById('emailInfoBox');
-    const confirmInput = document.getElementById('confirmIdentity');
-    const identityInput = document.getElementById('recoveryIdentity');
-
-    const SUBMIT_LABEL = {
-        email:   { icon: 'fa-regular fa-paper-plane', text: 'Kirim tautan reset password' },
-        default: { icon: 'fa-solid fa-rotate-left',   text: 'Kembalikan ke password default' },
-    };
-    const currentMethod = () => (methodRadios.find((r) => r.checked) || {}).value || 'email';
-
-    function applyMethod() {
-        const method = currentMethod();
-        const isDefault = method === 'default';
-        confirmBox.hidden = !isDefault;
-        emailInfoBox.hidden = isDefault;
-        confirmInput.required = isDefault;
-        if (!isDefault) confirmInput.value = '';
-        forgotSubmitBtn.innerHTML = '<i class="' + SUBMIT_LABEL[method].icon + '"></i><span>' + SUBMIT_LABEL[method].text + '</span>';
-        forgotAlert.style.display = 'none';
-    }
-    methodRadios.forEach((r) => r.addEventListener('change', applyMethod));
-    applyMethod();
-
+    // Kirim permintaan reset password lewat fetch, tanpa reload halaman
     forgotForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         forgotAlert.style.display = 'none';
 
-        const method = currentMethod();
+        const method = currentMethod;
         const identity = identityInput.value.trim();
-        if (!identity) return;
+        if (!identity) {
+            showForgotAlert('err', 'Isi ' + METHOD[method].label + ' terlebih dahulu.');
+            identityInput.focus();
+            return;
+        }
 
         let url = '{{ url('/forgot-password') }}';
         let payload = { identity };
@@ -943,8 +1201,8 @@
 
             if (res.ok && data.success) {
                 showForgotAlert('ok', data.message);
-                forgotForm.reset();
-                applyMethod();
+                identityInput.value = '';
+                confirmInput.value = '';
             } else if (res.status === 429) {
                 showForgotAlert('err', 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.');
             } else {
